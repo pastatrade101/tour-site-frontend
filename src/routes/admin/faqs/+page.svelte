@@ -1,0 +1,353 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { fade, scale, slide } from 'svelte/transition';
+  import { ChevronDown, CircleHelp, Edit, Plus, Search, Trash2, X } from '@lucide/svelte';
+  import { api } from '$lib/api/client';
+  import AdminButton from '$lib/components/admin/AdminButton.svelte';
+  import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
+  import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
+  import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
+  import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
+  import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
+  import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
+  import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
+  import StatusBadge from '$lib/components/admin/StatusBadge.svelte';
+  import ToastStack from '$lib/components/admin/ToastStack.svelte';
+  import ErrorState from '$lib/components/public/ErrorState.svelte';
+  import LoadingState from '$lib/components/public/LoadingState.svelte';
+
+  type Faq = {
+    answer: string;
+    category?: string | null;
+    created_at?: string;
+    id: string;
+    question: string;
+    sort_order: number;
+    status: 'archived' | 'draft' | 'published';
+    updated_at?: string;
+  };
+
+  type Option = { label: string; value: string };
+  type Toast = { id: string; message: string; type: 'error' | 'success' };
+
+  const recommendedCategories = [
+    'Safari',
+    'Kilimanjaro',
+    'Zanzibar',
+    'Family Travel',
+    'Safety',
+    'Payments',
+    'Booking',
+    'Visas',
+    'Health',
+    'General'
+  ];
+
+  const statusOptions: Option[] = [
+    { label: 'Draft', value: 'draft' },
+    { label: 'Published', value: 'published' },
+    { label: 'Archived', value: 'archived' }
+  ];
+
+  const categoryFormOptions: Option[] = [
+    { label: 'No category', value: '' },
+    ...recommendedCategories.map((c) => ({ label: c, value: c }))
+  ];
+
+  const emptyForm = () => ({
+    answer: '',
+    category: '',
+    question: '',
+    sort_order: '0',
+    status: 'draft' as Faq['status']
+  });
+
+  let rows: Faq[] = [];
+  let loading = true;
+  let saving = false;
+  let deleting = false;
+  let error = '';
+  let search = '';
+  let statusFilter = 'all';
+  let categoryFilter = 'all';
+  let modalOpen = false;
+  let confirmOpen = false;
+  let editingFaq: Faq | null = null;
+  let faqToDelete: Faq | null = null;
+  let form = emptyForm();
+  let expanded = new Set<string>();
+  let toasts: Toast[] = [];
+
+  // category filter list = recommended ∪ categories actually present in data
+  let seenCategories = new Set<string>(recommendedCategories);
+  $: categoryFilterOptions = [
+    { label: 'All categories', value: 'all' },
+    ...[...seenCategories].sort((a, b) => a.localeCompare(b)).map((c) => ({ label: c, value: c }))
+  ];
+
+  // group by category, then sort each group by sort_order
+  $: grouped = (() => {
+    const map = new Map<string, Faq[]>();
+    for (const faq of rows) {
+      const key = faq.category?.trim() || 'Uncategorized';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)?.push(faq);
+    }
+    for (const list of map.values()) list.sort((a, b) => a.sort_order - b.sort_order);
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  })();
+
+  const showToast = (message: string, type: Toast['type'] = 'success') => {
+    const id = crypto.randomUUID();
+    toasts = [{ id, message, type }, ...toasts].slice(0, 4);
+    setTimeout(() => { toasts = toasts.filter((t) => t.id !== id); }, 3500);
+  };
+
+  const dismissToast = (e: CustomEvent<string>) => { toasts = toasts.filter((t) => t.id !== e.detail); };
+
+  const toggleExpand = (id: string) => {
+    const next = new Set(expanded);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    expanded = next;
+  };
+
+  const load = async () => {
+    loading = true;
+    error = '';
+    try {
+      const res = await api.faqs.list({
+        search,
+        status: statusFilter,
+        category: categoryFilter === 'all' ? undefined : categoryFilter,
+        limit: 200
+      });
+      rows = res.data.items as unknown as Faq[];
+      // remember any categories present so the filter never hides them
+      const next = new Set(seenCategories);
+      for (const faq of rows) if (faq.category?.trim()) next.add(faq.category.trim());
+      seenCategories = next;
+    } catch (err) {
+      error = err instanceof Error ? err.message : 'Unable to load FAQs.';
+    } finally {
+      loading = false;
+    }
+  };
+
+  const openCreate = () => {
+    editingFaq = null;
+    form = emptyForm();
+    modalOpen = true;
+  };
+
+  const openEdit = (faq: Faq) => {
+    editingFaq = faq;
+    form = {
+      answer: faq.answer,
+      category: faq.category ?? '',
+      question: faq.question,
+      sort_order: String(faq.sort_order ?? 0),
+      status: faq.status
+    };
+    modalOpen = true;
+  };
+
+  const closeModal = () => { modalOpen = false; editingFaq = null; form = emptyForm(); };
+
+  const save = async () => {
+    if (form.question.trim().length < 5) { showToast('Question must be at least 5 characters.', 'error'); return; }
+    if (form.answer.trim().length < 5) { showToast('Answer must be at least 5 characters.', 'error'); return; }
+    saving = true;
+    const payload = {
+      answer: form.answer.trim(),
+      category: form.category.trim() || null,
+      question: form.question.trim(),
+      sort_order: Number(form.sort_order || 0),
+      status: form.status
+    };
+    try {
+      if (editingFaq) {
+        await api.faqs.update(editingFaq.id, payload);
+        showToast('FAQ updated successfully.');
+      } else {
+        await api.faqs.create(payload);
+        showToast('FAQ created successfully.');
+      }
+      closeModal();
+      await load();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Unable to save FAQ.', 'error');
+    } finally {
+      saving = false;
+    }
+  };
+
+  const openDelete = (faq: Faq) => { faqToDelete = faq; confirmOpen = true; };
+
+  const confirmDelete = async () => {
+    if (!faqToDelete) return;
+    deleting = true;
+    try {
+      await api.faqs.remove(faqToDelete.id);
+      showToast('FAQ deleted successfully.');
+      confirmOpen = false;
+      faqToDelete = null;
+      await load();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Unable to delete FAQ.', 'error');
+    } finally {
+      deleting = false;
+    }
+  };
+
+  onMount(load);
+</script>
+
+<ToastStack {toasts} on:dismiss={dismissToast} />
+
+<div class="mx-auto grid w-full max-w-[1500px] gap-6">
+  <AdminPageHeader
+    eyebrow="Content Management"
+    title="FAQs"
+    description="Manage traveler questions for education, SEO, objection handling, and conversion support."
+    actionLabel="New FAQ"
+    actionIcon={Plus}
+    on:action={openCreate}
+  />
+
+  <AdminToolbar className="grid gap-3 md:grid-cols-[1fr_200px_190px_auto] md:items-end">
+    <label class="grid gap-2 text-sm font-medium text-ink">
+      <span>Search</span>
+      <span class="flex h-11 items-center gap-2 rounded-2xl border border-ink/10 bg-white px-3 shadow-sm transition focus-within:border-forest/45 focus-within:ring-2 focus-within:ring-forest/10">
+        <Search size={16} class="text-ink/45" />
+        <input class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink/35" bind:value={search} placeholder="Search question, answer, or category..." on:keydown={(e) => e.key === 'Enter' && load()} />
+      </span>
+    </label>
+    <AdminSelect label="Category" name="category_filter" bind:value={categoryFilter} options={categoryFilterOptions} />
+    <AdminSelect label="Status" name="status_filter" bind:value={statusFilter} options={[{ label: 'All statuses', value: 'all' }, ...statusOptions]} />
+    <AdminButton variant="secondary" on:click={load}>Apply</AdminButton>
+  </AdminToolbar>
+
+  {#if loading}
+    <LoadingState message="Loading FAQs..." />
+  {:else if error}
+    <ErrorState message={error} />
+  {:else if rows.length === 0}
+    <AdminEmptyState
+      title="No FAQs yet"
+      message="Create your first FAQ to help travelers, improve SEO, and handle common objections before they reach support."
+      actionLabel="New FAQ"
+      icon={CircleHelp}
+      on:action={openCreate}
+    />
+  {:else}
+    <div class="grid gap-5">
+      {#each grouped as [category, items] (category)}
+        <section class="overflow-hidden rounded-[24px] border border-ink/10 bg-white shadow-[0_18px_50px_rgba(15,47,36,0.06)]">
+          <header class="flex items-center justify-between gap-3 border-b border-ink/10 bg-sand/40 px-5 py-3">
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">Category</span>
+              <h2 class="text-base font-bold text-ink">{category}</h2>
+            </div>
+            <span class="rounded-full bg-forest/10 px-2.5 py-0.5 text-xs font-bold text-forest">{items.length}</span>
+          </header>
+
+          <div class="divide-y divide-ink/10">
+            {#each items as faq (faq.id)}
+              <article class="px-5 py-4">
+                <div class="flex items-start gap-3">
+                  <button
+                    class="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-ink/10 bg-white text-ink/55 transition hover:bg-sand/70"
+                    type="button"
+                    aria-label={expanded.has(faq.id) ? 'Collapse answer' : 'Expand answer'}
+                    on:click={() => toggleExpand(faq.id)}
+                  >
+                    <ChevronDown size={15} class={`transition-transform ${expanded.has(faq.id) ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                      <button class="min-w-0 flex-1 text-left" type="button" on:click={() => toggleExpand(faq.id)}>
+                        <p class="font-semibold text-ink">{faq.question}</p>
+                      </button>
+                      <div class="flex shrink-0 items-center gap-2">
+                        <span class="rounded-full bg-sand/70 px-2 py-0.5 text-[11px] font-semibold text-ink/55">Sort {faq.sort_order}</span>
+                        <StatusBadge status={faq.status} />
+                      </div>
+                    </div>
+
+                    {#if expanded.has(faq.id)}
+                      <p class="mt-2 whitespace-pre-line text-sm leading-6 text-ink/65" transition:slide={{ duration: 160 }}>{faq.answer}</p>
+                    {:else}
+                      <p class="mt-1 line-clamp-1 text-sm text-ink/45">{faq.answer}</p>
+                    {/if}
+
+                    <div class="mt-3 flex gap-2">
+                      <button class="inline-flex h-9 items-center gap-2 rounded-xl border border-ink/10 bg-white px-3 text-xs font-semibold text-ink shadow-sm transition hover:border-goldfinch-gold/35 hover:bg-sand/70" type="button" on:click={() => openEdit(faq)}>
+                        <Edit size={14} />Edit
+                      </button>
+                      <button class="inline-flex h-9 items-center gap-2 rounded-xl border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-50" type="button" on:click={() => openDelete(faq)}>
+                        <Trash2 size={14} />Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            {/each}
+          </div>
+        </section>
+      {/each}
+    </div>
+  {/if}
+</div>
+
+{#if modalOpen}
+  <div class="fixed inset-0 z-50 grid place-items-center bg-ink/45 p-4 backdrop-blur-sm" transition:fade={{ duration: 140 }}>
+    <form
+      class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[30px] border border-ink/10 bg-white p-6 shadow-[0_24px_80px_rgba(15,47,36,0.18)]"
+      transition:scale={{ duration: 160, start: 0.98 }}
+      on:submit|preventDefault={save}
+    >
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">{editingFaq ? 'Edit FAQ' : 'New FAQ'}</p>
+          <h2 class="mt-1 text-2xl font-bold text-ink">{editingFaq ? 'Update question' : 'Add question'}</h2>
+        </div>
+        <button class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-ink/10 bg-white text-ink shadow-sm transition hover:bg-sand" type="button" aria-label="Close" on:click={closeModal}>
+          <X size={18} />
+        </button>
+      </div>
+
+      <div class="mt-6 grid gap-4">
+        <AdminFormInput label="Question" name="question" bind:value={form.question} placeholder="e.g. What is the best time for a Serengeti safari?" required />
+        <AdminTextArea label="Answer" name="answer" bind:value={form.answer} rows={6} placeholder="Write a clear, helpful answer that builds trust and handles objections." />
+
+        <div class="grid gap-4 sm:grid-cols-3">
+          <AdminSelect label="Category" name="category" bind:value={form.category} options={categoryFormOptions} />
+          <AdminSelect label="Status" name="status" bind:value={form.status} options={statusOptions} />
+          <AdminFormInput label="Sort order" name="sort_order" type="number" bind:value={form.sort_order} />
+        </div>
+      </div>
+
+      <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <AdminButton variant="secondary" type="button" on:click={closeModal}>Cancel</AdminButton>
+        <AdminButton type="submit" disabled={saving}>
+          {saving ? 'Saving...' : editingFaq ? 'Save Changes' : 'Create FAQ'}
+        </AdminButton>
+      </div>
+    </form>
+  </div>
+{/if}
+
+<ConfirmModal
+  open={confirmOpen}
+  title="Delete FAQ"
+  message={`Delete "${faqToDelete?.question ?? 'this FAQ'}"? This action soft-deletes the record.`}
+  on:cancel={() => { confirmOpen = false; faqToDelete = null; }}
+  on:confirm={confirmDelete}
+/>
+
+{#if deleting}
+  <div class="fixed bottom-4 right-4 z-[70] rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_40px_rgba(15,47,36,0.18)]">
+    Deleting FAQ...
+  </div>
+{/if}

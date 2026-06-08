@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# SvelteKit / Vite build & cache
+.svelte-kit/
+build/
+dist/
+.vite/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Deploy platforms
+.vercel/
+.netlify/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store

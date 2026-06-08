@@ -1,0 +1,564 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { fade, scale } from 'svelte/transition';
+  import { Edit, Plus, Search, Trash2, X } from '@lucide/svelte';
+  import { api } from '$lib/api/client';
+  import AdminButton from '$lib/components/admin/AdminButton.svelte';
+  import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
+  import AdminFileUpload from '$lib/components/admin/AdminFileUpload.svelte';
+  import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
+  import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
+  import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
+  import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
+  import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
+  import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
+  import StatusBadge from '$lib/components/admin/StatusBadge.svelte';
+  import ToastStack from '$lib/components/admin/ToastStack.svelte';
+  import ErrorState from '$lib/components/public/ErrorState.svelte';
+  import LoadingState from '$lib/components/public/LoadingState.svelte';
+
+  type PublishStatus = 'draft' | 'published' | 'archived';
+  type ImageMode = 'none' | 'url' | 'upload';
+
+  type Destination = {
+    id: string;
+    name: string;
+    slug: string;
+    country?: string | null;
+    region?: string | null;
+    location?: string | null;
+    short_description?: string | null;
+    description?: string | null;
+    main_image_url?: string | null;
+    banner_image_url?: string | null;
+    latitude?: number | string | null;
+    longitude?: number | string | null;
+    status: PublishStatus;
+    is_featured?: boolean | null;
+    meta_title?: string | null;
+    meta_description?: string | null;
+    og_image_url?: string | null;
+    created_at?: string;
+    updated_at?: string;
+    deleted_at?: string | null;
+  };
+
+  type DestinationForm = {
+    banner_image_url: string;
+    country: string;
+    description: string;
+    is_featured: boolean;
+    latitude: string;
+    location: string;
+    longitude: string;
+    main_image_url: string;
+    meta_description: string;
+    meta_title: string;
+    name: string;
+    og_image_url: string;
+    region: string;
+    short_description: string;
+    slug: string;
+    status: PublishStatus;
+  };
+
+  type Toast = {
+    id: string;
+    message: string;
+    type: 'error' | 'success';
+  };
+
+  const emptyForm = (): DestinationForm => ({
+    banner_image_url: '',
+    country: 'Tanzania',
+    description: '',
+    is_featured: false,
+    latitude: '',
+    location: '',
+    longitude: '',
+    main_image_url: '',
+    meta_description: '',
+    meta_title: '',
+    name: '',
+    og_image_url: '',
+    region: '',
+    short_description: '',
+    slug: '',
+    status: 'draft'
+  });
+
+  const statusOptions = [
+    { label: 'Draft', value: 'draft' },
+    { label: 'Published', value: 'published' },
+    { label: 'Archived', value: 'archived' }
+  ];
+
+  const imageModeOptions = [
+    { label: 'No image', value: 'none' },
+    { label: 'Paste image URL', value: 'url' },
+    { label: 'Upload image file', value: 'upload' }
+  ];
+
+  let rows: Destination[] = [];
+  let loading = true;
+  let saving = false;
+  let deleting = false;
+  let error = '';
+  let search = '';
+  let status = 'all';
+  let modalOpen = false;
+  let confirmOpen = false;
+  let slugManuallyEdited = false;
+  let editingDestination: Destination | null = null;
+  let destinationToDelete: Destination | null = null;
+  let form = emptyForm();
+  let mainImageMode: ImageMode = 'none';
+  let bannerImageMode: ImageMode = 'none';
+  let ogImageMode: ImageMode = 'none';
+  let lastMainImageMode: ImageMode = 'none';
+  let lastBannerImageMode: ImageMode = 'none';
+  let lastOgImageMode: ImageMode = 'none';
+  let toasts: Toast[] = [];
+
+  const slugify = (value: string) =>
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+  $: if (modalOpen && !slugManuallyEdited) {
+    form.slug = slugify(form.name);
+  }
+
+  $: if (modalOpen && mainImageMode !== lastMainImageMode) {
+    form.main_image_url = '';
+    lastMainImageMode = mainImageMode;
+  }
+
+  $: if (modalOpen && bannerImageMode !== lastBannerImageMode) {
+    form.banner_image_url = '';
+    lastBannerImageMode = bannerImageMode;
+  }
+
+  $: if (modalOpen && ogImageMode !== lastOgImageMode) {
+    form.og_image_url = '';
+    lastOgImageMode = ogImageMode;
+  }
+
+  const showToast = (message: string, type: Toast['type'] = 'success') => {
+    const id = crypto.randomUUID();
+    toasts = [{ id, message, type }, ...toasts].slice(0, 4);
+    setTimeout(() => {
+      toasts = toasts.filter((toast) => toast.id !== id);
+    }, 3500);
+  };
+
+  const dismissToast = (event: CustomEvent<string>) => {
+    toasts = toasts.filter((toast) => toast.id !== event.detail);
+  };
+
+  const loadDestinations = async () => {
+    loading = true;
+    error = '';
+
+    try {
+      const response = await api.destinations.list({
+        limit: 50,
+        search,
+        status
+      });
+      rows = response.data.items as Destination[];
+    } catch (requestError) {
+      error = requestError instanceof Error ? requestError.message : 'Unable to load destinations.';
+    } finally {
+      loading = false;
+    }
+  };
+
+  const openCreateModal = () => {
+    editingDestination = null;
+    form = emptyForm();
+    mainImageMode = 'none';
+    bannerImageMode = 'none';
+    ogImageMode = 'none';
+    lastMainImageMode = mainImageMode;
+    lastBannerImageMode = bannerImageMode;
+    lastOgImageMode = ogImageMode;
+    slugManuallyEdited = false;
+    modalOpen = true;
+  };
+
+  const openEditModal = (destination: Destination) => {
+    editingDestination = destination;
+    form = {
+      banner_image_url: destination.banner_image_url ?? '',
+      country: destination.country ?? 'Tanzania',
+      description: destination.description ?? '',
+      is_featured: Boolean(destination.is_featured),
+      latitude: destination.latitude === null || destination.latitude === undefined ? '' : String(destination.latitude),
+      location: destination.location ?? '',
+      longitude: destination.longitude === null || destination.longitude === undefined ? '' : String(destination.longitude),
+      main_image_url: destination.main_image_url ?? '',
+      meta_description: destination.meta_description ?? '',
+      meta_title: destination.meta_title ?? '',
+      name: destination.name,
+      og_image_url: destination.og_image_url ?? '',
+      region: destination.region ?? '',
+      short_description: destination.short_description ?? '',
+      slug: destination.slug,
+      status: destination.status ?? 'draft'
+    };
+    mainImageMode = destination.main_image_url ? 'url' : 'none';
+    bannerImageMode = destination.banner_image_url ? 'url' : 'none';
+    ogImageMode = destination.og_image_url ? 'url' : 'none';
+    lastMainImageMode = mainImageMode;
+    lastBannerImageMode = bannerImageMode;
+    lastOgImageMode = ogImageMode;
+    slugManuallyEdited = true;
+    modalOpen = true;
+  };
+
+  const closeModal = () => {
+    modalOpen = false;
+    editingDestination = null;
+    slugManuallyEdited = false;
+    form = emptyForm();
+    mainImageMode = 'none';
+    bannerImageMode = 'none';
+    ogImageMode = 'none';
+    lastMainImageMode = mainImageMode;
+    lastBannerImageMode = bannerImageMode;
+    lastOgImageMode = ogImageMode;
+  };
+
+  const numberOrNull = (value: string) => {
+    if (value.trim() === '') return null;
+    return Number(value);
+  };
+
+  const payload = () => {
+    const mainImage = mainImageMode === 'url' || mainImageMode === 'upload' ? form.main_image_url || null : null;
+
+    return {
+      banner_image_url: bannerImageMode === 'url' || bannerImageMode === 'upload' ? form.banner_image_url || null : null,
+      country: form.country.trim() || 'Tanzania',
+      description: form.description || null,
+      // Keep the canonical `image_url` in sync with the main image so public
+      // cards and detail pages (which read image_url) always have an image.
+      image_url: mainImage,
+      is_featured: form.is_featured,
+      latitude: numberOrNull(form.latitude),
+      location: form.location || null,
+      longitude: numberOrNull(form.longitude),
+      main_image_url: mainImage,
+      meta_description: form.meta_description || null,
+      meta_title: form.meta_title || null,
+      name: form.name.trim(),
+      og_image_url: ogImageMode === 'url' || ogImageMode === 'upload' ? form.og_image_url || null : null,
+      region: form.region || null,
+      short_description: form.short_description || null,
+      slug: form.slug.trim(),
+      status: form.status
+    };
+  };
+
+  const saveDestination = async () => {
+    saving = true;
+
+    try {
+      if (editingDestination) {
+        await api.destinations.update(editingDestination.id, payload());
+        showToast('Destination updated successfully.');
+      } else {
+        await api.destinations.create(payload());
+        showToast('Destination created successfully.');
+      }
+
+      closeModal();
+      await loadDestinations();
+    } catch (requestError) {
+      showToast(requestError instanceof Error ? requestError.message : 'Unable to save destination.', 'error');
+    } finally {
+      saving = false;
+    }
+  };
+
+  const openDeleteConfirm = (destination: Destination) => {
+    destinationToDelete = destination;
+    confirmOpen = true;
+  };
+
+  const deleteDestination = async () => {
+    if (!destinationToDelete) return;
+    deleting = true;
+
+    try {
+      await api.destinations.remove(destinationToDelete.id);
+      showToast('Destination deleted successfully.');
+      confirmOpen = false;
+      destinationToDelete = null;
+      await loadDestinations();
+    } catch (requestError) {
+      showToast(requestError instanceof Error ? requestError.message : 'Unable to delete destination.', 'error');
+    } finally {
+      deleting = false;
+    }
+  };
+
+  const formatDate = (value?: string) => {
+    if (!value) return '-';
+    return new Intl.DateTimeFormat('en', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value));
+  };
+
+  onMount(loadDestinations);
+</script>
+
+<ToastStack {toasts} on:dismiss={dismissToast} />
+
+<div class="mx-auto grid w-full max-w-[1500px] gap-6">
+<AdminPageHeader
+  eyebrow="Tour Management"
+  title="Destinations"
+  description="Manage countries, regions, destination pages, featured states, image assets, and SEO metadata."
+  actionLabel="New Destination"
+  actionIcon={Plus}
+  on:action={openCreateModal}
+/>
+
+<AdminToolbar className="grid gap-3 md:grid-cols-[1fr_190px_auto] md:items-end">
+  <label class="grid gap-2 text-sm font-medium text-ink">
+    <span>Search</span>
+    <span class="flex h-11 items-center gap-2 rounded-2xl border border-ink/10 bg-white px-3 shadow-sm transition focus-within:border-forest/45 focus-within:ring-2 focus-within:ring-forest/10">
+      <Search size={16} class="text-ink/45" />
+      <input class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink/35" bind:value={search} placeholder="Search destinations..." on:keydown={(event) => event.key === 'Enter' && loadDestinations()} />
+    </span>
+  </label>
+
+  <AdminSelect label="Status" name="status_filter" bind:value={status} options={[{ label: 'All statuses', value: 'all' }, ...statusOptions]} />
+
+  <AdminButton variant="secondary" on:click={loadDestinations}>Apply</AdminButton>
+</AdminToolbar>
+
+{#if loading}
+  <LoadingState message="Loading destinations..." />
+{:else if error}
+  <ErrorState message={error} />
+{:else if rows.length === 0}
+  <AdminEmptyState
+    title="No destinations found"
+    message="Create your first Goldfinch destination to start building public destination pages and tour filters."
+    actionLabel="Create destination"
+    on:action={openCreateModal}
+  />
+{:else}
+  <div class="overflow-hidden rounded-[24px] border border-ink/10 bg-white shadow-[0_18px_50px_rgba(15,47,36,0.06)]">
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[980px] text-start text-sm">
+        <thead class="bg-sand/70 text-xs uppercase tracking-[0.08em] text-ink/60">
+          <tr>
+            <th class="px-4 py-3 font-semibold">Name</th>
+            <th class="px-4 py-3 font-semibold">Country</th>
+            <th class="px-4 py-3 font-semibold">Region</th>
+            <th class="px-4 py-3 font-semibold">Status</th>
+            <th class="px-4 py-3 font-semibold">Featured</th>
+            <th class="px-4 py-3 font-semibold">Updated</th>
+            <th class="px-4 py-3 text-right font-semibold">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-ink/10">
+          {#each rows as destination}
+            <tr class="transition hover:bg-sand/25">
+              <td class="px-4 py-4">
+                <div class="font-semibold text-ink">{destination.name}</div>
+                <p class="mt-1 line-clamp-1 text-xs text-ink/55">{destination.short_description || destination.location || destination.slug}</p>
+              </td>
+              <td class="px-4 py-4 text-ink/65">{destination.country || '-'}</td>
+              <td class="px-4 py-4 text-ink/65">{destination.region || '-'}</td>
+              <td class="px-4 py-4"><StatusBadge status={destination.status} /></td>
+              <td class="px-4 py-4">
+                {#if destination.is_featured}
+                  <span class="inline-flex rounded-full bg-goldfinch-gold/15 px-2.5 py-1 text-xs font-semibold text-deep-green ring-1 ring-goldfinch-gold/30">Featured</span>
+                {:else}
+                  <span class="text-xs text-ink/45">No</span>
+                {/if}
+              </td>
+              <td class="px-4 py-4 text-ink/65">{formatDate(destination.updated_at ?? destination.created_at)}</td>
+              <td class="px-4 py-4">
+                <div class="flex justify-end gap-2">
+                  <button class="inline-flex h-9 items-center gap-2 rounded-xl border border-ink/10 bg-white px-3 text-xs font-semibold text-ink shadow-sm transition hover:border-goldfinch-gold/35 hover:bg-sand/70" type="button" on:click={() => openEditModal(destination)}>
+                    <Edit size={14} />
+                    Edit
+                  </button>
+                  <button class="inline-flex h-9 items-center gap-2 rounded-xl border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-50" type="button" on:click={() => openDeleteConfirm(destination)}>
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{/if}
+</div>
+
+{#if modalOpen}
+  <div class="fixed inset-0 z-50 grid place-items-center bg-ink/45 p-4 backdrop-blur-sm" transition:fade={{ duration: 140 }}>
+    <div class="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-[28px] border border-ink/10 bg-white p-6 shadow-[0_24px_80px_rgba(15,47,36,0.18)]" transition:scale={{ duration: 160, start: 0.98 }}>
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">{editingDestination ? 'Edit destination' : 'New destination'}</p>
+          <h2 class="mt-2 text-2xl font-bold tracking-normal text-ink">{editingDestination ? editingDestination.name : 'Create Destination'}</h2>
+        </div>
+        <button class="grid h-10 w-10 place-items-center rounded-2xl border border-ink/10 bg-white text-ink shadow-sm transition hover:bg-sand" type="button" aria-label="Close modal" on:click={closeModal}>
+          <X size={18} />
+        </button>
+      </div>
+
+      <form class="mt-6 grid gap-5" on:submit|preventDefault={saveDestination}>
+        <div class="grid gap-4 md:grid-cols-2">
+          <AdminFormInput label="Name" name="name" bind:value={form.name} required />
+
+          <label class="grid gap-2 text-sm font-medium text-ink">
+            <span>Slug</span>
+            <input
+              class="h-11 rounded-2xl border border-ink/10 bg-white px-3 text-sm outline-none shadow-sm transition focus:border-forest focus:ring-2 focus:ring-forest/15"
+              name="slug"
+              bind:value={form.slug}
+              required
+              on:input={() => (slugManuallyEdited = true)}
+            />
+          </label>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-3">
+          <AdminFormInput label="Country" name="country" bind:value={form.country} required />
+          <AdminFormInput label="Region" name="region" bind:value={form.region} />
+          <AdminFormInput label="Location" name="location" bind:value={form.location} />
+        </div>
+
+        <AdminTextArea label="Short description" name="short_description" bind:value={form.short_description} rows={3} placeholder="Concise destination summary for cards and search." />
+        <AdminTextArea label="Description" name="description" bind:value={form.description} rows={5} placeholder="Destination overview for the public page." />
+
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <AdminSelect label="Status" name="status" bind:value={form.status} options={statusOptions} />
+          <AdminFormInput label="Latitude" name="latitude" type="number" bind:value={form.latitude} placeholder="-6.3690" />
+          <AdminFormInput label="Longitude" name="longitude" type="number" bind:value={form.longitude} placeholder="34.8888" />
+          <label class="flex h-full min-h-[74px] items-center gap-3 rounded-2xl border border-ink/10 bg-sand/20 px-4 py-3 text-sm font-medium text-ink">
+            <input class="h-4 w-4 rounded border-ink/20 text-forest focus:ring-forest" type="checkbox" bind:checked={form.is_featured} />
+            Featured destination
+          </label>
+        </div>
+
+        <div class="grid gap-4 lg:grid-cols-3">
+          <section class="grid gap-4 rounded-[22px] border border-ink/10 bg-sand/20 p-4">
+            <div>
+              <h3 class="text-base font-semibold text-ink">Main image</h3>
+              <p class="mt-1 text-sm text-ink/55">Used for destination cards and list views.</p>
+            </div>
+            <AdminSelect label="Source" name="main_image_mode" bind:value={mainImageMode} options={imageModeOptions} />
+            {#if mainImageMode === 'url'}
+              <AdminFormInput label="Main image URL" name="main_image_url" bind:value={form.main_image_url} placeholder="https://..." />
+            {:else if mainImageMode === 'upload'}
+              <AdminFileUpload
+                label="Upload main image"
+                folder="destinations/main"
+                value={form.main_image_url}
+                helper="Use a local png, jpg, or webp destination image."
+                on:uploaded={(event) => {
+                  form.main_image_url = event.detail.url;
+                  showToast('Main image uploaded successfully.');
+                }}
+                on:error={(event) => showToast(event.detail, 'error')}
+              />
+            {:else}
+              <p class="rounded-2xl border border-dashed border-ink/15 bg-white px-3 py-3 text-sm text-ink/55">No main image will be saved.</p>
+            {/if}
+          </section>
+
+          <section class="grid gap-4 rounded-[22px] border border-ink/10 bg-sand/20 p-4">
+            <div>
+              <h3 class="text-base font-semibold text-ink">Banner image</h3>
+              <p class="mt-1 text-sm text-ink/55">Used for public destination page headers.</p>
+            </div>
+            <AdminSelect label="Source" name="banner_image_mode" bind:value={bannerImageMode} options={imageModeOptions} />
+            {#if bannerImageMode === 'url'}
+              <AdminFormInput label="Banner image URL" name="banner_image_url" bind:value={form.banner_image_url} placeholder="https://..." />
+            {:else if bannerImageMode === 'upload'}
+              <AdminFileUpload
+                label="Upload banner image"
+                folder="destinations/banners"
+                value={form.banner_image_url}
+                helper="Use a wide png, jpg, or webp banner image."
+                on:uploaded={(event) => {
+                  form.banner_image_url = event.detail.url;
+                  showToast('Banner image uploaded successfully.');
+                }}
+                on:error={(event) => showToast(event.detail, 'error')}
+              />
+            {:else}
+              <p class="rounded-2xl border border-dashed border-ink/15 bg-white px-3 py-3 text-sm text-ink/55">No banner image will be saved.</p>
+            {/if}
+          </section>
+
+          <section class="grid gap-4 rounded-[22px] border border-ink/10 bg-sand/20 p-4">
+            <div>
+              <h3 class="text-base font-semibold text-ink">Open Graph image</h3>
+              <p class="mt-1 text-sm text-ink/55">Used when the destination is shared online.</p>
+            </div>
+            <AdminSelect label="Source" name="og_image_mode" bind:value={ogImageMode} options={imageModeOptions} />
+            {#if ogImageMode === 'url'}
+              <AdminFormInput label="OG image URL" name="og_image_url" bind:value={form.og_image_url} placeholder="https://..." />
+            {:else if ogImageMode === 'upload'}
+              <AdminFileUpload
+                label="Upload OG image"
+                folder="destinations/og"
+                value={form.og_image_url}
+                helper="Use a social sharing image in png, jpg, or webp format."
+                on:uploaded={(event) => {
+                  form.og_image_url = event.detail.url;
+                  showToast('Open Graph image uploaded successfully.');
+                }}
+                on:error={(event) => showToast(event.detail, 'error')}
+              />
+            {:else}
+              <p class="rounded-2xl border border-dashed border-ink/15 bg-white px-3 py-3 text-sm text-ink/55">No Open Graph image will be saved.</p>
+            {/if}
+          </section>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2">
+          <AdminFormInput label="SEO title" name="meta_title" bind:value={form.meta_title} />
+          <AdminTextArea label="SEO description" name="meta_description" bind:value={form.meta_description} rows={3} />
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <AdminButton variant="secondary" type="button" on:click={closeModal}>Cancel</AdminButton>
+          <AdminButton type="submit" disabled={saving}>
+            {saving ? 'Saving...' : editingDestination ? 'Save Changes' : 'Create Destination'}
+          </AdminButton>
+        </div>
+      </form>
+    </div>
+  </div>
+{/if}
+
+<ConfirmModal
+  open={confirmOpen}
+  title="Delete destination"
+  message={`Delete "${destinationToDelete?.name ?? 'this destination'}"? This will soft delete it when supported by the database.`}
+  on:cancel={() => {
+    confirmOpen = false;
+    destinationToDelete = null;
+  }}
+  on:confirm={deleteDestination}
+/>
+
+{#if deleting}
+  <div class="fixed bottom-4 right-4 z-[70] rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_40px_rgba(15,47,36,0.18)]">
+    Deleting destination...
+  </div>
+{/if}

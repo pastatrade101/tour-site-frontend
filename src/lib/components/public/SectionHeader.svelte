@@ -1,0 +1,15 @@
+<script lang="ts">
+  export let eyebrow = '';
+  export let title = '';
+  export let description = '';
+</script>
+
+<div class="max-w-2xl">
+  {#if eyebrow}
+    <p class="text-sm font-semibold uppercase tracking-[0.16em] text-clay">{eyebrow}</p>
+  {/if}
+  <h2 class="mt-2 text-3xl font-bold tracking-normal text-ink md:text-4xl">{title}</h2>
+  {#if description}
+    <p class="mt-3 text-base leading-7 text-ink/70">{description}</p>
+  {/if}
+</div>
