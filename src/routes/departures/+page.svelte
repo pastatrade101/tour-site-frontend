@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
+  import { page } from '$app/stores';
   import { CalendarDays, Clock, Compass, MapPin, Search, Tag, Users } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import Button from '$lib/components/public/Button.svelte';
@@ -35,10 +36,11 @@
   let loading = true;
   let error = '';
 
+  // Initial filters can arrive from the homepage hero search (?destination=&month=).
   let search = '';
-  let destination = 'all';
+  let destination = $page.url.searchParams.get('destination') ?? 'all';
   let category = 'all';
-  let month = 'all';
+  let month = $page.url.searchParams.get('month') ?? 'all';
   let status = 'all';
   let sort = 'start_date';
 

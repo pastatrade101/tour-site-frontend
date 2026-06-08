@@ -78,28 +78,37 @@ export function initSmoothScrolling() {
   }
 
   void Promise.all([import('lenis'), setupGsap()]).then(([lenisModule, context]) => {
-    if (destroyed) return;
+    if (destroyed || !context) return;
 
+    const { gsap, ScrollTrigger } = context;
     const Lenis = lenisModule.default;
     const lenis = new Lenis({
-      duration: 1.05,
+      duration: 0.9,
       smoothWheel: true,
-      touchMultiplier: 1.1,
-      wheelMultiplier: 0.9
+      wheelMultiplier: 1,
+      touchMultiplier: 1.5
     });
 
-    let frame = 0;
-    const raf = (time: number) => {
-      lenis.raf(time);
-      frame = requestAnimationFrame(raf);
-    };
-
-    lenis.on('scroll', () => context?.ScrollTrigger.update());
-    frame = requestAnimationFrame(raf);
+    // Drive Lenis from the GSAP ticker so smooth scroll and ScrollTrigger share a
+    // single frame loop — two competing requestAnimationFrame loops are the main
+    // cause of stutter and elements/images appearing to "reload" while scrolling.
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (time: number) => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
     document.documentElement.classList.add('lenis');
 
+    // Recompute trigger positions once late-loading (lazy / API) images settle,
+    // otherwise reveals and the hero parallax fire against a stale page height.
+    const refresh = () => ScrollTrigger.refresh();
+    window.addEventListener('load', refresh);
+    const refreshTimer = window.setTimeout(refresh, 800);
+
     cleanup = () => {
-      cancelAnimationFrame(frame);
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      window.removeEventListener('load', refresh);
+      window.clearTimeout(refreshTimer);
       lenis.destroy();
       document.documentElement.classList.remove('lenis');
     };
@@ -195,14 +204,20 @@ export const staggeredCardReveal: Action<HTMLElement, StaggerOptions | undefined
 export const heroImageParallax: Action<HTMLElement, { amount?: number } | undefined> = (node, params = {}) => {
   return withMotion(node, ({ gsap }) => {
     const amount = params.amount ?? 5;
+    // Promote to its own GPU layer so the scrubbed transform composites instead of
+    // repainting/re-decoding the image each frame (the "image reloading" effect).
+    node.style.willChange = 'transform';
+    node.style.backfaceVisibility = 'hidden';
     const tween = gsap.fromTo(
       node,
-      { scale: 1.04, yPercent: -amount },
+      { scale: 1.12, yPercent: -amount },
       {
         ease: 'none',
+        force3D: true,
         scrollTrigger: {
           end: 'bottom top',
-          scrub: 0.45,
+          invalidateOnRefresh: true,
+          scrub: 0.6,
           start: 'top top',
           trigger: node.parentElement ?? node
         },
@@ -213,6 +228,7 @@ export const heroImageParallax: Action<HTMLElement, { amount?: number } | undefi
     return () => {
       tween.scrollTrigger?.kill();
       tween.kill();
+      node.style.willChange = '';
     };
   });
 };

@@ -53,7 +53,8 @@
     'faq_preview',
     'blog_preview',
     'ai_advisor_cta',
-    'final_cta'
+    'final_cta',
+    'partners'
   ];
 
   const imageModeOptions: Option[] = [
@@ -94,6 +95,92 @@
   let imageMode: ImageMode = 'none';
   let mediaId = '';
   let toasts: Toast[] = [];
+
+  // ── background & overlay (stored inside extra_data) ───────────────────────
+  const positionOptions = [
+    { label: 'Center', value: 'center' },
+    { label: 'Top', value: 'center top' },
+    { label: 'Bottom', value: 'center bottom' },
+    { label: 'Left', value: 'left center' },
+    { label: 'Right', value: 'right center' },
+    { label: 'Top left', value: 'left top' },
+    { label: 'Top right', value: 'right top' },
+    { label: 'Bottom left', value: 'left bottom' },
+    { label: 'Bottom right', value: 'right bottom' }
+  ];
+  const BG_KEYS = ['background_video', 'overlay_color', 'overlay_opacity', 'overlay_gradient', 'media_position'];
+  const emptyBg = () => ({ video: '', overlay_color: '#0F2F24', overlay_opacity: '60', overlay_gradient: true, media_position: 'center' });
+  let bg = emptyBg();
+
+  const hexToRgba = (hex: string, alpha: number) => {
+    const match = /^#?([0-9a-fA-F]{6})$/.exec(hex);
+    if (!match) return `rgba(15,47,36,${alpha})`;
+    const n = parseInt(match[1], 16);
+    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+  };
+
+  $: bgHasMedia = Boolean(form.image_url.trim() || bg.video.trim());
+  $: overlayAlpha = Math.max(0, Math.min(100, Number(bg.overlay_opacity) || 0)) / 100;
+  $: overlayStyle = bg.overlay_gradient
+    ? `background:linear-gradient(135deg, ${hexToRgba(bg.overlay_color, overlayAlpha)}, ${hexToRgba(bg.overlay_color, overlayAlpha * 0.55)})`
+    : `background:${hexToRgba(bg.overlay_color, overlayAlpha)}`;
+
+  const extraToBg = (ed: Record<string, unknown>) => ({
+    video: typeof ed.background_video === 'string' ? ed.background_video : '',
+    overlay_color: typeof ed.overlay_color === 'string' ? ed.overlay_color : '#0F2F24',
+    overlay_opacity: ed.overlay_opacity != null ? String(Math.round(Number(ed.overlay_opacity) * 100)) : '60',
+    overlay_gradient: ed.overlay_gradient !== false,
+    media_position: typeof ed.media_position === 'string' ? ed.media_position : 'center'
+  });
+
+  const bgToExtra = (): Record<string, unknown> => ({
+    ...(bg.video.trim() ? { background_video: bg.video.trim() } : {}),
+    overlay_color: bg.overlay_color || '#0F2F24',
+    overlay_opacity: overlayAlpha,
+    overlay_gradient: bg.overlay_gradient,
+    media_position: bg.media_position || 'center'
+  });
+
+  // ── partner logos repeater (stored in extra_data.logos) ───────────────────
+  type LogoRow = { image_url: string; name: string; url: string };
+  let logos: LogoRow[] = [];
+  let logoPickerIndex: null | number = null;
+
+  const MANAGED_KEYS = [...BG_KEYS, 'logos'];
+
+  const addLogo = () => {
+    logos = [...logos, { name: '', image_url: '', url: '' }];
+  };
+  const removeLogo = (index: number) => {
+    logos = logos.filter((_, i) => i !== index);
+  };
+  const openLogoPicker = async (index: number) => {
+    logoPickerIndex = index;
+    await loadMedia();
+  };
+  const pickLogo = (url: string) => {
+    if (logoPickerIndex !== null && logos[logoPickerIndex]) {
+      logos[logoPickerIndex].image_url = url;
+      logos = logos;
+    }
+    logoPickerIndex = null;
+  };
+  const extraToLogos = (ed: Record<string, unknown>): LogoRow[] =>
+    Array.isArray(ed.logos)
+      ? (ed.logos as Array<Record<string, unknown>>).map((l) => ({
+          name: String(l?.name ?? ''),
+          image_url: String(l?.image_url ?? ''),
+          url: String(l?.url ?? '')
+        }))
+      : [];
+  const logosToExtra = () =>
+    logos
+      .filter((l) => l.image_url.trim())
+      .map((l) => ({
+        name: l.name.trim() || undefined,
+        image_url: l.image_url.trim(),
+        ...(l.url.trim() ? { url: l.url.trim() } : {})
+      }));
 
   $: sorted = [...rows].sort((a, b) => a.sort_order - b.sort_order || a.section_key.localeCompare(b.section_key));
 
@@ -140,6 +227,8 @@
     editing = null;
     form = { ...emptyForm(), sort_order: String(nextOrder()) };
     extraDataText = '{}';
+    bg = emptyBg();
+    logos = [];
     imageMode = 'none';
     mediaId = '';
     modalOpen = true;
@@ -158,13 +247,17 @@
       subtitle: section.subtitle ?? '',
       title: section.title ?? ''
     };
-    extraDataText = JSON.stringify(section.extra_data ?? {}, null, 2);
+    const ed = (section.extra_data ?? {}) as Record<string, unknown>;
+    bg = extraToBg(ed);
+    logos = extraToLogos(ed);
+    const rest = Object.fromEntries(Object.entries(ed).filter(([key]) => !MANAGED_KEYS.includes(key)));
+    extraDataText = Object.keys(rest).length ? JSON.stringify(rest, null, 2) : '{}';
     imageMode = section.image_url ? 'url' : 'none';
     mediaId = '';
     modalOpen = true;
   };
 
-  const closeModal = () => { modalOpen = false; editing = null; form = emptyForm(); extraDataText = '{}'; };
+  const closeModal = () => { modalOpen = false; editing = null; form = emptyForm(); extraDataText = '{}'; bg = emptyBg(); logos = []; logoPickerIndex = null; };
 
   const applyImageMode = async () => {
     if (imageMode === 'none') { form.image_url = ''; mediaId = ''; }
@@ -182,12 +275,23 @@
       return;
     }
 
-    let extra: unknown = {};
+    let extra: Record<string, unknown> = {};
     try {
       extra = extraDataText.trim() ? JSON.parse(extraDataText) : {};
     } catch {
       showToast('Extra data must be valid JSON.', 'error');
       return;
+    }
+
+    // Merge the friendly background/overlay controls back into extra_data when
+    // this section actually has a background image or video.
+    if (form.image_url.trim() || bg.video.trim()) {
+      extra = { ...extra, ...bgToExtra() };
+    }
+
+    // Merge partner logos when this is a logo-strip section.
+    if (form.section_key.trim() === 'partners' || logos.some((l) => l.image_url.trim())) {
+      extra = { ...extra, logos: logosToExtra() };
     }
 
     saving = true;
@@ -402,10 +506,77 @@
               <div class="grid place-items-center rounded-2xl border border-dashed border-ink/15 bg-white/70 p-3 text-sm text-ink/50">No image.</div>
             {/if}
           </div>
-          {#if form.image_url}
+          {#if form.image_url && imageMode !== 'none'}
             <img class="mt-4 h-28 w-full rounded-2xl object-cover ring-1 ring-ink/10" src={form.image_url} alt="Section preview" />
           {/if}
         </div>
+
+        <!-- background video + overlay -->
+        <div class="grid gap-4 rounded-[22px] border border-ink/10 bg-sand/25 p-4">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">Background &amp; overlay</p>
+            <p class="mt-1 text-xs text-ink/50">Used by full-width sections (e.g. final CTA, hero). A video takes priority over the image. The overlay keeps text readable.</p>
+          </div>
+          <AdminFormInput label="Background video URL (optional · mp4/webm)" name="bg_video" bind:value={bg.video} placeholder="https://...mp4" />
+          <div class="grid gap-4 sm:grid-cols-3">
+            <label class="grid gap-2 text-sm font-medium text-ink">
+              <span>Overlay color</span>
+              <span class="flex h-11 items-center gap-2 rounded-2xl border border-ink/10 bg-white px-2 shadow-sm">
+                <input class="h-8 w-10 shrink-0 cursor-pointer rounded-lg border border-ink/10 bg-white p-0.5" type="color" bind:value={bg.overlay_color} aria-label="Overlay color" />
+                <input class="min-w-0 flex-1 bg-transparent font-mono text-sm uppercase outline-none" bind:value={bg.overlay_color} spellcheck="false" />
+              </span>
+            </label>
+            <label class="grid gap-2 text-sm font-medium text-ink">
+              <span>Overlay opacity · {bg.overlay_opacity}%</span>
+              <input class="mt-3 w-full accent-forest" type="range" min="0" max="100" step="5" bind:value={bg.overlay_opacity} aria-label="Overlay opacity" />
+            </label>
+            <AdminSelect label="Crop / focus" name="media_position" bind:value={bg.media_position} options={positionOptions} />
+          </div>
+          <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-ink/10 bg-white p-3">
+            <input class="h-4 w-4 accent-forest" type="checkbox" bind:checked={bg.overlay_gradient} />
+            <span class="text-sm font-semibold text-ink">Gradient overlay <span class="font-normal text-ink/50">(fades diagonally for depth)</span></span>
+          </label>
+        </div>
+
+        <!-- partner logos repeater -->
+        {#if form.section_key.trim() === 'partners'}
+          <div class="grid gap-3 rounded-[22px] border border-ink/10 bg-sand/25 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">Partner logos</p>
+                <p class="mt-1 text-xs text-ink/50">Shown as an auto-scrolling strip. Transparent PNG or SVG works best.</p>
+              </div>
+              <button type="button" class="inline-flex h-9 items-center gap-1.5 rounded-xl border border-ink/10 bg-white px-3 text-xs font-semibold text-ink shadow-sm transition hover:border-goldfinch-gold/35 hover:bg-sand/70" on:click={addLogo}>
+                <Plus size={14} />Add logo
+              </button>
+            </div>
+
+            {#if logos.length === 0}
+              <p class="rounded-xl border border-dashed border-ink/15 bg-white/60 py-4 text-center text-xs text-ink/45">No logos yet — add your first partner.</p>
+            {/if}
+
+            {#each logos as logo, i (i)}
+              <div class="grid gap-2 rounded-xl border border-ink/10 bg-white p-3 sm:grid-cols-[64px_1fr_auto] sm:items-start">
+                <div class="grid h-12 w-16 place-items-center overflow-hidden rounded-lg bg-sand/40 ring-1 ring-ink/10">
+                  {#if logo.image_url}
+                    <img class="max-h-10 max-w-[56px] object-contain" src={logo.image_url} alt={logo.name || 'Logo'} />
+                  {:else}
+                    <ImageIcon size={16} class="text-ink/30" />
+                  {/if}
+                </div>
+                <div class="grid gap-2">
+                  <input class="h-9 rounded-lg border border-ink/10 bg-white px-3 text-sm outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" placeholder="Partner name" bind:value={logo.name} />
+                  <div class="flex gap-2">
+                    <input class="h-9 min-w-0 flex-1 rounded-lg border border-ink/10 bg-white px-3 text-sm outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" placeholder="Logo image URL" bind:value={logo.image_url} />
+                    <button type="button" class="inline-flex h-9 shrink-0 items-center gap-1 rounded-lg border border-ink/10 bg-white px-2.5 text-xs font-semibold text-ink shadow-sm transition hover:bg-sand/60" on:click={() => openLogoPicker(i)}><ImageIcon size={13} />Media</button>
+                  </div>
+                  <input class="h-9 rounded-lg border border-ink/10 bg-white px-3 text-sm outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" placeholder="Link URL (optional)" bind:value={logo.url} />
+                </div>
+                <button type="button" class="grid h-9 w-9 place-items-center justify-self-end rounded-lg border border-red-200 bg-white text-red-600 shadow-sm transition hover:bg-red-50" aria-label="Remove logo" on:click={() => removeLogo(i)}><Trash2 size={15} /></button>
+              </div>
+            {/each}
+          </div>
+        {/if}
 
         <div class="grid gap-4 sm:grid-cols-2">
           <AdminFormInput label="Button text" name="button_text" bind:value={form.button_text} placeholder="e.g. Plan My Trip" />
@@ -429,10 +600,15 @@
         <!-- live preview -->
         <div class="overflow-hidden rounded-[22px] border border-ink/10">
           <div class="border-b border-ink/10 bg-sand/40 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">Live preview</div>
-          <div class="relative grid min-h-[150px] place-items-center bg-deep-green p-6 text-center text-white">
-            {#if form.image_url}
-              <img class="absolute inset-0 h-full w-full object-cover" src={form.image_url} alt="" />
-              <div class="absolute inset-0 bg-deep-green/55"></div>
+          <div class="relative grid min-h-[180px] place-items-center overflow-hidden bg-gradient-to-br from-deep-green via-forest to-deep-green p-6 text-center text-white">
+            {#if bg.video}
+              <!-- svelte-ignore a11y-media-has-caption -->
+              <video class="absolute inset-0 h-full w-full object-cover" style={`object-position:${bg.media_position}`} src={bg.video} autoplay muted loop playsinline></video>
+            {:else if form.image_url && imageMode !== 'none'}
+              <img class="absolute inset-0 h-full w-full object-cover" style={`object-position:${bg.media_position}`} src={form.image_url} alt="" />
+            {/if}
+            {#if bgHasMedia}
+              <div class="absolute inset-0" style={overlayStyle}></div>
             {/if}
             <div class="relative z-10">
               <h3 class="text-xl font-extrabold">{form.title || prettyKey(form.section_key || 'section')}</h3>
@@ -467,5 +643,49 @@
 {#if deleting}
   <div class="fixed bottom-4 right-4 z-[70] rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_40px_rgba(15,47,36,0.18)]">
     Deleting section...
+  </div>
+{/if}
+
+{#if logoPickerIndex !== null}
+  <div
+    class="fixed inset-0 z-[60] grid place-items-center bg-ink/45 p-4 backdrop-blur-sm"
+    transition:fade={{ duration: 140 }}
+  >
+    <div
+      class="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-[28px] border border-ink/10 bg-white shadow-[0_24px_80px_rgba(15,47,36,0.18)]"
+      transition:scale={{ duration: 160, start: 0.98 }}
+    >
+      <div class="flex items-center justify-between border-b border-ink/10 bg-sand/30 p-4">
+        <h3 class="text-base font-bold text-ink">Choose a logo image</h3>
+        <button
+          class="grid h-9 w-9 place-items-center rounded-xl border border-ink/10 bg-white text-ink shadow-sm transition hover:bg-sand"
+          type="button"
+          aria-label="Close"
+          on:click={() => (logoPickerIndex = null)}
+        >
+          <X size={16} />
+        </button>
+      </div>
+      <div class="overflow-y-auto p-4">
+        {#if loadingMedia}
+          <p class="py-8 text-center text-sm text-ink/50">Loading media...</p>
+        {:else if mediaItems.length === 0}
+          <p class="py-8 text-center text-sm text-ink/50">No images in the Media Library yet.</p>
+        {:else}
+          <div class="grid grid-cols-3 gap-3 sm:grid-cols-4">
+            {#each mediaItems as m (m.id)}
+              <button
+                class="group grid aspect-square place-items-center overflow-hidden rounded-xl border border-ink/10 bg-sand/30 p-2 transition hover:border-goldfinch-gold/50 hover:bg-sand/60"
+                type="button"
+                title={m.file_name}
+                on:click={() => pickLogo(m.file_url)}
+              >
+                <img class="max-h-full max-w-full object-contain" src={m.file_url} alt={m.file_name} loading="lazy" />
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </div>
   </div>
 {/if}

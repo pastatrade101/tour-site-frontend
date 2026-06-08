@@ -1,16 +1,43 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { ArrowRight } from '@lucide/svelte';
+  import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
+  import { staggeredCardReveal } from '$lib/animations/motion';
+  import BlogCard from '$lib/components/public/BlogCard.svelte';
+  import DestinationCard from '$lib/components/public/DestinationCard.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
+  import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import { placeholderPosts } from '$lib/data/placeholders';
-  import type { BlogPost } from '$lib/types';
+  import type { BlogPost, Destination } from '$lib/types';
 
   let post: BlogPost = placeholderPosts[0];
   let loading = true;
 
-  onMount(async () => {
-    const slug = $page.params.slug ?? '';
+  // Relevant content for onward navigation (loaded best-effort after the article).
+  let morePosts: BlogPost[] = [];
+  let exploreDestinations: Destination[] = [];
+
+  const loadRelated = async (current: BlogPost) => {
+    const [postRes, destRes] = await Promise.allSettled([
+      api.blog.list({ limit: 4 }),
+      api.destinations.list({ limit: 3 })
+    ]);
+
+    if (postRes.status === 'fulfilled') {
+      morePosts = (postRes.value.data.items ?? [])
+        .filter((item) => item.id !== current.id && item.slug !== current.slug)
+        .slice(0, 3);
+    }
+    if (destRes.status === 'fulfilled') {
+      exploreDestinations = destRes.value.data.items ?? [];
+    }
+  };
+
+  const load = async (slug: string) => {
+    loading = true;
+    morePosts = [];
+    exploreDestinations = [];
     try {
       const response = await api.blog.get(slug);
       post = response.data;
@@ -19,13 +46,26 @@
     } finally {
       loading = false;
     }
-  });
+
+    if (post) void loadRelated(post);
+  };
+
+  // The component is reused across /blog/[slug] navigations, so a one-shot
+  // onMount would leave the page stale. Re-load whenever the slug changes.
+  $: slug = $page.params.slug ?? '';
+  $: if (browser && slug) void load(slug);
 </script>
 
 <article class="container-shell py-14">
   {#if loading}
     <LoadingState message="Loading article..." />
   {:else}
+    <nav class="mb-6 flex items-center gap-2 text-sm">
+      <a class="font-medium text-ink/55 transition hover:text-forest" href="/blog">Blog</a>
+      <span class="text-ink/30">/</span>
+      <span class="max-w-[60vw] truncate font-medium text-ink/80">{post.title}</span>
+    </nav>
+
     <div class="max-w-3xl">
       <p class="text-sm font-semibold uppercase tracking-[0.16em] text-clay">{post.author_name ?? 'Tour Team'}</p>
       <h1 class="mt-3 text-4xl font-bold tracking-normal text-ink">{post.title}</h1>
@@ -39,3 +79,57 @@
     </div>
   {/if}
 </article>
+
+{#if !loading}
+  <!-- Continue reading -->
+  {#if morePosts.length}
+    <section class="border-t border-ink/[0.06] bg-sand/30 py-14 md:py-20">
+      <div class="container-shell">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <SectionHeader
+            eyebrow="Keep reading"
+            title="More from the journal"
+            description="Travel inspiration, tips and stories from the field."
+          />
+          <a
+            class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-deep-green"
+            href="/blog"
+          >
+            All articles <ArrowRight size={16} />
+          </a>
+        </div>
+        <div class="mt-9 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 18, stagger: 0.07 }}>
+          {#each morePosts as item (item.id)}
+            <BlogCard post={item} />
+          {/each}
+        </div>
+      </div>
+    </section>
+  {/if}
+
+  <!-- Explore destinations -->
+  {#if exploreDestinations.length}
+    <section class="py-14 md:py-20">
+      <div class="container-shell">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <SectionHeader
+            eyebrow="Plan your trip"
+            title="Explore destinations"
+            description="Turn inspiration into a real itinerary across East Africa."
+          />
+          <a
+            class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-deep-green"
+            href="/destinations"
+          >
+            All destinations <ArrowRight size={16} />
+          </a>
+        </div>
+        <div class="mt-9 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 18, stagger: 0.07 }}>
+          {#each exploreDestinations as item (item.id)}
+            <DestinationCard destination={item} />
+          {/each}
+        </div>
+      </div>
+    </section>
+  {/if}
+{/if}

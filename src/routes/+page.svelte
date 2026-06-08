@@ -6,6 +6,7 @@
   import DestinationCard from '$lib/components/public/DestinationCard.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import HeroSection from '$lib/components/public/HeroSection.svelte';
+  import PartnerStrip from '$lib/components/public/PartnerStrip.svelte';
   import PopularActivitiesSlider from '$lib/components/public/PopularActivitiesSlider.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import TestimonialCard from '$lib/components/public/TestimonialCard.svelte';
@@ -41,13 +42,42 @@
 
   $: heroExtra = (sections.hero?.extra_data ?? {}) as Record<string, unknown>;
 
+  const hexToRgba = (hex: string, alpha: number) => {
+    const match = /^#?([0-9a-fA-F]{6})$/.exec(hex);
+    if (!match) return `rgba(15,47,36,${alpha})`;
+    const n = parseInt(match[1], 16);
+    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+  };
+
+  // Final CTA background (image/video + overlay), all editable from Admin → Homepage.
+  $: ctaExtra = (sections.final_cta?.extra_data ?? {}) as Record<string, unknown>;
+  $: ctaImage = typeof sections.final_cta?.image_url === 'string' ? sections.final_cta.image_url : '';
+  $: ctaVideo = typeof ctaExtra.background_video === 'string' ? ctaExtra.background_video : '';
+  $: ctaPosition = typeof ctaExtra.media_position === 'string' ? ctaExtra.media_position : 'center';
+  $: ctaHasMedia = Boolean(ctaImage || ctaVideo);
+  $: ctaOverlayColor = typeof ctaExtra.overlay_color === 'string' ? ctaExtra.overlay_color : '#0F2F24';
+  $: ctaOverlayOpacity = typeof ctaExtra.overlay_opacity === 'number' ? ctaExtra.overlay_opacity : 0.7;
+  $: ctaOverlayStyle =
+    ctaExtra.overlay_gradient !== false
+      ? `background:linear-gradient(135deg, ${hexToRgba(ctaOverlayColor, ctaOverlayOpacity)}, ${hexToRgba(ctaOverlayColor, ctaOverlayOpacity * 0.55)})`
+      : `background:${hexToRgba(ctaOverlayColor, ctaOverlayOpacity)}`;
+
+  // Partner / company logo strip (managed in Admin → Homepage → "partners").
+  $: partnersExtra = (sections.partners?.extra_data ?? {}) as Record<string, unknown>;
+  $: partnerLogos = (Array.isArray(partnersExtra.logos) ? partnersExtra.logos : []) as Array<{
+    image_url: string;
+    name?: string;
+    url?: string;
+  }>;
+  $: partnersActive = sections.partners?.is_active !== false;
+
   onMount(async () => {
     try {
       const [tourResponse, destinationResponse, postResponse, testimonialResponse, faqResponse, homepageResponse] = await Promise.all([
         api.tours.list({ limit: 3 }),
         api.destinations.list({ limit: 3 }),
         api.blog.list({ limit: 3 }),
-        api.testimonials.list({ limit: 3 }),
+        api.testimonials.list({ limit: 6 }),
         api.faqs.list({ limit: 5 }),
         api.homepage.get()
       ]);
@@ -116,34 +146,58 @@
   </div>
 </section>
 
-<section class="bg-white py-14" use:sectionReveal>
-  <div class="container-shell grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
-    <SectionHeader eyebrow="Guest Notes" title={cms('testimonials', 'title', 'Testimonials and FAQs')} description={cms('testimonials', 'subtitle', 'Starter modules for trust content and common questions.')} />
-    <div class="grid gap-6">
+<section class="bg-white py-14 md:py-20" use:sectionReveal>
+  <div class="container-shell">
+    <div class="mx-auto max-w-2xl text-center" use:fadeUpOnScroll={{ y: 14 }}>
+      <h2 class="text-3xl font-extrabold tracking-normal text-deep-green md:text-[40px]">
+        {cms('testimonials', 'title', 'What Our Travelers Say')}
+      </h2>
+      <p class="mx-auto mt-3 max-w-xl text-[15px] font-medium leading-7 text-ink/60 md:text-lg">
+        {cms('testimonials', 'subtitle', 'Real stories from travelers who planned their East Africa trip with confidence.')}
+      </p>
+    </div>
+    <div class="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 18, stagger: 0.07 }}>
       {#each testimonials as testimonial}
         <TestimonialCard {testimonial} />
       {/each}
-      <FAQAccordion {faqs} />
     </div>
   </div>
 </section>
 
-{#if sections.final_cta?.is_active !== false && (sections.final_cta?.title || sections.final_cta?.button_text)}
-  <section class="container-shell py-14 md:py-20" use:sectionReveal>
-    <div
-      class="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-deep-green via-forest to-deep-green px-6 py-14 text-white shadow-[0_30px_80px_rgba(15,47,36,0.28)] sm:px-10 md:px-16 md:py-[72px]"
-      use:fadeUpOnScroll={{ y: 18 }}
-    >
-      <!-- decorative depth -->
-      <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-goldfinch-gold/25 blur-3xl"></div>
-      <div class="pointer-events-none absolute -bottom-28 -left-20 h-72 w-72 rounded-full bg-savanna/15 blur-3xl"></div>
-      <div class="pointer-events-none absolute inset-0 rounded-[32px] ring-1 ring-inset ring-white/10"></div>
-      <div
-        class="pointer-events-none absolute inset-0 opacity-[0.06]"
-        style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1.6px); background-size: 26px 26px;"
-      ></div>
+<section class="bg-sand/40 py-14 md:py-16" use:sectionReveal>
+  <div class="container-shell grid gap-8 md:grid-cols-[0.7fr_1.3fr]">
+    <SectionHeader eyebrow="Good to Know" title="Frequently Asked Questions" description="Honest answers to the questions East Africa travelers ask most." />
+    <FAQAccordion {faqs} />
+  </div>
+</section>
 
-      <div class="relative mx-auto max-w-3xl text-center">
+{#if sections.final_cta?.is_active !== false && (sections.final_cta?.title || sections.final_cta?.button_text)}
+  <section class="relative w-full overflow-hidden text-white" use:sectionReveal>
+    <!-- background media layer (admin-configurable: video > image > brand gradient) -->
+    {#if ctaVideo}
+      <!-- svelte-ignore a11y-media-has-caption -->
+      <video class="absolute inset-0 h-full w-full object-cover" style={`object-position:${ctaPosition}`} src={ctaVideo} poster={ctaImage || undefined} autoplay muted loop playsinline></video>
+    {:else if ctaImage}
+      <img class="absolute inset-0 h-full w-full object-cover" style={`object-position:${ctaPosition}`} src={ctaImage} alt="" />
+    {:else}
+      <div class="absolute inset-0 bg-gradient-to-br from-deep-green via-forest to-deep-green"></div>
+    {/if}
+
+    <!-- overlay (color + opacity + optional gradient) only over real media -->
+    {#if ctaHasMedia}
+      <div class="absolute inset-0" style={ctaOverlayStyle}></div>
+    {/if}
+
+    <!-- decorative depth -->
+    <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-goldfinch-gold/20 blur-3xl"></div>
+    <div class="pointer-events-none absolute -bottom-28 -left-20 h-72 w-72 rounded-full bg-savanna/15 blur-3xl"></div>
+    <div
+      class="pointer-events-none absolute inset-0 opacity-[0.06]"
+      style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1.6px); background-size: 26px 26px;"
+    ></div>
+
+    <div class="container-shell relative py-16 text-center md:py-24" use:fadeUpOnScroll={{ y: 18 }}>
+      <div class="mx-auto max-w-3xl">
         <span class="inline-flex items-center gap-2 rounded-full border border-goldfinch-gold/30 bg-goldfinch-gold/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-goldfinch-gold">
           <Sparkles size={14} strokeWidth={2.4} />
           Start Your Journey
@@ -187,4 +241,8 @@
       </div>
     </div>
   </section>
+{/if}
+
+{#if partnersActive}
+  <PartnerStrip logos={partnerLogos} title={cms('partners', 'title', 'Trusted by leading travel partners')} />
 {/if}

@@ -1,35 +1,92 @@
 <script lang="ts">
-  import {
-    BadgeCheck,
-    CalendarDays,
-    Hotel,
-    ListFilter,
-    Luggage,
-    MapPin,
-    Search,
-    TicketsPlane
-  } from '@lucide/svelte';
+  import { onMount } from 'svelte';
+  import { CalendarDays, ChevronDown, ListFilter, Luggage, MapPin, Search, Sparkles } from '@lucide/svelte';
+  import { goto } from '$app/navigation';
+  import { api } from '$lib/api/client';
   import { fadeUpOnScroll, heroImageParallax } from '$lib/animations';
   import { brand } from '$lib/brand';
+  import type { Destination } from '$lib/types';
 
   export let title = 'Plan East Africa With Confidence';
   export let description = 'Honest safari, Kilimanjaro, gorilla trekking and beach advice from local experts.';
   export let imageUrl = '/images/surf-hero.jpg';
+  // Kept for backwards-compatible props from the homepage; the button label is now scope-aware.
   export let primaryCta = brand.primaryCta;
   export let secondaryCta = brand.secondaryCta;
   export let secondaryCtaUrl = '/contact';
 
-  const tabs = [
-    { label: 'Tours', icon: Luggage },
-    { label: 'Hotels', icon: Hotel },
-    { label: 'Visa', icon: TicketsPlane },
-    { label: 'Experience', icon: BadgeCheck }
+  type Scope = 'tours' | 'destinations' | 'departures' | 'advisor';
+  type Opt = { label: string; value: string };
+
+  const scopes: { id: Scope; label: string; icon: typeof MapPin }[] = [
+    { id: 'tours', label: 'Tours', icon: Luggage },
+    { id: 'destinations', label: 'Destinations', icon: MapPin },
+    { id: 'departures', label: 'Departures', icon: CalendarDays },
+    { id: 'advisor', label: 'Advisor', icon: Sparkles }
   ];
+
+  let scope: Scope = 'tours';
+  let destination = '';
+  let category = '';
+  let date = '';
+
+  let destinationOptions: Opt[] = [];
+  let categoryOptions: Opt[] = [];
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  // Which controls are meaningful for each scope (dates only exist on departures).
+  $: showDestination = scope !== 'advisor';
+  $: showDate = scope === 'departures';
+  $: showCategory = scope === 'tours';
+  $: ctaLabel =
+    scope === 'tours'
+      ? 'Search tours'
+      : scope === 'destinations'
+        ? 'Explore'
+        : scope === 'departures'
+          ? 'Find dates'
+          : primaryCta; // advisor scope routes to /plan-my-trip, so use the brand CTA label
+
+  onMount(async () => {
+    try {
+      const [dest, cat] = await Promise.all([
+        api.destinations.list({ status: 'published', limit: 100 }),
+        api.categories.list({ status: 'published', limit: 100 })
+      ]);
+      destinationOptions = (dest.data.items as Destination[])
+        .filter((d) => d.slug)
+        .map((d) => ({ label: d.name, value: d.slug }));
+      categoryOptions = (cat.data.items as Array<Record<string, unknown>>)
+        .filter((c) => c.slug)
+        .map((c) => ({ label: String(c.name ?? c.slug), value: String(c.slug) }));
+    } catch {
+      // Selects stay empty; the search button still routes to the right page.
+    }
+  });
+
+  const submit = () => {
+    if (scope === 'tours') {
+      const params = new URLSearchParams();
+      if (destination) params.set('destination', destination);
+      if (category) params.set('category', category);
+      void goto(`/tours${params.toString() ? `?${params}` : ''}`);
+    } else if (scope === 'destinations') {
+      void goto(destination ? `/destinations/${destination}` : '/destinations');
+    } else if (scope === 'departures') {
+      const params = new URLSearchParams();
+      if (destination) params.set('destination', destination);
+      if (date) params.set('month', date.slice(0, 7));
+      void goto(`/departures${params.toString() ? `?${params}` : ''}`);
+    } else {
+      void goto('/plan-my-trip');
+    }
+  };
 </script>
 
 <section class="relative bg-white">
   <div class="relative h-[410px] overflow-hidden sm:h-[440px] md:h-[500px]">
-    <img class="absolute inset-0 h-full w-full object-cover object-center" src={imageUrl} alt="Aerial view of surfers in ocean water" use:heroImageParallax={{ amount: 4 }} />
+    <img class="absolute inset-0 h-full w-full object-cover object-center" src={imageUrl} alt="East Africa landscape" use:heroImageParallax={{ amount: 4 }} />
     <div class="absolute inset-0 bg-deep-green/35"></div>
 
     <div class="relative z-10 mx-auto flex h-full w-full max-w-[1500px] items-center justify-center px-5 pb-20 pt-10 text-center md:pb-20">
@@ -41,50 +98,92 @@
   </div>
 
   <div class="relative z-20 mx-auto -mt-[86px] w-full max-w-[1500px] px-5 pb-14 md:-mt-[92px] md:px-4 md:pb-18">
-    <div class="relative rounded-[18px] bg-white px-4 pb-6 pt-12 shadow-[0_18px_42px_rgba(20,20,20,0.09)] md:rounded-[22px] md:px-10 md:pb-8 md:pt-14" use:fadeUpOnScroll={{ y: 18, start: 'top 96%', duration: 0.7 }}>
-      <div class="layout-ltr absolute left-1/2 top-0 z-10 flex w-[calc(100vw-20px)] max-w-[390px] -translate-x-1/2 -translate-y-1/2 flex-nowrap justify-center gap-1 overflow-visible md:left-auto md:right-10 md:w-auto md:max-w-none md:translate-x-0 md:gap-2">
-        {#each tabs as tab}
-          <button class="inline-flex h-11 shrink-0 items-center justify-center gap-1 rounded-full border border-[#e8e8e8] bg-white px-2 text-[12px] font-semibold text-[#151515] shadow-sm sm:px-3 md:h-12 md:gap-2.5 md:px-5 md:text-[15px]" type="button">
-            {tab.label}
+    <div class="relative rounded-[18px] bg-white px-4 pb-6 pt-5 shadow-[0_18px_42px_rgba(20,20,20,0.09)] md:rounded-[22px] md:px-10 md:pb-8 md:pt-14" use:fadeUpOnScroll={{ y: 18, start: 'top 96%', duration: 0.7 }}>
+      <!-- scope tabs: in-flow + scrollable on mobile, floating on the card edge on desktop -->
+      <div class="hide-scroll layout-ltr z-10 mb-4 flex gap-1.5 overflow-x-auto md:absolute md:right-10 md:top-0 md:mb-0 md:w-auto md:-translate-y-1/2 md:gap-2 md:overflow-visible">
+        {#each scopes as s (s.id)}
+          <button
+            class={`inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full border px-3.5 text-[13px] font-semibold shadow-sm transition md:h-12 md:px-5 md:text-[15px] ${
+              scope === s.id
+                ? 'border-forest bg-forest text-white'
+                : 'border-[#e8e8e8] bg-white text-[#151515] hover:border-forest/40'
+            }`}
+            type="button"
+            aria-pressed={scope === s.id}
+            on:click={() => (scope = s.id)}
+          >
+            {s.label}
             <span class="grid h-[19px] w-[19px] shrink-0 place-items-center rounded-full bg-goldfinch-gold text-white md:h-6 md:w-6">
-              <svelte:component this={tab.icon} size={12} strokeWidth={2.6} />
+              <svelte:component this={s.icon} size={12} strokeWidth={2.6} />
             </span>
           </button>
         {/each}
       </div>
 
-      <form class="layout-ltr grid gap-4 lg:grid-cols-[1fr_1fr_1fr_176px] lg:gap-4">
-        <label class="order-1 flex h-[62px] items-center justify-start gap-3 rounded-xl border border-[#e5e5e5] bg-white px-4 md:h-16 lg:order-1">
-          <MapPin class="shrink-0 text-[#686868]" size={21} strokeWidth={2.5} />
-          <span class="grid min-w-0 text-left">
-            <span class="truncate text-[15px] font-semibold text-[#222222] md:text-lg">Serengeti Safari</span>
-            <span class="text-xs font-medium text-[#6e6e6e] md:text-sm">Tanzania</span>
-          </span>
-          <select class="sr-only" aria-label="Destination">
-            <option>Bali Paradaise</option>
-          </select>
-        </label>
+      <form class="layout-ltr flex flex-col gap-3 lg:flex-row lg:items-stretch lg:gap-4" on:submit|preventDefault={submit}>
+        {#if showDestination}
+          <label class="relative flex h-[62px] flex-1 items-center gap-3 rounded-xl border border-[#e5e5e5] bg-white px-4 transition focus-within:border-forest focus-within:ring-2 focus-within:ring-forest/15 md:h-16">
+            <MapPin class="shrink-0 text-[#686868]" size={21} strokeWidth={2.5} />
+            <select
+              class="w-full cursor-pointer appearance-none bg-transparent text-[15px] font-semibold text-[#222222] outline-none md:text-lg"
+              bind:value={destination}
+              aria-label="Destination"
+            >
+              <option value="">{scope === 'destinations' ? 'Choose a destination' : 'Anywhere'}</option>
+              {#each destinationOptions as opt (opt.value)}
+                <option value={opt.value}>{opt.label}</option>
+              {/each}
+            </select>
+            <ChevronDown class="pointer-events-none shrink-0 text-[#9a9a9a]" size={18} />
+          </label>
+        {/if}
 
-        <label class="order-2 flex h-[62px] items-center justify-start gap-3 rounded-xl border border-[#e5e5e5] bg-white px-4 text-left md:h-16 lg:order-2">
-          <CalendarDays class="shrink-0 text-[#686868]" size={20} strokeWidth={2.4} />
-          <span class="text-[15px] font-medium text-[#5f5f5f] md:text-base">Select dates</span>
-          <input class="sr-only" type="date" aria-label="Travel date" />
-        </label>
+        {#if showDate}
+          <label class="flex h-[62px] flex-1 items-center gap-3 rounded-xl border border-[#e5e5e5] bg-white px-4 transition focus-within:border-forest focus-within:ring-2 focus-within:ring-forest/15 md:h-16">
+            <CalendarDays class="shrink-0 text-[#686868]" size={20} strokeWidth={2.4} />
+            <input
+              class="w-full cursor-pointer bg-transparent text-[15px] font-medium text-[#3f3f3f] outline-none md:text-base"
+              type="date"
+              min={todayStr}
+              bind:value={date}
+              aria-label="Travel month"
+            />
+          </label>
+        {/if}
 
-        <label class="order-3 flex h-[62px] items-center justify-start gap-3 rounded-xl border border-[#e5e5e5] bg-white px-4 md:h-16 lg:order-3">
-          <ListFilter class="shrink-0 text-[#686868]" size={21} strokeWidth={2.5} />
-          <span class="grid min-w-0 text-left">
-            <span class="truncate text-[15px] font-semibold text-[#222222] md:text-lg">Safari</span>
-            <span class="text-xs font-medium text-[#6e6e6e] md:text-sm">Experience</span>
-          </span>
-          <select class="sr-only" aria-label="Tour category">
-            <option>Family Tour</option>
-          </select>
-        </label>
+        {#if showCategory}
+          <label class="relative flex h-[62px] flex-1 items-center gap-3 rounded-xl border border-[#e5e5e5] bg-white px-4 transition focus-within:border-forest focus-within:ring-2 focus-within:ring-forest/15 md:h-16">
+            <ListFilter class="shrink-0 text-[#686868]" size={21} strokeWidth={2.5} />
+            <select
+              class="w-full cursor-pointer appearance-none bg-transparent text-[15px] font-semibold text-[#222222] outline-none md:text-lg"
+              bind:value={category}
+              aria-label="Experience"
+            >
+              <option value="">Any experience</option>
+              {#each categoryOptions as opt (opt.value)}
+                <option value={opt.value}>{opt.label}</option>
+              {/each}
+            </select>
+            <ChevronDown class="pointer-events-none shrink-0 text-[#9a9a9a]" size={18} />
+          </label>
+        {/if}
 
-        <button class="order-4 flex h-[62px] items-center justify-center gap-2.5 rounded-xl bg-forest px-6 text-sm font-semibold text-white shadow-sm md:h-16 md:text-base lg:order-4" type="submit">
-          <Search size={20} strokeWidth={2.4} />
-          {primaryCta}
+        {#if scope === 'advisor'}
+          <div class="flex flex-1 items-center rounded-xl border border-dashed border-[#e0e0e0] bg-sand/30 px-4 py-4 text-[14px] font-medium text-[#5f5f5f] md:text-[15px]">
+            Tell us your dream trip and a local expert will craft a tailored plan — free to start.
+          </div>
+        {/if}
+
+        <button
+          class="flex h-[62px] items-center justify-center gap-2.5 rounded-xl bg-forest px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-deep-green md:h-16 md:text-base lg:w-[200px]"
+          type="submit"
+        >
+          {#if scope === 'advisor'}
+            <Sparkles size={20} strokeWidth={2.4} />
+          {:else}
+            <Search size={20} strokeWidth={2.4} />
+          {/if}
+          {ctaLabel}
         </button>
       </form>
 
@@ -95,3 +194,13 @@
     </div>
   </div>
 </section>
+
+<style>
+  .hide-scroll {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .hide-scroll::-webkit-scrollbar {
+    display: none;
+  }
+</style>
