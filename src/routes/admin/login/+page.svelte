@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Eye, EyeOff } from '@lucide/svelte';
   import { goto } from '$app/navigation';
   import { api } from '$lib/api/client';
   import Button from '$lib/components/public/Button.svelte';
@@ -6,6 +7,7 @@
 
   let email = 'admin@goldfinch.local';
   let password = '';
+  let showPassword = false;
   let error = '';
   let loading = false;
 
@@ -32,7 +34,28 @@
     <h1 class="mt-2 text-2xl font-bold text-ink">Login</h1>
     <div class="mt-6 grid gap-4">
       <FormInput label="Email" name="email" type="email" bind:value={email} required />
-      <FormInput label="Password" name="password" type="password" bind:value={password} required />
+      <label class="grid gap-2 text-sm font-medium text-ink">
+        <span>Password</span>
+        <div class="relative">
+          <input
+            class="w-full rounded-md border border-ink/15 bg-white px-3 py-3 pr-11 outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
+            name="password"
+            type={showPassword ? 'text' : 'password'}
+            autocomplete="current-password"
+            bind:value={password}
+            required
+          />
+          <button
+            type="button"
+            class="absolute inset-y-0 right-0 grid w-11 place-items-center text-ink/45 transition hover:text-ink/70"
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            aria-pressed={showPassword}
+            on:click={() => (showPassword = !showPassword)}
+          >
+            {#if showPassword}<EyeOff size={18} />{:else}<Eye size={18} />{/if}
+          </button>
+        </div>
+      </label>
     </div>
     <div class="mt-6">
       <Button type="submit" className="w-full">{loading ? 'Logging in...' : 'Login'}</Button>

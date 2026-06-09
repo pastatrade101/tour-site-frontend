@@ -122,7 +122,7 @@
 
       <form class="layout-ltr flex flex-col gap-3 lg:flex-row lg:items-stretch lg:gap-4" on:submit|preventDefault={submit}>
         {#if showDestination}
-          <label class="relative flex h-[62px] flex-1 items-center gap-3 rounded-xl border border-[#e5e5e5] bg-white px-4 transition focus-within:border-forest focus-within:ring-2 focus-within:ring-forest/15 md:h-16">
+          <label class="relative flex h-[62px] items-center lg:flex-1 gap-3 rounded-xl border border-[#e5e5e5] bg-white px-4 transition focus-within:border-forest focus-within:ring-2 focus-within:ring-forest/15 md:h-16">
             <MapPin class="shrink-0 text-[#686868]" size={21} strokeWidth={2.5} />
             <select
               class="w-full cursor-pointer appearance-none bg-transparent text-[15px] font-semibold text-[#222222] outline-none md:text-lg"
@@ -139,7 +139,7 @@
         {/if}
 
         {#if showDate}
-          <label class="flex h-[62px] flex-1 items-center gap-3 rounded-xl border border-[#e5e5e5] bg-white px-4 transition focus-within:border-forest focus-within:ring-2 focus-within:ring-forest/15 md:h-16">
+          <label class="flex h-[62px] items-center lg:flex-1 gap-3 rounded-xl border border-[#e5e5e5] bg-white px-4 transition focus-within:border-forest focus-within:ring-2 focus-within:ring-forest/15 md:h-16">
             <CalendarDays class="shrink-0 text-[#686868]" size={20} strokeWidth={2.4} />
             <input
               class="w-full cursor-pointer bg-transparent text-[15px] font-medium text-[#3f3f3f] outline-none md:text-base"
@@ -152,7 +152,7 @@
         {/if}
 
         {#if showCategory}
-          <label class="relative flex h-[62px] flex-1 items-center gap-3 rounded-xl border border-[#e5e5e5] bg-white px-4 transition focus-within:border-forest focus-within:ring-2 focus-within:ring-forest/15 md:h-16">
+          <label class="relative flex h-[62px] items-center lg:flex-1 gap-3 rounded-xl border border-[#e5e5e5] bg-white px-4 transition focus-within:border-forest focus-within:ring-2 focus-within:ring-forest/15 md:h-16">
             <ListFilter class="shrink-0 text-[#686868]" size={21} strokeWidth={2.5} />
             <select
               class="w-full cursor-pointer appearance-none bg-transparent text-[15px] font-semibold text-[#222222] outline-none md:text-lg"
@@ -169,7 +169,7 @@
         {/if}
 
         {#if scope === 'advisor'}
-          <div class="flex flex-1 items-center rounded-xl border border-dashed border-[#e0e0e0] bg-sand/30 px-4 py-4 text-[14px] font-medium text-[#5f5f5f] md:text-[15px]">
+          <div class="flex items-center rounded-xl border border-dashed border-[#e0e0e0] bg-sand/30 px-4 py-4 text-[14px] font-medium text-[#5f5f5f] md:text-[15px] lg:flex-1">
             Tell us your dream trip and a local expert will craft a tailored plan — free to start.
           </div>
         {/if}
