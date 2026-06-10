@@ -1,10 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { fade, fly } from 'svelte/transition';
   import { ArrowRight, Sparkles } from '@lucide/svelte';
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
+  import { prefersReducedMotion } from '$lib/animations/motion';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { placeholderDestinations } from '$lib/data/placeholders';
@@ -14,6 +16,9 @@
   let loading = true;
   let activeCountry = 'All';
   let relatedTours: Tour[] = [];
+
+  const reduce = prefersReducedMotion();
+  const ms = (n: number) => (reduce ? 0 : n);
 
   onMount(async () => {
     try {
@@ -61,26 +66,32 @@
 {:else if selected}
   <!-- hero -->
   <section class="relative h-[380px] w-full overflow-hidden bg-deep-green md:h-[460px]">
-    {#if heroImage}
-      <img class="absolute inset-0 h-full w-full object-cover" src={heroImage} alt={selected.name} />
-    {/if}
+    {#key selected.slug}
+      {#if heroImage}
+        <img class="absolute inset-0 h-full w-full object-cover" src={heroImage} alt={selected.name} transition:fade={{ duration: ms(450) }} />
+      {/if}
+    {/key}
     <div class="absolute inset-0 bg-gradient-to-t from-deep-green/95 via-deep-green/45 to-deep-green/20"></div>
     <div class="container-shell relative flex h-full flex-col justify-end pb-10 text-white md:pb-12">
-      <p class="text-sm font-bold uppercase tracking-[0.18em] text-goldfinch-gold">
-        Destinations{selected.country ? ` · ${selected.country}` : ''}
-      </p>
-      <h1 class="mt-2 max-w-2xl text-4xl font-extrabold leading-[1.05] tracking-tight md:text-6xl">{selected.name}</h1>
-      {#if selected.short_description}
-        <p class="mt-3 max-w-xl text-sm leading-7 text-white/85 md:text-base">{selected.short_description}</p>
-      {/if}
-      <div class="mt-6 flex flex-wrap gap-3">
-        <a class="inline-flex h-12 items-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-deep-green transition hover:brightness-105" href={`/plan-my-trip?destination=${selected.slug}`}>
-          <Sparkles size={18} /> Plan a trip to {selected.name}
-        </a>
-        <a class="inline-flex h-12 items-center gap-2 rounded-xl border border-white/30 px-6 font-semibold text-white transition hover:bg-white/10" href={`/destinations/${selected.slug}`}>
-          Full guide <ArrowRight size={18} />
-        </a>
-      </div>
+      {#key selected.slug}
+        <div in:fly={{ y: 16, duration: ms(450) }}>
+          <p class="text-sm font-bold uppercase tracking-[0.18em] text-goldfinch-gold">
+            Destinations{selected.country ? ` · ${selected.country}` : ''}
+          </p>
+          <h1 class="mt-2 max-w-2xl text-4xl font-extrabold leading-[1.05] tracking-tight md:text-6xl">{selected.name}</h1>
+          {#if selected.short_description}
+            <p class="mt-3 max-w-xl text-sm leading-7 text-white/85 md:text-base">{selected.short_description}</p>
+          {/if}
+          <div class="mt-6 flex flex-wrap gap-3">
+            <a class="inline-flex h-12 items-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-deep-green transition hover:brightness-105" href={`/plan-my-trip?destination=${selected.slug}`}>
+              <Sparkles size={18} /> Plan a trip to {selected.name}
+            </a>
+            <a class="inline-flex h-12 items-center gap-2 rounded-xl border border-white/30 px-6 font-semibold text-white transition hover:bg-white/10" href={`/destinations/${selected.slug}`}>
+              Full guide <ArrowRight size={18} />
+            </a>
+          </div>
+        </div>
+      {/key}
     </div>
   </section>
 
@@ -121,6 +132,8 @@
 
   <!-- selected destination panel -->
   <section class="container-shell py-12 md:py-16">
+   {#key selected.slug}
+    <div in:fly={{ y: 16, duration: ms(400) }}>
     <div class="grid gap-10 lg:grid-cols-[1fr_0.8fr]">
       <div>
         {#if selected.country}<p class="text-sm font-semibold uppercase tracking-[0.16em] text-clay">{selected.country}</p>{/if}
@@ -160,6 +173,8 @@
         </div>
       </div>
     {/if}
+    </div>
+   {/key}
   </section>
 {:else}
   <section class="container-shell py-20 text-center text-ink/60">No destinations yet.</section>

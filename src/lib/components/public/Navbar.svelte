@@ -126,7 +126,7 @@
   });
 </script>
 
-<header class={`sticky top-0 z-40 border-b border-[#e8e8e8] bg-white transition-shadow duration-300 ${scrolled ? 'shadow-[0_8px_28px_rgba(15,47,36,0.10)]' : ''}`} use:navbarEntrance>
+<header class={`sticky top-0 z-40 border-b bg-white transition-[box-shadow,border-color] duration-[400ms] ease-out ${scrolled ? 'border-transparent shadow-[0_8px_28px_rgba(15,47,36,0.10)]' : 'border-[#e8e8e8]'}`} use:navbarEntrance>
   <!-- ── mobile top bar ─────────────────────────────────────────────────── -->
   <div class="flex h-[70px] items-center justify-between gap-3 px-4 sm:px-5 lg:hidden">
     <button class="grid h-11 w-11 place-items-center rounded-xl border border-[#e5e5e5] bg-white text-[#111111]" type="button" aria-label="Open menu" aria-expanded={menuOpen} on:click={() => (menuOpen = true)}>
@@ -147,7 +147,7 @@
   </div>
 
   <!-- ── desktop top row (collapses smoothly on scroll) ──────────────────── -->
-  <div class={`hidden overflow-hidden transition-all duration-300 ease-out lg:block ${scrolled ? 'max-h-0 opacity-0' : 'max-h-[96px] opacity-100'}`}>
+  <div class={`hidden overflow-hidden transition-[max-height,opacity] duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] lg:block ${scrolled ? 'max-h-0 opacity-0' : 'max-h-[96px] opacity-100'}`}>
     <div class="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-7 px-4 lg:h-[80px]">
       <a href="/" class="flex min-w-[150px] items-center gap-2.5" aria-label="Goldfinch Adventures home">
         <TicketsPlane class="text-goldfinch-gold" size={34} strokeWidth={2.1} />
@@ -183,11 +183,11 @@
     <div class="mx-auto flex w-full max-w-[1500px] items-stretch justify-between px-4">
       <nav class="flex items-center gap-1" aria-label="Primary">
         {#if scrolled}
-          <a href="/" class="mr-1 flex shrink-0 items-center gap-2" aria-label="Goldfinch Adventures home" transition:fly={{ x: -10, duration: 220 }}>
+          <a href="/" class="mr-1 flex shrink-0 items-center gap-2" aria-label="Goldfinch Adventures home" transition:fly={{ x: -14, duration: 320 }}>
             <TicketsPlane class="text-goldfinch-gold" size={26} strokeWidth={2.2} />
             <span class="text-lg font-extrabold tracking-normal text-deep-green">Goldfinch</span>
           </a>
-          <form class="mr-2 hidden h-9 items-center rounded-full bg-[#f1f1f1] pl-1 pr-2 transition focus-within:ring-2 focus-within:ring-goldfinch-gold/30 xl:flex" on:submit|preventDefault={submitSearch} role="search" transition:fly={{ x: -10, duration: 220 }}>
+          <form class="mr-2 hidden h-9 items-center rounded-full bg-[#f1f1f1] pl-1 pr-2 transition focus-within:ring-2 focus-within:ring-goldfinch-gold/30 xl:flex" on:submit|preventDefault={submitSearch} role="search" transition:fly={{ x: -14, duration: 320 }}>
             <button class="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[#111]" type="submit" aria-label="Search tours"><Search size={15} strokeWidth={2.6} /></button>
             <input class="w-32 min-w-0 bg-transparent text-xs font-medium outline-none placeholder:text-[#a9a9a9]" aria-label="Search tour packages" placeholder="Search tours..." bind:value={searchQuery} />
           </form>
