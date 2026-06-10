@@ -7,10 +7,12 @@
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import HeroSection from '$lib/components/public/HeroSection.svelte';
   import PartnerStrip from '$lib/components/public/PartnerStrip.svelte';
+  import PlanningProcess from '$lib/components/public/PlanningProcess.svelte';
   import PopularActivitiesSlider from '$lib/components/public/PopularActivitiesSlider.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import TestimonialCard from '$lib/components/public/TestimonialCard.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
+  import TripFinderBand from '$lib/components/public/TripFinderBand.svelte';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
   import { placeholderDestinations, placeholderFaqs, placeholderPosts, placeholderTestimonials, placeholderTours } from '$lib/data/placeholders';
   import type { BlogPost, Destination, FAQ, Testimonial, Tour } from '$lib/types';
@@ -110,6 +112,9 @@
   secondaryCtaUrl={typeof heroExtra.secondary_cta_url === 'string' ? heroExtra.secondary_cta_url : '/contact'}
 />
 
+<!-- Trip Finder entry (spec §4.1 B) -->
+<TripFinderBand />
+
 <PopularActivitiesSlider />
 
 <section class="container-shell py-14 md:py-20" use:sectionReveal>
@@ -168,6 +173,23 @@
   <div class="container-shell grid gap-8 md:grid-cols-[0.7fr_1.3fr]">
     <SectionHeader eyebrow="Good to Know" title="Frequently Asked Questions" description="Honest answers to the questions East Africa travelers ask most." />
     <FAQAccordion {faqs} />
+  </div>
+</section>
+
+<section class="bg-white py-14 md:py-20" use:sectionReveal>
+  <div class="container-shell">
+    <PlanningProcess
+      title={cms('how_it_works', 'title', 'How planning works')}
+      subtitle={cms('how_it_works', 'subtitle', 'A calm, transparent process — no pressure, and no payment to start.')}
+    />
+    <div class="mt-10 flex justify-center">
+      <a
+        class="inline-flex h-12 items-center gap-2 rounded-xl bg-deep-green px-7 font-bold text-white shadow-sm transition hover:bg-forest"
+        href="/plan-my-trip"
+      >
+        Start planning <ArrowRight size={18} />
+      </a>
+    </div>
   </div>
 </section>
 

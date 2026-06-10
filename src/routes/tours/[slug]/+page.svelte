@@ -1,12 +1,14 @@
 <script lang="ts">
-  import { ArrowRight } from '@lucide/svelte';
+  import { ArrowRight, Check, MessageCircle, Sparkles } from '@lucide/svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
   import { staggeredCardReveal } from '$lib/animations/motion';
+  import { publicSettings, settingText } from '$lib/settings';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
   import BookingForm from '$lib/components/public/BookingForm.svelte';
-  import Button from '$lib/components/public/Button.svelte';
+  import EmailItineraryCapture from '$lib/components/public/EmailItineraryCapture.svelte';
+  import ShortlistButton from '$lib/components/public/ShortlistButton.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
@@ -17,6 +19,25 @@
   let tour: Tour | null = null;
   let loading = true;
   let error = '';
+
+  // Shortlist item for the save button.
+  $: shortlistItem = tour
+    ? {
+        slug: tour.slug,
+        title: tour.title,
+        image_url: tour.main_image_url,
+        duration_days: tour.duration_days,
+        price_from: tour.price_from,
+        currency: tour.currency,
+        destination: (tour as unknown as { destinations?: { name?: string } }).destinations?.name
+      }
+    : null;
+
+  // WhatsApp deep-link pre-filled with the trip name (spec §7).
+  $: waDigits = (settingText($publicSettings, 'whatsapp_number') || '+255 700 000 000').replace(/\D/g, '');
+  $: waHref = tour
+    ? `https://wa.me/${waDigits}?text=${encodeURIComponent(`Hi Goldfinch, I'm interested in the ${tour.title}. Can you help me plan it?`)}`
+    : '#';
 
   // Relevant content for onward navigation (loaded best-effort after the tour).
   let relatedTours: Tour[] = [];
@@ -91,11 +112,62 @@
             <img class="h-full w-full object-cover" src={tour.main_image_url} alt={tour.title} />
           {/if}
         </div>
-        <p class="mt-6 text-sm font-semibold uppercase tracking-[0.16em] text-clay">{tour.duration_days ?? 1} days</p>
-        <h1 class="mt-3 text-4xl font-bold tracking-normal text-ink">{tour.title}</h1>
+        <div class="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1">
+          <p class="text-sm font-semibold uppercase tracking-[0.16em] text-clay">{tour.duration_days ?? 1} days</p>
+          {#if tour.price_from}
+            <p class="text-sm text-ink/55">
+              from
+              <span class="text-lg font-extrabold text-deep-green">{tour.currency ?? 'USD'} {tour.price_from.toLocaleString()}</span>
+              <span class="text-ink/45">/ person</span>
+            </p>
+          {/if}
+        </div>
+        <h1 class="mt-2 text-4xl font-bold tracking-normal text-ink">{tour.title}</h1>
         <p class="mt-4 text-base leading-7 text-ink/70">{tour.full_description ?? tour.short_description}</p>
-        <div class="mt-8">
-          <Button href={`/booking/${tour.slug}`}>Request Booking</Button>
+
+        <!-- primary action + WhatsApp (spec §4.4 A) -->
+        <div class="mt-7 grid gap-3 sm:max-w-md">
+          <a
+            class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-deep-green shadow-sm transition hover:brightness-105"
+            href={`/plan-my-trip?tour=${tour.slug}`}
+          >
+            <Sparkles size={18} strokeWidth={2.4} /> Plan This Trip
+          </a>
+          <a
+            class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-6 font-semibold text-white shadow-sm transition hover:brightness-105"
+            href={waHref}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <MessageCircle size={18} strokeWidth={2.2} /> Chat on WhatsApp
+          </a>
+          {#if shortlistItem}
+            <ShortlistButton item={shortlistItem} variant="full" />
+          {/if}
+        </div>
+
+        <!-- "a starting point, tailored to you" (spec §4.4 C) -->
+        <div class="mt-6 flex items-start gap-3 rounded-2xl border border-goldfinch-gold/30 bg-savanna/20 p-4">
+          <Sparkles size={20} class="mt-0.5 shrink-0 text-goldfinch-gold" />
+          <p class="text-sm leading-6 text-ink/75">
+            <span class="font-semibold text-ink">A starting point, tailored to you.</span>
+            This itinerary is a sample — a Goldfinch specialist will adapt it to your dates, pace and interests.
+          </p>
+        </div>
+
+        <!-- trust strip (spec §4.4 B) -->
+        <div class="mt-5 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
+          {#each ['Local experts', 'Customizable itinerary', 'No-pressure planning', 'Secure enquiry'] as point}
+            <span class="inline-flex items-center gap-1.5 text-sm font-medium text-ink/65">
+              <span class="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-forest/10 text-forest"><Check size={11} strokeWidth={3} /></span>
+              {point}
+            </span>
+          {/each}
+        </div>
+
+        <!-- low-commitment capture (spec §7) -->
+        <div class="mt-6 sm:max-w-md">
+          <EmailItineraryCapture tourTitle={tour.title} />
         </div>
       </div>
       <div>

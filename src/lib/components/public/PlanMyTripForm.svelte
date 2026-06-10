@@ -1,10 +1,16 @@
 <script lang="ts">
-  import { AlertCircle, CheckCircle2, Copy } from '@lucide/svelte';
+  import { onMount } from 'svelte';
+  import { get } from 'svelte/store';
+  import { AlertCircle, CheckCircle2, Copy, MapPin } from '@lucide/svelte';
+  import { page } from '$app/stores';
   import { api } from '$lib/api/client';
+  import { shortlist } from '$lib/shortlist';
   import Button from './Button.svelte';
   import FormInput from './FormInput.svelte';
   import SelectInput from './SelectInput.svelte';
   import TextArea from './TextArea.svelte';
+
+  type Option = { label: string; value: string };
 
   const destinationOptions = ['Not sure yet', 'Tanzania', 'Kenya', 'Uganda', 'Rwanda', 'Zanzibar', 'Multi-country'].map((v) => ({ label: v, value: v }));
   const experienceOptions = ['Safari', 'Kilimanjaro', 'Gorilla Trekking', 'Beach Holiday', 'Family Trip', 'Honeymoon', 'Cultural Tour'].map((v) => ({ label: v, value: v }));
@@ -29,8 +35,87 @@
   let errorMessage = '';
   let bookingCode = '';
   let copied = false;
+  let tripContext = ''; // tour name carried in from a tour/departure/persona link
 
   $: sent = Boolean(bookingCode);
+
+  // Pre-fill the enquiry from context (spec §4.9): a visitor arriving from a tour,
+  // departure, persona or experience link carries that intent into the form.
+  const matchOption = (options: Option[], value: unknown) =>
+    options.find((o) => o.value.toLowerCase() === String(value).toLowerCase())?.value;
+
+  onMount(async () => {
+    const p = $page.url.searchParams;
+    const persona = p.get('persona');
+    const experience = p.get('experience');
+    const destination = p.get('destination');
+    const monthParam = p.get('month') || p.get('date');
+    const tourSlug = p.get('tour');
+
+    const personaMap: Record<string, string> = {
+      family: 'Family',
+      couple: 'Couple',
+      solo: 'Solo',
+      group: 'Group of friends',
+      honeymoon: 'Honeymooners'
+    };
+    const expMap: Record<string, string> = {
+      safari: 'Safari',
+      kilimanjaro: 'Kilimanjaro',
+      gorilla: 'Gorilla Trekking',
+      'gorilla-trekking': 'Gorilla Trekking',
+      beach: 'Beach Holiday',
+      'beach-holiday': 'Beach Holiday',
+      cultural: 'Cultural Tour',
+      honeymoon: 'Honeymoon'
+    };
+
+    if (persona && personaMap[persona.toLowerCase()]) traveller_type = personaMap[persona.toLowerCase()];
+    if (experience) {
+      const e = expMap[experience.toLowerCase()] || matchOption(experienceOptions, experience);
+      if (e) experience_interest = e;
+    }
+    if (destination) {
+      const d = matchOption(destinationOptions, destination);
+      if (d) destination_interest = d;
+    }
+    if (monthParam) {
+      let m = monthParam;
+      if (/^\d{4}-\d{2}/.test(monthParam)) {
+        const iso = monthParam.length === 7 ? `${monthParam}-01` : monthParam;
+        m = new Date(iso).toLocaleString('en', { month: 'long' });
+      }
+      const mm = matchOption(monthOptions, m);
+      if (mm) travel_month = mm;
+    }
+    if (tourSlug) {
+      try {
+        const res = await api.tours.get(tourSlug);
+        const t = res.data as Record<string, unknown>;
+        tripContext = String(t.title ?? '');
+        const dName = (t.destinations as Record<string, unknown> | undefined)?.name;
+        const cName = (t.tour_categories as Record<string, unknown> | undefined)?.name;
+        if (dName) {
+          const d = matchOption(destinationOptions, dName);
+          if (d) destination_interest = d;
+        }
+        if (cName) {
+          const e = matchOption(experienceOptions, cName);
+          if (e) experience_interest = e;
+        }
+      } catch {
+        tripContext = tourSlug.replace(/-/g, ' ');
+      }
+      if (tripContext && !message.trim()) message = `I'm interested in: ${tripContext}.`;
+    } else {
+      // No specific tour — carry in the visitor's saved shortlist (spec §7).
+      const saved = get(shortlist);
+      if (saved.length) {
+        tripContext = saved.length === 1 ? saved[0].title : `${saved.length} saved trips`;
+        if (!message.trim()) message = `I'm interested in: ${saved.map((sv) => sv.title).join(', ')}.`;
+      }
+    }
+  });
 
   const submit = async () => {
     errorMessage = '';
@@ -55,7 +140,8 @@
           experience_interest,
           travel_month,
           budget_per_person,
-          traveller_type
+          traveller_type,
+          ...(tripContext ? { tour_interest: tripContext } : {})
         }
       });
       bookingCode = String((res.data as Record<string, unknown>)?.booking_code ?? '');
@@ -102,8 +188,19 @@
     <div>
       <p class="text-sm font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">Plan My Trip</p>
       <h3 class="mt-1 text-2xl font-bold tracking-normal text-deep-green">Tell us about your dream trip</h3>
-      <p class="mt-1 text-sm leading-6 text-ink/65">No tour selected yet? Perfect. Share the basics and a local expert will shape a confident East Africa plan — safari, Kilimanjaro, gorilla trekking, or beach.</p>
+      {#if tripContext}
+        <p class="mt-1 text-sm leading-6 text-ink/65">We've carried your trip across — adjust anything below and a local expert will tailor it to you.</p>
+      {:else}
+        <p class="mt-1 text-sm leading-6 text-ink/65">No tour selected yet? Perfect. Share the basics and a local expert will shape a confident East Africa plan — safari, Kilimanjaro, gorilla trekking, or beach.</p>
+      {/if}
     </div>
+
+    {#if tripContext}
+      <div class="flex items-center gap-2 rounded-xl border border-forest/20 bg-forest/[0.06] px-3.5 py-2.5 text-sm font-semibold text-forest">
+        <MapPin size={16} class="shrink-0" />
+        Planning: {tripContext}
+      </div>
+    {/if}
 
     <div class="grid gap-4 md:grid-cols-2">
       <FormInput label="Full name" name="full_name" bind:value={full_name} placeholder="Your name" required />

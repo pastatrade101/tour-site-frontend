@@ -267,7 +267,7 @@
 
                 <div class="mt-4 grid grid-cols-2 gap-2 border-t border-ink/10 pt-4">
                   <Button href={`/tours/${g.tour.tour_slug}`} variant="secondary">View Tour</Button>
-                  <Button href="/plan-my-trip">Plan My Trip</Button>
+                  <Button href={`/plan-my-trip?tour=${g.tour.tour_slug}&month=${(g.tour.start_date ?? '').slice(0, 7)}`}>Request</Button>
                 </div>
               </div>
             </article>

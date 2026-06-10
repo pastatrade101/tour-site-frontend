@@ -5,6 +5,8 @@
   import '../app.css';
   import Navbar from '$lib/components/public/Navbar.svelte';
   import Footer from '$lib/components/public/Footer.svelte';
+  import PersistentCTA from '$lib/components/public/PersistentCTA.svelte';
+  import ShortlistFab from '$lib/components/public/ShortlistFab.svelte';
   import { initSmoothScrolling, setupGsap } from '$lib/animations';
   import { api } from '$lib/api/client';
   import { applyBranding, branding } from '$lib/branding';
@@ -76,4 +78,8 @@
 
 {#if !isAdmin}
   <Footer />
+  <!-- clearance so the fixed mobile CTA bar never covers footer content -->
+  <div class="h-16 lg:hidden" aria-hidden="true"></div>
+  <ShortlistFab />
+  <PersistentCTA />
 {/if}

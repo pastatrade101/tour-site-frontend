@@ -1,10 +1,24 @@
 <script lang="ts">
+  import ShortlistButton from './ShortlistButton.svelte';
   import type { Tour } from '$lib/types';
 
   export let tour: Tour;
+
+  $: item = {
+    slug: tour.slug,
+    title: tour.title,
+    image_url: tour.main_image_url,
+    duration_days: tour.duration_days,
+    price_from: tour.price_from,
+    currency: tour.currency,
+    destination: (tour as unknown as { destinations?: { name?: string } }).destinations?.name
+  };
 </script>
 
-<article class="overflow-hidden rounded-lg border border-ink/10 bg-white shadow-soft">
+<article class="relative overflow-hidden rounded-lg border border-ink/10 bg-white shadow-soft">
+  <div class="absolute right-3 top-3 z-10">
+    <ShortlistButton {item} />
+  </div>
   <a href={`/tours/${tour.slug}`} class="block">
     <div class="aspect-[4/3] bg-skywash">
       {#if tour.main_image_url}

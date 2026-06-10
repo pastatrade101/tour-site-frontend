@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Compass, HeartHandshake, ShieldCheck } from '@lucide/svelte';
   import PlanMyTripForm from '$lib/components/public/PlanMyTripForm.svelte';
+  import PlanningProcess from '$lib/components/public/PlanningProcess.svelte';
 
   const assurances = [
     { icon: ShieldCheck, title: 'Honest, local expertise', text: 'Advice from people who live and travel East Africa every day.' },
@@ -28,6 +29,10 @@
           </div>
         </div>
       {/each}
+    </div>
+
+    <div class="mt-8 rounded-2xl border border-ink/10 bg-white p-5 shadow-soft">
+      <PlanningProcess compact title="How planning works" />
     </div>
   </aside>
 
