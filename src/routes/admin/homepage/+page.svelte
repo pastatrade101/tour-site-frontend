@@ -55,7 +55,8 @@
     'ai_advisor_cta',
     'final_cta',
     'partners',
-    'login_slider'
+    'login_slider',
+    'cost_ranges'
   ];
 
   const imageModeOptions: Option[] = [
@@ -151,7 +152,7 @@
   // Shared media-library picker — targets either a logo row or a slide row.
   let mediaPicker: { list: 'logos' | 'slides'; index: number } | null = null;
 
-  const MANAGED_KEYS = [...BG_KEYS, 'logos', 'slides'];
+  const MANAGED_KEYS = [...BG_KEYS, 'logos', 'slides', 'ranges'];
 
   const openMediaPicker = async (list: 'logos' | 'slides', index: number) => {
     mediaPicker = { list, index };
@@ -214,6 +215,32 @@
         ...(s.subtitle.trim() ? { subtitle: s.subtitle.trim() } : {})
       }));
 
+  // ── cost ranges repeater (stored in extra_data.ranges) ────────────────────
+  type CostRow = { label: string; from: string; note: string };
+  let costRanges: CostRow[] = [];
+  const addCostRange = () => {
+    costRanges = [...costRanges, { label: '', from: '', note: '' }];
+  };
+  const removeCostRange = (index: number) => {
+    costRanges = costRanges.filter((_, i) => i !== index);
+  };
+  const extraToCostRanges = (ed: Record<string, unknown>): CostRow[] =>
+    Array.isArray(ed.ranges)
+      ? (ed.ranges as Array<Record<string, unknown>>).map((r) => ({
+          label: String(r?.label ?? ''),
+          from: String(r?.from ?? ''),
+          note: String(r?.note ?? '')
+        }))
+      : [];
+  const costRangesToExtra = () =>
+    costRanges
+      .filter((r) => r.label.trim() && r.from.trim())
+      .map((r) => ({
+        label: r.label.trim(),
+        from: r.from.trim(),
+        ...(r.note.trim() ? { note: r.note.trim() } : {})
+      }));
+
   $: sorted = [...rows].sort((a, b) => a.sort_order - b.sort_order || a.section_key.localeCompare(b.section_key));
 
   const showToast = (message: string, type: Toast['type'] = 'success') => {
@@ -262,6 +289,7 @@
     bg = emptyBg();
     logos = [];
     slides = [];
+    costRanges = [];
     imageMode = 'none';
     mediaId = '';
     modalOpen = true;
@@ -284,6 +312,7 @@
     bg = extraToBg(ed);
     logos = extraToLogos(ed);
     slides = extraToSlides(ed);
+    costRanges = extraToCostRanges(ed);
     const rest = Object.fromEntries(Object.entries(ed).filter(([key]) => !MANAGED_KEYS.includes(key)));
     extraDataText = Object.keys(rest).length ? JSON.stringify(rest, null, 2) : '{}';
     imageMode = section.image_url ? 'url' : 'none';
@@ -291,7 +320,7 @@
     modalOpen = true;
   };
 
-  const closeModal = () => { modalOpen = false; editing = null; form = emptyForm(); extraDataText = '{}'; bg = emptyBg(); logos = []; slides = []; mediaPicker = null; };
+  const closeModal = () => { modalOpen = false; editing = null; form = emptyForm(); extraDataText = '{}'; bg = emptyBg(); logos = []; slides = []; costRanges = []; mediaPicker = null; };
 
   const applyImageMode = async () => {
     if (imageMode === 'none') { form.image_url = ''; mediaId = ''; }
@@ -331,6 +360,11 @@
     // Merge login slides when this is the login slider section.
     if (form.section_key.trim() === 'login_slider' || slides.some((s) => s.image_url.trim())) {
       extra = { ...extra, slides: slidesToExtra() };
+    }
+
+    // Merge cost ranges for the typical-cost band.
+    if (form.section_key.trim() === 'cost_ranges' || costRanges.some((r) => r.label.trim())) {
+      extra = { ...extra, ranges: costRangesToExtra() };
     }
 
     saving = true;
@@ -652,6 +686,34 @@
                   <input class="h-9 rounded-lg border border-ink/10 bg-white px-3 text-sm outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" placeholder="Short line (optional)" bind:value={slide.subtitle} />
                 </div>
                 <button type="button" class="grid h-9 w-9 place-items-center justify-self-end rounded-lg border border-red-200 bg-white text-red-600 shadow-sm transition hover:bg-red-50" aria-label="Remove slide" on:click={() => removeSlide(i)}><Trash2 size={15} /></button>
+              </div>
+            {/each}
+          </div>
+        {/if}
+
+        <!-- typical cost ranges repeater -->
+        {#if form.section_key.trim() === 'cost_ranges'}
+          <div class="grid gap-3 rounded-[22px] border border-ink/10 bg-sand/25 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">Typical cost ranges</p>
+                <p class="mt-1 text-xs text-ink/50">The "What trips typically cost" band on the homepage. Each row: trip type, a "from" price, and an optional note. (Built-in defaults show until you add rows.)</p>
+              </div>
+              <button type="button" class="inline-flex h-9 items-center gap-1.5 rounded-xl border border-ink/10 bg-white px-3 text-xs font-semibold text-ink shadow-sm transition hover:border-goldfinch-gold/35 hover:bg-sand/70" on:click={addCostRange}>
+                <Plus size={14} />Add row
+              </button>
+            </div>
+
+            {#if costRanges.length === 0}
+              <p class="rounded-xl border border-dashed border-ink/15 bg-white/60 py-4 text-center text-xs text-ink/45">No rows yet — add your first trip type.</p>
+            {/if}
+
+            {#each costRanges as row, i (i)}
+              <div class="grid gap-2 rounded-xl border border-ink/10 bg-white p-3 sm:grid-cols-[1fr_1fr_1.4fr_auto] sm:items-center">
+                <input class="h-9 rounded-lg border border-ink/10 bg-white px-3 text-sm outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" placeholder="Trip type (e.g. Safari)" bind:value={row.label} />
+                <input class="h-9 rounded-lg border border-ink/10 bg-white px-3 text-sm outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" placeholder="from $1,500" bind:value={row.from} />
+                <input class="h-9 rounded-lg border border-ink/10 bg-white px-3 text-sm outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" placeholder="Note (e.g. Guiding &amp; park fees)" bind:value={row.note} />
+                <button type="button" class="grid h-9 w-9 place-items-center justify-self-end rounded-lg border border-red-200 bg-white text-red-600 shadow-sm transition hover:bg-red-50" aria-label="Remove row" on:click={() => removeCostRange(i)}><Trash2 size={15} /></button>
               </div>
             {/each}
           </div>
