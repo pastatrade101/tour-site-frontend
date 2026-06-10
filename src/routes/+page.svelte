@@ -11,6 +11,7 @@
   import PopularActivitiesSlider from '$lib/components/public/PopularActivitiesSlider.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import TestimonialCard from '$lib/components/public/TestimonialCard.svelte';
+  import PriceRangeBlock from '$lib/components/public/PriceRangeBlock.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import TripFinderBand from '$lib/components/public/TripFinderBand.svelte';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
@@ -73,6 +74,12 @@
   }>;
   $: partnersActive = sections.partners?.is_active !== false;
 
+  // Typical-cost rows, CMS-overridable (cost_ranges → extra_data.ranges).
+  $: costRanges = (() => {
+    const r = (sections.cost_ranges?.extra_data as Record<string, unknown> | undefined)?.ranges;
+    return Array.isArray(r) ? (r as Array<{ label: string; from: string; note?: string }>) : [];
+  })();
+
   onMount(async () => {
     try {
       const [tourResponse, destinationResponse, postResponse, testimonialResponse, faqResponse, homepageResponse] = await Promise.all([
@@ -128,6 +135,17 @@
     {#each tours as tour}
       <TourCard {tour} />
     {/each}
+  </div>
+</section>
+
+<!-- typical cost band (spec §4.1 F / §6) -->
+<section class="bg-sand/40 py-14 md:py-20" use:sectionReveal>
+  <div class="container-shell">
+    <PriceRangeBlock
+      title={cms('cost_ranges', 'title', 'What trips typically cost')}
+      subtitle={cms('cost_ranges', 'subtitle', 'A confident brand is upfront about price — here are honest starting points by trip type.')}
+      ranges={costRanges}
+    />
   </div>
 </section>
 

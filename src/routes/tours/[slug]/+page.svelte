@@ -9,6 +9,7 @@
   import BookingForm from '$lib/components/public/BookingForm.svelte';
   import EmailItineraryCapture from '$lib/components/public/EmailItineraryCapture.svelte';
   import ShortlistButton from '$lib/components/public/ShortlistButton.svelte';
+  import TripCostSection from '$lib/components/public/TripCostSection.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
@@ -163,6 +164,11 @@
               {point}
             </span>
           {/each}
+        </div>
+
+        <!-- cost confidence (spec §4.4 G) -->
+        <div class="mt-6">
+          <TripCostSection priceFrom={tour.price_from} currency={tour.currency ?? 'USD'} tourSlug={tour.slug} />
         </div>
 
         <!-- low-commitment capture (spec §7) -->
