@@ -81,6 +81,7 @@
       <p class="text-sm font-semibold">Company</p>
       <div class="mt-3 grid gap-2 text-sm text-white/70">
         <a class="w-fit transition hover:text-white" href="/about">About</a>
+        <a class="w-fit transition hover:text-white" href="/safety">Health &amp; Safety</a>
         <a class="w-fit transition hover:text-white" href="/contact">Contact</a>
         <a class="w-fit transition hover:text-white" href="/admin">{brand.adminName}</a>
       </div>

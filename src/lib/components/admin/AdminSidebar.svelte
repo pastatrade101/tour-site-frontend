@@ -94,6 +94,7 @@
         { href: '/admin/media', label: 'Media Library', icon: Image },
         { href: '/admin/testimonials', label: 'Testimonials', icon: MessageCircleHeart },
         { href: '/admin/faqs', label: 'FAQs', icon: CircleHelp },
+        { href: '/admin/safety', label: 'Safety Guide', icon: ShieldCheck },
         { href: '/admin/homepage', label: 'Homepage', icon: Home }
       ]
     },

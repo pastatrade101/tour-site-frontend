@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { API_URL } from '$lib/config/env';
-import type { Activity, AiChatResponse, ApiResponse, BlogPost, Country, Destination, FAQ, Lodge, Paginated, Testimonial, Tour, TripPoint } from '$lib/types';
+import type { Activity, AiChatResponse, ApiResponse, BlogPost, Country, Destination, FAQ, Lodge, Paginated, SafetyTopic, Testimonial, Tour, TripPoint } from '$lib/types';
 
 type QueryValue = string | number | boolean | undefined | null;
 type RequestOptions = Omit<RequestInit, 'body'> & {
@@ -188,6 +188,13 @@ export const api = {
     create: (body: Record<string, unknown>) => apiRequest<TripPoint>('/trip-points', { method: 'POST', body }),
     update: (id: string, body: Record<string, unknown>) => apiRequest<TripPoint>(`/trip-points/${id}`, { method: 'PUT', body }),
     remove: (id: string) => apiRequest(`/trip-points/${id}`, { method: 'DELETE' })
+  },
+  safetyTopics: {
+    list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<SafetyTopic>>(`/safety-topics${queryString(params)}`),
+    get: (slug: string) => apiRequest<SafetyTopic>(`/safety-topics/${slug}`),
+    create: (body: Record<string, unknown>) => apiRequest<SafetyTopic>('/safety-topics', { method: 'POST', body }),
+    update: (id: string, body: Record<string, unknown>) => apiRequest<SafetyTopic>(`/safety-topics/${id}`, { method: 'PUT', body }),
+    remove: (id: string) => apiRequest(`/safety-topics/${id}`, { method: 'DELETE' })
   },
   categories: {
     list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Record<string, unknown>>>(`/categories${queryString(params)}`),

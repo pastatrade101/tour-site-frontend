@@ -48,6 +48,11 @@ export type Destination = {
   banner_image_url?: string;
   latitude?: number;
   longitude?: number;
+  safety_overview?: string;
+  health_vaccinations?: string;
+  security_advice?: string;
+  travel_insurance_note?: string;
+  emergency_contacts?: string;
   status?: string;
   is_featured?: boolean;
   meta_title?: string;
@@ -139,6 +144,23 @@ export type TripPoint = {
   description?: string;
   transfer_info?: string;
   hero_image_url?: string;
+  image_url?: string;
+  status?: string;
+  is_featured?: boolean;
+  sort_order?: number | null;
+  seo_title?: string;
+  meta_title?: string;
+  meta_description?: string;
+};
+
+export type SafetyTopic = {
+  id: string;
+  title: string;
+  slug: string;
+  category: 'general' | 'health' | 'security' | 'wildlife' | 'practical';
+  icon?: string | null;
+  summary?: string;
+  content?: string;
   image_url?: string;
   status?: string;
   is_featured?: boolean;

@@ -15,7 +15,7 @@
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { placeholderDestinations } from '$lib/data/placeholders';
   import { breadcrumbLd } from '$lib/seo';
-  import { Plane } from '@lucide/svelte';
+  import { FileCheck, HeartPulse, Phone, Plane, Shield, ShieldCheck } from '@lucide/svelte';
   import type { Activity, BlogPost, Destination, Lodge, Tour, TripPoint } from '$lib/types';
 
   $: origin = $page.url.origin;
@@ -34,6 +34,15 @@
 
   const roleLabel = (role: TripPoint['role']) =>
     role === 'start' ? 'Trips start here' : role === 'end' ? 'Trips end here' : 'Start & end point';
+
+  $: hasSafety = Boolean(
+    destination &&
+      (destination.safety_overview ||
+        destination.health_vaccinations ||
+        destination.security_advice ||
+        destination.travel_insurance_note ||
+        destination.emergency_contacts)
+  );
 
   $: heroImage = destination
     ? destination.banner_image_url || destination.main_image_url || destination.image_url || ''
@@ -188,6 +197,60 @@
             <LodgeCard {lodge} />
           {/each}
         </div>
+      </div>
+    </section>
+  {/if}
+
+  <!-- Health & safety -->
+  {#if hasSafety}
+    <section class="py-14 md:py-20">
+      <div class="container-shell">
+        <SectionHeader
+          eyebrow="Health &amp; safety"
+          title={`Staying safe in ${destination.name}`}
+          description="Honest, practical guidance for your trip. See our full guide for more."
+        />
+        <div class="mt-9 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          {#if destination.safety_overview}
+            <div class="rounded-2xl border border-ink/10 bg-white p-6 shadow-soft">
+              <div class="flex items-center gap-3">
+                <span class="grid h-11 w-11 place-items-center rounded-xl bg-forest/10 text-forest"><ShieldCheck size={20} /></span>
+                <h3 class="text-lg font-bold text-ink">Is it safe?</h3>
+              </div>
+              <p class="mt-3 text-sm leading-7 text-ink/70">{destination.safety_overview}</p>
+            </div>
+          {/if}
+
+          <div class="grid gap-4">
+            {#if destination.health_vaccinations}
+              <div class="flex gap-3 rounded-2xl border border-ink/10 bg-white p-5 shadow-soft">
+                <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-clay/10 text-clay"><HeartPulse size={18} /></span>
+                <div><p class="text-sm font-bold text-ink">Health &amp; vaccinations</p><p class="mt-1 text-sm leading-6 text-ink/65">{destination.health_vaccinations}</p></div>
+              </div>
+            {/if}
+            {#if destination.security_advice}
+              <div class="flex gap-3 rounded-2xl border border-ink/10 bg-white p-5 shadow-soft">
+                <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-forest/10 text-forest"><Shield size={18} /></span>
+                <div><p class="text-sm font-bold text-ink">Security</p><p class="mt-1 text-sm leading-6 text-ink/65">{destination.security_advice}</p></div>
+              </div>
+            {/if}
+            {#if destination.travel_insurance_note}
+              <div class="flex gap-3 rounded-2xl border border-ink/10 bg-white p-5 shadow-soft">
+                <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-goldfinch-gold/15 text-goldfinch-gold"><FileCheck size={18} /></span>
+                <div><p class="text-sm font-bold text-ink">Travel insurance</p><p class="mt-1 text-sm leading-6 text-ink/65">{destination.travel_insurance_note}</p></div>
+              </div>
+            {/if}
+            {#if destination.emergency_contacts}
+              <div class="flex gap-3 rounded-2xl border border-ink/10 bg-white p-5 shadow-soft">
+                <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-forest/10 text-forest"><Phone size={18} /></span>
+                <div><p class="text-sm font-bold text-ink">Emergency contacts</p><p class="mt-1 text-sm leading-6 text-ink/65">{destination.emergency_contacts}</p></div>
+              </div>
+            {/if}
+          </div>
+        </div>
+        <a class="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-deep-green" href="/safety">
+          Read the full health &amp; safety guide <ArrowRight size={16} />
+        </a>
       </div>
     </section>
   {/if}

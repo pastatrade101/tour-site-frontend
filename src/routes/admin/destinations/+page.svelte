@@ -33,6 +33,11 @@
     banner_image_url?: string | null;
     latitude?: number | string | null;
     longitude?: number | string | null;
+    safety_overview?: string | null;
+    health_vaccinations?: string | null;
+    security_advice?: string | null;
+    travel_insurance_note?: string | null;
+    emergency_contacts?: string | null;
     status: PublishStatus;
     is_featured?: boolean | null;
     meta_title?: string | null;
@@ -47,6 +52,8 @@
     banner_image_url: string;
     country: string;
     description: string;
+    emergency_contacts: string;
+    health_vaccinations: string;
     is_featured: boolean;
     latitude: string;
     location: string;
@@ -57,9 +64,12 @@
     name: string;
     og_image_url: string;
     region: string;
+    safety_overview: string;
+    security_advice: string;
     short_description: string;
     slug: string;
     status: PublishStatus;
+    travel_insurance_note: string;
   };
 
   type Toast = {
@@ -72,6 +82,8 @@
     banner_image_url: '',
     country: 'Tanzania',
     description: '',
+    emergency_contacts: '',
+    health_vaccinations: '',
     is_featured: false,
     latitude: '',
     location: '',
@@ -82,9 +94,12 @@
     name: '',
     og_image_url: '',
     region: '',
+    safety_overview: '',
+    security_advice: '',
     short_description: '',
     slug: '',
-    status: 'draft'
+    status: 'draft',
+    travel_insurance_note: ''
   });
 
   const statusOptions = [
@@ -195,6 +210,8 @@
       banner_image_url: destination.banner_image_url ?? '',
       country: destination.country ?? 'Tanzania',
       description: destination.description ?? '',
+      emergency_contacts: destination.emergency_contacts ?? '',
+      health_vaccinations: destination.health_vaccinations ?? '',
       is_featured: Boolean(destination.is_featured),
       latitude: destination.latitude === null || destination.latitude === undefined ? '' : String(destination.latitude),
       location: destination.location ?? '',
@@ -205,9 +222,12 @@
       name: destination.name,
       og_image_url: destination.og_image_url ?? '',
       region: destination.region ?? '',
+      safety_overview: destination.safety_overview ?? '',
+      security_advice: destination.security_advice ?? '',
       short_description: destination.short_description ?? '',
       slug: destination.slug,
-      status: destination.status ?? 'draft'
+      status: destination.status ?? 'draft',
+      travel_insurance_note: destination.travel_insurance_note ?? ''
     };
     mainImageMode = destination.main_image_url ? 'url' : 'none';
     bannerImageMode = destination.banner_image_url ? 'url' : 'none';
@@ -244,6 +264,8 @@
       banner_image_url: bannerImageMode === 'url' || bannerImageMode === 'upload' ? form.banner_image_url || null : null,
       country: form.country.trim() || 'Tanzania',
       description: form.description || null,
+      emergency_contacts: form.emergency_contacts || null,
+      health_vaccinations: form.health_vaccinations || null,
       // Keep the canonical `image_url` in sync with the main image so public
       // cards and detail pages (which read image_url) always have an image.
       image_url: mainImage,
@@ -257,9 +279,12 @@
       name: form.name.trim(),
       og_image_url: ogImageMode === 'url' || ogImageMode === 'upload' ? form.og_image_url || null : null,
       region: form.region || null,
+      safety_overview: form.safety_overview || null,
+      security_advice: form.security_advice || null,
       short_description: form.short_description || null,
       slug: form.slug.trim(),
-      status: form.status
+      status: form.status,
+      travel_insurance_note: form.travel_insurance_note || null
     };
   };
 
@@ -442,6 +467,22 @@
 
         <AdminTextArea label="Short description" name="short_description" bind:value={form.short_description} rows={3} placeholder="Concise destination summary for cards and search." />
         <AdminTextArea label="Description" name="description" bind:value={form.description} rows={5} placeholder="Destination overview for the public page." />
+
+        <div class="rounded-2xl border border-ink/10 bg-sand/20 p-4">
+          <p class="text-sm font-bold text-ink">Health &amp; safety</p>
+          <p class="mt-0.5 text-xs text-ink/55">Shown as a "Health &amp; safety" section on this destination's page and summarised on the /safety hub. Leave blank to hide.</p>
+          <div class="mt-4 grid gap-4">
+            <AdminTextArea label="Safety overview" name="safety_overview" bind:value={form.safety_overview} rows={3} placeholder="Is it safe? An honest, reassuring overview." />
+            <div class="grid gap-4 md:grid-cols-2">
+              <AdminTextArea label="Health & vaccinations" name="health_vaccinations" bind:value={form.health_vaccinations} rows={3} />
+              <AdminTextArea label="Security advice" name="security_advice" bind:value={form.security_advice} rows={3} />
+            </div>
+            <div class="grid gap-4 md:grid-cols-2">
+              <AdminTextArea label="Travel insurance note" name="travel_insurance_note" bind:value={form.travel_insurance_note} rows={2} />
+              <AdminTextArea label="Emergency contacts" name="emergency_contacts" bind:value={form.emergency_contacts} rows={2} />
+            </div>
+          </div>
+        </div>
 
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <AdminSelect label="Status" name="status" bind:value={form.status} options={statusOptions} />
