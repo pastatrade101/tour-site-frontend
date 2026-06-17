@@ -1,9 +1,10 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { X } from '@lucide/svelte';
+  import { Check, X } from '@lucide/svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
+  import { EXPERIENCE_TO_CATEGORY, PERSONA_ORDER, PERSONAS } from '$lib/data/personas';
   import EmptyState from '$lib/components/public/EmptyState.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
@@ -16,7 +17,7 @@
   let loading = true;
   let error = '';
 
-  // slug -> { id, name } lookups, fetched once to resolve hero filters + label chips.
+  // slug -> { id, name } lookups, fetched once to resolve filters + label chips.
   const destLookup = new Map<string, { id: string; name: string }>();
   const catLookup = new Map<string, { id: string; name: string }>();
   let lookupsReady = false;
@@ -27,8 +28,13 @@
   $: params = $page.url.searchParams;
   $: searchTerm = params.get('search')?.trim() ?? '';
   $: destSlug = params.get('destination')?.trim() ?? '';
-  $: catSlug = params.get('category')?.trim() ?? '';
-  $: hasFilters = Boolean(searchTerm || destSlug || catSlug);
+  $: persona = params.get('persona')?.trim() ?? '';
+  $: experience = params.get('experience')?.trim() ?? '';
+  // ?experience= maps onto a category for filtering; an explicit ?category= wins.
+  $: catSlug = params.get('category')?.trim() || (experience ? EXPERIENCE_TO_CATEGORY[experience] ?? '' : '');
+
+  $: personaCfg = persona ? PERSONAS[persona] : null;
+  $: hasFilters = Boolean(searchTerm || destSlug || catSlug || persona || experience);
 
   const ensureLookups = async () => {
     if (lookupsReady) return;
@@ -68,7 +74,6 @@
     try {
       const response = await api.tours.list(query);
       const items = response.data.items;
-      // Fall back to sample tours only when not filtering, so a search shows a true empty state.
       tours = items.length ? items : filtered ? [] : placeholderTours;
     } catch (requestError) {
       error = requestError instanceof Error ? requestError.message : 'Unable to load tours.';
@@ -78,62 +83,93 @@
     }
   };
 
-  // Re-run whenever any query filter changes (hero search + navbar search navigate here).
+  // Re-run whenever any filter changes.
   $: if (browser) void load(searchTerm, destSlug, catSlug);
 
-  const removeFilter = (key: string) => {
+  // Persona = soft ordering (not a hard filter, so results never go empty): tours
+  // whose persona_tags include the persona float to the top.
+  const personaTags = (t: Tour) => (t as unknown as { persona_tags?: string[] }).persona_tags ?? [];
+  $: displayTours = persona
+    ? [...tours].sort((a, b) => Number(personaTags(b).includes(persona)) - Number(personaTags(a).includes(persona)))
+    : tours;
+
+  const withParams = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams($page.url.searchParams);
-    next.delete(key);
-    void goto(`/tours${next.toString() ? `?${next}` : ''}`);
+    for (const [k, v] of Object.entries(changes)) {
+      if (v) next.set(k, v);
+      else next.delete(k);
+    }
+    return `/tours${next.toString() ? `?${next}` : ''}`;
   };
+  const removeFilter = (key: string) => void goto(withParams({ [key]: null }));
   const clearAll = () => void goto('/tours');
 </script>
 
 <section class="container-shell py-14">
-  <SectionHeader
-    eyebrow="Tours"
-    title={hasFilters ? 'Matching tours' : 'Tour Packages'}
-    description={hasFilters
-      ? 'Trips that match your search — adjust the filters below to refine.'
-      : 'Explore trusted East Africa tour packages — safaris, Kilimanjaro, gorilla trekking and beaches.'}
-  />
+  {#if personaCfg}
+    <!-- persona-tailored intro (SRS v2.0 §4.3) -->
+    <div class="overflow-hidden rounded-[28px] border border-goldfinch-gold/20 bg-gradient-to-br from-sand via-sand to-savanna/40 p-7 md:p-9">
+      <p class="text-sm font-semibold uppercase tracking-[0.16em] text-clay">For {personaCfg.label}</p>
+      <h1 class="mt-2 max-w-2xl text-3xl font-extrabold tracking-tight text-deep-green md:text-4xl">{personaCfg.headline}</h1>
+      <p class="mt-3 max-w-2xl text-base leading-7 text-ink/70">{personaCfg.sub}</p>
+      <div class="mt-5 flex flex-wrap gap-2.5">
+        {#each personaCfg.concerns as concern}
+          <span class="inline-flex items-center gap-1.5 rounded-full border border-forest/15 bg-white/70 px-3 py-1.5 text-sm font-medium text-ink/70">
+            <span class="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-forest/10 text-forest"><Check size={11} strokeWidth={3} /></span>
+            {concern}
+          </span>
+        {/each}
+      </div>
+    </div>
+  {:else}
+    <SectionHeader
+      eyebrow="Tours"
+      title={hasFilters ? 'Matching tours' : 'Tour Packages'}
+      description={hasFilters
+        ? 'Trips that match your search — adjust the filters below to refine.'
+        : 'Explore trusted East Africa tour packages — safaris, Kilimanjaro, gorilla trekking and beaches.'}
+    />
+  {/if}
+
+  <!-- persona switcher -->
+  <div class="mt-6 flex flex-wrap items-center gap-2">
+    <span class="text-sm font-medium text-ink/50">Who's travelling?</span>
+    {#each PERSONA_ORDER as key}
+      <a
+        class={`rounded-full border px-3.5 py-1.5 text-sm font-semibold transition ${
+          persona === key ? 'border-forest bg-forest text-white' : 'border-ink/15 bg-white text-ink/65 hover:border-forest/40'
+        }`}
+        href={withParams({ persona: persona === key ? null : key })}
+      >
+        {PERSONAS[key].label}
+      </a>
+    {/each}
+  </div>
 
   {#if hasFilters}
     <div class="mt-4 flex flex-wrap items-center gap-2">
       <span class="text-sm font-medium text-ink/50">Filters:</span>
+      {#if persona && personaCfg}
+        <button class="inline-flex items-center gap-1.5 rounded-full border border-forest/20 bg-forest/5 px-3 py-1 text-sm font-semibold text-forest transition hover:bg-forest/10" type="button" on:click={() => removeFilter('persona')}>
+          {personaCfg.label} <X size={13} />
+        </button>
+      {/if}
       {#if destSlug}
-        <button
-          class="inline-flex items-center gap-1.5 rounded-full border border-forest/20 bg-forest/5 px-3 py-1 text-sm font-semibold text-forest transition hover:bg-forest/10"
-          type="button"
-          on:click={() => removeFilter('destination')}
-        >
-          {activeDestination?.name ?? destSlug}
-          <X size={13} />
+        <button class="inline-flex items-center gap-1.5 rounded-full border border-forest/20 bg-forest/5 px-3 py-1 text-sm font-semibold text-forest transition hover:bg-forest/10" type="button" on:click={() => removeFilter('destination')}>
+          {activeDestination?.name ?? destSlug} <X size={13} />
         </button>
       {/if}
       {#if catSlug}
-        <button
-          class="inline-flex items-center gap-1.5 rounded-full border border-forest/20 bg-forest/5 px-3 py-1 text-sm font-semibold text-forest transition hover:bg-forest/10"
-          type="button"
-          on:click={() => removeFilter('category')}
-        >
-          {activeCategory?.name ?? catSlug}
-          <X size={13} />
+        <button class="inline-flex items-center gap-1.5 rounded-full border border-forest/20 bg-forest/5 px-3 py-1 text-sm font-semibold text-forest transition hover:bg-forest/10" type="button" on:click={() => goto(withParams({ category: null, experience: null }))}>
+          {activeCategory?.name ?? catSlug} <X size={13} />
         </button>
       {/if}
       {#if searchTerm}
-        <button
-          class="inline-flex items-center gap-1.5 rounded-full border border-forest/20 bg-forest/5 px-3 py-1 text-sm font-semibold text-forest transition hover:bg-forest/10"
-          type="button"
-          on:click={() => removeFilter('search')}
-        >
-          “{searchTerm}”
-          <X size={13} />
+        <button class="inline-flex items-center gap-1.5 rounded-full border border-forest/20 bg-forest/5 px-3 py-1 text-sm font-semibold text-forest transition hover:bg-forest/10" type="button" on:click={() => removeFilter('search')}>
+          “{searchTerm}” <X size={13} />
         </button>
       {/if}
-      <button class="text-sm font-semibold text-forest underline-offset-2 hover:underline" type="button" on:click={clearAll}>
-        Clear all
-      </button>
+      <button class="text-sm font-semibold text-forest underline-offset-2 hover:underline" type="button" on:click={clearAll}>Clear all</button>
     </div>
   {/if}
 
@@ -142,14 +178,14 @@
       <LoadingState message="Loading tours..." />
     {:else if error && tours.length === 0}
       <ErrorState message={error} />
-    {:else if tours.length === 0}
+    {:else if displayTours.length === 0}
       <EmptyState
         title="No tours match your filters"
         message="Try a different destination or experience — or plan a custom trip and we'll tailor it to you."
       />
     {:else}
       <div class="grid gap-6 md:grid-cols-3">
-        {#each tours as tour}
+        {#each displayTours as tour (tour.slug)}
           <TourCard {tour} />
         {/each}
       </div>
