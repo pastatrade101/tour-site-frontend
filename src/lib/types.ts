@@ -23,15 +23,27 @@ export type Tour = {
   slug: string;
   short_description?: string;
   full_description?: string;
+  destination_id?: string | null;
+  category_id?: string | null;
+  destinations?: { name?: string; slug?: string; country?: string } | null;
+  tour_categories?: { name?: string; slug?: string } | null;
+  experience_type?: string | null;
+  persona_tags?: string[];
   duration_days?: number;
   duration_nights?: number;
+  budget_tier?: string | null;
   price_from?: number;
   currency?: string;
   main_image_url?: string;
   banner_image_url?: string;
+  highlights?: string[];
+  difficulty_level?: string | null;
   group_size?: string;
+  start_location?: string | null;
+  end_location?: string | null;
   status?: string;
   is_featured?: boolean;
+  is_popular?: boolean;
 };
 
 export type Destination = {
