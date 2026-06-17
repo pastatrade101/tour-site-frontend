@@ -8,7 +8,10 @@
   import BlogCard from '$lib/components/public/BlogCard.svelte';
   import BookingForm from '$lib/components/public/BookingForm.svelte';
   import EmailItineraryCapture from '$lib/components/public/EmailItineraryCapture.svelte';
+  import JsonLd from '$lib/components/public/JsonLd.svelte';
   import ShortlistButton from '$lib/components/public/ShortlistButton.svelte';
+  import SpecialistCard from '$lib/components/public/SpecialistCard.svelte';
+  import { defaultSpecialist } from '$lib/data/specialists';
   import TripCostSection from '$lib/components/public/TripCostSection.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
@@ -39,6 +42,31 @@
   $: waHref = tour
     ? `https://wa.me/${waDigits}?text=${encodeURIComponent(`Hi Goldfinch, I'm interested in the ${tour.title}. Can you help me plan it?`)}`
     : '#';
+
+  // SEO schema (SRS v2.0 §7.4): TouristTrip + BreadcrumbList.
+  $: origin = $page.url.origin;
+  $: touristTripLd = tour
+    ? {
+        '@type': 'TouristTrip',
+        name: tour.title,
+        description: tour.short_description ?? tour.full_description ?? '',
+        ...(tour.main_image_url ? { image: tour.main_image_url } : {}),
+        ...(tour.price_from
+          ? { offers: { '@type': 'Offer', price: tour.price_from, priceCurrency: tour.currency ?? 'USD' } }
+          : {}),
+        url: `${origin}/tours/${tour.slug}`
+      }
+    : null;
+  $: breadcrumbLd = tour
+    ? {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: `${origin}/` },
+          { '@type': 'ListItem', position: 2, name: 'Tours', item: `${origin}/tours` },
+          { '@type': 'ListItem', position: 3, name: tour.title, item: `${origin}/tours/${tour.slug}` }
+        ]
+      }
+    : null;
 
   // Relevant content for onward navigation (loaded best-effort after the tour).
   let relatedTours: Tour[] = [];
@@ -178,10 +206,16 @@
       </div>
       <div>
         <BookingForm {tour} />
+        <div class="mt-6">
+          <SpecialistCard specialist={defaultSpecialist} />
+        </div>
       </div>
     </div>
   {/if}
 </section>
+
+{#if touristTripLd}<JsonLd data={touristTripLd} />{/if}
+{#if breadcrumbLd}<JsonLd data={breadcrumbLd} />{/if}
 
 {#if tour && !loading}
   <!-- More tours -->

@@ -4,11 +4,16 @@
   import { AlertCircle, CheckCircle2, Copy, MapPin } from '@lucide/svelte';
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
+  import { defaultSpecialist } from '$lib/data/specialists';
+  import { publicSettings, settingText } from '$lib/settings';
   import { shortlist } from '$lib/shortlist';
   import Button from './Button.svelte';
   import FormInput from './FormInput.svelte';
   import SelectInput from './SelectInput.svelte';
+  import SpecialistCard from './SpecialistCard.svelte';
   import TextArea from './TextArea.svelte';
+
+  $: bookCallUrl = settingText($publicSettings, 'booking_call_url');
 
   type Option = { label: string; value: string };
 
@@ -181,7 +186,34 @@
         </button>
       </div>
     </div>
-    <Button type="button" variant="secondary" on:click={() => (bookingCode = '')}>Start another request</Button>
+
+    <!-- what happens next (SRS v2.0 §4.11) -->
+    <div class="rounded-xl border border-emerald-200 bg-white p-4">
+      <p class="text-xs font-semibold uppercase tracking-[0.14em] text-ink/50">What happens next</p>
+      <ol class="mt-3 grid gap-3">
+        {#each [{ t: 'We review your request', s: 'A specialist reads your details — usually within one business day.' }, { t: 'We craft a tailored itinerary', s: 'Shaped around your dates, budget and travel style.' }, { t: 'You refine it with us', s: 'Adjust pace, lodges and activities until it feels right.' }, { t: 'Confirm when you are ready', s: 'No pressure — you decide if and when to book.' }] as step, i}
+          <li class="flex gap-3">
+            <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-forest text-[11px] font-bold text-white">{i + 1}</span>
+            <span>
+              <span class="block text-sm font-semibold text-ink">{step.t}</span>
+              <span class="block text-xs leading-5 text-ink/55">{step.s}</span>
+            </span>
+          </li>
+        {/each}
+      </ol>
+    </div>
+
+    <SpecialistCard specialist={defaultSpecialist} heading="Who will be in touch" />
+
+    <div class="flex flex-col gap-3 sm:flex-row">
+      {#if bookCallUrl}
+        <a class="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-deep-green px-5 font-bold text-white transition hover:bg-forest" href={bookCallUrl} target="_blank" rel="noopener noreferrer">
+          Book a call now
+        </a>
+      {/if}
+      <Button type="button" variant="secondary" on:click={() => (bookingCode = '')}>Start another request</Button>
+    </div>
+    <p class="text-center text-xs text-ink/45">A confirmation email is on its way to the address you provided.</p>
   </div>
 {:else}
   <form class="grid gap-4 rounded-2xl border border-ink/10 bg-white p-5 shadow-soft md:p-6" on:submit|preventDefault={submit}>
