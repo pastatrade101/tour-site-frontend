@@ -7,7 +7,9 @@
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
   import { prefersReducedMotion } from '$lib/animations/motion';
+  import { getDestinationScores } from '$lib/data/destination-scores';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
+  import ScoreBars from '$lib/components/public/ScoreBars.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { placeholderDestinations } from '$lib/data/placeholders';
   import type { Destination, Tour } from '$lib/types';
@@ -39,6 +41,7 @@
   $: selected = destinations.find((d) => d.slug === requested) ?? filtered[0] ?? destinations[0];
 
   $: heroImage = selected ? selected.banner_image_url || selected.main_image_url || selected.image_url || '' : '';
+  $: selectedScores = selected ? getDestinationScores(selected.slug) : undefined;
 
   const selectDestination = (slug: string) =>
     goto(`/destinations?d=${slug}`, { replaceState: true, noScroll: true, keepFocus: true });
@@ -148,9 +151,20 @@
           </a>
         </div>
       </div>
-      <div class="aspect-[4/3] overflow-hidden rounded-2xl bg-skywash shadow-soft">
-        {#if selected.main_image_url || selected.image_url || heroImage}
-          <img class="h-full w-full object-cover" src={selected.main_image_url || selected.image_url || heroImage} alt={selected.name} />
+      <div class="grid gap-4">
+        <div class="aspect-[4/3] overflow-hidden rounded-2xl bg-skywash shadow-soft">
+          {#if selected.main_image_url || selected.image_url || heroImage}
+            <img class="h-full w-full object-cover" src={selected.main_image_url || selected.image_url || heroImage} alt={selected.name} />
+          {/if}
+        </div>
+        {#if selectedScores}
+          <div class="rounded-2xl border border-ink/10 bg-white p-5 shadow-soft">
+            <div class="flex items-center justify-between">
+              <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">How {selected.name} scores</p>
+              <a class="text-xs font-semibold text-forest transition hover:text-deep-green" href="/destination-scores">Compare all</a>
+            </div>
+            <div class="mt-3"><ScoreBars scores={selectedScores} /></div>
+          </div>
         {/if}
       </div>
     </div>

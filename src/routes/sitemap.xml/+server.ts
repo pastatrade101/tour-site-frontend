@@ -9,6 +9,7 @@ const routes = [
   '/experiences',
   '/trip-finder',
   '/destinations',
+  '/destination-scores',
   '/gallery',
   '/blog',
   '/expert-advice',
