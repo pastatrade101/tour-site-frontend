@@ -5,6 +5,8 @@
   import BlogCard from '$lib/components/public/BlogCard.svelte';
   import DestinationCard from '$lib/components/public/DestinationCard.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
+  import JsonLd from '$lib/components/public/JsonLd.svelte';
+  import { faqLd } from '$lib/seo';
   import HeroSection from '$lib/components/public/HeroSection.svelte';
   import PartnerStrip from '$lib/components/public/PartnerStrip.svelte';
   import PlanningProcess from '$lib/components/public/PlanningProcess.svelte';
@@ -192,6 +194,9 @@
   </div>
 </section>
 
+{#if faqs.length}
+  <JsonLd data={faqLd(faqs.map((f) => ({ q: f.question, a: f.answer })))} />
+{/if}
 <section class="bg-sand/40 py-14 md:py-16" use:sectionReveal>
   <div class="container-shell grid gap-8 md:grid-cols-[0.7fr_1.3fr]">
     <SectionHeader eyebrow="Good to Know" title="Frequently Asked Questions" description="Honest answers to the questions East Africa travelers ask most." />

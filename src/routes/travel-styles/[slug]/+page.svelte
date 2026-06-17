@@ -5,8 +5,12 @@
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
   import { getTravelStyle, TRAVEL_STYLES } from '$lib/data/travel-styles';
+  import JsonLd from '$lib/components/public/JsonLd.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
+  import { breadcrumbLd } from '$lib/seo';
   import type { Tour } from '$lib/types';
+
+  $: origin = $page.url.origin;
 
   let featured: Tour[] = [];
 
@@ -26,6 +30,7 @@
 </script>
 
 {#if style}
+  <JsonLd data={breadcrumbLd(origin, [{ name: 'Home', path: '/' }, { name: 'Travel Styles', path: '/travel-styles' }, { name: style.name, path: `/travel-styles/${style.slug}` }])} />
   <section class="relative overflow-hidden bg-gradient-to-br from-deep-green via-forest to-deep-green text-white">
     <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-goldfinch-gold/20 blur-3xl"></div>
     <div class="container-shell relative py-14 md:py-20">

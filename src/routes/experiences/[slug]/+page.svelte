@@ -4,9 +4,13 @@
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
   import { getExperienceInfo } from '$lib/data/experiences';
+  import JsonLd from '$lib/components/public/JsonLd.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
+  import { breadcrumbLd } from '$lib/seo';
   import type { Tour } from '$lib/types';
+
+  $: origin = $page.url.origin;
 
   let exp: Record<string, unknown> | null = null;
   let tours: Tour[] = [];
@@ -40,6 +44,7 @@
 {#if loading}
   <section class="container-shell py-20"><LoadingState message="Loading experience..." /></section>
 {:else if exp}
+  <JsonLd data={breadcrumbLd(origin, [{ name: 'Home', path: '/' }, { name: 'Experiences', path: '/experiences' }, { name, path: `/experiences/${slug}` }])} />
   <section class="relative overflow-hidden bg-deep-green text-white">
     {#if image}
       <img class="absolute inset-0 h-full w-full object-cover opacity-45" src={image} alt={name} />

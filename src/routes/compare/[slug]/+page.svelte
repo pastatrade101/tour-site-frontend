@@ -2,12 +2,17 @@
   import { ArrowRight, Check, Sparkles } from '@lucide/svelte';
   import { page } from '$app/stores';
   import { COMPARISONS, getComparison } from '$lib/data/comparisons';
+  import JsonLd from '$lib/components/public/JsonLd.svelte';
+  import { breadcrumbLd, faqLd } from '$lib/seo';
 
   $: cmp = getComparison($page.params.slug ?? '');
   $: others = COMPARISONS.filter((c) => c.slug !== cmp?.slug).slice(0, 2);
+  $: origin = $page.url.origin;
 </script>
 
 {#if cmp}
+  <JsonLd data={breadcrumbLd(origin, [{ name: 'Home', path: '/' }, { name: 'Compare', path: '/compare' }, { name: cmp.title, path: `/compare/${cmp.slug}` }])} />
+  {#if cmp.faqs?.length}<JsonLd data={faqLd(cmp.faqs)} />{/if}
   <!-- hero -->
   <section class="relative overflow-hidden bg-deep-green text-white">
     {#if cmp.a.image}

@@ -7,11 +7,15 @@
   import BlogCard from '$lib/components/public/BlogCard.svelte';
   import DestinationCard from '$lib/components/public/DestinationCard.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
+  import JsonLd from '$lib/components/public/JsonLd.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { placeholderDestinations } from '$lib/data/placeholders';
+  import { breadcrumbLd } from '$lib/seo';
   import type { BlogPost, Destination, Tour } from '$lib/types';
+
+  $: origin = $page.url.origin;
 
   let destination: Destination | null = null;
   let loading = true;
@@ -77,6 +81,7 @@
   {:else if !destination}
     <ErrorState message={error || 'Destination not found.'} />
   {:else}
+    <JsonLd data={breadcrumbLd(origin, [{ name: 'Home', path: '/' }, { name: 'Destinations', path: '/destinations' }, { name: destination.name, path: `/destinations/${destination.slug}` }])} />
     <nav class="mb-6 flex items-center gap-2 text-sm">
       <a class="font-medium text-ink/55 transition hover:text-forest" href="/destinations">Destinations</a>
       <span class="text-ink/30">/</span>

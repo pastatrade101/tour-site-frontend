@@ -6,10 +6,14 @@
   import { staggeredCardReveal } from '$lib/animations/motion';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
   import DestinationCard from '$lib/components/public/DestinationCard.svelte';
+  import JsonLd from '$lib/components/public/JsonLd.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import { placeholderPosts } from '$lib/data/placeholders';
+  import { breadcrumbLd } from '$lib/seo';
   import type { BlogPost, Destination } from '$lib/types';
+
+  $: origin = $page.url.origin;
 
   let post: BlogPost = placeholderPosts[0];
   let loading = true;
@@ -60,6 +64,7 @@
   {#if loading}
     <LoadingState message="Loading article..." />
   {:else}
+    <JsonLd data={breadcrumbLd(origin, [{ name: 'Home', path: '/' }, { name: 'Expert Advice', path: '/expert-advice' }, { name: post.title, path: `/blog/${post.slug}` }])} />
     <nav class="mb-6 flex items-center gap-2 text-sm">
       <a class="font-medium text-ink/55 transition hover:text-forest" href="/blog">Blog</a>
       <span class="text-ink/30">/</span>
