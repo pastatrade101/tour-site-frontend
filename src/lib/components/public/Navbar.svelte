@@ -17,6 +17,7 @@
     { href: '/destinations', label: 'Destinations', dropdown: 'destinations' },
     { href: '/tours', label: 'Tours', dropdown: 'tours' },
     { href: '/departures', label: 'Departures' },
+    { href: '/expert-advice', label: 'Expert Advice' },
     { href: '/contact', label: 'Contact' }
   ];
 

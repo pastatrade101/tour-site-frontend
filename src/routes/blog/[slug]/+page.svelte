@@ -81,6 +81,16 @@
 </article>
 
 {#if !loading}
+  <!-- guide → primary action (SRS v2.0 §4.8: every guide ends with Plan My Trip) -->
+  <section class="container-shell pb-4 pt-2 md:pb-8">
+    <div class="flex flex-col items-start justify-between gap-4 rounded-2xl border border-goldfinch-gold/30 bg-savanna/20 p-5 sm:flex-row sm:items-center md:p-6">
+      <p class="text-base font-semibold text-deep-green">Ready to turn this into a real trip?</p>
+      <a class="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-deep-green px-6 font-bold text-white transition hover:bg-forest" href="/plan-my-trip">
+        Plan My Trip <ArrowRight size={16} />
+      </a>
+    </div>
+  </section>
+
   <!-- Continue reading -->
   {#if morePosts.length}
     <section class="border-t border-ink/[0.06] bg-sand/30 py-14 md:py-20">

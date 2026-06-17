@@ -8,6 +8,7 @@ const routes = [
   '/destinations',
   '/gallery',
   '/blog',
+  '/expert-advice',
   '/about',
   '/contact',
   '/plan-my-trip',

@@ -66,6 +66,7 @@
       <div class="mt-3 grid gap-2 text-sm text-white/70">
         <a class="w-fit transition hover:text-white" href="/tours">Tours</a>
         <a class="w-fit transition hover:text-white" href="/destinations">Destinations</a>
+        <a class="w-fit transition hover:text-white" href="/expert-advice">Expert Advice</a>
         <a class="w-fit transition hover:text-white" href="/gallery">Gallery</a>
         <a class="w-fit transition hover:text-white" href="/plan-my-trip">{brand.primaryCta}</a>
       </div>
