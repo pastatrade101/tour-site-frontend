@@ -1,0 +1,106 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { ArrowRight, Check, Heart, Sparkles } from '@lucide/svelte';
+  import { browser } from '$app/environment';
+  import { page } from '$app/stores';
+  import { api } from '$lib/api/client';
+  import { getTravelStyle, TRAVEL_STYLES } from '$lib/data/travel-styles';
+  import TourCard from '$lib/components/public/TourCard.svelte';
+  import type { Tour } from '$lib/types';
+
+  let featured: Tour[] = [];
+
+  $: style = getTravelStyle($page.params.slug ?? '');
+  $: others = TRAVEL_STYLES.filter((s) => s.slug !== style?.slug).slice(0, 3);
+  $: toursHref = style?.persona ? `/tours?persona=${style.persona}` : '/tours';
+  $: planHref = `/plan-my-trip${style?.persona ? `?persona=${style.persona}` : ''}`;
+
+  onMount(async () => {
+    try {
+      const res = await api.tours.list({ is_featured: 'true', status: 'published', limit: 3 });
+      featured = res.data.items.length ? res.data.items : (await api.tours.list({ status: 'published', limit: 3 })).data.items;
+    } catch {
+      featured = [];
+    }
+  });
+</script>
+
+{#if style}
+  <section class="relative overflow-hidden bg-gradient-to-br from-deep-green via-forest to-deep-green text-white">
+    <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-goldfinch-gold/20 blur-3xl"></div>
+    <div class="container-shell relative py-14 md:py-20">
+      <nav class="mb-5 flex items-center gap-2 text-sm text-white/70">
+        <a class="font-medium transition hover:text-white" href="/travel-styles">Travel Styles</a>
+        <span class="text-white/30">/</span>
+        <span class="font-medium text-white">{style.name}</span>
+      </nav>
+      <p class="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-goldfinch-gold">
+        <Heart size={14} strokeWidth={2.4} /> {style.name}
+      </p>
+      <h1 class="mt-2 max-w-3xl text-3xl font-extrabold leading-[1.08] tracking-tight md:text-5xl">{style.emotionalPromise}</h1>
+      <p class="mt-4 max-w-2xl text-[15px] leading-7 text-white/85 md:text-base">{style.description}</p>
+      <div class="mt-6 flex flex-wrap gap-3">
+        <a class="inline-flex h-12 items-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-deep-green transition hover:brightness-105" href={planHref}>
+          <Sparkles size={18} /> Plan a {style.name.toLowerCase()} trip
+        </a>
+        <a class="inline-flex h-12 items-center gap-2 rounded-xl border border-white/30 px-6 font-semibold text-white transition hover:bg-white/10" href={toursHref}>
+          Browse trips <ArrowRight size={18} />
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="container-shell py-12 md:py-16">
+    <div class="grid gap-6 md:grid-cols-2">
+      <div class="rounded-2xl border border-ink/10 bg-white p-6 shadow-soft">
+        <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">What you want</p>
+        <div class="mt-3 grid gap-2.5">
+          {#each style.desires as d}
+            <span class="inline-flex items-center gap-2 text-sm font-medium text-ink/75">
+              <span class="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-forest/10 text-forest"><Check size={12} strokeWidth={3} /></span>{d}
+            </span>
+          {/each}
+        </div>
+      </div>
+      <div class="rounded-2xl border border-ink/10 bg-sand/30 p-6">
+        <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">What we plan around</p>
+        <div class="mt-3 grid gap-2.5">
+          {#each style.concerns as c}
+            <span class="text-sm leading-6 text-ink/70">“{c}” — handled, honestly.</span>
+          {/each}
+        </div>
+      </div>
+    </div>
+
+    {#if featured.length}
+      <div class="mt-12">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <h2 class="text-2xl font-bold text-deep-green md:text-3xl">Trips to start from</h2>
+          <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-deep-green" href={toursHref}>Browse all <ArrowRight size={16} /></a>
+        </div>
+        <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {#each featured as tour (tour.slug)}
+            <TourCard {tour} />
+          {/each}
+        </div>
+      </div>
+    {/if}
+
+    <div class="mt-12">
+      <h2 class="text-xl font-bold text-deep-green">Other travel styles</h2>
+      <div class="mt-4 grid gap-4 sm:grid-cols-3">
+        {#each others as o (o.slug)}
+          <a class="group flex items-center justify-between gap-3 rounded-2xl border border-ink/10 bg-white p-5 transition hover:border-goldfinch-gold/40" href={`/travel-styles/${o.slug}`}>
+            <span class="font-extrabold text-deep-green">{o.name}</span>
+            <ArrowRight size={18} class="shrink-0 text-ink/30 transition group-hover:text-forest" />
+          </a>
+        {/each}
+      </div>
+    </div>
+  </section>
+{:else}
+  <section class="container-shell py-20 text-center">
+    <h1 class="text-2xl font-bold text-deep-green">Travel style not found</h1>
+    <a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-forest hover:text-deep-green" href="/travel-styles">All travel styles <ArrowRight size={16} /></a>
+  </section>
+{/if}
