@@ -15,7 +15,8 @@
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { placeholderDestinations } from '$lib/data/placeholders';
   import { breadcrumbLd } from '$lib/seo';
-  import type { Activity, BlogPost, Destination, Lodge, Tour } from '$lib/types';
+  import { Plane } from '@lucide/svelte';
+  import type { Activity, BlogPost, Destination, Lodge, Tour, TripPoint } from '$lib/types';
 
   $: origin = $page.url.origin;
 
@@ -29,18 +30,23 @@
   let recentPosts: BlogPost[] = [];
   let lodges: Lodge[] = [];
   let activities: Activity[] = [];
+  let tripPoints: TripPoint[] = [];
+
+  const roleLabel = (role: TripPoint['role']) =>
+    role === 'start' ? 'Trips start here' : role === 'end' ? 'Trips end here' : 'Start & end point';
 
   $: heroImage = destination
     ? destination.banner_image_url || destination.main_image_url || destination.image_url || ''
     : '';
 
   const loadRelated = async (dest: Destination) => {
-    const [tourRes, destRes, postRes, lodgeRes, activityRes] = await Promise.allSettled([
+    const [tourRes, destRes, postRes, lodgeRes, activityRes, tripPointRes] = await Promise.allSettled([
       api.tours.list({ destination_id: dest.id, limit: 3 }),
       api.destinations.list({ limit: 7 }),
       api.blog.list({ limit: 3 }),
       api.lodges.list({ destination_id: dest.id, limit: 3 }),
-      api.activities.list({ destination_id: dest.id, limit: 3 })
+      api.activities.list({ destination_id: dest.id, limit: 3 }),
+      api.tripPoints.list({ destination_id: dest.id, limit: 4 })
     ]);
 
     if (tourRes.status === 'fulfilled') {
@@ -60,6 +66,9 @@
     if (activityRes.status === 'fulfilled') {
       activities = activityRes.value.data.items ?? [];
     }
+    if (tripPointRes.status === 'fulfilled') {
+      tripPoints = tripPointRes.value.data.items ?? [];
+    }
   };
 
   const load = async (slug: string) => {
@@ -70,6 +79,7 @@
     recentPosts = [];
     lodges = [];
     activities = [];
+    tripPoints = [];
     try {
       const response = await api.destinations.get(slug);
       destination = response.data;
@@ -176,6 +186,42 @@
         <div class="mt-9 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 18, stagger: 0.07 }}>
           {#each lodges as lodge (lodge.id)}
             <LodgeCard {lodge} />
+          {/each}
+        </div>
+      </div>
+    </section>
+  {/if}
+
+  <!-- Getting there (start & end points) -->
+  {#if tripPoints.length}
+    <section class="border-t border-ink/[0.06] bg-sand/30 py-14 md:py-20">
+      <div class="container-shell">
+        <SectionHeader
+          eyebrow="Getting there"
+          title={`How trips to ${destination.name} start and end`}
+          description="The airports and hub towns we use as gateways — and how we connect you onward."
+        />
+        <div class="mt-9 grid gap-5 sm:grid-cols-2">
+          {#each tripPoints as point (point.id)}
+            <div class="flex gap-4 rounded-2xl border border-ink/10 bg-white p-5 shadow-soft">
+              <div class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-forest/10 text-forest">
+                <Plane size={20} />
+              </div>
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-base font-bold text-ink">{point.name}</h3>
+                  {#if point.airport_code}
+                    <span class="rounded-md bg-forest/10 px-1.5 py-0.5 font-mono text-[11px] font-bold text-forest">{point.airport_code}</span>
+                  {/if}
+                </div>
+                <p class="mt-0.5 text-xs font-semibold uppercase tracking-[0.1em] text-clay">{roleLabel(point.role)}</p>
+                {#if point.transfer_info}
+                  <p class="mt-2 text-sm leading-6 text-ink/70">{point.transfer_info}</p>
+                {:else if point.description}
+                  <p class="mt-2 text-sm leading-6 text-ink/70">{point.description}</p>
+                {/if}
+              </div>
+            </div>
           {/each}
         </div>
       </div>

@@ -127,6 +127,27 @@ export type Activity = {
   meta_description?: string;
 };
 
+export type TripPoint = {
+  id: string;
+  name: string;
+  slug: string;
+  destination_id?: string | null;
+  destinations?: { name: string; slug: string } | null;
+  role: 'start' | 'end' | 'both';
+  gateway_type: 'airport' | 'city' | 'hotel' | 'border' | 'station';
+  airport_code?: string | null;
+  description?: string;
+  transfer_info?: string;
+  hero_image_url?: string;
+  image_url?: string;
+  status?: string;
+  is_featured?: boolean;
+  sort_order?: number | null;
+  seo_title?: string;
+  meta_title?: string;
+  meta_description?: string;
+};
+
 export type BlogPost = {
   id: string;
   title: string;

@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { API_URL } from '$lib/config/env';
-import type { Activity, AiChatResponse, ApiResponse, BlogPost, Country, Destination, FAQ, Lodge, Paginated, Testimonial, Tour } from '$lib/types';
+import type { Activity, AiChatResponse, ApiResponse, BlogPost, Country, Destination, FAQ, Lodge, Paginated, Testimonial, Tour, TripPoint } from '$lib/types';
 
 type QueryValue = string | number | boolean | undefined | null;
 type RequestOptions = Omit<RequestInit, 'body'> & {
@@ -181,6 +181,13 @@ export const api = {
     create: (body: Record<string, unknown>) => apiRequest<Activity>('/activities', { method: 'POST', body }),
     update: (id: string, body: Record<string, unknown>) => apiRequest<Activity>(`/activities/${id}`, { method: 'PUT', body }),
     remove: (id: string) => apiRequest(`/activities/${id}`, { method: 'DELETE' })
+  },
+  tripPoints: {
+    list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<TripPoint>>(`/trip-points${queryString(params)}`),
+    get: (slug: string) => apiRequest<TripPoint>(`/trip-points/${slug}`),
+    create: (body: Record<string, unknown>) => apiRequest<TripPoint>('/trip-points', { method: 'POST', body }),
+    update: (id: string, body: Record<string, unknown>) => apiRequest<TripPoint>(`/trip-points/${id}`, { method: 'PUT', body }),
+    remove: (id: string) => apiRequest(`/trip-points/${id}`, { method: 'DELETE' })
   },
   categories: {
     list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Record<string, unknown>>>(`/categories${queryString(params)}`),
