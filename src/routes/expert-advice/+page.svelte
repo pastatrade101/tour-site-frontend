@@ -69,6 +69,17 @@
     {/if}
   </div>
 
+  <!-- compare promo -->
+  <a class="group mt-10 flex flex-col items-start justify-between gap-3 rounded-2xl border border-ink/10 bg-sand/40 p-6 transition hover:border-goldfinch-gold/40 sm:flex-row sm:items-center" href="/compare">
+    <div>
+      <p class="text-xs font-bold uppercase tracking-[0.16em] text-clay">Decision help</p>
+      <p class="mt-1 text-lg font-extrabold text-deep-green">Compare destinations & routes side by side</p>
+    </div>
+    <span class="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border border-forest/20 bg-white px-5 font-semibold text-forest transition group-hover:bg-white">
+      See comparisons <ArrowRight size={16} />
+    </span>
+  </a>
+
   <!-- every guide surface ends with the primary action (SRS v2.0 §4.8) -->
   <div class="mt-12 overflow-hidden rounded-[28px] bg-gradient-to-br from-deep-green via-forest to-deep-green p-8 text-center text-white md:p-12">
     <h2 class="text-2xl font-extrabold md:text-3xl">Still have questions?</h2>

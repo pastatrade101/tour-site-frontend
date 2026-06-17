@@ -67,6 +67,7 @@
         <a class="w-fit transition hover:text-white" href="/tours">Tours</a>
         <a class="w-fit transition hover:text-white" href="/destinations">Destinations</a>
         <a class="w-fit transition hover:text-white" href="/expert-advice">Expert Advice</a>
+        <a class="w-fit transition hover:text-white" href="/compare">Compare</a>
         <a class="w-fit transition hover:text-white" href="/gallery">Gallery</a>
         <a class="w-fit transition hover:text-white" href="/plan-my-trip">{brand.primaryCta}</a>
       </div>

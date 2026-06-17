@@ -1,9 +1,100 @@
 <script lang="ts">
+  import { ArrowRight, Check, Sparkles } from '@lucide/svelte';
   import { page } from '$app/stores';
-  import PlaceholderPage from '$lib/components/public/PlaceholderPage.svelte';
+  import { COMPARISONS, getComparison } from '$lib/data/comparisons';
+
+  $: cmp = getComparison($page.params.slug ?? '');
+  $: others = COMPARISONS.filter((c) => c.slug !== cmp?.slug).slice(0, 2);
 </script>
 
-<PlaceholderPage
-  title="Compare Goldfinch Tours"
-  description={`Prepared comparison page for ${$page.params.slug}.`}
-/>
+{#if cmp}
+  <!-- hero -->
+  <section class="relative overflow-hidden bg-deep-green text-white">
+    {#if cmp.a.image}
+      <img class="absolute inset-0 h-full w-full object-cover opacity-40" src={cmp.a.image} alt="" />
+    {/if}
+    <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-deep-green/80 to-deep-green/40"></div>
+    <div class="container-shell relative py-14 md:py-20">
+      <nav class="mb-5 flex items-center gap-2 text-sm text-white/70">
+        <a class="font-medium transition hover:text-white" href="/compare">Compare</a>
+        <span class="text-white/30">/</span>
+        <span class="font-medium text-white">{cmp.title}</span>
+      </nav>
+      <p class="text-sm font-bold uppercase tracking-[0.18em] text-goldfinch-gold">{cmp.eyebrow}</p>
+      <h1 class="mt-2 max-w-3xl text-3xl font-extrabold leading-[1.08] tracking-tight md:text-5xl">{cmp.title}</h1>
+      <p class="mt-4 max-w-2xl text-[15px] leading-7 text-white/80 md:text-base">{cmp.intro}</p>
+    </div>
+  </section>
+
+  <section class="container-shell py-12 md:py-16">
+    <!-- comparison table -->
+    <div class="overflow-hidden rounded-[24px] border border-ink/10 bg-white shadow-soft">
+      <div class="hidden grid-cols-[200px_1fr_1fr] border-b border-ink/10 bg-sand/40 sm:grid">
+        <div class="p-4"></div>
+        <div class="p-4 text-center text-lg font-extrabold text-deep-green">{cmp.a.name}</div>
+        <div class="p-4 text-center text-lg font-extrabold text-deep-green">{cmp.b.name}</div>
+      </div>
+      {#each cmp.dimensions as dim, i}
+        <div class={`grid sm:grid-cols-[200px_1fr_1fr] ${i % 2 ? 'bg-sand/20' : 'bg-white'}`}>
+          <div class="px-4 pt-4 text-[11px] font-bold uppercase tracking-[0.14em] text-clay sm:py-4 sm:text-xs">{dim.label}</div>
+          <div class="px-4 pb-2 pt-1 text-sm leading-6 text-ink/75 sm:border-l sm:border-ink/10 sm:py-4">
+            <span class="mb-1 block text-xs font-bold text-deep-green sm:hidden">{cmp.a.name}</span>{dim.a}
+          </div>
+          <div class="px-4 pb-4 pt-1 text-sm leading-6 text-ink/75 sm:border-l sm:border-ink/10 sm:py-4">
+            <span class="mb-1 block text-xs font-bold text-deep-green sm:hidden">{cmp.b.name}</span>{dim.b}
+          </div>
+        </div>
+      {/each}
+    </div>
+
+    <!-- verdict -->
+    <div class="mt-8 flex items-start gap-3 rounded-2xl border border-goldfinch-gold/30 bg-savanna/20 p-5 md:p-6">
+      <Sparkles size={22} class="mt-0.5 shrink-0 text-goldfinch-gold" />
+      <div>
+        <p class="text-sm font-bold uppercase tracking-[0.14em] text-clay">Our honest verdict</p>
+        <p class="mt-2 text-base leading-7 text-ink/80">{cmp.verdict}</p>
+        <a class="mt-4 inline-flex h-11 items-center gap-2 rounded-xl bg-deep-green px-6 font-bold text-white transition hover:bg-forest" href={cmp.cta.href}>
+          {cmp.cta.label} <ArrowRight size={16} />
+        </a>
+      </div>
+    </div>
+
+    {#if cmp.faqs?.length}
+      <div class="mt-10">
+        <h2 class="text-2xl font-bold text-deep-green">Common questions</h2>
+        <div class="mt-4 grid gap-3">
+          {#each cmp.faqs as faq}
+            <div class="rounded-2xl border border-ink/10 bg-white p-5">
+              <p class="flex items-start gap-2 font-semibold text-ink">
+                <Check size={16} class="mt-1 shrink-0 text-forest" />{faq.q}
+              </p>
+              <p class="mt-1.5 pl-6 text-sm leading-6 text-ink/65">{faq.a}</p>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
+
+    {#if others.length}
+      <div class="mt-12">
+        <h2 class="text-xl font-bold text-deep-green">More comparisons</h2>
+        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+          {#each others as o (o.slug)}
+            <a class="group flex items-center justify-between gap-3 rounded-2xl border border-ink/10 bg-white p-5 transition hover:border-goldfinch-gold/40" href={`/compare/${o.slug}`}>
+              <span>
+                <span class="block text-xs font-bold uppercase tracking-[0.14em] text-clay">{o.eyebrow}</span>
+                <span class="mt-0.5 block font-extrabold text-deep-green">{o.title}</span>
+              </span>
+              <ArrowRight size={18} class="shrink-0 text-ink/30 transition group-hover:text-forest" />
+            </a>
+          {/each}
+        </div>
+      </div>
+    {/if}
+  </section>
+{:else}
+  <section class="container-shell py-20 text-center">
+    <h1 class="text-2xl font-bold text-deep-green">Comparison not found</h1>
+    <a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-forest hover:text-deep-green" href="/compare">See all comparisons <ArrowRight size={16} /></a>
+  </section>
+{/if}

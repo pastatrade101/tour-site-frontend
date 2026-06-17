@@ -1,4 +1,5 @@
 import { SITE_URL } from '$lib/config/env';
+import { COMPARISONS } from '$lib/data/comparisons';
 import type { RequestHandler } from './$types';
 
 const routes = [
@@ -9,6 +10,8 @@ const routes = [
   '/gallery',
   '/blog',
   '/expert-advice',
+  '/compare',
+  ...COMPARISONS.map((c) => `/compare/${c.slug}`),
   '/about',
   '/contact',
   '/plan-my-trip',
