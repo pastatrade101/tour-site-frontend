@@ -65,6 +65,12 @@ export type Destination = {
   security_advice?: string;
   travel_insurance_note?: string;
   emergency_contacts?: string;
+  score_wildlife?: number | null;
+  score_luxury?: number | null;
+  score_family?: number | null;
+  score_photography?: number | null;
+  score_adventure?: number | null;
+  score_budget_from?: number | null;
   status?: string;
   is_featured?: boolean;
   meta_title?: string;
@@ -174,6 +180,51 @@ export type SafetyTopic = {
   summary?: string;
   content?: string;
   image_url?: string;
+  status?: string;
+  is_featured?: boolean;
+  sort_order?: number | null;
+  seo_title?: string;
+  meta_title?: string;
+  meta_description?: string;
+};
+
+export type TravelStyle = {
+  id: string;
+  name: string;
+  slug: string;
+  emotional_promise?: string;
+  description?: string;
+  desires?: string[];
+  concerns?: string[];
+  persona?: string | null;
+  hero_image_url?: string;
+  image_url?: string;
+  status?: string;
+  is_featured?: boolean;
+  sort_order?: number | null;
+  seo_title?: string;
+  meta_title?: string;
+  meta_description?: string;
+};
+
+export type ComparisonDimension = { label: string; a: string; b: string };
+export type ComparisonFaq = { q: string; a: string };
+
+export type Comparison = {
+  id: string;
+  title: string;
+  slug: string;
+  eyebrow?: string;
+  intro?: string;
+  a_name: string;
+  a_image_url?: string | null;
+  b_name: string;
+  b_image_url?: string | null;
+  dimensions?: ComparisonDimension[];
+  verdict?: string;
+  cta_label?: string | null;
+  cta_href?: string | null;
+  faqs?: ComparisonFaq[];
   status?: string;
   is_featured?: boolean;
   sort_order?: number | null;

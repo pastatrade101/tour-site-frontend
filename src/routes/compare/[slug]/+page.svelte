@@ -1,13 +1,70 @@
 <script lang="ts">
   import { ArrowRight, Check, Sparkles } from '@lucide/svelte';
+  import { browser } from '$app/environment';
   import { page } from '$app/stores';
+  import { api } from '$lib/api/client';
   import { COMPARISONS, getComparison } from '$lib/data/comparisons';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import { breadcrumbLd, faqLd } from '$lib/seo';
+  import type { Comparison } from '$lib/types';
 
-  $: cmp = getComparison($page.params.slug ?? '');
-  $: others = COMPARISONS.filter((c) => c.slug !== cmp?.slug).slice(0, 2);
+  type NormCmp = {
+    slug: string;
+    eyebrow: string;
+    title: string;
+    intro: string;
+    a: { name: string; image?: string };
+    b: { name: string; image?: string };
+    dimensions: { label: string; a: string; b: string }[];
+    verdict: string;
+    cta: { label: string; href: string };
+    faqs?: { q: string; a: string }[];
+  };
+
   $: origin = $page.url.origin;
+
+  let cmp: NormCmp | null = null;
+  let others: { slug: string; eyebrow: string; title: string }[] = [];
+  let loaded = false;
+
+  const fromApi = (c: Comparison): NormCmp => ({
+    slug: c.slug,
+    eyebrow: c.eyebrow ?? '',
+    title: c.title,
+    intro: c.intro ?? '',
+    a: { name: c.a_name, image: c.a_image_url ?? undefined },
+    b: { name: c.b_name, image: c.b_image_url ?? undefined },
+    dimensions: c.dimensions ?? [],
+    verdict: c.verdict ?? '',
+    cta: { label: c.cta_label ?? 'Plan My Trip', href: c.cta_href ?? '/plan-my-trip' },
+    faqs: c.faqs ?? []
+  });
+
+  const loadCmp = async (slug: string) => {
+    loaded = false;
+    try {
+      const res = await api.comparisons.get(slug);
+      cmp = fromApi(res.data);
+    } catch {
+      const cfg = getComparison(slug);
+      cmp = cfg
+        ? { slug: cfg.slug, eyebrow: cfg.eyebrow, title: cfg.title, intro: cfg.intro, a: cfg.a, b: cfg.b, dimensions: cfg.dimensions, verdict: cfg.verdict, cta: cfg.cta, faqs: cfg.faqs }
+        : null;
+    }
+    try {
+      const list = await api.comparisons.list({ status: 'published', limit: 100 });
+      const rows = list.data.items as Comparison[];
+      others = (rows.length ? rows.map((c) => ({ slug: c.slug, eyebrow: c.eyebrow ?? '', title: c.title })) : COMPARISONS.map((c) => ({ slug: c.slug, eyebrow: c.eyebrow, title: c.title })))
+        .filter((c) => c.slug !== slug)
+        .slice(0, 2);
+    } catch {
+      others = COMPARISONS.filter((c) => c.slug !== slug).slice(0, 2).map((c) => ({ slug: c.slug, eyebrow: c.eyebrow, title: c.title }));
+    }
+    loaded = true;
+  };
+
+  $: slug = $page.params.slug ?? '';
+  $: if (browser && slug) void loadCmp(slug);
 </script>
 
 {#if cmp}
@@ -97,7 +154,7 @@
       </div>
     {/if}
   </section>
-{:else}
+{:else if loaded}
   <section class="container-shell py-20 text-center">
     <h1 class="text-2xl font-bold text-deep-green">Comparison not found</h1>
     <a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-forest hover:text-deep-green" href="/compare">See all comparisons <ArrowRight size={16} /></a>

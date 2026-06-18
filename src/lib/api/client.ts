@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { API_URL } from '$lib/config/env';
-import type { Activity, AiChatResponse, ApiResponse, BlogPost, Country, Destination, FAQ, Lodge, Paginated, SafetyTopic, Testimonial, Tour, TripPoint } from '$lib/types';
+import type { Activity, AiChatResponse, ApiResponse, BlogPost, Comparison, Country, Destination, FAQ, Lodge, Paginated, SafetyTopic, Testimonial, Tour, TravelStyle, TripPoint } from '$lib/types';
 
 type QueryValue = string | number | boolean | undefined | null;
 type RequestOptions = Omit<RequestInit, 'body'> & {
@@ -195,6 +195,20 @@ export const api = {
     create: (body: Record<string, unknown>) => apiRequest<SafetyTopic>('/safety-topics', { method: 'POST', body }),
     update: (id: string, body: Record<string, unknown>) => apiRequest<SafetyTopic>(`/safety-topics/${id}`, { method: 'PUT', body }),
     remove: (id: string) => apiRequest(`/safety-topics/${id}`, { method: 'DELETE' })
+  },
+  travelStyles: {
+    list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<TravelStyle>>(`/travel-styles${queryString(params)}`),
+    get: (slug: string) => apiRequest<TravelStyle>(`/travel-styles/${slug}`),
+    create: (body: Record<string, unknown>) => apiRequest<TravelStyle>('/travel-styles', { method: 'POST', body }),
+    update: (id: string, body: Record<string, unknown>) => apiRequest<TravelStyle>(`/travel-styles/${id}`, { method: 'PUT', body }),
+    remove: (id: string) => apiRequest(`/travel-styles/${id}`, { method: 'DELETE' })
+  },
+  comparisons: {
+    list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Comparison>>(`/comparisons${queryString(params)}`),
+    get: (slug: string) => apiRequest<Comparison>(`/comparisons/${slug}`),
+    create: (body: Record<string, unknown>) => apiRequest<Comparison>('/comparisons', { method: 'POST', body }),
+    update: (id: string, body: Record<string, unknown>) => apiRequest<Comparison>(`/comparisons/${id}`, { method: 'PUT', body }),
+    remove: (id: string) => apiRequest(`/comparisons/${id}`, { method: 'DELETE' })
   },
   categories: {
     list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Record<string, unknown>>>(`/categories${queryString(params)}`),

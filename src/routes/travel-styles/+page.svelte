@@ -1,6 +1,36 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { ArrowRight, Heart } from '@lucide/svelte';
+  import { api } from '$lib/api/client';
   import { TRAVEL_STYLES } from '$lib/data/travel-styles';
+  import type { TravelStyle } from '$lib/types';
+
+  type Card = { slug: string; name: string; emotionalPromise: string; description: string };
+
+  // Static config as the immediate fallback; replaced by CMS data when available.
+  let styles: Card[] = TRAVEL_STYLES.map((s) => ({
+    slug: s.slug,
+    name: s.name,
+    emotionalPromise: s.emotionalPromise,
+    description: s.description
+  }));
+
+  onMount(async () => {
+    try {
+      const res = await api.travelStyles.list({ status: 'published', limit: 100 });
+      const items = res.data.items as TravelStyle[];
+      if (items.length) {
+        styles = items.map((s) => ({
+          slug: s.slug,
+          name: s.name,
+          emotionalPromise: s.emotional_promise ?? '',
+          description: s.description ?? ''
+        }));
+      }
+    } catch {
+      // keep the config fallback
+    }
+  });
 </script>
 
 <section class="relative overflow-hidden bg-gradient-to-br from-deep-green via-forest to-deep-green text-white">
@@ -18,7 +48,7 @@
 
 <section class="container-shell py-12 md:py-16">
   <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-    {#each TRAVEL_STYLES as style (style.slug)}
+    {#each styles as style (style.slug)}
       <a class="group flex flex-col rounded-2xl border border-ink/10 bg-white p-6 shadow-soft transition hover:border-goldfinch-gold/40 hover:shadow-[0_18px_50px_rgba(15,47,36,0.1)]" href={`/travel-styles/${style.slug}`}>
         <h2 class="text-xl font-extrabold text-deep-green">{style.name}</h2>
         <p class="mt-1 text-sm font-semibold text-clay">{style.emotionalPromise}</p>

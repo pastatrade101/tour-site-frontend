@@ -36,7 +36,20 @@
 
   $: slug = $page.params.slug ?? '';
   $: if (browser && slug) void load(slug);
-  $: info = getExperienceInfo(slug);
+  // Prefer CMS-managed enrichment on the category; fall back to static config.
+  $: info = (() => {
+    const w = exp?.who_its_for;
+    const f = exp?.fitness;
+    const h = exp?.highlights;
+    if (w || (Array.isArray(h) && h.length)) {
+      return {
+        whoItsFor: w ? String(w) : '',
+        fitness: f ? String(f) : undefined,
+        highlights: Array.isArray(h) ? h.map(String) : []
+      };
+    }
+    return getExperienceInfo(slug);
+  })();
   $: name = exp ? String(exp.name ?? slug) : slug;
   $: image = exp ? String(exp.image_url ?? '') : '';
 </script>

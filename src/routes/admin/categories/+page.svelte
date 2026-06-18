@@ -22,6 +22,9 @@
     name: string;
     slug: string;
     description?: string | null;
+    who_its_for?: string | null;
+    fitness?: string | null;
+    highlights?: string[] | null;
     icon_url?: string | null;
     image_url?: string | null;
     lottie_url?: string | null;
@@ -35,6 +38,9 @@
 
   type CategoryForm = {
     description: string;
+    who_its_for: string;
+    fitness: string;
+    highlights: string;
     icon_url: string;
     image_url: string;
     lottie_url: string;
@@ -57,6 +63,9 @@
 
   const emptyForm = (): CategoryForm => ({
     description: '',
+    who_its_for: '',
+    fitness: '',
+    highlights: '',
     icon_url: '',
     image_url: '',
     lottie_url: '',
@@ -174,6 +183,9 @@
     editingCategory = category;
     form = {
       description: category.description ?? '',
+      who_its_for: category.who_its_for ?? '',
+      fitness: category.fitness ?? '',
+      highlights: Array.isArray(category.highlights) ? category.highlights.join('\n') : '',
       icon_url: category.icon_url ?? '',
       image_url: category.image_url ?? '',
       lottie_url: category.lottie_url ?? '',
@@ -205,6 +217,9 @@
 
   const payload = () => ({
     description: form.description || null,
+    who_its_for: form.who_its_for || null,
+    fitness: form.fitness || null,
+    highlights: form.highlights.split('\n').map((s) => s.trim()).filter(Boolean),
     icon_url: iconAssetMode === 'icon_url' || iconAssetMode === 'icon_upload' ? form.icon_url || null : null,
     image_url: imageAssetMode === 'image_url' || imageAssetMode === 'image_upload' ? form.image_url || null : null,
     lottie_url: iconAssetMode === 'lottie_url' || iconAssetMode === 'lottie_upload' ? form.lottie_url || null : null,
@@ -380,6 +395,16 @@
         </div>
 
         <AdminTextArea label="Description" name="description" bind:value={form.description} rows={4} placeholder="Short category description for CMS and public pages." />
+
+        <div class="rounded-2xl border border-ink/10 bg-sand/20 p-4">
+          <p class="text-sm font-bold text-ink">Experience page enrichment</p>
+          <p class="mt-0.5 text-xs text-ink/55">Shown on the public /experiences/{form.slug || 'slug'} page. Leave blank to hide.</p>
+          <div class="mt-4 grid gap-4">
+            <AdminTextArea label="Who it's for" name="who_its_for" bind:value={form.who_its_for} rows={2} placeholder="First-timers, families and photographers…" />
+            <AdminFormInput label="Fitness" name="fitness" bind:value={form.fitness} placeholder="Easy — game drives, no walking required." />
+            <AdminTextArea label="Highlights (one per line)" name="highlights" bind:value={form.highlights} rows={4} placeholder={'The Great Migration\nBig Five game viewing'} />
+          </div>
+        </div>
 
         <div class="grid gap-4 md:grid-cols-2">
           <AdminSelect label="Status" name="status" bind:value={form.status} options={statusOptions} />

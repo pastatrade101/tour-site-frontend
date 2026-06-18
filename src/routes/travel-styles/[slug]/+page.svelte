@@ -8,16 +8,64 @@
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { breadcrumbLd } from '$lib/seo';
-  import type { Tour } from '$lib/types';
+  import type { TravelStyle, Tour } from '$lib/types';
+
+  type NormStyle = {
+    slug: string;
+    name: string;
+    emotionalPromise: string;
+    description: string;
+    desires: string[];
+    concerns: string[];
+    persona?: string;
+  };
 
   $: origin = $page.url.origin;
 
+  let style: NormStyle | null = null;
+  let others: { slug: string; name: string }[] = [];
   let featured: Tour[] = [];
+  let loaded = false;
 
-  $: style = getTravelStyle($page.params.slug ?? '');
-  $: others = TRAVEL_STYLES.filter((s) => s.slug !== style?.slug).slice(0, 3);
+  const fromApi = (s: TravelStyle): NormStyle => ({
+    slug: s.slug,
+    name: s.name,
+    emotionalPromise: s.emotional_promise ?? '',
+    description: s.description ?? '',
+    desires: s.desires ?? [],
+    concerns: s.concerns ?? [],
+    persona: s.persona ?? undefined
+  });
+
   $: toursHref = style?.persona ? `/tours?persona=${style.persona}` : '/tours';
   $: planHref = `/plan-my-trip${style?.persona ? `?persona=${style.persona}` : ''}`;
+
+  const loadStyle = async (slug: string) => {
+    loaded = false;
+    try {
+      const res = await api.travelStyles.get(slug);
+      style = fromApi(res.data);
+    } catch {
+      // fall back to static config
+      const cfg = getTravelStyle(slug);
+      style = cfg
+        ? { slug: cfg.slug, name: cfg.name, emotionalPromise: cfg.emotionalPromise, description: cfg.description, desires: cfg.desires, concerns: cfg.concerns, persona: cfg.persona }
+        : null;
+    }
+    try {
+      const list = await api.travelStyles.list({ status: 'published', limit: 100 });
+      const items = list.data.items as TravelStyle[];
+      others = (items.length ? items.map((s) => ({ slug: s.slug, name: s.name })) : TRAVEL_STYLES.map((s) => ({ slug: s.slug, name: s.name })))
+        .filter((s) => s.slug !== slug)
+        .slice(0, 3);
+    } catch {
+      others = TRAVEL_STYLES.filter((s) => s.slug !== slug).slice(0, 3).map((s) => ({ slug: s.slug, name: s.name }));
+    }
+    loaded = true;
+  };
+
+  $: slug = $page.params.slug ?? '';
+  $: if (browser && slug) void loadStyle(slug);
 
   onMount(async () => {
     try {
@@ -103,7 +151,7 @@
       </div>
     </div>
   </section>
-{:else}
+{:else if loaded}
   <section class="container-shell py-20 text-center">
     <h1 class="text-2xl font-bold text-deep-green">Travel style not found</h1>
     <a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-forest hover:text-deep-green" href="/travel-styles">All travel styles <ArrowRight size={16} /></a>

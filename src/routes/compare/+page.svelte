@@ -1,6 +1,23 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { ArrowRight, GitCompare } from '@lucide/svelte';
+  import { api } from '$lib/api/client';
   import { COMPARISONS } from '$lib/data/comparisons';
+  import type { Comparison } from '$lib/types';
+
+  type Card = { slug: string; eyebrow: string; title: string; intro: string };
+
+  let items: Card[] = COMPARISONS.map((c) => ({ slug: c.slug, eyebrow: c.eyebrow, title: c.title, intro: c.intro }));
+
+  onMount(async () => {
+    try {
+      const res = await api.comparisons.list({ status: 'published', limit: 100 });
+      const rows = res.data.items as Comparison[];
+      if (rows.length) items = rows.map((c) => ({ slug: c.slug, eyebrow: c.eyebrow ?? '', title: c.title, intro: c.intro ?? '' }));
+    } catch {
+      // keep config fallback
+    }
+  });
 </script>
 
 <section class="relative overflow-hidden bg-gradient-to-br from-deep-green via-forest to-deep-green text-white">
@@ -18,7 +35,7 @@
 
 <section class="container-shell py-12 md:py-16">
   <div class="grid gap-6 md:grid-cols-3">
-    {#each COMPARISONS as c (c.slug)}
+    {#each items as c (c.slug)}
       <a
         class="group flex flex-col rounded-2xl border border-ink/10 bg-white p-6 shadow-soft transition hover:border-goldfinch-gold/40 hover:shadow-[0_18px_50px_rgba(15,47,36,0.1)]"
         href={`/compare/${c.slug}`}

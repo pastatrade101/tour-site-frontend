@@ -38,6 +38,12 @@
     security_advice?: string | null;
     travel_insurance_note?: string | null;
     emergency_contacts?: string | null;
+    score_wildlife?: number | string | null;
+    score_luxury?: number | string | null;
+    score_family?: number | string | null;
+    score_photography?: number | string | null;
+    score_adventure?: number | string | null;
+    score_budget_from?: number | string | null;
     status: PublishStatus;
     is_featured?: boolean | null;
     meta_title?: string | null;
@@ -54,6 +60,12 @@
     description: string;
     emergency_contacts: string;
     health_vaccinations: string;
+    score_wildlife: string;
+    score_luxury: string;
+    score_family: string;
+    score_photography: string;
+    score_adventure: string;
+    score_budget_from: string;
     is_featured: boolean;
     latitude: string;
     location: string;
@@ -84,6 +96,12 @@
     description: '',
     emergency_contacts: '',
     health_vaccinations: '',
+    score_wildlife: '',
+    score_luxury: '',
+    score_family: '',
+    score_photography: '',
+    score_adventure: '',
+    score_budget_from: '',
     is_featured: false,
     latitude: '',
     location: '',
@@ -212,6 +230,12 @@
       description: destination.description ?? '',
       emergency_contacts: destination.emergency_contacts ?? '',
       health_vaccinations: destination.health_vaccinations ?? '',
+      score_wildlife: destination.score_wildlife == null ? '' : String(destination.score_wildlife),
+      score_luxury: destination.score_luxury == null ? '' : String(destination.score_luxury),
+      score_family: destination.score_family == null ? '' : String(destination.score_family),
+      score_photography: destination.score_photography == null ? '' : String(destination.score_photography),
+      score_adventure: destination.score_adventure == null ? '' : String(destination.score_adventure),
+      score_budget_from: destination.score_budget_from == null ? '' : String(destination.score_budget_from),
       is_featured: Boolean(destination.is_featured),
       latitude: destination.latitude === null || destination.latitude === undefined ? '' : String(destination.latitude),
       location: destination.location ?? '',
@@ -266,6 +290,12 @@
       description: form.description || null,
       emergency_contacts: form.emergency_contacts || null,
       health_vaccinations: form.health_vaccinations || null,
+      score_wildlife: numberOrNull(form.score_wildlife),
+      score_luxury: numberOrNull(form.score_luxury),
+      score_family: numberOrNull(form.score_family),
+      score_photography: numberOrNull(form.score_photography),
+      score_adventure: numberOrNull(form.score_adventure),
+      score_budget_from: numberOrNull(form.score_budget_from),
       // Keep the canonical `image_url` in sync with the main image so public
       // cards and detail pages (which read image_url) always have an image.
       image_url: mainImage,
@@ -481,6 +511,19 @@
               <AdminTextArea label="Travel insurance note" name="travel_insurance_note" bind:value={form.travel_insurance_note} rows={2} />
               <AdminTextArea label="Emergency contacts" name="emergency_contacts" bind:value={form.emergency_contacts} rows={2} />
             </div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-ink/10 bg-sand/20 p-4">
+          <p class="text-sm font-bold text-ink">Destination scores</p>
+          <p class="mt-0.5 text-xs text-ink/55">Honest 0–10 ratings shown on the /destination-scores page. Leave blank to hide.</p>
+          <div class="mt-4 grid gap-4 sm:grid-cols-3">
+            <AdminFormInput label="Wildlife (0–10)" name="score_wildlife" type="number" bind:value={form.score_wildlife} />
+            <AdminFormInput label="Luxury (0–10)" name="score_luxury" type="number" bind:value={form.score_luxury} />
+            <AdminFormInput label="Family (0–10)" name="score_family" type="number" bind:value={form.score_family} />
+            <AdminFormInput label="Photography (0–10)" name="score_photography" type="number" bind:value={form.score_photography} />
+            <AdminFormInput label="Adventure (0–10)" name="score_adventure" type="number" bind:value={form.score_adventure} />
+            <AdminFormInput label="Budget from (USD pp)" name="score_budget_from" type="number" bind:value={form.score_budget_from} />
           </div>
         </div>
 
