@@ -174,7 +174,12 @@
 </section>
 
 <section class="container-shell py-14" use:sectionReveal>
-  <SectionHeader eyebrow="Stories" title={cms('blog_preview', 'title', 'Latest Blog Posts')} description={cms('blog_preview', 'subtitle', 'Blog posts are pulled from the backend when available.')} />
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <SectionHeader eyebrow="Stories" title={cms('blog_preview', 'title', 'Latest Blog Posts')} description={cms('blog_preview', 'subtitle', 'Blog posts are pulled from the backend when available.')} />
+    <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-deep-green" href="/blog">
+      View all <ArrowRight size={16} />
+    </a>
+  </div>
   <div class="mt-8 grid gap-6 md:grid-cols-3" use:staggeredCardReveal>
     {#each posts as post}
       <BlogCard {post} />
