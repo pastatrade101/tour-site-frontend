@@ -1,11 +1,11 @@
 <script lang="ts">
   import { ArrowRight, Clock, Compass, MapPin } from '@lucide/svelte';
 
-  // Replace these with your real assets when ready.
-  const heroImage = '/images/safari-trip-finder.jpg';
+  // Swap these for your own files in static/images/ (e.g. '/images/safari-trip-finder.jpg') when ready.
+  const heroImage = 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=80';
   const previews = [
-    { src: '/images/kilimanjaro.jpg', label: 'Kilimanjaro' },
-    { src: '/images/zanzibar.jpg', label: 'Zanzibar' }
+    { src: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=80', label: 'Kilimanjaro' },
+    { src: 'https://images.unsplash.com/photo-1605731414532-6b26976cc153?auto=format&fit=crop&w=400&q=80', label: 'Zanzibar' }
   ];
 </script>
 
