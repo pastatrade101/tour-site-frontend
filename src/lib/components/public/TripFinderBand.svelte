@@ -1,12 +1,43 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { ArrowRight, Clock, Compass, MapPin } from '@lucide/svelte';
+  import { api } from '$lib/api/client';
+  import type { Destination } from '$lib/types';
 
-  // Swap these for your own files in static/images/ (e.g. '/images/safari-trip-finder.jpg') when ready.
-  const heroImage = 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=80';
-  const previews = [
-    { src: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=80', label: 'Kilimanjaro' },
-    { src: 'https://images.unsplash.com/photo-1605731414532-6b26976cc153?auto=format&fit=crop&w=400&q=80', label: 'Zanzibar' }
+  // Fallbacks (shown until live images load, or if the API is empty).
+  const FB_HERO = 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=80';
+  const FB_KILI = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=80';
+  const FB_ZNZ = 'https://images.unsplash.com/photo-1605731414532-6b26976cc153?auto=format&fit=crop&w=400&q=80';
+
+  let heroImage = FB_HERO;
+  let previews: { src: string; label: string }[] = [
+    { src: FB_KILI, label: 'Kilimanjaro' },
+    { src: FB_ZNZ, label: 'Zanzibar' }
   ];
+
+  onMount(async () => {
+    const [destRes, catRes] = await Promise.allSettled([
+      api.destinations.list({ status: 'published', limit: 50 }),
+      api.categories.list({ status: 'published', limit: 50 })
+    ]);
+    const dests = destRes.status === 'fulfilled' ? ((destRes.value.data.items ?? []) as Destination[]) : [];
+    const cats = catRes.status === 'fulfilled' ? ((catRes.value.data.items ?? []) as Array<Record<string, unknown>>) : [];
+
+    const destImg = (slug: string) => {
+      const d = dests.find((x) => x.slug === slug);
+      return d ? d.banner_image_url || d.main_image_url || d.image_url || '' : '';
+    };
+    const catImg = (slug: string) => {
+      const c = cats.find((x) => x.slug === slug);
+      return c?.image_url ? String(c.image_url) : '';
+    };
+
+    heroImage = destImg('tanzania') || (dests[0]?.banner_image_url || dests[0]?.main_image_url || dests[0]?.image_url) || FB_HERO;
+    previews = [
+      { src: catImg('kilimanjaro') || FB_KILI, label: 'Kilimanjaro' },
+      { src: destImg('zanzibar') || catImg('zanzibar-beach') || FB_ZNZ, label: 'Zanzibar' }
+    ];
+  });
 </script>
 
 <section class="container-shell py-14 md:py-20">
