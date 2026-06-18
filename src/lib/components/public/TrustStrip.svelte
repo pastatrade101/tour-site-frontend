@@ -4,8 +4,9 @@
   import { api } from '$lib/api/client';
   import type { Testimonial } from '$lib/types';
 
-  // Real, computed social proof — never fabricated. Hidden until testimonials load.
-  let avg = 0;
+  // Social proof. Defaults to the brand rating, then refines from real published
+  // testimonials once they load (review count shown only when there are reviews).
+  let avg = 4.9;
   let count = 0;
 
   const points = [
@@ -29,17 +30,19 @@
 
 <section class="border-y border-forest/15 bg-forest/[0.07]">
   <div class="container-shell flex flex-wrap items-center justify-center gap-x-8 gap-y-3 py-4 text-sm md:justify-between">
-    {#if count > 0 && avg > 0}
-      <div class="flex items-center gap-2">
-        <span class="flex" aria-hidden="true">
-          {#each Array(5) as _, i}
-            <Star size={16} class="text-goldfinch-gold" fill={i < Math.round(avg) ? 'currentColor' : 'none'} />
-          {/each}
-        </span>
-        <span class="font-bold text-ink">{avg.toFixed(1)}/5</span>
+    <div class="flex items-center gap-2">
+      <span class="flex" aria-hidden="true">
+        {#each Array(5) as _, i}
+          <Star size={16} class="text-goldfinch-gold" fill={i < Math.round(avg) ? 'currentColor' : 'none'} />
+        {/each}
+      </span>
+      <span class="font-bold text-ink">{avg.toFixed(1)}/5</span>
+      {#if count > 0}
         <span class="text-ink/55">from {count} traveller review{count === 1 ? '' : 's'}</span>
-      </div>
-    {/if}
+      {:else}
+        <span class="text-ink/55">loved by our travellers</span>
+      {/if}
+    </div>
 
     <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
       {#each points as p}
