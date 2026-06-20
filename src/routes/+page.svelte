@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { ArrowRight, Check, MessageCircle, Sparkles } from '@lucide/svelte';
+  import { ArrowRight, Check, Clock, MessageCircle, Sparkles } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
   import DestinationCard from '$lib/components/public/DestinationCard.svelte';
@@ -16,7 +16,7 @@
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import TestimonialCard from '$lib/components/public/TestimonialCard.svelte';
   import PriceRangeBlock from '$lib/components/public/PriceRangeBlock.svelte';
-  import TourCard from '$lib/components/public/TourCard.svelte';
+  import DealCard from '$lib/components/public/DealCard.svelte';
   import TripFinderBand from '$lib/components/public/TripFinderBand.svelte';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
   import { placeholderDestinations, placeholderFaqs, placeholderPosts, placeholderTestimonials, placeholderTours } from '$lib/data/placeholders';
@@ -132,17 +132,25 @@
 
 <FeaturedTripsShowcase />
 
-<section class="container-shell py-14 md:py-20" use:sectionReveal>
-  <div class="mx-auto max-w-2xl text-center" use:fadeUpOnScroll={{ y: 14 }}>
-    <h2 class="text-3xl font-extrabold tracking-normal text-[#111111] md:text-[40px]">{cms('featured_tours', 'title', 'Discounts & Offers')}</h2>
-    <p class="mt-3 text-[15px] font-medium leading-7 text-[#555555] md:text-lg">
-      {cms('featured_tours', 'subtitle', 'A curated list of the most popular travel packages based on different destinations')}
-    </p>
-  </div>
-  <div class="mt-8 grid gap-6 md:grid-cols-3" use:staggeredCardReveal>
-    {#each tours as tour}
-      <TourCard {tour} />
-    {/each}
+<section class="relative overflow-hidden bg-gradient-to-b from-sand/55 via-white to-white py-14 md:py-20" use:sectionReveal>
+  <span class="pointer-events-none absolute -right-24 top-10 h-72 w-72 rounded-full bg-goldfinch-gold/10 blur-3xl" aria-hidden="true"></span>
+  <div class="container-shell relative">
+    <div class="mx-auto max-w-2xl text-center" use:fadeUpOnScroll={{ y: 14 }}>
+      <span class="inline-flex items-center gap-2 rounded-full border border-goldfinch-gold/30 bg-goldfinch-gold/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-clay">
+        <Clock size={13} strokeWidth={2.6} /> Limited Time Offers
+      </span>
+      <h2 class="mt-4 text-3xl font-extrabold tracking-tight text-deep-green md:text-[40px]">
+        {cms('featured_tours', 'title', 'Exclusive Safari Deals & Travel Offers')}
+      </h2>
+      <p class="mt-3 text-[15px] font-medium leading-7 text-ink/60 md:text-lg">
+        {cms('featured_tours', 'subtitle', 'Handpicked Tanzania safari, Kilimanjaro and Zanzibar experiences at our best seasonal prices — limited spots, big value.')}
+      </p>
+    </div>
+    <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal>
+      {#each tours as tour, i}
+        <DealCard {tour} index={i} />
+      {/each}
+    </div>
   </div>
 </section>
 
