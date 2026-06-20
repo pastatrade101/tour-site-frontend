@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ArrowRight, BedDouble, CalendarDays, Check, MapPin, MessageCircle, Mountain, Sparkles, Users, Utensils, X } from '@lucide/svelte';
+  import { fade, scale } from 'svelte/transition';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
@@ -23,6 +24,12 @@
   let tour: Tour | null = null;
   let loading = true;
   let error = '';
+
+  // Booking form opens in a modal on request.
+  let formOpen = false;
+  const openForm = () => (formOpen = true);
+  const closeForm = () => (formOpen = false);
+  $: if (browser) document.body.style.overflow = formOpen ? 'hidden' : '';
 
   // Shortlist item for the save button.
   $: shortlistItem = tour
@@ -167,14 +174,15 @@
         <h1 class="mt-2 text-4xl font-bold tracking-normal text-ink">{tour.title}</h1>
         <p class="mt-4 text-base leading-7 text-ink/70">{tour.full_description ?? tour.short_description}</p>
 
-        <!-- primary action + WhatsApp (spec §4.4 A) -->
-        <div class="mt-7 grid gap-3 sm:max-w-md">
-          <a
+        <!-- primary actions (mobile; desktop uses the sticky booking card) -->
+        <div class="mt-7 grid gap-3 lg:hidden">
+          <button
             class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-deep-green shadow-sm transition hover:brightness-105"
-            href={`/plan-my-trip?tour=${tour.slug}`}
+            type="button"
+            on:click={openForm}
           >
-            <Sparkles size={18} strokeWidth={2.4} /> Plan This Trip
-          </a>
+            <Sparkles size={18} strokeWidth={2.4} /> Request this trip
+          </button>
           <a
             class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-6 font-semibold text-white shadow-sm transition hover:brightness-105"
             href={waHref}
@@ -330,14 +338,84 @@
         </div>
       </div>
       <div>
-        <BookingForm {tour} />
-        <div class="mt-6">
-          <SpecialistCard specialist={defaultSpecialist} />
+        <!-- sticky booking summary card -->
+        <div class="lg:sticky lg:top-24">
+          <div class="overflow-hidden rounded-[12px] border border-ink/10 bg-white shadow-[0_18px_50px_rgba(15,47,36,0.10)]">
+            <div class="bg-gradient-to-br from-deep-green to-forest p-5 text-white">
+              <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-savanna">From</p>
+              <p class="mt-0.5 text-3xl font-extrabold leading-none">
+                {tour.currency ?? 'USD'} {(tour.price_from ?? 0).toLocaleString()}
+                <span class="text-sm font-semibold text-white/70">/ person</span>
+              </p>
+              <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-white/85">
+                {#if tour.duration_days}<span class="inline-flex items-center gap-1.5"><CalendarDays size={14} /> {tour.duration_days} days</span>{/if}
+                {#if groupSize}<span class="inline-flex items-center gap-1.5"><Users size={14} /> {groupSize}</span>{/if}
+              </div>
+            </div>
+
+            <div class="grid gap-3 p-5">
+              <button
+                class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-deep-green shadow-sm transition hover:brightness-105"
+                type="button"
+                on:click={openForm}
+              >
+                <Sparkles size={18} strokeWidth={2.4} /> Request this trip
+              </button>
+              <a
+                class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-6 font-semibold text-white shadow-sm transition hover:brightness-105"
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <MessageCircle size={18} strokeWidth={2.2} /> Chat on WhatsApp
+              </a>
+              {#if shortlistItem}
+                <ShortlistButton item={shortlistItem} variant="full" />
+              {/if}
+
+              <p class="flex items-center justify-center gap-1.5 pt-1 text-center text-xs text-ink/55">
+                <Check size={13} class="text-forest" /> No payment now — a request, not a final booking.
+              </p>
+
+              <div class="mt-1 grid grid-cols-2 gap-x-3 gap-y-1.5 border-t border-ink/[0.07] pt-3">
+                {#each ['Local experts', 'Tailor-made', 'No-pressure planning', 'Private & secure'] as point}
+                  <span class="inline-flex items-center gap-1.5 text-xs font-medium text-ink/60">
+                    <span class="grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full bg-forest/10 text-forest"><Check size={9} strokeWidth={3} /></span>
+                    {point}
+                  </span>
+                {/each}
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6">
+            <SpecialistCard specialist={defaultSpecialist} />
+          </div>
         </div>
       </div>
     </div>
   {/if}
 </section>
+
+<!-- booking request modal -->
+{#if formOpen && tour}
+  <div class="fixed inset-0 z-[60] grid place-items-center overflow-y-auto p-4" role="dialog" aria-modal="true" aria-label="Booking request">
+    <button class="fixed inset-0 cursor-default bg-ink/55 backdrop-blur-sm" type="button" aria-label="Close" on:click={closeForm} transition:fade={{ duration: 150 }}></button>
+    <div class="relative my-auto w-full max-w-xl" transition:scale={{ duration: 180, start: 0.97 }}>
+      <button
+        class="absolute -top-3 right-0 z-10 grid h-9 w-9 place-items-center rounded-full bg-white text-ink shadow-md transition hover:bg-sand sm:-right-3"
+        type="button"
+        aria-label="Close"
+        on:click={closeForm}
+      >
+        <X size={18} />
+      </button>
+      <BookingForm {tour} />
+    </div>
+  </div>
+{/if}
+
+<svelte:window on:keydown={(e) => e.key === 'Escape' && closeForm()} />
 
 {#if touristTripLd}<JsonLd data={touristTripLd} />{/if}
 {#if breadcrumbLd}<JsonLd data={breadcrumbLd} />{/if}
