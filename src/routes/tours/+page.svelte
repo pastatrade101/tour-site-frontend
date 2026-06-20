@@ -229,7 +229,7 @@
   <div class="mt-8 grid gap-8 lg:grid-cols-[300px_1fr]">
     <!-- ============ FILTER SIDEBAR ============ -->
     <aside class={`${filtersOpen ? 'block' : 'hidden'} lg:block`}>
-      <div class="filter-scroll grid gap-5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pb-2 lg:pr-1">
+      <div class="filter-scroll grid gap-5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pb-2">
         <!-- search card -->
         <div class="rounded-2xl border border-goldfinch-gold/30 bg-sand/40 p-5">
           <p class="font-serif text-lg font-bold text-deep-green">Your Safari</p>
@@ -416,19 +416,14 @@
     background: rgba(31, 77, 58, 0.12);
   }
 
-  /* thin, unobtrusive scrollbar for the self-scrolling filter rail */
+  /* self-scrolling filter rail: scroll by gesture (wheel/trackpad/touch),
+     no visible scrollbar handle */
   .filter-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(31, 77, 58, 0.3) transparent;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
   }
   .filter-scroll::-webkit-scrollbar {
-    width: 6px;
-  }
-  .filter-scroll::-webkit-scrollbar-thumb {
-    background: rgba(31, 77, 58, 0.25);
-    border-radius: 999px;
-  }
-  .filter-scroll::-webkit-scrollbar-thumb:hover {
-    background: rgba(31, 77, 58, 0.4);
+    display: none;
   }
 </style>
