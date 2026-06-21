@@ -80,8 +80,9 @@
 </script>
 
 {#if destinations.length}
-  <section class="overflow-hidden" use:fadeUpOnScroll={{ y: 18 }}>
-    <div class="grid lg:grid-cols-[0.82fr_1.18fr]">
+  <section class="py-14 md:py-20" use:fadeUpOnScroll={{ y: 18 }}>
+    <div class="container-shell">
+      <div class="grid overflow-hidden rounded-[12px] border border-ink/10 shadow-[0_18px_50px_rgba(15,47,36,0.10)] lg:grid-cols-[0.82fr_1.18fr]">
       <!-- ── left promo ─────────────────────────────────────────── -->
       <div class="relative flex flex-col justify-center overflow-hidden px-6 py-14 text-white md:px-10 md:py-20">
         <img class="absolute inset-0 h-full w-full object-cover" src={promoImage} alt="" aria-hidden="true" loading="lazy" />
@@ -169,6 +170,7 @@
             </div>
           {/if}
         </div>
+      </div>
       </div>
     </div>
   </section>
