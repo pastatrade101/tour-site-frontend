@@ -5,6 +5,8 @@
     AlertTriangle,
     Bot,
     CalendarCheck,
+    ChartBar,
+    ChartPie,
     CheckCircle,
     CircleDollarSign,
     ClipboardList,
@@ -26,6 +28,7 @@
     Upload
   } from '@lucide/svelte';
   import { api } from '$lib/api/client';
+  import ApexChart from '$lib/components/admin/ApexChart.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
 
   type CountStats = {
@@ -324,6 +327,60 @@
     year: 'numeric'
   }).format(new Date());
 
+  // ── ApexCharts options (brand-coloured) ──────────────────────────────────
+  const CHART_FONT = 'Figtree, Inter, sans-serif';
+  $: donutOptions = {
+    chart: { type: 'donut', height: 300, fontFamily: CHART_FONT },
+    labels: ['Pending', 'Confirmed', 'Cancelled', 'Completed', 'Rejected'],
+    series: [
+      stats.bookingPipeline.pending,
+      stats.bookingPipeline.confirmed,
+      stats.bookingPipeline.cancelled,
+      stats.bookingPipeline.completed,
+      stats.bookingPipeline.rejected
+    ],
+    colors: ['#D9A441', '#1F4D3A', '#94a3b8', '#0F2F24', '#f87171'],
+    legend: { position: 'bottom', fontWeight: 600, labels: { colors: '#5A655F' } },
+    dataLabels: { enabled: false },
+    stroke: { width: 2, colors: ['#ffffff'] },
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '68%',
+          labels: {
+            show: true,
+            value: { fontSize: '24px', fontWeight: 700, color: '#1B2420' },
+            total: { show: true, label: 'Total requests', color: '#5A655F', formatter: () => String(pipelineTotal) }
+          }
+        }
+      }
+    },
+    tooltip: { y: { formatter: (v: number) => `${v} request${v === 1 ? '' : 's'}` } }
+  };
+
+  $: barOptions = {
+    chart: { type: 'bar', height: 300, fontFamily: CHART_FONT, toolbar: { show: false } },
+    series: [
+      {
+        name: 'Items',
+        data: [
+          stats.counts.totalTours,
+          stats.counts.destinations,
+          stats.counts.totalBookings,
+          stats.counts.blogPosts,
+          stats.counts.mediaFiles
+        ]
+      }
+    ],
+    xaxis: { categories: ['Tours', 'Destinations', 'Bookings', 'Blog', 'Media'], labels: { style: { colors: '#5A655F', fontWeight: 600 } } },
+    yaxis: { labels: { style: { colors: '#5A655F' } } },
+    colors: ['#1F4D3A'],
+    plotOptions: { bar: { borderRadius: 5, columnWidth: '46%' } },
+    dataLabels: { enabled: false },
+    grid: { borderColor: 'rgba(15,47,36,0.07)', strokeDashArray: 4 },
+    tooltip: { theme: 'light' }
+  };
+
   onMount(async () => {
     loading = true;
     error = '';
@@ -439,6 +496,39 @@
             <p class="mt-2 text-sm leading-5 text-ink/55">{card.helper}</p>
           </article>
         {/each}
+      </div>
+    </section>
+
+    <!-- Analytics charts (ApexCharts) -->
+    <section class="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+      <div class="rounded-[10px] border border-ink/10 bg-white p-5 shadow-card">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Booking pipeline</p>
+            <h2 class="mt-1 text-xl font-bold text-ink">Requests by status</h2>
+          </div>
+          <ChartPie class="text-goldfinch-gold" size={22} />
+        </div>
+        <div class="mt-4">
+          {#if pipelineTotal > 0}
+            <ApexChart options={donutOptions} />
+          {:else}
+            <p class="grid h-[260px] place-items-center text-sm text-ink/45">No booking requests yet.</p>
+          {/if}
+        </div>
+      </div>
+
+      <div class="rounded-[10px] border border-ink/10 bg-white p-5 shadow-card">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Content overview</p>
+            <h2 class="mt-1 text-xl font-bold text-ink">Inventory at a glance</h2>
+          </div>
+          <ChartBar class="text-goldfinch-gold" size={22} />
+        </div>
+        <div class="mt-4">
+          <ApexChart options={barOptions} />
+        </div>
       </div>
     </section>
 

@@ -20,8 +20,15 @@ export default {
         sand: 'rgb(var(--c-sand) / <alpha-value>)',
         savanna: 'rgb(var(--c-savanna) / <alpha-value>)'
       },
+      fontFamily: {
+        // Admin UI font (Attex-style). Public site keeps its default font.
+        admin: ['Figtree', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
+      },
       boxShadow: {
-        soft: '0 18px 50px rgba(24, 33, 31, 0.08)'
+        soft: '0 18px 50px rgba(24, 33, 31, 0.08)',
+        // Attex-style soft card elevation
+        card: '0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06)',
+        'card-hover': '0 8px 24px rgba(16, 24, 40, 0.10)'
       },
       // Tighter corners site-wide for a crisp, editorial tour feel.
       // `full` (pills/avatars) and `none` keep their Tailwind defaults.

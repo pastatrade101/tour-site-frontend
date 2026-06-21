@@ -45,8 +45,8 @@
   });
 </script>
 
-<header class="sticky top-0 z-30 border-b border-forest/10 bg-white/80 shadow-[0_10px_30px_rgba(15,47,36,0.05)] backdrop-blur-xl">
-  <div class="flex h-[72px] items-center justify-between gap-3 px-4 sm:px-6">
+<header class="sticky top-0 z-30 border-b border-ink/[0.08] bg-white">
+  <div class="flex h-[68px] items-center justify-between gap-3 px-4 sm:px-6">
     <div class="flex min-w-0 items-center gap-3">
       <button class="grid h-11 w-11 place-items-center rounded-2xl border border-ink/10 bg-white text-ink shadow-sm transition hover:border-goldfinch-gold/40 hover:bg-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/30 lg:hidden" type="button" aria-label="Open sidebar" on:click={onOpenMobile}>
         <Menu size={19} />
