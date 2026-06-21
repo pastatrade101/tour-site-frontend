@@ -5,7 +5,9 @@ export {
   navbarEntrance,
   numberCounter,
   prefersReducedMotion,
+  revealHeading,
   sectionReveal,
   setupGsap,
-  staggeredCardReveal
+  staggeredCardReveal,
+  tilt
 } from './motion';

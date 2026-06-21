@@ -3,7 +3,7 @@
   import { ArrowRight, ChevronDown, MapPin, Star } from '@lucide/svelte';
   import { goto } from '$app/navigation';
   import { api } from '$lib/api/client';
-  import { fadeUpOnScroll } from '$lib/animations';
+  import { fadeUpOnScroll, tilt } from '$lib/animations';
   import type { Destination } from '$lib/types';
 
   const FALLBACK_PROMO = 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=80';
@@ -132,7 +132,7 @@
             <div class="dest-track">
               {#each destinations as d, i (d.slug)}
                 {@const rating = ratingOf(d)}
-                <a class="dest-card group relative block aspect-[3/4] overflow-hidden rounded-[12px] shadow-soft" href={`/destinations/${d.slug}`} use:registerCard={i}>
+                <a class="dest-card group relative block aspect-[3/4] overflow-hidden rounded-[12px] shadow-soft" href={`/destinations/${d.slug}`} use:registerCard={i} use:tilt={{ max: 6 }}>
                   <img class="h-full w-full object-cover transition-transform duration-[600ms] ease-out group-hover:scale-105" src={imgOf(d)} alt={d.name} loading="lazy" />
 
                   {#if rating}

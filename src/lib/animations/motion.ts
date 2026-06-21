@@ -146,12 +146,14 @@ export const fadeUpOnScroll: Action<HTMLElement, RevealOptions | undefined> = (n
   return withMotion(node, ({ gsap }) => {
     const tween = gsap.fromTo(
       node,
-      { autoAlpha: 0, y: params.y ?? 22 },
+      { autoAlpha: 0, y: params.y ?? 32, scale: 0.985, filter: 'blur(8px)' },
       {
         autoAlpha: 1,
         delay: params.delay ?? 0,
-        duration: params.duration ?? 0.7,
-        ease: params.ease ?? 'power3.out',
+        duration: params.duration ?? 0.9,
+        ease: params.ease ?? 'power4.out',
+        filter: 'blur(0px)',
+        scale: 1,
         scrollTrigger: {
           once: params.once ?? true,
           start: params.start ?? 'top 86%',
@@ -178,18 +180,20 @@ export const staggeredCardReveal: Action<HTMLElement, StaggerOptions | undefined
 
     const tween = gsap.fromTo(
       targets,
-      { autoAlpha: 0, y: params.y ?? 18 },
+      { autoAlpha: 0, y: params.y ?? 26, scale: 0.965, filter: 'blur(6px)' },
       {
         autoAlpha: 1,
         delay: params.delay ?? 0,
-        duration: params.duration ?? 0.6,
-        ease: params.ease ?? 'power3.out',
+        duration: params.duration ?? 0.8,
+        ease: params.ease ?? 'power4.out',
+        filter: 'blur(0px)',
+        scale: 1,
         scrollTrigger: {
           once: params.once ?? true,
           start: params.start ?? 'top 84%',
           trigger: node
         },
-        stagger: params.stagger ?? 0.08,
+        stagger: params.stagger ?? 0.1,
         y: 0
       }
     );
@@ -286,6 +290,86 @@ export const numberCounter: Action<HTMLElement, CounterOptions | undefined> = (n
       },
       value
     });
+
+    return () => {
+      tween.scrollTrigger?.kill();
+      tween.kill();
+    };
+  });
+};
+
+// 3D cursor tilt (vanilla-tilt style) for cards. Pure transforms, no library.
+export const tilt: Action<HTMLElement, { max?: number; scale?: number; glare?: boolean } | undefined> = (node, params = {}) => {
+  if (!browser || prefersReducedMotion()) return {};
+
+  const max = params.max ?? 7;
+  const scale = params.scale ?? 1.02;
+  let raf = 0;
+
+  node.style.transformStyle = 'preserve-3d';
+  node.style.willChange = 'transform';
+
+  const onMove = (event: MouseEvent) => {
+    const rect = node.getBoundingClientRect();
+    const px = (event.clientX - rect.left) / rect.width - 0.5;
+    const py = (event.clientY - rect.top) / rect.height - 0.5;
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      node.style.transition = 'transform 0.08s ease-out';
+      node.style.transform = `perspective(900px) rotateX(${(-py * max).toFixed(2)}deg) rotateY(${(px * max).toFixed(2)}deg) scale(${scale})`;
+    });
+  };
+
+  const onLeave = () => {
+    cancelAnimationFrame(raf);
+    node.style.transition = 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)';
+    node.style.transform = 'perspective(900px) rotateX(0deg) rotateY(0deg) scale(1)';
+  };
+
+  node.addEventListener('mousemove', onMove);
+  node.addEventListener('mouseleave', onLeave);
+
+  return {
+    destroy() {
+      cancelAnimationFrame(raf);
+      node.removeEventListener('mousemove', onMove);
+      node.removeEventListener('mouseleave', onLeave);
+    }
+  };
+};
+
+// Cinematic heading reveal — words rise + de-blur in sequence on scroll.
+export const revealHeading: Action<HTMLElement, { stagger?: number; y?: number; start?: string } | undefined> = (node, params = {}) => {
+  const text = (node.textContent ?? '').trim();
+  if (!text) return {};
+
+  if (!browser || prefersReducedMotion()) {
+    setFinalVisible(node);
+    return {};
+  }
+
+  // Wrap each word in an inline-block span (spaces preserved); keep a11y text.
+  node.setAttribute('aria-label', text);
+  node.innerHTML = text
+    .split(/(\s+)/)
+    .map((part) => (/^\s+$/.test(part) ? part : `<span class="reveal-word" style="display:inline-block;will-change:transform,opacity,filter">${part}</span>`))
+    .join('');
+
+  return withMotion(node, ({ gsap }) => {
+    const words = node.querySelectorAll('.reveal-word');
+    const tween = gsap.fromTo(
+      words,
+      { autoAlpha: 0, y: params.y ?? 26, filter: 'blur(7px)' },
+      {
+        autoAlpha: 1,
+        duration: 0.85,
+        ease: 'power4.out',
+        filter: 'blur(0px)',
+        stagger: params.stagger ?? 0.06,
+        scrollTrigger: { once: true, start: params.start ?? 'top 88%', trigger: node },
+        y: 0
+      }
+    );
 
     return () => {
       tween.scrollTrigger?.kill();
