@@ -13,11 +13,8 @@
   const dispatch = createEventDispatcher<{ action: void; secondary: void }>();
 </script>
 
-<section class="relative overflow-hidden rounded-[10px] border border-ink/10 bg-gradient-to-br from-white via-white to-sand/70 p-5 shadow-[0_20px_60px_rgba(15,47,36,0.08)] sm:p-6">
-  <div class="pointer-events-none absolute -right-16 -top-20 h-52 w-52 rounded-full bg-goldfinch-gold/20 blur-3xl"></div>
-  <div class="pointer-events-none absolute -bottom-24 left-12 h-52 w-52 rounded-full bg-forest/10 blur-3xl"></div>
-
-  <div class="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+<section class="rounded-[10px] border border-ink/10 bg-white p-5 shadow-card sm:p-6">
+  <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
     <div class="max-w-3xl">
       <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">{eyebrow}</p>
       <h1 class="mt-2 text-2xl font-bold tracking-normal text-ink sm:text-3xl">{title}</h1>

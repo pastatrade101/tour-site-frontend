@@ -7,7 +7,7 @@
   export let required = false;
 </script>
 
-<label class="grid gap-2 text-sm font-semibold text-ink">
+<label class="grid gap-1.5 text-sm font-medium text-ink/80">
   <span>{label}</span>
-  <input class="h-11 rounded-2xl border border-ink/10 bg-white px-3.5 text-sm outline-none shadow-sm transition placeholder:text-ink/35 focus:border-forest focus:ring-4 focus:ring-forest/10" {name} {type} bind:value {placeholder} {required} />
+  <input class="h-10 rounded-md border border-ink/15 bg-white px-3 text-sm text-ink shadow-sm outline-none transition placeholder:text-ink/35 focus:border-forest focus:ring-2 focus:ring-forest/20" {name} {type} bind:value {placeholder} {required} />
 </label>

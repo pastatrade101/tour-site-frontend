@@ -8,14 +8,14 @@
 
   const variantClass = {
     danger: 'border border-red-200 bg-white text-red-700 shadow-sm hover:bg-red-50',
-    ghost: 'border border-transparent bg-transparent text-ink/70 hover:bg-sand hover:text-deep-green',
+    ghost: 'border border-transparent bg-transparent text-ink/70 hover:bg-ink/[0.04] hover:text-deep-green',
     primary: 'border border-forest bg-forest text-white shadow-sm shadow-forest/15 hover:bg-deep-green hover:border-deep-green',
-    secondary: 'border border-ink/10 bg-white text-ink shadow-sm hover:border-goldfinch-gold/40 hover:bg-sand/75'
+    secondary: 'border border-ink/15 bg-white text-ink shadow-sm hover:border-forest/30 hover:bg-ink/[0.02]'
   };
 
   const sizeClass = {
-    sm: 'h-9 rounded-xl px-3 text-xs',
-    md: 'h-11 rounded-2xl px-4 text-sm'
+    sm: 'h-9 rounded-md px-3 text-xs',
+    md: 'h-10 rounded-md px-4 text-sm'
   };
 </script>
 

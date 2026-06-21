@@ -9,4 +9,4 @@
   };
 </script>
 
-<span class={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold capitalize ring-1 ${color(status)}`}>{status}</span>
+<span class={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold capitalize ring-1 ${color(status)}`}>{status}</span>
