@@ -8,6 +8,7 @@
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import { faqLd } from '$lib/seo';
   import FeaturedTripsShowcase from '$lib/components/public/FeaturedTripsShowcase.svelte';
+  import PopularDestinationsPromo from '$lib/components/public/PopularDestinationsPromo.svelte';
   import HeroSection from '$lib/components/public/HeroSection.svelte';
   import PartnerStrip from '$lib/components/public/PartnerStrip.svelte';
   import TrustStrip from '$lib/components/public/TrustStrip.svelte';
@@ -131,6 +132,8 @@
 <PopularActivitiesSlider />
 
 <FeaturedTripsShowcase />
+
+<PopularDestinationsPromo />
 
 <section class="relative overflow-hidden bg-gradient-to-b from-sand/55 via-white to-white py-14 md:py-20" use:sectionReveal>
   <span class="pointer-events-none absolute -right-24 top-10 h-72 w-72 rounded-full bg-goldfinch-gold/10 blur-3xl" aria-hidden="true"></span>
