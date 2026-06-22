@@ -30,7 +30,7 @@
 </script>
 
 <div>
-  {#if title}<h2 class="text-center text-3xl font-bold tracking-normal text-ink md:text-4xl">{title}</h2>{/if}
+  {#if title}<h2 class="text-center font-serif text-3xl font-bold tracking-normal text-ink md:text-4xl">{title}</h2>{/if}
   {#if subtitle}<p class="mx-auto mt-3 max-w-2xl text-center text-base leading-7 text-ink/65">{subtitle}</p>{/if}
 
   <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

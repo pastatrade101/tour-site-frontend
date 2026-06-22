@@ -110,7 +110,7 @@
           >
             <Star size={13} fill="currentColor" /> {current.eyebrow}
           </span>
-          <h1 class="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight drop-shadow-sm sm:text-5xl lg:text-[58px]" use:revealHeading={{ stagger: 0.02 }}>{current.title}</h1>
+          <h1 class="mt-5 font-serif text-4xl font-extrabold leading-[1.05] tracking-normal drop-shadow-sm sm:text-5xl lg:text-[58px]" use:revealHeading={{ stagger: 0.02 }}>{current.title}</h1>
           <p class="mt-4 max-w-xl text-base font-medium leading-7 text-white/85 sm:text-lg" in:fly={{ y: 14, duration: 500, delay: 120 }}>{current.subtitle}</p>
         </div>
       {/key}
