@@ -1,12 +1,13 @@
 <script lang="ts">
   import { afterUpdate, onMount } from 'svelte';
   import { fade, fly } from 'svelte/transition';
-  import { ArrowUpRight, Bot, MapPin, MessageCircle, Send, Sparkles, Star, X } from '@lucide/svelte';
+  import { ArrowUpRight, MapPin, MessageCircle, Send, Sparkles, Star, X } from '@lucide/svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { env as publicEnv } from '$env/dynamic/public';
   import { streamAdvisorChat } from '$lib/api/client';
   import { brand } from '$lib/brand';
+  import LottieChatIcon from './LottieChatIcon.svelte';
   import type { AdvisorAction, AdvisorPageContext, AdvisorRecommendation } from '$lib/types';
 
   type ChatMessage = {
@@ -179,7 +180,7 @@
     on:click={() => (open = true)}
     aria-label="Open the Goldfinch AI Travel Advisor"
   >
-    <Bot size={20} strokeWidth={2.2} />
+    <LottieChatIcon size={26} />
     <span class="sm:hidden">AI advisor</span>
     <span class="hidden sm:inline">Ask our AI advisor</span>
   </button>
@@ -196,7 +197,7 @@
     <!-- Header -->
     <header class="flex items-center justify-between gap-3 border-b border-ink/10 bg-deep-green px-4 py-3 text-white md:rounded-t-[16px]">
       <div class="flex items-center gap-2.5">
-        <span class="grid h-9 w-9 place-items-center rounded-full bg-white/15"><Bot size={18} /></span>
+        <span class="grid h-9 w-9 place-items-center rounded-full bg-white/15"><LottieChatIcon size={24} /></span>
         <div class="leading-tight">
           <p class="text-sm font-bold">{brand.aiAdvisorName}</p>
           <p class="text-[11px] text-white/70">AI assistant · replies are guidance, not a final booking</p>
