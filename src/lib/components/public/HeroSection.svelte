@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { fly } from 'svelte/transition';
   import { ArrowRight, ChevronDown, MapPin, Search, ShieldCheck, Star } from '@lucide/svelte';
   import { goto } from '$app/navigation';
   import { api } from '$lib/api/client';
@@ -14,14 +15,14 @@
   export let secondaryCta = brand.secondaryCta;
   export let secondaryCtaUrl = '/contact';
 
-  type Slide = { url: string; label?: string };
+  type Slide = { url: string; label?: string; eyebrow: string; title: string; subtitle: string };
   type Opt = { label: string; value: string };
 
   const FALLBACK_SLIDES: Slide[] = [
-    { url: 'https://images.unsplash.com/photo-1516426122078-c23e76319801', label: 'Serengeti' },
-    { url: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e', label: 'Gorilla trekking' },
-    { url: 'https://images.unsplash.com/photo-1605731414532-6b26976cc153', label: 'Zanzibar' },
-    { url: 'https://images.unsplash.com/photo-1535941339077-2dd1c7963098', label: 'Big game' }
+    { url: 'https://images.unsplash.com/photo-1516426122078-c23e76319801', label: 'Serengeti', eyebrow: 'Tanzania · Safari', title: 'The Great Serengeti', subtitle: 'Endless plains, the Great Migration and unforgettable Big Five game viewing.' },
+    { url: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e', label: 'Gorilla trekking', eyebrow: 'Rwanda · Gorillas', title: 'Gorilla Trekking', subtitle: 'A once-in-a-lifetime hour with mountain gorillas in the misty Virungas.' },
+    { url: 'https://images.unsplash.com/photo-1605731414532-6b26976cc153', label: 'Zanzibar', eyebrow: 'Zanzibar · Coast', title: 'Zanzibar Beaches', subtitle: 'White-sand shores, Stone Town spice and the perfect safari finale.' },
+    { url: 'https://images.unsplash.com/photo-1535941339077-2dd1c7963098', label: 'Big game', eyebrow: 'East Africa · Wildlife', title: 'Into the Wild', subtitle: 'Elephant herds, big cats and dramatic landscapes across East Africa.' }
   ];
 
   const quick = [
@@ -37,6 +38,11 @@
   let index = 0;
   let timer: ReturnType<typeof setInterval> | undefined;
 
+  // The brand pitch (slide 0 / pre-load fallback). The hero copy below reads from
+  // `current`, which changes with the slider so each slide has its own headline.
+  $: brandSlide = { url: '', eyebrow: 'Rated 4.9/5 by travellers', title, subtitle: description } as Slide;
+  $: current = slides[index] ?? brandSlide;
+
   const startAuto = () => {
     stop();
     const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -47,21 +53,31 @@
   onDestroy(stop);
 
   onMount(async () => {
-    const seed: Slide[] = imageUrl && !imageUrl.startsWith('/images/') ? [{ url: imageUrl }] : [];
+    const brandImage = imageUrl && !imageUrl.startsWith('/images/') ? imageUrl : FALLBACK_SLIDES[0].url;
+    // First slide keeps the brand pitch (CMS title/description); the rest are
+    // destination-specific with their own copy.
+    const brand0: Slide = { url: brandImage, eyebrow: 'Rated 4.9/5 by travellers', title, subtitle: description };
     try {
       const dest = await api.destinations.list({ status: 'published', limit: 12 });
       const items = (dest.data.items as Destination[]).filter((d) => d.slug);
       destinationOptions = items.map((d) => ({ label: d.name, value: d.slug }));
-      const destSlides = items
-        .map((d) => ({ url: d.banner_image_url || d.main_image_url || d.image_url || '', label: d.name }))
-        .filter((s) => s.url);
-      slides = [...seed, ...destSlides];
+      const destSlides: Slide[] = items
+        .map((d) => ({
+          url: d.banner_image_url || d.main_image_url || d.image_url || '',
+          label: d.name,
+          eyebrow: d.region || d.country || 'East Africa',
+          title: d.name,
+          subtitle: d.short_description || `Tailor-made ${d.name} journeys, planned around you by local specialists.`
+        }))
+        .filter((s) => s.url)
+        .filter((s, i, a) => a.findIndex((x) => x.url === s.url) === i)
+        .slice(0, 5);
+      slides = [brand0, ...destSlides];
     } catch {
-      slides = seed;
+      slides = [brand0, ...FALLBACK_SLIDES];
     }
-    if (!slides.length) slides = FALLBACK_SLIDES;
-    // de-dupe by url, cap to 6
-    slides = slides.filter((s, i, a) => a.findIndex((x) => x.url === s.url) === i).slice(0, 6);
+    // Always give the slider something to cycle through.
+    if (slides.length <= 1) slides = [brand0, ...FALLBACK_SLIDES];
     startAuto();
   });
 
@@ -85,14 +101,19 @@
   <!-- content -->
   <div class="relative z-10 mx-auto w-full max-w-[1500px] px-5 py-20 md:px-8 md:py-28 lg:py-32">
     <div class="max-w-2xl text-white">
-      <span class="inline-flex items-center gap-2 rounded-full bg-white/12 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-savanna backdrop-blur">
-        <Star size={13} fill="currentColor" /> Rated 4.9/5 by travellers
-      </span>
-
-      {#key title}
-        <h1 class="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight drop-shadow-sm sm:text-5xl lg:text-[58px]" use:revealHeading={{ stagger: 0.02 }}>{title}</h1>
+      <!-- per-slide copy: changes with the slider and re-animates on each change -->
+      {#key index}
+        <div class="min-h-[200px] sm:min-h-[230px] lg:min-h-[256px]">
+          <span
+            class="inline-flex items-center gap-2 rounded-full bg-white/12 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-savanna backdrop-blur"
+            in:fly={{ y: 12, duration: 450 }}
+          >
+            <Star size={13} fill="currentColor" /> {current.eyebrow}
+          </span>
+          <h1 class="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight drop-shadow-sm sm:text-5xl lg:text-[58px]" use:revealHeading={{ stagger: 0.02 }}>{current.title}</h1>
+          <p class="mt-4 max-w-xl text-base font-medium leading-7 text-white/85 sm:text-lg" in:fly={{ y: 14, duration: 500, delay: 120 }}>{current.subtitle}</p>
+        </div>
       {/key}
-      <p class="mt-4 max-w-xl text-base font-medium leading-7 text-white/85 sm:text-lg">{description}</p>
 
       <!-- search on top -->
       <form class="mt-7 flex flex-col gap-2 rounded-lg bg-white p-2 shadow-[0_20px_50px_rgba(15,47,36,0.30)] sm:flex-row sm:items-center" on:submit|preventDefault={submit}>
