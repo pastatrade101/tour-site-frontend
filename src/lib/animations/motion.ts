@@ -119,10 +119,10 @@ export function initSmoothScrolling() {
     const { gsap, ScrollTrigger } = context;
     const Lenis = lenisModule.default;
     const lenis = new Lenis({
-      duration: 0.9,
+      lerp: 0.085,
       smoothWheel: true,
       wheelMultiplier: 1,
-      touchMultiplier: 1.5
+      touchMultiplier: 1.6
     });
 
     // Drive Lenis from the GSAP ticker so smooth scroll and ScrollTrigger share a
@@ -335,18 +335,35 @@ export const revealHeading: Action<HTMLElement, { stagger?: number; y?: number; 
     return {};
   }
 
-  // Wrap each word in an inline-block span (spaces preserved); keep a11y text.
+  // Split into per-character spans (kept word-safe so words never break across
+  // lines), then animate each char in with a stagger — Travelik's "text-anime".
+  const esc = (c: string) => (c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c);
   node.setAttribute('aria-label', text);
   node.innerHTML = text
     .split(/(\s+)/)
-    .map((part) => (/^\s+$/.test(part) ? part : `<span class="reveal-word" style="display:inline-block">${part}</span>`))
+    .map((part) => {
+      if (/^\s+$/.test(part)) return part;
+      const chars = Array.from(part)
+        .map((c) => `<span class="reveal-char" style="display:inline-block;will-change:transform,opacity">${esc(c)}</span>`)
+        .join('');
+      return `<span style="display:inline-block;white-space:nowrap">${chars}</span>`;
+    })
     .join('');
 
-  const words = Array.from(node.querySelectorAll<HTMLElement>('.reveal-word'));
-  const y = params.y ?? 18;
-  const stagger = params.stagger ?? 0.05;
-  words.forEach((el, i) => hideEl(el, y, 0.6, i * stagger));
-  const stop = observeOnce(node, () => words.forEach(showEl));
+  const chars = Array.from(node.querySelectorAll<HTMLElement>('.reveal-char'));
+  const stagger = params.stagger ?? 0.025;
+  const ease = 'cubic-bezier(0.34, 1.4, 0.64, 1)'; // slight Back-style overshoot
+  chars.forEach((el, i) => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(0.4em)';
+    el.style.transition = `opacity 0.5s ease ${(i * stagger).toFixed(3)}s, transform 0.7s ${ease} ${(i * stagger).toFixed(3)}s`;
+  });
+  const stop = observeOnce(node, () => {
+    chars.forEach((el) => {
+      el.style.opacity = '1';
+      el.style.transform = 'translateX(0)';
+    });
+  });
   return { destroy: stop };
 };
 

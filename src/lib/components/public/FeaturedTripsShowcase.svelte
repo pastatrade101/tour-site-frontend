@@ -15,7 +15,7 @@
     Utensils
   } from '@lucide/svelte';
   import { api } from '$lib/api/client';
-  import { fadeUpOnScroll } from '$lib/animations';
+  import { fadeUpOnScroll, revealHeading } from '$lib/animations';
   import { brand } from '$lib/brand';
   import { defaultSpecialist } from '$lib/data/specialists';
   import type { Tour } from '$lib/types';
@@ -119,7 +119,7 @@
 {#if !loading && tabs.length && active}
   <section class="bg-sand/40 py-14 md:py-20" use:fadeUpOnScroll={{ y: 18 }}>
     <div class="container-shell">
-      <h2 class="text-center font-serif text-3xl font-bold tracking-tight text-deep-green md:text-[40px]">
+      <h2 class="text-center font-serif text-3xl font-bold tracking-tight text-deep-green md:text-[40px]" use:revealHeading>
         What a trip with {brand.name.split(' ')[0]} can look like
       </h2>
 

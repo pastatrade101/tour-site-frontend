@@ -3,7 +3,7 @@
   import { ArrowRight, ChevronDown, MapPin, Star } from '@lucide/svelte';
   import { goto } from '$app/navigation';
   import { api } from '$lib/api/client';
-  import { fadeUpOnScroll, tilt } from '$lib/animations';
+  import { fadeUpOnScroll, revealHeading, tilt } from '$lib/animations';
   import type { Destination } from '$lib/types';
 
   const FALLBACK_PROMO = 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=80';
@@ -122,7 +122,7 @@
         <span class="pointer-events-none absolute inset-0 opacity-[0.04]" style="background-image: radial-gradient(circle, #0F2F24 1px, transparent 1.5px); background-size: 24px 24px;" aria-hidden="true"></span>
         <div class="relative">
           <p class="font-serif text-xl italic text-clay">Top Destinations</p>
-          <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-deep-green md:text-[40px]">Explore Popular Destinations</h2>
+          <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-deep-green md:text-[40px]" use:revealHeading>Explore Popular Destinations</h2>
           <p class="mt-3 max-w-xl text-[15px] leading-7 text-ink/60">
             From the Serengeti's endless plains to Zanzibar's white-sand shores — handpicked places our local specialists know inside out.
           </p>

@@ -3,6 +3,7 @@
   import { ArrowRight, ChevronDown, MapPin, Search, ShieldCheck, Star } from '@lucide/svelte';
   import { goto } from '$app/navigation';
   import { api } from '$lib/api/client';
+  import { revealHeading } from '$lib/animations';
   import { brand } from '$lib/brand';
   import type { Destination } from '$lib/types';
 
@@ -88,7 +89,9 @@
         <Star size={13} fill="currentColor" /> Rated 4.9/5 by travellers
       </span>
 
-      <h1 class="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight drop-shadow-sm sm:text-5xl lg:text-[58px]">{title}</h1>
+      {#key title}
+        <h1 class="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight drop-shadow-sm sm:text-5xl lg:text-[58px]" use:revealHeading={{ stagger: 0.02 }}>{title}</h1>
+      {/key}
       <p class="mt-4 max-w-xl text-base font-medium leading-7 text-white/85 sm:text-lg">{description}</p>
 
       <!-- search on top -->
