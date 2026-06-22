@@ -434,7 +434,16 @@ export const api = {
     handoff: (id: string, body: Record<string, unknown> = {}) =>
       apiRequest(`/ai/conversations/${id}/handoff`, { method: 'POST', body }),
     tourMatches: (conversationId: string) =>
-      apiRequest<Array<Record<string, unknown>>>(`/ai/tour-matches/${conversationId}`)
+      apiRequest<Array<Record<string, unknown>>>(`/ai/tour-matches/${conversationId}`),
+    updateStatus: (id: string, body: { status?: string; lead_status?: string }) =>
+      apiRequest<Record<string, unknown>>(`/ai/conversations/${id}/status`, { method: 'PUT', body }),
+    adminCreateBooking: (id: string, body: { idempotency_key?: string } = {}) =>
+      apiRequest<{ booking_request_id?: string; status?: string; error?: string; missing?: string[] }>(
+        `/ai/conversations/${id}/create-booking`,
+        { method: 'POST', body }
+      ),
+    usage: () => apiRequest<Record<string, unknown>>('/ai/usage'),
+    evals: () => apiRequest<Array<Record<string, unknown>>>('/ai/evals')
   },
   hubspot: {
     syncLead: (body: Record<string, unknown>) => apiRequest('/hubspot/sync-lead', { method: 'POST', body }),
