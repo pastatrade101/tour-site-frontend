@@ -1,17 +1,18 @@
 <script lang="ts">
+  import { tilt } from '$lib/animations';
   import type { BlogPost } from '$lib/types';
 
   export let post: BlogPost;
 </script>
 
-<article class="overflow-hidden rounded-lg border border-ink/10 bg-white shadow-soft">
-  <a href={`/blog/${post.slug}`} class="block">
-    <div class="aspect-[16/10] bg-skywash">
+<article class="group flex h-full flex-col overflow-hidden rounded-[12px] border border-ink/10 bg-white shadow-[0_14px_40px_rgba(15,47,36,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(15,47,36,0.16)]" use:tilt={{ max: 5 }}>
+  <a href={`/blog/${post.slug}`} class="flex h-full flex-col">
+    <div class="aspect-[16/10] overflow-hidden bg-skywash">
       {#if post.featured_image_url}
-        <img class="h-full w-full object-cover" src={post.featured_image_url} alt={post.title} />
+        <img class="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-110" src={post.featured_image_url} alt={post.title} loading="lazy" />
       {/if}
     </div>
-    <div class="p-5">
+    <div class="flex flex-1 flex-col p-5">
       <p class="text-sm font-semibold text-clay">{post.author_name ?? 'Tour Team'}</p>
       <h3 class="mt-2 text-xl font-bold tracking-normal text-ink">{post.title}</h3>
       <p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/70">{post.excerpt}</p>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Sparkles, Star } from '@lucide/svelte';
+  import { tilt } from '$lib/animations';
   import type { Lodge } from '$lib/types';
 
   export let lodge: Lodge;
@@ -25,10 +26,10 @@
       : '';
 </script>
 
-<article class="flex h-full flex-col overflow-hidden rounded-lg border border-ink/10 bg-white shadow-soft">
-  <div class="relative aspect-[4/3] bg-skywash">
+<article class="group flex h-full flex-col overflow-hidden rounded-[12px] border border-ink/10 bg-white shadow-[0_14px_40px_rgba(15,47,36,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(15,47,36,0.16)]" use:tilt={{ max: 5 }}>
+  <div class="relative aspect-[4/3] overflow-hidden bg-skywash">
     {#if imageUrl}
-      <img class="h-full w-full object-cover" src={imageUrl} alt={lodge.name} />
+      <img class="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-110" src={imageUrl} alt={lodge.name} loading="lazy" />
     {/if}
     {#if lodge.is_featured}
       <span class="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-goldfinch-gold px-2.5 py-1 text-[11px] font-bold text-deep-green shadow">
