@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { ArrowRight, BarChart3 } from '@lucide/svelte';
+  import { ArrowRight } from '@lucide/svelte';
   import { api } from '$lib/api/client';
+  import { revealHeading, staggeredCardReveal } from '$lib/animations';
   import { DESTINATION_SCORES, getDestinationScores, topDimension, type DestinationScores } from '$lib/data/destination-scores';
   import ScoreBars from '$lib/components/public/ScoreBars.svelte';
   import type { Destination } from '$lib/types';
@@ -52,10 +53,8 @@
 <section class="relative overflow-hidden bg-gradient-to-br from-deep-green via-forest to-deep-green text-white">
   <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-goldfinch-gold/20 blur-3xl"></div>
   <div class="container-shell relative py-16 text-center md:py-20">
-    <span class="inline-flex items-center gap-2 rounded-full border border-goldfinch-gold/30 bg-goldfinch-gold/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-goldfinch-gold">
-      <BarChart3 size={14} strokeWidth={2.4} /> Destination Scores
-    </span>
-    <h1 class="mx-auto mt-5 max-w-3xl text-3xl font-extrabold leading-[1.1] tracking-tight md:text-[44px]">How East Africa's destinations really score</h1>
+    <p class="font-serif text-xl italic text-savanna">Destination Scores</p>
+    <h1 class="mx-auto mt-5 max-w-3xl text-3xl font-extrabold leading-[1.1] tracking-tight md:text-[44px]" use:revealHeading>How East Africa's destinations really score</h1>
     <p class="mx-auto mt-4 max-w-2xl text-[15px] leading-7 text-white/75 md:text-lg">
       Our honest 1–10 ratings across wildlife, luxury, family, photography and adventure — so you can match the place to what matters to you.
     </p>
@@ -63,7 +62,7 @@
 </section>
 
 <section class="container-shell py-12 md:py-16">
-  <div class="grid gap-6 lg:grid-cols-2">
+  <div class="grid gap-6 lg:grid-cols-2" use:staggeredCardReveal={{ y: 16, stagger: 0.05 }}>
     {#each rows as row (row.slug)}
       <article class="flex flex-col overflow-hidden rounded-2xl border border-ink/10 bg-white shadow-soft">
         <div class="flex items-center gap-4 border-b border-ink/10 p-5">

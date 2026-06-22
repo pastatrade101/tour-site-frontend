@@ -3,6 +3,7 @@
   import { page } from '$app/stores';
   import { CalendarClock, MapPin, Users } from '@lucide/svelte';
   import { api } from '$lib/api/client';
+  import { revealHeading } from '$lib/animations';
   import BookingForm from '$lib/components/public/BookingForm.svelte';
   import { placeholderTours } from '$lib/data/placeholders';
   import type { Tour } from '$lib/types';
@@ -36,8 +37,10 @@
 <section class="container-shell grid items-start gap-10 py-12 lg:grid-cols-[0.85fr_1.15fr] lg:py-16">
   <!-- tour summary -->
   <aside class="lg:sticky lg:top-24">
-    <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">Booking</p>
-    <h1 class="mt-2 text-3xl font-bold tracking-normal text-deep-green md:text-4xl">{tour.title}</h1>
+    <p class="font-serif text-xl italic text-clay">Booking</p>
+    {#key tour.title}
+      <h1 class="mt-2 text-3xl font-bold tracking-normal text-deep-green md:text-4xl" use:revealHeading>{tour.title}</h1>
+    {/key}
 
     <div class="mt-6 overflow-hidden rounded-2xl border border-ink/10 bg-white shadow-soft">
       <div class="aspect-[16/10] bg-skywash">

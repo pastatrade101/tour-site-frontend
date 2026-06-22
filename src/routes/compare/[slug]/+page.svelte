@@ -3,6 +3,7 @@
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
+  import { revealHeading } from '$lib/animations';
   import { COMPARISONS, getComparison } from '$lib/data/comparisons';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import { breadcrumbLd, faqLd } from '$lib/seo';
@@ -82,8 +83,10 @@
         <span class="text-white/30">/</span>
         <span class="font-medium text-white">{cmp.title}</span>
       </nav>
-      <p class="text-sm font-bold uppercase tracking-[0.18em] text-goldfinch-gold">{cmp.eyebrow}</p>
-      <h1 class="mt-2 max-w-3xl text-3xl font-extrabold leading-[1.08] tracking-tight md:text-5xl">{cmp.title}</h1>
+      <p class="font-serif text-xl italic text-savanna">{cmp.eyebrow}</p>
+      {#key cmp.title}
+        <h1 class="mt-2 max-w-3xl text-3xl font-extrabold leading-[1.08] tracking-tight md:text-5xl" use:revealHeading>{cmp.title}</h1>
+      {/key}
       <p class="mt-4 max-w-2xl text-[15px] leading-7 text-white/80 md:text-base">{cmp.intro}</p>
     </div>
   </section>

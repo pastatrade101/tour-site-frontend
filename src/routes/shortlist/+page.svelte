@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ArrowRight, Heart, Trash2 } from '@lucide/svelte';
+  import { revealHeading } from '$lib/animations';
   import { clearShortlist, removeShortlist, shortlist } from '$lib/shortlist';
 
   $: items = $shortlist;
@@ -8,8 +9,8 @@
 <section class="container-shell py-12 md:py-16">
   <div class="flex flex-wrap items-end justify-between gap-4">
     <div>
-      <p class="text-sm font-semibold uppercase tracking-[0.16em] text-clay">Your shortlist</p>
-      <h1 class="mt-2 text-3xl font-bold tracking-tight text-deep-green md:text-4xl">Saved trips</h1>
+      <p class="font-serif text-xl italic text-clay">Your shortlist</p>
+      <h1 class="mt-2 text-3xl font-bold tracking-tight text-deep-green md:text-4xl" use:revealHeading>Saved trips</h1>
       <p class="mt-2 text-ink/60">
         {items.length} saved {items.length === 1 ? 'trip' : 'trips'} · we'll keep these for your next visit.
       </p>

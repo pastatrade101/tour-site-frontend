@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { ArrowLeft, ArrowRight, Check, Compass, MessageCircle, Sparkles } from '@lucide/svelte';
+  import { ArrowLeft, ArrowRight, Check, MessageCircle, Sparkles } from '@lucide/svelte';
   import { api } from '$lib/api/client';
+  import { revealHeading } from '$lib/animations';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import type { Tour } from '$lib/types';
 
@@ -186,12 +187,12 @@
   <div class="container-shell flex min-h-[70vh] flex-col items-center py-12 md:py-16">
     <div class="w-full max-w-2xl">
       <div class="text-center">
-        <span class="inline-flex items-center gap-2 rounded-full border border-goldfinch-gold/30 bg-goldfinch-gold/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-clay">
-          <Compass size={14} strokeWidth={2.4} /> Trip Finder
-        </span>
-        <h1 class="mx-auto mt-4 max-w-xl text-3xl font-extrabold leading-tight tracking-tight text-deep-green md:text-[40px]">
-          {isResults ? 'Your best-fit trips' : 'Find the right trip in a minute'}
-        </h1>
+        <p class="font-serif text-xl italic text-clay">Trip Finder</p>
+        {#key isResults}
+          <h1 class="mx-auto mt-4 max-w-xl text-3xl font-extrabold leading-tight tracking-tight text-deep-green md:text-[40px]" use:revealHeading>
+            {isResults ? 'Your best-fit trips' : 'Find the right trip in a minute'}
+          </h1>
+        {/key}
         {#if !isResults}
           <p class="mx-auto mt-3 max-w-md text-ink/60">A few quick questions and we'll recommend trips that actually fit you.</p>
         {/if}
