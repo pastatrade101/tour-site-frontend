@@ -72,7 +72,7 @@
     </nav>
 
     <div class="max-w-3xl">
-      <p class="text-sm font-semibold uppercase tracking-[0.16em] text-clay">{post.author_name ?? 'Tour Team'}</p>
+      <p class="font-serif text-lg italic text-clay">{post.author_name ?? 'Tour Team'}</p>
       <h1 class="mt-3 text-4xl font-bold tracking-normal text-ink">{post.title}</h1>
       <p class="mt-4 text-lg leading-8 text-ink/70">{post.excerpt}</p>
     </div>

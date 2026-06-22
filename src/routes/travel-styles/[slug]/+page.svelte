@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { ArrowRight, Check, Heart, Sparkles } from '@lucide/svelte';
+  import { ArrowRight, Check, Sparkles } from '@lucide/svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
@@ -87,9 +87,7 @@
         <span class="text-white/30">/</span>
         <span class="font-medium text-white">{style.name}</span>
       </nav>
-      <p class="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-goldfinch-gold">
-        <Heart size={14} strokeWidth={2.4} /> {style.name}
-      </p>
+      <p class="font-serif text-xl italic text-savanna">{style.name}</p>
       <h1 class="mt-2 max-w-3xl text-3xl font-extrabold leading-[1.08] tracking-tight md:text-5xl">{style.emotionalPromise}</h1>
       <p class="mt-4 max-w-2xl text-[15px] leading-7 text-white/85 md:text-base">{style.description}</p>
       <div class="mt-6 flex flex-wrap gap-3">

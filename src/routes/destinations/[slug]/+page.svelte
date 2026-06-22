@@ -124,7 +124,7 @@
     <div class="grid gap-10 lg:grid-cols-[1fr_0.8fr]">
       <div>
         {#if destination.country}
-          <p class="text-sm font-semibold uppercase tracking-[0.16em] text-clay">{destination.country}</p>
+          <p class="font-serif text-xl italic text-clay">{destination.country}</p>
         {/if}
         <h1 class="mt-3 text-4xl font-bold tracking-normal text-ink">{destination.name}</h1>
         <p class="mt-4 text-base leading-7 text-ink/70">{destination.description}</p>
