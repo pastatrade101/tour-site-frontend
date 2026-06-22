@@ -112,7 +112,7 @@
   <div class="container-shell">
     <div class="mx-auto max-w-2xl text-center">
       <p class="font-serif text-xl italic text-clay">Things to do</p>
-      <h2 class="mt-2 font-serif text-3xl font-extrabold tracking-normal text-deep-green md:text-[40px]" use:revealHeading>Popular Activities</h2>
+      <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-deep-green md:text-[40px]" use:revealHeading>Popular Activities</h2>
       <p class="mx-auto mt-3 max-w-[620px] text-[15px] leading-7 text-ink/60 md:text-base">
         A curated list of the most-loved experiences across our East-Africa destinations.
       </p>

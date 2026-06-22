@@ -29,7 +29,7 @@
   </div>
 {:else}
   <div class="text-center">
-    {#if title}<h2 class="font-serif text-3xl font-bold tracking-normal text-ink md:text-4xl">{title}</h2>{/if}
+    {#if title}<h2 class="text-3xl font-bold tracking-normal text-ink md:text-4xl">{title}</h2>{/if}
     {#if subtitle}<p class="mx-auto mt-3 max-w-2xl text-base leading-7 text-ink/65">{subtitle}</p>{/if}
     <ol class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
       {#each steps as step, i}

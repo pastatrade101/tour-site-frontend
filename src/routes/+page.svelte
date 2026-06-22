@@ -143,7 +143,7 @@
   <div class="container-shell relative">
     <div class="mx-auto max-w-2xl text-center" use:fadeUpOnScroll={{ y: 14 }}>
       <p class="font-serif text-xl italic text-clay">Limited Time Offers</p>
-      <h2 class="mt-4 font-serif text-3xl font-extrabold tracking-normal text-deep-green md:text-[40px]">
+      <h2 class="mt-4 text-3xl font-extrabold tracking-tight text-deep-green md:text-[40px]">
         {cms('featured_tours', 'title', 'Exclusive Safari Deals & Travel Offers')}
       </h2>
       <p class="mt-3 text-[15px] font-medium leading-7 text-ink/60 md:text-lg">
@@ -202,7 +202,7 @@
 <section class="bg-white py-14 md:py-20" use:sectionReveal>
   <div class="container-shell">
     <div class="mx-auto max-w-2xl text-center" use:fadeUpOnScroll={{ y: 14 }}>
-      <h2 class="font-serif text-3xl font-extrabold tracking-normal text-deep-green md:text-[40px]">
+      <h2 class="text-3xl font-extrabold tracking-normal text-deep-green md:text-[40px]">
         {cms('testimonials', 'title', 'What Our Travelers Say')}
       </h2>
       <p class="mx-auto mt-3 max-w-xl text-[15px] font-medium leading-7 text-ink/60 md:text-lg">
@@ -273,7 +273,7 @@
       <div class="mx-auto max-w-3xl">
         <p class="font-serif text-xl italic text-savanna">Start Your Journey</p>
 
-        <h2 class="mt-5 font-serif text-3xl font-extrabold leading-[1.1] tracking-normal md:text-[44px]">
+        <h2 class="mt-5 text-3xl font-extrabold leading-[1.1] tracking-normal md:text-[44px]">
           {cms('final_cta', 'title', 'Ready to Plan Your East Africa Adventure?')}
         </h2>
 
