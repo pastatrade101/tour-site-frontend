@@ -443,7 +443,9 @@ export const api = {
         { method: 'POST', body }
       ),
     usage: () => apiRequest<Record<string, unknown>>('/ai/usage'),
-    evals: () => apiRequest<Array<Record<string, unknown>>>('/ai/evals')
+    evals: () => apiRequest<Array<Record<string, unknown>>>('/ai/evals'),
+    runEvals: () => apiRequest<{ total: number; passed: number; failed: number }>('/ai/evals/run', { method: 'POST' }),
+    purgeRetention: () => apiRequest<{ purged: number; cutoff: string; retentionDays: number }>('/ai/retention/purge', { method: 'POST' })
   },
   hubspot: {
     syncLead: (body: Record<string, unknown>) => apiRequest('/hubspot/sync-lead', { method: 'POST', body }),

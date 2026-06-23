@@ -51,12 +51,62 @@
   const pct = (used: number, budget: number) => (budget > 0 ? Math.min(100, Math.round((used / budget) * 100)) : 0);
   $: evalPassed = evals.filter((e) => e.passed === true).length;
   $: evalFailed = evals.filter((e) => e.passed === false).length;
+
+  // On-demand maintenance (also runs nightly via the ai:nightly job).
+  let busy = '';
+  let notice = '';
+  const runEvals = async () => {
+    busy = 'evals';
+    notice = '';
+    try {
+      const res = await api.aiTravelAdvisor.runEvals();
+      notice = `Eval sweep: ${res.data.passed}/${res.data.total} passed${res.data.failed ? `, ${res.data.failed} failed` : ''}.`;
+      await load();
+    } catch (err) {
+      notice = err instanceof Error ? err.message : 'Eval sweep failed.';
+    } finally {
+      busy = '';
+    }
+  };
+  const purgeRetention = async () => {
+    busy = 'purge';
+    notice = '';
+    try {
+      const res = await api.aiTravelAdvisor.purgeRetention();
+      notice = `Purged ${res.data.purged} anonymous conversation(s) older than ${res.data.retentionDays} days.`;
+    } catch (err) {
+      notice = err instanceof Error ? err.message : 'Purge failed.';
+    } finally {
+      busy = '';
+    }
+  };
 </script>
 
 <svelte:head><title>AI Usage | Goldfinch CMS</title></svelte:head>
 
 <section class="grid gap-6">
   <AdminPageHeader eyebrow="AI System" title="AI Usage & Cost" description="Live Anthropic spend, budget headroom, route mix and abuse signals for the Goldfinch AI Travel Advisor." />
+
+  <!-- maintenance actions (also run nightly via the ai:nightly job) -->
+  <div class="flex flex-wrap items-center gap-3">
+    <button
+      class="inline-flex h-9 items-center gap-2 rounded-lg bg-forest px-4 text-sm font-bold text-white transition hover:bg-deep-green disabled:opacity-60"
+      type="button"
+      on:click={runEvals}
+      disabled={busy !== ''}
+    >
+      {busy === 'evals' ? 'Running eval sweep…' : 'Run eval sweep'}
+    </button>
+    <button
+      class="inline-flex h-9 items-center gap-2 rounded-lg border border-ink/15 bg-white px-4 text-sm font-bold text-ink transition hover:bg-ink/5 disabled:opacity-60"
+      type="button"
+      on:click={purgeRetention}
+      disabled={busy !== ''}
+    >
+      {busy === 'purge' ? 'Purging…' : 'Purge old anonymous chats'}
+    </button>
+    {#if notice}<span class="text-sm font-medium text-ink/70">{notice}</span>{/if}
+  </div>
 
   {#if loading}
     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{#each Array(4) as _}<div class="h-24 animate-pulse rounded-[10px] bg-ink/5"></div>{/each}</div>
