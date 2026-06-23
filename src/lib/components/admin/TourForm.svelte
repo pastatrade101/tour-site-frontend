@@ -131,26 +131,31 @@
     toasts = toasts.filter((toast) => toast.id !== event.detail);
   };
 
-  const slugify = (value: string) =>
-    value
+  // Coerce to string first — number <input>s bind as numbers in Svelte, so these
+  // helpers must tolerate non-string values (otherwise .trim() throws on save).
+  const slugify = (value: unknown) =>
+    String(value ?? '')
       .toLowerCase()
       .trim()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
-  const stringList = (value: string) =>
-    value
+  const stringList = (value: unknown) =>
+    String(value ?? '')
       .split(/[\n,]/)
       .map((item) => item.trim())
       .filter(Boolean);
 
-  const lineList = (value: string) =>
-    value
+  const lineList = (value: unknown) =>
+    String(value ?? '')
       .split('\n')
       .map((item) => item.trim())
       .filter(Boolean);
 
-  const nullableNumber = (value: string) => (value.trim() === '' ? null : Number(value));
+  const nullableNumber = (value: unknown) => {
+    const text = String(value ?? '').trim();
+    return text === '' ? null : Number(text);
+  };
 
   const applyMediaSelection = (target: 'banner' | 'main' | 'og', id: string) => {
     const media = mediaItems.find((item) => item.id === id);
@@ -265,7 +270,7 @@
     banner_image_url: form.banner_image_url || null,
     budget_tier: form.budget_tier || null,
     category_id: form.category_id || null,
-    currency: form.currency.trim().toUpperCase() || 'USD',
+    currency: String(form.currency ?? '').trim().toUpperCase() || 'USD',
     destination_id: form.destination_id || null,
     difficulty_level: form.difficulty_level || null,
     duration_days: Number(form.duration_days || 1),
@@ -287,10 +292,10 @@
     price_from: Number(form.price_from || 0),
     seo_title: form.seo_title || null,
     short_description: form.short_description || null,
-    slug: form.slug.trim(),
+    slug: String(form.slug ?? '').trim(),
     start_location: form.start_location || null,
     status: form.status,
-    title: form.title.trim()
+    title: String(form.title ?? '').trim()
   });
 
   const saveTour = async () => {
