@@ -18,11 +18,12 @@
   type Slide = { url: string; label?: string; eyebrow: string; title: string; subtitle: string };
   type Opt = { label: string; value: string };
 
+  const U = '?auto=format&fit=crop&w=1600&q=70'; // size + compress Unsplash fallbacks
   const FALLBACK_SLIDES: Slide[] = [
-    { url: 'https://images.unsplash.com/photo-1516426122078-c23e76319801', label: 'Serengeti', eyebrow: 'Tanzania · Safari', title: 'The Great Serengeti', subtitle: 'Endless plains, the Great Migration and unforgettable Big Five game viewing.' },
-    { url: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e', label: 'Gorilla trekking', eyebrow: 'Rwanda · Gorillas', title: 'Gorilla Trekking', subtitle: 'A once-in-a-lifetime hour with mountain gorillas in the misty Virungas.' },
-    { url: 'https://images.unsplash.com/photo-1605731414532-6b26976cc153', label: 'Zanzibar', eyebrow: 'Zanzibar · Coast', title: 'Zanzibar Beaches', subtitle: 'White-sand shores, Stone Town spice and the perfect safari finale.' },
-    { url: 'https://images.unsplash.com/photo-1535941339077-2dd1c7963098', label: 'Big game', eyebrow: 'East Africa · Wildlife', title: 'Into the Wild', subtitle: 'Elephant herds, big cats and dramatic landscapes across East Africa.' }
+    { url: `https://images.unsplash.com/photo-1516426122078-c23e76319801${U}`, label: 'Serengeti', eyebrow: 'Tanzania · Safari', title: 'The Great Serengeti', subtitle: 'Endless plains, the Great Migration and unforgettable Big Five game viewing.' },
+    { url: `https://images.unsplash.com/photo-1547471080-7cc2caa01a7e${U}`, label: 'Gorilla trekking', eyebrow: 'Rwanda · Gorillas', title: 'Gorilla Trekking', subtitle: 'A once-in-a-lifetime hour with mountain gorillas in the misty Virungas.' },
+    { url: `https://images.unsplash.com/photo-1605731414532-6b26976cc153${U}`, label: 'Zanzibar', eyebrow: 'Zanzibar · Coast', title: 'Zanzibar Beaches', subtitle: 'White-sand shores, Stone Town spice and the perfect safari finale.' },
+    { url: `https://images.unsplash.com/photo-1535941339077-2dd1c7963098${U}`, label: 'Big game', eyebrow: 'East Africa · Wildlife', title: 'Into the Wild', subtitle: 'Elephant herds, big cats and dramatic landscapes across East Africa.' }
   ];
 
   const quick = [
@@ -42,6 +43,16 @@
   // `current`, which changes with the slider so each slide has its own headline.
   $: brandSlide = { url: '', eyebrow: 'Rated 4.9/5 by travellers', title, subtitle: description } as Slide;
   $: current = slides[index] ?? brandSlide;
+
+  // Only download a slide image once it's the active (or next) slide — the
+  // slider stacks all slides on top of each other, so without this every slide
+  // image loads up-front (the 18MB / 46s-LCP problem). This keeps it to ~1–2.
+  let loaded = new Set<number>([0]);
+  $: {
+    loaded.add(index);
+    if (slides.length > 1) loaded.add((index + 1) % slides.length);
+    loaded = loaded;
+  }
 
   const startAuto = () => {
     stop();
@@ -87,13 +98,21 @@
 <section class="relative overflow-hidden bg-deep-green">
   <!-- background slider -->
   {#each slides as slide, i (slide.url)}
-    <img
-      class={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1200ms] ease-out ${i === index ? 'opacity-100' : 'opacity-0'}`}
-      src={slide.url}
-      alt={slide.label ?? 'East Africa'}
-      loading={i === 0 ? 'eager' : 'lazy'}
+    <div
+      class={`absolute inset-0 transition-opacity duration-[1200ms] ease-out ${i === index ? 'opacity-100' : 'opacity-0'}`}
       aria-hidden={i === index ? undefined : 'true'}
-    />
+    >
+      {#if loaded.has(i)}
+        <img
+          class="h-full w-full object-cover"
+          src={slide.url}
+          alt={slide.label ?? 'East Africa'}
+          loading={i === 0 ? 'eager' : 'lazy'}
+          decoding="async"
+          fetchpriority={i === 0 ? 'high' : 'auto'}
+        />
+      {/if}
+    </div>
   {/each}
   <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-deep-green/55 to-deep-green/25"></div>
   <div class="absolute inset-0 bg-gradient-to-r from-deep-green/75 via-deep-green/25 to-transparent"></div>
