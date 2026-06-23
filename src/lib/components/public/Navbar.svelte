@@ -134,8 +134,14 @@
         menuOpen = false;
       }
     };
+    // Hysteresis: collapse the top row only once we're well past the header,
+    // and only re-expand when scrolled back near the top. The wide dead zone
+    // (40–120px) stops the sticky header shrinking from nudging scrollY back
+    // across a single threshold, which caused the infinite on/off "vibration".
     const onScroll = () => {
-      scrolled = window.scrollY > 28;
+      const y = window.scrollY;
+      if (!scrolled && y > 120) scrolled = true;
+      else if (scrolled && y < 40) scrolled = false;
     };
     onScroll();
     window.addEventListener('click', onClick);
