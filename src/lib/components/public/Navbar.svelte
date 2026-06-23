@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { ArrowRight, ChevronDown, CircleHelp, Mail, Menu, MessageCircle, Phone, Search, TicketsPlane, User, X } from '@lucide/svelte';
+  import { ArrowRight, ChevronDown, CircleHelp, Menu, MessageCircle, Search, TicketsPlane, User, X } from '@lucide/svelte';
   import { fade, fly } from 'svelte/transition';
   import { api } from '$lib/api/client';
   import { openAiAdvisor } from '$lib/aiAdvisor';
@@ -331,7 +331,7 @@
   <!-- ── mobile drawer ──────────────────────────────────────────────────── -->
   {#if menuOpen}
     <div class="fixed inset-0 z-[90] lg:hidden" transition:fade={{ duration: 120 }}>
-      <button class="absolute inset-0 bg-ink/30 backdrop-blur-sm" type="button" aria-label="Close menu" on:click={() => (menuOpen = false)}></button>
+      <button class="absolute inset-0 bg-ink/45 backdrop-blur-md" type="button" aria-label="Close menu" on:click={() => (menuOpen = false)}></button>
 
       <aside class="absolute right-0 top-0 flex min-h-dvh w-[86vw] min-w-[300px] max-w-[380px] flex-col overflow-y-auto border-l border-[#e8e8e8] bg-white px-5 py-5 shadow-[-20px_0_55px_rgba(0,0,0,0.12)]" transition:fly={{ x: 60, duration: 200 }}>
         <div class="flex items-center justify-between gap-4">
@@ -384,14 +384,6 @@
             {/if}
           {/each}
 
-          <a class={`mt-2 inline-flex items-center justify-center rounded-xl px-4 py-3 text-[16px] font-bold shadow-sm transition ${isActive(path, '/plan-my-trip') ? 'bg-deep-green text-white' : 'bg-goldfinch-gold text-deep-green'}`} href="/plan-my-trip" on:click={() => (menuOpen = false)}>
-            {brand.primaryCta}
-          </a>
-
-          <a class="inline-flex items-center justify-center gap-2 rounded-xl bg-deep-green px-4 py-3 text-[16px] font-bold text-white shadow-sm transition hover:bg-forest" href="/admin/login" on:click={() => (menuOpen = false)}>
-            <User size={17} strokeWidth={2.4} />
-            Login
-          </a>
         </nav>
 
         <div class="mt-6 grid gap-2.5 border-t border-ink/10 pt-5">
@@ -402,20 +394,7 @@
               <span class="text-[15px] font-bold text-[#141414]">{waNumber}</span>
             </span>
           </a>
-          <a class="flex items-center gap-3 rounded-2xl bg-sand/40 px-4 py-3" href={`mailto:${supportEmail}`} on:click={() => (menuOpen = false)}>
-            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-forest ring-1 ring-ink/10"><Mail size={19} strokeWidth={2.2} /></span>
-            <span class="grid leading-tight">
-              <span class="text-xs font-medium text-[#555]">Email support</span>
-              <span class="text-[15px] font-semibold text-[#141414]">{supportEmail}</span>
-            </span>
-          </a>
-          <a class="flex items-center gap-3 rounded-2xl bg-sand/40 px-4 py-3" href={`tel:${supportPhone.replace(/\s+/g, '')}`} on:click={() => (menuOpen = false)}>
-            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-forest ring-1 ring-ink/10"><Phone size={19} strokeWidth={2.2} /></span>
-            <span class="grid leading-tight">
-              <span class="text-xs font-medium text-[#555]">Call us</span>
-              <span class="text-[15px] font-semibold text-[#141414]">{supportPhone}</span>
-            </span>
-          </a>
+          <a class="mt-1 text-center text-xs font-medium text-ink/40 transition hover:text-forest" href="/admin/login" on:click={() => (menuOpen = false)}>Staff login</a>
         </div>
       </aside>
     </div>
