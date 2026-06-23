@@ -6,6 +6,7 @@
   import { page } from '$app/stores';
   import { env as publicEnv } from '$env/dynamic/public';
   import { streamAdvisorChat } from '$lib/api/client';
+  import { aiAdvisorOpen } from '$lib/aiAdvisor';
   import { brand } from '$lib/brand';
   import LottieChatIcon from './LottieChatIcon.svelte';
   import type { AdvisorAction, AdvisorPageContext, AdvisorRecommendation } from '$lib/types';
@@ -29,7 +30,8 @@
     'Talk to a human'
   ];
 
-  let open = false;
+  // Open-state lives in a shared store so the navbar "Need help?" link (and any
+  // other entry point) can launch the advisor.
   let started = false;
   let input = '';
   let loading = false;
@@ -91,7 +93,7 @@
     if (scroller) scroller.scrollTop = scroller.scrollHeight;
   };
   afterUpdate(() => {
-    if (open) scrollToBottom();
+    if ($aiAdvisorOpen) scrollToBottom();
   });
 
   const lastAssistant = (): ChatMessage | undefined => {
@@ -199,13 +201,13 @@
 
 <!-- Floating launcher: compact circle on mobile, labelled pill on desktop.
      Auto-hides on scroll-down so it never covers content. -->
-{#if !open}
+{#if !$aiAdvisorOpen}
   <button
     class={`fixed bottom-24 right-4 z-[60] grid h-14 w-14 place-items-center rounded-full bg-deep-green text-white shadow-[0_14px_40px_rgba(15,47,36,0.35)] transition-all duration-300 ease-out hover:bg-forest sm:inline-flex sm:h-auto sm:w-auto sm:items-center sm:gap-2.5 sm:px-5 sm:py-3.5 sm:font-bold md:bottom-6 md:right-6 ${
       launcherHidden ? 'pointer-events-none translate-y-28 opacity-0' : 'translate-y-0 opacity-100'
     }`}
     type="button"
-    on:click={() => (open = true)}
+    on:click={() => ($aiAdvisorOpen = true)}
     aria-label="Open the Goldfinch AI Travel Advisor"
   >
     <LottieChatIcon size={40} />
@@ -214,7 +216,7 @@
 {/if}
 
 <!-- Panel -->
-{#if open}
+{#if $aiAdvisorOpen}
   <div
     class="fixed inset-0 z-[60] flex flex-col bg-white md:inset-auto md:bottom-6 md:right-6 md:h-[640px] md:max-h-[85vh] md:w-[400px] md:rounded-[16px] md:border md:border-ink/10 md:shadow-[0_30px_80px_rgba(15,47,36,0.28)]"
     role="dialog"
@@ -230,7 +232,7 @@
           <p class="text-[11px] text-white/70">AI assistant · replies are guidance, not a final booking</p>
         </div>
       </div>
-      <button class="rounded-full p-1.5 text-white/80 transition hover:bg-white/10 hover:text-white" type="button" on:click={() => (open = false)} aria-label="Close advisor">
+      <button class="rounded-full p-1.5 text-white/80 transition hover:bg-white/10 hover:text-white" type="button" on:click={() => ($aiAdvisorOpen = false)} aria-label="Close advisor">
         <X size={18} />
       </button>
     </header>

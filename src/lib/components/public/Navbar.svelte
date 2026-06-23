@@ -5,6 +5,7 @@
   import { ArrowRight, ChevronDown, CircleHelp, Mail, Menu, MessageCircle, Phone, Search, TicketsPlane, User, X } from '@lucide/svelte';
   import { fade, fly } from 'svelte/transition';
   import { api } from '$lib/api/client';
+  import { openAiAdvisor } from '$lib/aiAdvisor';
   import { navbarEntrance } from '$lib/animations';
   import { brand } from '$lib/brand';
   import { publicSettings, settingText } from '$lib/settings';
@@ -194,10 +195,10 @@
       </form>
 
       <div class="flex items-center gap-4 text-[13px] font-semibold">
-        <a class="inline-flex items-center gap-1 text-forest transition hover:text-deep-green" href="/contact">
+        <button type="button" class="inline-flex items-center gap-1 text-forest transition hover:text-deep-green" on:click={openAiAdvisor}>
           <CircleHelp size={15} strokeWidth={2.6} />
-          Need Help
-        </a>
+          Need help?
+        </button>
       </div>
 
       <a href="/admin/login" class="inline-flex h-12 items-center gap-2.5 rounded-xl bg-deep-green px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-forest">
