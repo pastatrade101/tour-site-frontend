@@ -120,24 +120,24 @@
   <div class="absolute inset-0 bg-gradient-to-r from-deep-green/75 via-deep-green/25 to-transparent"></div>
 
   <!-- content -->
-  <div class="relative z-10 mx-auto w-full max-w-[1500px] px-5 py-20 md:px-8 md:py-28 lg:py-32">
+  <div class="relative z-10 mx-auto w-full max-w-[1500px] px-5 pb-16 pt-12 md:px-8 md:py-28 lg:py-32">
     <div class="max-w-2xl text-white">
       <!-- per-slide copy: changes with the slider and re-animates on each change -->
       {#key index}
-        <div class="min-h-[200px] sm:min-h-[230px] lg:min-h-[256px]">
+        <div class="min-h-[132px] sm:min-h-[230px] lg:min-h-[256px]">
           <span
             class="inline-flex items-center gap-2 rounded-full bg-white/12 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-savanna backdrop-blur"
             in:fly={{ y: 12, duration: 450 }}
           >
             <Star size={13} fill="currentColor" /> {current.eyebrow}
           </span>
-          <h1 class="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight drop-shadow-sm sm:text-5xl lg:text-[58px]" use:revealHeading={{ stagger: 0.02 }}>{current.title}</h1>
-          <p class="mt-4 max-w-xl text-base font-medium leading-7 text-white/85 sm:text-lg" in:fly={{ y: 14, duration: 500, delay: 120 }}>{current.subtitle}</p>
+          <h1 class="mt-4 text-4xl font-extrabold leading-[1.05] tracking-tight drop-shadow-sm sm:mt-5 sm:text-5xl lg:text-[58px]" use:revealHeading={{ stagger: 0.02 }}>{current.title}</h1>
+          <p class="mt-3 line-clamp-2 max-w-xl text-base font-medium leading-7 text-white/85 sm:mt-4 sm:line-clamp-none sm:text-lg" in:fly={{ y: 14, duration: 500, delay: 120 }}>{current.subtitle}</p>
         </div>
       {/key}
 
       <!-- search on top -->
-      <form class="mt-7 flex flex-col gap-2 rounded-lg bg-white p-2 shadow-[0_20px_50px_rgba(15,47,36,0.30)] sm:flex-row sm:items-center" on:submit|preventDefault={submit}>
+      <form class="mt-5 flex flex-col gap-2 rounded-lg bg-white p-2 shadow-[0_20px_50px_rgba(15,47,36,0.30)] sm:mt-7 sm:flex-row sm:items-center" on:submit|preventDefault={submit}>
         <label class="flex h-14 flex-1 items-center gap-2.5 rounded-md px-3">
           <MapPin class="shrink-0 text-forest" size={20} strokeWidth={2.4} />
           <select class="w-full cursor-pointer appearance-none bg-transparent text-[15px] font-semibold text-ink outline-none" bind:value={destination} aria-label="Choose a destination">
@@ -153,8 +153,8 @@
         </button>
       </form>
 
-      <!-- popular shortcuts -->
-      <div class="mt-4 flex flex-wrap items-center gap-2">
+      <!-- popular shortcuts (hidden on mobile to declutter — nav + search cover it) -->
+      <div class="mt-4 hidden flex-wrap items-center gap-2 sm:flex">
         <span class="text-sm font-medium text-white/70">Popular:</span>
         {#each quick as q}
           <a class="rounded-full border border-white/25 bg-white/10 px-3 py-1 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20" href={q.href}>{q.label}</a>
@@ -162,12 +162,12 @@
       </div>
 
       <!-- conversion CTAs + reassurance -->
-      <div class="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
+      <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 sm:mt-7">
         <a class="inline-flex h-12 items-center gap-2 rounded-lg bg-goldfinch-gold px-6 font-bold text-deep-green shadow-lg transition hover:brightness-105" href="/plan-my-trip">
           {primaryCta} <ArrowRight size={18} strokeWidth={2.6} />
         </a>
         <a class="text-sm font-semibold text-white underline-offset-4 transition hover:underline" href={secondaryCtaUrl}>{secondaryCta}</a>
-        <span class="inline-flex items-center gap-1.5 text-sm text-white/75">
+        <span class="hidden items-center gap-1.5 text-sm text-white/75 sm:inline-flex">
           <ShieldCheck size={15} class="text-savanna" /> Free, no-obligation planning · No hidden costs
         </span>
       </div>
