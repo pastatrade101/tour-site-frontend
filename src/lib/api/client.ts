@@ -445,7 +445,8 @@ export const api = {
     usage: () => apiRequest<Record<string, unknown>>('/ai/usage'),
     evals: () => apiRequest<Array<Record<string, unknown>>>('/ai/evals'),
     runEvals: () => apiRequest<{ total: number; passed: number; failed: number }>('/ai/evals/run', { method: 'POST' }),
-    purgeRetention: () => apiRequest<{ purged: number; cutoff: string; retentionDays: number }>('/ai/retention/purge', { method: 'POST' })
+    purgeRetention: () => apiRequest<{ purged: number; cutoff: string; retentionDays: number }>('/ai/retention/purge', { method: 'POST' }),
+    refreshEmbeddings: () => apiRequest<{ embedded: number; skipped: number; enabled: boolean }>('/ai/embeddings/refresh', { method: 'POST' })
   },
   hubspot: {
     syncLead: (body: Record<string, unknown>) => apiRequest('/hubspot/sync-lead', { method: 'POST', body }),

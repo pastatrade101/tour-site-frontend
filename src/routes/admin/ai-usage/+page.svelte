@@ -80,6 +80,20 @@
       busy = '';
     }
   };
+  const refreshEmbeddings = async () => {
+    busy = 'embeddings';
+    notice = '';
+    try {
+      const res = await api.aiTravelAdvisor.refreshEmbeddings();
+      notice = res.data.enabled
+        ? `Embeddings refreshed: ${res.data.embedded} indexed${res.data.skipped ? `, ${res.data.skipped} skipped` : ''}.`
+        : 'Embedding provider not configured (set AI_EMBEDDING_* on the backend).';
+    } catch (err) {
+      notice = err instanceof Error ? err.message : 'Embeddings refresh failed.';
+    } finally {
+      busy = '';
+    }
+  };
 </script>
 
 <svelte:head><title>AI Usage | Goldfinch CMS</title></svelte:head>
@@ -96,6 +110,14 @@
       disabled={busy !== ''}
     >
       {busy === 'evals' ? 'Running eval sweep…' : 'Run eval sweep'}
+    </button>
+    <button
+      class="inline-flex h-9 items-center gap-2 rounded-lg border border-ink/15 bg-white px-4 text-sm font-bold text-ink transition hover:bg-ink/5 disabled:opacity-60"
+      type="button"
+      on:click={refreshEmbeddings}
+      disabled={busy !== ''}
+    >
+      {busy === 'embeddings' ? 'Refreshing embeddings…' : 'Refresh embeddings'}
     </button>
     <button
       class="inline-flex h-9 items-center gap-2 rounded-lg border border-ink/15 bg-white px-4 text-sm font-bold text-ink transition hover:bg-ink/5 disabled:opacity-60"
