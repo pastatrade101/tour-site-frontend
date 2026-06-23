@@ -21,6 +21,16 @@
   const WELCOME =
     "Hi, I'm the Goldfinch AI Travel Advisor — an AI here to help you plan East Africa with confidence. Where would you like to go, and roughly when?";
 
+  // Page-aware opening line so the greeting fits where the visitor launched it.
+  const computeWelcome = (path: string): string => {
+    if (/^\/tours\/[^/]+/.test(path)) return "Hi! Want help deciding if this trip fits — or planning something similar? Tell me your dates, group size and budget.";
+    if (path.startsWith('/tours')) return "Looking for the right safari? Tell me your destination, dates, group and budget and I'll suggest options.";
+    if (path.startsWith('/destinations') || path.startsWith('/countries')) return "Hi! Planning a trip to this region? Tell me when you'd travel, your group and budget and I'll help shape it.";
+    if (path.startsWith('/experiences') || path.startsWith('/travel-styles')) return "Hi! Tell me the experience you're after, plus your dates, group and budget, and I'll match real Goldfinch trips.";
+    if (path.startsWith('/plan-my-trip')) return "Hi! I can help you plan before you submit — tell me what you have in mind (destination, dates, group, budget).";
+    return WELCOME;
+  };
+
   const QUICK_REPLIES = [
     'Help me choose a safari',
     'I want Kilimanjaro',
@@ -63,6 +73,13 @@
     if (tour) ctx.tour_slug = tour[1];
     return ctx;
   })();
+
+  // While the panel is open and the visitor hasn't sent anything yet, keep the
+  // greeting matched to the current page (so "Need help?" on a tour page opens
+  // with a trip-specific welcome). Stops once the conversation starts.
+  $: if ($aiAdvisorOpen && !started) {
+    messages = [{ role: 'assistant', text: computeWelcome($page.url.pathname) }];
+  }
 
   const turnstileSiteKey = publicEnv.PUBLIC_TURNSTILE_SITE_KEY;
   let turnstileToken = '';

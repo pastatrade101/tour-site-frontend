@@ -352,6 +352,14 @@
           <input class="min-w-0 flex-1 bg-transparent px-1 text-sm font-medium outline-none placeholder:text-[#a9a9a9]" aria-label="Search tour packages" placeholder="Search tours..." bind:value={searchQuery} />
         </form>
 
+        <button
+          type="button"
+          class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-deep-green px-4 py-3 text-sm font-bold text-white transition hover:bg-forest"
+          on:click={() => { openAiAdvisor(); menuOpen = false; }}
+        >
+          <CircleHelp size={16} strokeWidth={2.6} /> Ask our AI advisor
+        </button>
+
         <nav class="mt-5 grid gap-1" aria-label="Mobile">
           {#each NAV as item}
             {@const active = isActive(path, item.href)}
