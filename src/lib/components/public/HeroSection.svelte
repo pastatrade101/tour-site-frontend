@@ -137,7 +137,7 @@
       {/key}
 
       <!-- search on top -->
-      <form class="mt-5 flex flex-col gap-2 rounded-lg bg-white p-2 shadow-[0_20px_50px_rgba(15,47,36,0.30)] sm:mt-7 sm:flex-row sm:items-center" on:submit|preventDefault={submit}>
+      <form class="mt-5 flex items-center gap-2 rounded-lg bg-white p-2 shadow-[0_20px_50px_rgba(15,47,36,0.30)] sm:mt-7" on:submit|preventDefault={submit}>
         <label class="flex h-14 flex-1 items-center gap-2.5 rounded-md border border-ink/15 bg-ink/[0.03] px-3">
           <MapPin class="shrink-0 text-forest" size={20} strokeWidth={2.4} />
           <select class="w-full cursor-pointer appearance-none bg-transparent text-[15px] font-semibold text-ink outline-none" bind:value={destination} aria-label="Choose a destination">
@@ -148,8 +148,8 @@
           </select>
           <ChevronDown class="pointer-events-none shrink-0 text-ink/40" size={18} />
         </label>
-        <button class="flex h-14 items-center justify-center gap-2 rounded-md bg-forest px-7 text-[15px] font-bold text-white transition hover:bg-deep-green" type="submit">
-          <Search size={18} strokeWidth={2.6} /> Explore
+        <button class="flex h-14 shrink-0 items-center justify-center gap-2 rounded-md bg-forest px-4 text-[15px] font-bold text-white transition hover:bg-deep-green sm:px-7" type="submit">
+          <Search size={18} strokeWidth={2.6} /> <span class="hidden sm:inline">Explore</span>
         </button>
       </form>
 
@@ -162,11 +162,11 @@
       </div>
 
       <!-- conversion CTAs + reassurance -->
-      <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 sm:mt-7">
-        <a class="inline-flex h-12 items-center gap-2 rounded-lg bg-goldfinch-gold px-6 font-bold text-deep-green shadow-lg transition hover:brightness-105" href="/plan-my-trip">
+      <div class="mt-5 flex flex-col gap-3 sm:mt-7 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-5 sm:gap-y-3">
+        <a class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-goldfinch-gold px-6 font-bold text-deep-green shadow-lg transition hover:brightness-105 sm:w-auto" href="/plan-my-trip">
           {primaryCta} <ArrowRight size={18} strokeWidth={2.6} />
         </a>
-        <a class="inline-flex h-12 items-center gap-2 rounded-lg border border-white/35 px-6 font-semibold text-white transition hover:bg-white/10" href={secondaryCtaUrl}>{secondaryCta}</a>
+        <a class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-white/35 px-6 font-semibold text-white transition hover:bg-white/10 sm:w-auto" href={secondaryCtaUrl}>{secondaryCta}</a>
         <span class="hidden items-center gap-1.5 text-sm text-white/75 sm:inline-flex">
           <ShieldCheck size={15} class="text-savanna" /> Free, no-obligation planning · No hidden costs
         </span>
