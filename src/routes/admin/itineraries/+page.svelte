@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
-  import { Edit, Image as ImageIcon, Plus, Route, Save, Search, Trash2, X } from '@lucide/svelte';
+  import { Edit, Image as ImageIcon, Plus, Route, Save, Search, Sparkles, Trash2, X } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
@@ -297,6 +297,52 @@
     tour_id: form.tour_id || selectedTourId
   });
 
+  // ✨ AI co-pilot: draft the whole day-by-day itinerary from the tour context
+  // and create the days that don't exist yet (review/edit afterwards).
+  let drafting = false;
+  const draftItinerary = async () => {
+    if (!selectedTour || drafting) return;
+    if (sortedDays.length && !confirm('Generate AI-drafted days for any day numbers not already added? Existing days are kept.')) return;
+    drafting = true;
+    try {
+      const res = await api.aiTravelAdvisor.assist({
+        task: 'draft_itinerary',
+        context: {
+          title: selectedTour.title,
+          destination: selectedTour.destination,
+          duration_days: Number(selectedTour.duration_days) || undefined
+        }
+      });
+      const generated = (res.data.itinerary ?? []) as Array<Record<string, unknown>>;
+      if (!generated.length) {
+        showToast('The AI did not return any days. Please try again.', 'error');
+        return;
+      }
+      const existing = new Set(sortedDays.map((day) => Number(day.day_number)));
+      let created = 0;
+      for (const day of generated) {
+        const dayNumber = Number(day.day_number);
+        if (!dayNumber || existing.has(dayNumber)) continue;
+        await api.itineraries.create({
+          tour_id: selectedTourId,
+          day_number: dayNumber,
+          title: String(day.title ?? `Day ${dayNumber}`),
+          description: (day.description as string) ?? null,
+          accommodation: (day.accommodation as string) ?? null,
+          meals: (day.meals as string) ?? null,
+          activities: (day.activities as string) ?? null
+        });
+        created += 1;
+      }
+      await loadDays();
+      showToast(created ? `Drafted ${created} day${created === 1 ? '' : 's'} — review and edit as needed.` : 'All day numbers already exist; nothing added.');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'AI draft failed.', 'error');
+    } finally {
+      drafting = false;
+    }
+  };
+
   const saveDay = async () => {
     if (!selectedTourId) {
       showToast('Select a parent tour first.', 'error');
@@ -435,10 +481,22 @@
           </div>
         </div>
 
-        <AdminButton on:click={openCreateModal}>
-          <Plus size={16} />
-          Add Day
-        </AdminButton>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            on:click={draftItinerary}
+            disabled={drafting}
+            class="inline-flex h-10 items-center gap-2 rounded-lg border border-forest/30 bg-forest/5 px-4 text-sm font-bold text-forest transition hover:bg-forest hover:text-white disabled:opacity-50"
+            title="Draft the day-by-day plan with AI"
+          >
+            <Sparkles size={16} strokeWidth={2.4} />
+            {drafting ? 'Drafting…' : 'Draft with AI'}
+          </button>
+          <AdminButton on:click={openCreateModal}>
+            <Plus size={16} />
+            Add Day
+          </AdminButton>
+        </div>
       </div>
     </section>
 
