@@ -138,7 +138,7 @@
 
       <!-- search on top -->
       <form class="mt-5 flex flex-col gap-2 rounded-lg bg-white p-2 shadow-[0_20px_50px_rgba(15,47,36,0.30)] sm:mt-7 sm:flex-row sm:items-center" on:submit|preventDefault={submit}>
-        <label class="flex h-14 flex-1 items-center gap-2.5 rounded-md px-3">
+        <label class="flex h-14 flex-1 items-center gap-2.5 rounded-md border border-ink/15 bg-ink/[0.03] px-3">
           <MapPin class="shrink-0 text-forest" size={20} strokeWidth={2.4} />
           <select class="w-full cursor-pointer appearance-none bg-transparent text-[15px] font-semibold text-ink outline-none" bind:value={destination} aria-label="Choose a destination">
             <option value="">Where do you want to go?</option>
@@ -166,7 +166,7 @@
         <a class="inline-flex h-12 items-center gap-2 rounded-lg bg-goldfinch-gold px-6 font-bold text-deep-green shadow-lg transition hover:brightness-105" href="/plan-my-trip">
           {primaryCta} <ArrowRight size={18} strokeWidth={2.6} />
         </a>
-        <a class="text-sm font-semibold text-white underline-offset-4 transition hover:underline" href={secondaryCtaUrl}>{secondaryCta}</a>
+        <a class="inline-flex h-12 items-center gap-2 rounded-lg border border-white/35 px-6 font-semibold text-white transition hover:bg-white/10" href={secondaryCtaUrl}>{secondaryCta}</a>
         <span class="hidden items-center gap-1.5 text-sm text-white/75 sm:inline-flex">
           <ShieldCheck size={15} class="text-savanna" /> Free, no-obligation planning · No hidden costs
         </span>
