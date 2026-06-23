@@ -240,9 +240,9 @@
     resetForm();
   };
 
-  const nullableNumber = (value: string) => {
-    if (value.trim() === '') return null;
-    return Number(value);
+  const nullableNumber = (value: unknown) => {
+    const text = String(value ?? '').trim();
+    return text === '' ? null : Number(text);
   };
 
   const validateForm = () => {

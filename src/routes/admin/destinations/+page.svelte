@@ -276,9 +276,9 @@
     lastOgImageMode = ogImageMode;
   };
 
-  const numberOrNull = (value: string) => {
-    if (value.trim() === '') return null;
-    return Number(value);
+  const numberOrNull = (value: unknown) => {
+    const text = String(value ?? '').trim();
+    return text === '' ? null : Number(text);
   };
 
   const payload = () => {

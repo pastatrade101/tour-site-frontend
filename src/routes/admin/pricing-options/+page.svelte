@@ -248,10 +248,10 @@
 
   const validateForm = () => {
     if (!selectedTourId) return 'Select a parent tour first.';
-    if (!form.title.trim()) return 'Title is required.';
-    if (form.price.trim() === '') return 'Price is required.';
+    if (!String(form.title ?? '').trim()) return 'Title is required.';
+    if (String(form.price ?? '').trim() === '') return 'Price is required.';
     if (Number(form.price) < 0) return 'Price must be zero or positive.';
-    if (form.sort_order.trim() && !Number.isInteger(Number(form.sort_order))) return 'Sort order must be a whole number.';
+    if (String(form.sort_order ?? '').trim() && !Number.isInteger(Number(form.sort_order))) return 'Sort order must be a whole number.';
     return '';
   };
 
