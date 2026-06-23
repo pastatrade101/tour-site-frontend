@@ -85,9 +85,9 @@
     notice = '';
     try {
       const res = await api.aiTravelAdvisor.refreshEmbeddings();
-      notice = res.data.enabled
-        ? `Embeddings refreshed: ${res.data.embedded} indexed${res.data.skipped ? `, ${res.data.skipped} skipped` : ''}.`
-        : 'Embedding provider not configured (set AI_EMBEDDING_* on the backend).';
+      notice = res.data.alreadyRunning
+        ? 'An embeddings refresh is already running — check back shortly.'
+        : 'Embeddings refresh started — it runs in the background (see server logs for the result).';
     } catch (err) {
       notice = err instanceof Error ? err.message : 'Embeddings refresh failed.';
     } finally {
