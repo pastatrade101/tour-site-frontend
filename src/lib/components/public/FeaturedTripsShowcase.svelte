@@ -17,7 +17,7 @@
   import { api } from '$lib/api/client';
   import { fadeUpOnScroll, revealHeading } from '$lib/animations';
   import { brand } from '$lib/brand';
-  import { imgUrl } from '$lib/img';
+  import { imgUrl, thumbUrl } from '$lib/img';
   import { defaultSpecialist } from '$lib/data/specialists';
   import type { Tour } from '$lib/types';
 
@@ -194,7 +194,7 @@
           {:else}
             <div class="aspect-[5/4] overflow-hidden rounded-2xl bg-skywash">
               {#if active.tour.main_image_url}
-                <img class="h-full w-full object-cover" src={imgUrl(active.tour.main_image_url, 800)} alt={active.tour.title} loading="lazy" decoding="async" />
+                <img class="h-full w-full object-cover" src={imgUrl(thumbUrl(active.tour, 'main_image_url'), 800)} alt={active.tour.title} loading="lazy" decoding="async" />
               {/if}
             </div>
           {/if}

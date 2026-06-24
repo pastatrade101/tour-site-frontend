@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Sparkles, Star } from '@lucide/svelte';
   import { tilt } from '$lib/animations';
-  import { imgUrl } from '$lib/img';
+  import { imgUrl, thumbUrl } from '$lib/img';
   import type { Lodge } from '$lib/types';
 
   export let lodge: Lodge;
@@ -20,7 +20,7 @@
     treehouse: 'Treehouse'
   };
 
-  $: imageUrl = lodge.image_url || lodge.hero_image_url || '';
+  $: imageUrl = thumbUrl(lodge, 'image_url', 'hero_image_url');
   $: priceLabel =
     lodge.price_per_night_from != null
       ? `${lodge.currency ?? 'USD'} ${Math.round(lodge.price_per_night_from).toLocaleString()}`

@@ -31,3 +31,18 @@ export const imgUrl = (url: string | null | undefined, width = 800, quality = 70
     return url;
   }
 };
+
+// Pick the best source URL for a record's image: prefer the server-attached
+// `<field>_thumbnail` (a small webp from media_library) over the full-size
+// original, walking a fallback chain of fields. Pass the result to imgUrl().
+export const thumbUrl = (record: Record<string, any> | null | undefined, ...fields: string[]): string => {
+  if (!record) return '';
+  for (const field of fields) {
+    const value = record[field];
+    if (typeof value === 'string' && value) {
+      const thumbnail = record[`${field}_thumbnail`];
+      return typeof thumbnail === 'string' && thumbnail ? thumbnail : value;
+    }
+  }
+  return '';
+};
