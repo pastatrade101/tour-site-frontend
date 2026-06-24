@@ -166,10 +166,10 @@
   });
 </script>
 
-<header class={`sticky top-0 z-40 border-b bg-surface transition-[box-shadow,border-color] duration-[400ms] ease-out ${scrolled ? 'border-transparent shadow-[0_8px_28px_rgba(15,47,36,0.10)]' : 'border-[#e8e8e8]'}`} use:navbarEntrance>
+<header class={`sticky top-0 z-40 border-b bg-surface transition-[box-shadow,border-color] duration-[400ms] ease-out ${scrolled ? 'border-transparent shadow-[0_8px_28px_rgba(15,47,36,0.10)]' : 'border-ink/10'}`} use:navbarEntrance>
   <!-- ── mobile top bar ─────────────────────────────────────────────────── -->
   <div class="flex h-[70px] items-center justify-between gap-3 px-4 sm:px-5 lg:hidden">
-    <button class="grid h-11 w-11 place-items-center rounded-xl border border-[#e5e5e5] bg-surface text-[#111111]" type="button" aria-label="Toggle menu" aria-expanded={menuOpen} on:click={() => (menuOpen = !menuOpen)}>
+    <button class="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 bg-surface text-ink" type="button" aria-label="Toggle menu" aria-expanded={menuOpen} on:click={() => (menuOpen = !menuOpen)}>
       <Menu size={24} strokeWidth={2.4} />
     </button>
 
@@ -177,7 +177,7 @@
       <TicketsPlane class="text-goldfinch-gold" size={30} strokeWidth={2} />
       <div class="leading-none">
         <p class="text-xl font-extrabold tracking-normal text-heading">Goldfinch</p>
-        <p class="mt-1 text-xs font-semibold text-[#555555]">Adventures</p>
+        <p class="mt-1 text-xs font-semibold text-ink/60">Adventures</p>
       </div>
     </a>
 
@@ -193,12 +193,12 @@
         <TicketsPlane class="text-goldfinch-gold" size={34} strokeWidth={2.1} />
         <div class="leading-none">
           <p class="text-2xl font-extrabold tracking-normal text-heading">Goldfinch</p>
-          <p class="mt-1.5 text-sm font-semibold text-[#555555]">Adventures</p>
+          <p class="mt-1.5 text-sm font-semibold text-ink/60">Adventures</p>
         </div>
       </a>
 
       <form class="flex h-[50px] w-full max-w-[640px] items-center rounded-full bg-[#f0f0f0] px-3 transition focus-within:ring-2 focus-within:ring-goldfinch-gold/30" on:submit|preventDefault={submitSearch} role="search">
-        <button class="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[#111111] transition hover:text-forest" type="submit" aria-label="Search tours">
+        <button class="grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink transition hover:text-forest" type="submit" aria-label="Search tours">
           <Search size={19} strokeWidth={2.4} />
         </button>
         <input class="min-w-0 flex-1 bg-transparent px-2 text-sm font-medium text-[#222222] outline-none placeholder:text-[#a9a9a9]" aria-label="Search tour packages" placeholder="Search safaris, Kilimanjaro, Zanzibar..." bind:value={searchQuery} />
@@ -227,7 +227,7 @@
   </div>
 
   <!-- ── desktop nav row ────────────────────────────────────────────────── -->
-  <div class="hidden border-t border-[#e8e8e8] lg:block">
+  <div class="hidden border-t border-ink/10 lg:block">
     <div class="mx-auto flex w-full max-w-[1500px] items-stretch justify-between px-4">
       <nav class="flex items-center gap-1" aria-label="Primary">
         {#if scrolled}
@@ -247,7 +247,7 @@
             <div class="nav-dropdown relative" on:mouseenter={() => (openDropdown = item.dropdown ?? '')} on:mouseleave={() => (openDropdown = '')}>
               <div class="flex items-center">
                 <a
-                  class={`relative inline-flex items-center gap-1 rounded px-2.5 py-4 text-sm font-semibold transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40 ${active ? 'text-forest' : 'text-[#1b1b1b]'}`}
+                  class={`relative inline-flex items-center gap-1 rounded px-2.5 py-4 text-sm font-semibold transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40 ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink/80'}`}
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
                 >
@@ -255,7 +255,7 @@
                   {#if active}<span class="absolute inset-x-2.5 bottom-1 h-0.5 rounded-full bg-goldfinch-gold"></span>{/if}
                 </a>
                 <button
-                  class="grid h-8 w-7 place-items-center rounded text-[#666] transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40"
+                  class="grid h-8 w-7 place-items-center rounded text-ink/55 transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40"
                   type="button"
                   aria-haspopup="true"
                   aria-expanded={openDropdown === item.dropdown}
@@ -284,7 +284,7 @@
                     <div class="my-1.5 h-px bg-black/5"></div>
                     <div class="grid grid-cols-2 gap-0.5">
                       {#each dropdownLinks(item.dropdown) as link (link.href)}
-                        <a class="truncate rounded-xl px-3 py-2.5 text-sm font-medium text-[#333] transition hover:bg-sand/60 hover:text-forest" href={link.href} role="menuitem">{link.label}</a>
+                        <a class="truncate rounded-xl px-3 py-2.5 text-sm font-medium text-ink/75 transition hover:bg-sand/60 hover:text-forest" href={link.href} role="menuitem">{link.label}</a>
                       {/each}
                     </div>
                   </div>
@@ -307,7 +307,7 @@
             </div>
           {:else}
             <a
-              class={`relative inline-flex items-center rounded px-2.5 py-4 text-sm font-semibold transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40 ${active ? 'text-forest' : 'text-[#1b1b1b]'}`}
+              class={`relative inline-flex items-center rounded px-2.5 py-4 text-sm font-semibold transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40 ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink/80'}`}
               href={item.href}
               aria-current={active ? 'page' : undefined}
             >
@@ -329,7 +329,7 @@
 
       <!-- WhatsApp block -->
       <a
-        class="flex min-h-[54px] items-center gap-3 border-l border-[#e8e8e8] px-5 transition hover:bg-[#f7f7f7] lg:w-[300px] lg:px-6"
+        class="flex min-h-[54px] items-center gap-3 border-l border-ink/10 px-5 transition hover:bg-ink/5 lg:w-[300px] lg:px-6"
         href={waHref}
         target="_blank"
         rel="noopener noreferrer"
@@ -339,8 +339,8 @@
           <MessageCircle size={18} strokeWidth={2.8} />
         </span>
         <span class="grid leading-tight">
-          <span class="text-xs font-medium text-[#555555]">{waButtonText}</span>
-          <span class="whitespace-nowrap text-base font-bold text-[#191919]">{waNumber}</span>
+          <span class="text-xs font-medium text-ink/60">{waButtonText}</span>
+          <span class="whitespace-nowrap text-base font-bold text-ink">{waNumber}</span>
         </span>
       </a>
     </div>
@@ -351,16 +351,16 @@
     <div class="fixed inset-0 z-[90] lg:hidden" transition:fade={{ duration: 120 }}>
       <button class="absolute inset-0 bg-black/45 backdrop-blur-md" type="button" aria-label="Close menu" on:click={() => (menuOpen = false)}></button>
 
-      <aside class="absolute right-0 top-0 flex min-h-dvh w-[86vw] min-w-[300px] max-w-[380px] flex-col overflow-y-auto border-l border-[#e8e8e8] bg-surface px-5 py-5 shadow-[-20px_0_55px_rgba(0,0,0,0.12)]" transition:fly={{ x: 60, duration: 200 }}>
+      <aside class="absolute right-0 top-0 flex min-h-dvh w-[86vw] min-w-[300px] max-w-[380px] flex-col overflow-y-auto border-l border-ink/10 bg-surface px-5 py-5 shadow-[-20px_0_55px_rgba(0,0,0,0.12)]" transition:fly={{ x: 60, duration: 200 }}>
         <div class="flex items-center justify-between gap-4">
           <a href="/" class="flex shrink-0 items-center gap-2.5" on:click={() => (menuOpen = false)}>
             <TicketsPlane class="text-goldfinch-gold" size={32} strokeWidth={2.1} />
             <div class="leading-none">
               <p class="text-xl font-extrabold tracking-normal text-heading">Goldfinch</p>
-              <p class="mt-1 text-xs font-semibold text-[#555555]">Adventures</p>
+              <p class="mt-1 text-xs font-semibold text-ink/60">Adventures</p>
             </div>
           </a>
-          <button class="grid h-11 w-11 place-items-center rounded-xl border border-[#e5e5e5] bg-surface text-[#111111]" type="button" aria-label="Close menu" on:click={() => (menuOpen = false)}>
+          <button class="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 bg-surface text-ink" type="button" aria-label="Close menu" on:click={() => (menuOpen = false)}>
             <X size={22} strokeWidth={2.4} />
           </button>
         </div>
@@ -386,21 +386,21 @@
             {#if item.dropdown}
               <div class="rounded-xl">
                 <div class="flex items-center">
-                  <a class={`flex-1 rounded-xl px-3 py-3 text-[17px] font-semibold transition ${active ? 'text-forest' : 'text-[#141414]'}`} href={item.href} on:click={() => (menuOpen = false)}>{item.label}</a>
-                  <button class="grid h-11 w-11 place-items-center rounded-xl text-[#555] transition hover:bg-sand/50" type="button" aria-expanded={mobileAccordion === item.dropdown} aria-label={`Toggle ${item.label}`} on:click={() => (mobileAccordion = mobileAccordion === item.dropdown ? '' : (item.dropdown ?? ''))}>
+                  <a class={`flex-1 rounded-xl px-3 py-3 text-[17px] font-semibold transition ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink'}`} href={item.href} on:click={() => (menuOpen = false)}>{item.label}</a>
+                  <button class="grid h-11 w-11 place-items-center rounded-xl text-ink/55 transition hover:bg-sand/50" type="button" aria-expanded={mobileAccordion === item.dropdown} aria-label={`Toggle ${item.label}`} on:click={() => (mobileAccordion = mobileAccordion === item.dropdown ? '' : (item.dropdown ?? ''))}>
                     <ChevronDown size={18} strokeWidth={2.6} class={`transition-transform ${mobileAccordion === item.dropdown ? 'rotate-180' : ''}`} />
                   </button>
                 </div>
                 {#if mobileAccordion === item.dropdown}
                   <div class="grid gap-0.5 pb-2 pl-3" transition:fly={{ y: -4, duration: 150 }}>
                     {#each dropdownLinks(item.dropdown) as link (link.href)}
-                      <a class="rounded-lg px-3 py-2 text-[15px] font-medium text-[#444] transition hover:bg-sand/50 hover:text-forest" href={link.href} on:click={() => (menuOpen = false)}>{link.label}</a>
+                      <a class="rounded-lg px-3 py-2 text-[15px] font-medium text-ink/65 transition hover:bg-sand/50 hover:text-forest" href={link.href} on:click={() => (menuOpen = false)}>{link.label}</a>
                     {/each}
                   </div>
                 {/if}
               </div>
             {:else}
-              <a class={`rounded-xl px-3 py-3 text-[17px] font-semibold transition ${active ? 'text-forest' : 'text-[#141414]'}`} href={item.href} on:click={() => (menuOpen = false)}>{item.label}</a>
+              <a class={`rounded-xl px-3 py-3 text-[17px] font-semibold transition ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink'}`} href={item.href} on:click={() => (menuOpen = false)}>{item.label}</a>
             {/if}
           {/each}
 
@@ -414,8 +414,8 @@
           <a class="flex items-center gap-3 rounded-2xl bg-[#25D366]/10 px-4 py-3" href={waHref} target="_blank" rel="noopener noreferrer" on:click={() => (menuOpen = false)}>
             <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#25D366] text-white"><MessageCircle size={20} strokeWidth={2.6} /></span>
             <span class="grid leading-tight">
-              <span class="text-xs font-medium text-[#555]">{waButtonText}</span>
-              <span class="text-[15px] font-bold text-[#141414]">{waNumber}</span>
+              <span class="text-xs font-medium text-ink/55">{waButtonText}</span>
+              <span class="text-[15px] font-bold text-ink">{waNumber}</span>
             </span>
           </a>
           <a class="mt-1 text-center text-xs font-medium text-ink/40 transition hover:text-forest" href="/admin/login" on:click={() => (menuOpen = false)}>Staff login</a>

@@ -41,8 +41,9 @@ html.dark {
   color: #e0e6e2; /* matches --c-ink (dark) */
   background-color: #0e1311; /* matches --c-canvas (dark) */
   --c-ink: 224 230 226; /* body + border ink → light */
-  --c-sand: 30 38 33; /* warm light surface → dark */
-  --c-savanna: 41 52 46;
+  --c-sand: 30 38 33; /* warm light surface → dark (only ever a background) */
+  /* --c-savanna intentionally NOT flipped: it's used as light *text* on the
+     always-dark green sidebar/footer/hero, so it must stay light cream. */
   --c-surface: 23 30 27; /* cards */
   --c-canvas: 14 19 17; /* page background */
   --c-heading: 233 238 234; /* headings → light */
