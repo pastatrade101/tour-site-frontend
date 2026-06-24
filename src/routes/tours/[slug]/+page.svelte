@@ -3,6 +3,7 @@
   import { fade, scale } from 'svelte/transition';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
+  import { trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
   import { staggeredCardReveal } from '$lib/animations/motion';
   import { publicSettings, settingText } from '$lib/settings';
@@ -133,7 +134,10 @@
       loading = false;
     }
 
-    if (tour) void loadRelated(tour);
+    if (tour) {
+      void loadRelated(tour);
+      trackEvent('tour_page_view', { tour_id: tour.id, tour_title: tour.title, destination: tour.destinations?.name });
+    }
   };
 
   // The component is reused across /tours/[slug] navigations, so a one-shot

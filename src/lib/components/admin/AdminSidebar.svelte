@@ -21,6 +21,7 @@
     Image,
     Images,
     LayoutDashboard,
+    ChartColumnBig,
     ListCheck,
     Mail,
     Map,
@@ -58,7 +59,7 @@
   };
 
   const groups: NavGroup[] = [
-    { label: 'Dashboard', links: [{ href: '/admin', label: 'Overview', icon: LayoutDashboard, exact: true }] },
+    { label: 'Dashboard', links: [{ href: '/admin', label: 'Overview', icon: LayoutDashboard, exact: true }, { href: '/admin/analytics', label: 'Analytics', icon: ChartColumnBig }] },
     {
       label: 'Tour Management',
       links: [

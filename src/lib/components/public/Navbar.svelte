@@ -6,6 +6,7 @@
   import { fade, fly } from 'svelte/transition';
   import { api } from '$lib/api/client';
   import { openAiAdvisor } from '$lib/aiAdvisor';
+  import { trackEvent } from '$lib/analytics';
   import { navbarEntrance } from '$lib/animations';
   import { brand } from '$lib/brand';
   import { aiAdvisorEnabled, publicSettings, settingText } from '$lib/settings';
@@ -181,7 +182,7 @@
       </div>
     </a>
 
-    <a class="grid h-11 w-11 place-items-center rounded-full bg-[#25D366] text-white shadow-sm" href={waHref} target="_blank" rel="noopener noreferrer" aria-label={waButtonText}>
+    <a class="grid h-11 w-11 place-items-center rounded-full bg-[#25D366] text-white shadow-sm" href={waHref} target="_blank" rel="noopener noreferrer" aria-label={waButtonText} on:click={() => trackEvent('whatsapp_click')}>
       <MessageCircle size={20} strokeWidth={2.6} />
     </a>
   </div>
@@ -333,6 +334,7 @@
         href={waHref}
         target="_blank"
         rel="noopener noreferrer"
+        on:click={() => trackEvent('whatsapp_click')}
         aria-label={`${waButtonText} ${waNumber}`}
       >
         <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#25D366] text-white ring-4 ring-[#25D366]/15">
@@ -411,7 +413,7 @@
             <span class="text-sm font-semibold text-ink/70">Appearance</span>
             <ThemeToggle />
           </div>
-          <a class="flex items-center gap-3 rounded-2xl bg-[#25D366]/10 px-4 py-3" href={waHref} target="_blank" rel="noopener noreferrer" on:click={() => (menuOpen = false)}>
+          <a class="flex items-center gap-3 rounded-2xl bg-[#25D366]/10 px-4 py-3" href={waHref} target="_blank" rel="noopener noreferrer" on:click={() => { trackEvent('whatsapp_click'); menuOpen = false; }}>
             <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#25D366] text-white"><MessageCircle size={20} strokeWidth={2.6} /></span>
             <span class="grid leading-tight">
               <span class="text-xs font-medium text-ink/55">{waButtonText}</span>

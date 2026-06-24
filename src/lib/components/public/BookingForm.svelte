@@ -1,13 +1,17 @@
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { AlertCircle, CheckCircle2, Copy, MapPin, ShieldCheck } from '@lucide/svelte';
   import { page } from '$app/stores';
+  import { trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
   import Button from './Button.svelte';
   import CountrySelect from './CountrySelect.svelte';
   import type { Tour } from '$lib/types';
 
   export let tour: Tour | null = null;
+
+  // This form mounts when the "Request this trip" modal opens.
+  onMount(() => trackEvent('request_trip_opened', { tour_id: tour?.id, tour_title: tour?.title }));
 
   // ── Options ────────────────────────────────────────────────────────────────
   const BUDGET_OPTIONS = ['Budget', 'Mid-range', 'Luxury', 'Not sure yet'];
@@ -150,6 +154,12 @@
       });
       bookingCode = String((res.data as Record<string, unknown>)?.booking_code ?? '');
       submitted = true;
+      trackEvent('request_trip_submitted', {
+        tour_id: tour?.id,
+        tour_title: tour?.title,
+        budget_range,
+        experience_type: travel_interests.join(', ')
+      });
     } catch (error) {
       errorMessage =
         error instanceof Error && error.message

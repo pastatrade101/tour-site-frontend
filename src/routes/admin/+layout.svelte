@@ -6,6 +6,7 @@
 
   const titles: Record<string, string> = {
     '/admin': 'Dashboard',
+    '/admin/analytics': 'Analytics',
     '/admin/tours': 'Tours',
     '/admin/tours/new': 'New Tour',
     '/admin/itineraries': 'Itineraries',

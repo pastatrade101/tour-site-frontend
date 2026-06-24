@@ -315,6 +315,12 @@ export const api = {
     updateNotes: (id: string, body: Record<string, unknown>) => apiRequest(`/bookings/${id}/notes`, { method: 'PUT', body }),
     remove: (id: string) => apiRequest(`/bookings/${id}`, { method: 'DELETE' })
   },
+  analytics: {
+    overview: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/overview${queryString(params)}`),
+    leads: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/leads${queryString(params)}`),
+    funnel: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/funnel${queryString(params)}`),
+    timeseries: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/timeseries${queryString(params)}`)
+  },
   payments: {
     list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Record<string, unknown>>>(`/payments${queryString(params)}`),
     create: (body: Record<string, unknown>) => apiRequest('/payments', { method: 'POST', body }),

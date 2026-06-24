@@ -5,6 +5,7 @@
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { env as publicEnv } from '$env/dynamic/public';
+  import { trackEvent } from '$lib/analytics';
   import { streamAdvisorChat } from '$lib/api/client';
   import { aiAdvisorOpen, aiAdvisorSeed } from '$lib/aiAdvisor';
   import { brand } from '$lib/brand';
@@ -43,6 +44,10 @@
   // Open-state lives in a shared store so the navbar "Need help?" link (and any
   // other entry point) can launch the advisor.
   let started = false;
+  let trackedOpen = false;
+  // Track each advisor open once (it can be opened from many entry points).
+  $: if ($aiAdvisorOpen && !trackedOpen) { trackedOpen = true; trackEvent('ai_advisor_opened'); }
+  $: if (!$aiAdvisorOpen) trackedOpen = false;
   let input = '';
   let loading = false;
   let conversationId = '';
@@ -130,6 +135,7 @@
     if (!trimmed || loading) return;
     started = true;
     loading = true;
+    trackEvent('ai_advisor_message_sent');
     messages = [...messages, { role: 'user', text: trimmed }, { role: 'assistant', text: '' }];
     input = '';
 

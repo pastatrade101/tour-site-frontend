@@ -3,6 +3,7 @@
   import { get } from 'svelte/store';
   import { AlertCircle, CheckCircle2, Copy, MapPin, ShieldCheck } from '@lucide/svelte';
   import { page } from '$app/stores';
+  import { trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
   import { defaultSpecialist } from '$lib/data/specialists';
   import { publicSettings, settingText } from '$lib/settings';
@@ -95,6 +96,7 @@
     options.find((o) => o.toLowerCase() === String(value).toLowerCase());
 
   onMount(async () => {
+    trackEvent('plan_my_trip_opened');
     const p = $page.url.searchParams;
     const persona = p.get('persona');
     const experience = p.get('experience');
@@ -247,6 +249,12 @@
       });
       bookingCode = String((res.data as Record<string, unknown>)?.booking_code ?? '');
       submitted = true;
+      trackEvent('plan_my_trip_submitted', {
+        destination: destination_interest,
+        budget_range: budget_per_person,
+        traveller_type,
+        experience_type: experience_interests.join(', ')
+      });
     } catch (error) {
       errorMessage =
         error instanceof Error && error.message
