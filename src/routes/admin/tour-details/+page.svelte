@@ -21,6 +21,7 @@
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
+  import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
   import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
@@ -46,7 +47,7 @@
     tour_id: string;
   };
 
-  type MediaItem = { file_name: string; file_url: string; id: string };
+  type MediaItem = { file_name: string; file_url: string; id: string; thumbnail_url?: string | null };
   type Option = { label: string; value: string };
   type Toast = { id: string; message: string; type: 'error' | 'success' };
 
@@ -79,7 +80,6 @@
   let exclusions: ExclusionItem[] = [];
   let images: TourImage[] = [];
   let mediaItems: MediaItem[] = [];
-  let mediaOptions: Option[] = [{ label: 'Select an image', value: '' }];
 
   let modalOpen = false;
   let modalKind: 'exclusion' | 'image' | 'inclusion' = 'inclusion';
@@ -89,16 +89,6 @@
 
   let editingId: null | string = null;
   let deleteTarget: null | { id: string; label: string } = null;
-
-  type ImageMode = 'media' | 'none' | 'url';
-  let imageMode: ImageMode = 'none';
-  let mediaId = '';
-
-  const imageModeOptions: Option[] = [
-    { label: 'No image', value: 'none' },
-    { label: 'Choose from Media Library', value: 'media' },
-    { label: 'Manual URL', value: 'url' }
-  ];
 
   let itemForm = { sort_order: '0', title: '', tour_id: '' };
   let imageForm = {
@@ -203,9 +193,8 @@
     try {
       const res = await api.media.list({ file_type: 'image', limit: 200 });
       mediaItems = res.data.items
-        .map((m) => ({ id: String(m.id ?? ''), file_name: String(m.file_name ?? 'Untitled'), file_url: String(m.file_url ?? '') }))
+        .map((m) => ({ id: String(m.id ?? ''), file_name: String(m.file_name ?? 'Untitled'), file_url: String(m.file_url ?? ''), thumbnail_url: (m.thumbnail_url as string | null | undefined) ?? null }))
         .filter((m) => m.id && m.file_url);
-      mediaOptions = [{ label: 'Select an image', value: '' }, ...mediaItems.map((m) => ({ label: m.file_name, value: m.id }))];
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Unable to load media library.', 'error');
     } finally {
@@ -254,8 +243,7 @@
     }
     modalKind = kind;
     editingId = null;
-    imageMode = 'none';
-    mediaId = '';
+    if (kind === 'image') void loadMedia();
     if (kind === 'inclusion') {
       itemForm = { sort_order: nextOrder(sortedInclusions), title: '', tour_id: selectedTourId };
     } else if (kind === 'exclusion') {
@@ -269,8 +257,7 @@
   const openEdit = (kind: typeof modalKind, item: ExclusionItem | InclusionItem | TourImage) => {
     modalKind = kind;
     editingId = item.id;
-    imageMode = 'none';
-    mediaId = '';
+    if (kind === 'image') void loadMedia();
     if (kind === 'inclusion' || kind === 'exclusion') {
       const i = item as InclusionItem;
       itemForm = { sort_order: String(i.sort_order), title: i.title, tour_id: i.tour_id };
@@ -284,7 +271,6 @@
         sort_order: String(img.sort_order),
         tour_id: img.tour_id
       };
-      imageMode = img.image_url ? 'url' : 'none';
     }
     modalOpen = true;
   };
@@ -292,16 +278,6 @@
   const closeModal = () => {
     modalOpen = false;
     editingId = null;
-  };
-
-  const applyImageMode = async () => {
-    if (imageMode === 'none') { imageForm.image_url = ''; mediaId = ''; }
-    if (imageMode === 'media') await loadMedia();
-  };
-
-  const applyMediaSelection = () => {
-    const found = mediaItems.find((m) => m.id === mediaId);
-    imageForm.image_url = found?.file_url ?? '';
   };
 
   // ─── save / delete ────────────────────────────────────────────────────────
@@ -698,22 +674,7 @@
       {:else}
         <!-- image form -->
         <div class="mt-6 rounded-[8px] border border-ink/10 bg-sand/25 p-4">
-          <div class="grid gap-4 md:grid-cols-[260px_1fr]">
-            <AdminSelect label="Image source" name="image_mode" bind:value={imageMode} options={imageModeOptions} on:change={applyImageMode} />
-            {#if imageMode === 'media'}
-              <AdminSelect label={loadingMedia ? 'Loading...' : 'Media Library'} name="media_id" bind:value={mediaId} options={mediaOptions} on:change={applyMediaSelection} />
-            {:else if imageMode === 'url'}
-              <AdminFormInput label="Image URL" name="image_url" bind:value={imageForm.image_url} placeholder="https://..." required />
-            {:else}
-              <div class="rounded-2xl border border-dashed border-ink/15 bg-surface/70 p-4 text-sm text-ink/50">Select an image source above.</div>
-            {/if}
-          </div>
-          {#if imageForm.image_url}
-            <div class="mt-4 flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-ink/10">
-              <img class="h-14 w-20 rounded-xl object-cover" src={imageForm.image_url} alt="Preview" />
-              <p class="min-w-0 truncate text-xs text-ink/50">{imageForm.image_url}</p>
-            </div>
-          {/if}
+          <MediaPicker label="Tour image" media={mediaItems} uploadFolder="tours" bind:value={imageForm.image_url} />
         </div>
 
         <div class="mt-4 grid gap-4 sm:grid-cols-2">

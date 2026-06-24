@@ -5,7 +5,7 @@
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
-  import AdminFileUpload from '$lib/components/admin/AdminFileUpload.svelte';
+  import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
@@ -18,7 +18,7 @@
   import LoadingState from '$lib/components/public/LoadingState.svelte';
 
   type PublishStatus = 'draft' | 'published' | 'archived';
-  type ImageMode = 'none' | 'url' | 'upload';
+  type MediaItem = { file_name: string; file_url: string; id: string; thumbnail_url?: string | null };
 
   type Destination = {
     id: string;
@@ -126,11 +126,6 @@
     { label: 'Archived', value: 'archived' }
   ];
 
-  const imageModeOptions = [
-    { label: 'No image', value: 'none' },
-    { label: 'Paste image URL', value: 'url' },
-    { label: 'Upload image file', value: 'upload' }
-  ];
 
   let rows: Destination[] = [];
   let loading = true;
@@ -145,12 +140,8 @@
   let editingDestination: Destination | null = null;
   let destinationToDelete: Destination | null = null;
   let form = emptyForm();
-  let mainImageMode: ImageMode = 'none';
-  let bannerImageMode: ImageMode = 'none';
-  let ogImageMode: ImageMode = 'none';
-  let lastMainImageMode: ImageMode = 'none';
-  let lastBannerImageMode: ImageMode = 'none';
-  let lastOgImageMode: ImageMode = 'none';
+  let mediaItems: MediaItem[] = [];
+  let loadingMedia = false;
   let toasts: Toast[] = [];
 
   const slugify = (value: string) =>
@@ -164,20 +155,18 @@
     form.slug = slugify(form.name);
   }
 
-  $: if (modalOpen && mainImageMode !== lastMainImageMode) {
-    form.main_image_url = '';
-    lastMainImageMode = mainImageMode;
-  }
-
-  $: if (modalOpen && bannerImageMode !== lastBannerImageMode) {
-    form.banner_image_url = '';
-    lastBannerImageMode = bannerImageMode;
-  }
-
-  $: if (modalOpen && ogImageMode !== lastOgImageMode) {
-    form.og_image_url = '';
-    lastOgImageMode = ogImageMode;
-  }
+  const loadMedia = async () => {
+    if (mediaItems.length || loadingMedia) return;
+    loadingMedia = true;
+    try {
+      const res = await api.media.list({ file_type: 'image', limit: 200 });
+      mediaItems = (res.data.items as unknown as MediaItem[]).filter((m) => m.file_url);
+    } catch {
+      /* non-fatal — the picker can still upload/paste a URL */
+    } finally {
+      loadingMedia = false;
+    }
+  };
 
   const showToast = (message: string, type: Toast['type'] = 'success') => {
     const id = crypto.randomUUID();
@@ -212,12 +201,7 @@
   const openCreateModal = () => {
     editingDestination = null;
     form = emptyForm();
-    mainImageMode = 'none';
-    bannerImageMode = 'none';
-    ogImageMode = 'none';
-    lastMainImageMode = mainImageMode;
-    lastBannerImageMode = bannerImageMode;
-    lastOgImageMode = ogImageMode;
+    void loadMedia();
     slugManuallyEdited = false;
     modalOpen = true;
   };
@@ -253,12 +237,7 @@
       status: destination.status ?? 'draft',
       travel_insurance_note: destination.travel_insurance_note ?? ''
     };
-    mainImageMode = destination.main_image_url ? 'url' : 'none';
-    bannerImageMode = destination.banner_image_url ? 'url' : 'none';
-    ogImageMode = destination.og_image_url ? 'url' : 'none';
-    lastMainImageMode = mainImageMode;
-    lastBannerImageMode = bannerImageMode;
-    lastOgImageMode = ogImageMode;
+    void loadMedia();
     slugManuallyEdited = true;
     modalOpen = true;
   };
@@ -268,12 +247,6 @@
     editingDestination = null;
     slugManuallyEdited = false;
     form = emptyForm();
-    mainImageMode = 'none';
-    bannerImageMode = 'none';
-    ogImageMode = 'none';
-    lastMainImageMode = mainImageMode;
-    lastBannerImageMode = bannerImageMode;
-    lastOgImageMode = ogImageMode;
   };
 
   const numberOrNull = (value: unknown) => {
@@ -282,10 +255,10 @@
   };
 
   const payload = () => {
-    const mainImage = mainImageMode === 'url' || mainImageMode === 'upload' ? form.main_image_url || null : null;
+    const mainImage = form.main_image_url || null;
 
     return {
-      banner_image_url: bannerImageMode === 'url' || bannerImageMode === 'upload' ? form.banner_image_url || null : null,
+      banner_image_url: form.banner_image_url || null,
       country: form.country.trim() || 'Tanzania',
       description: form.description || null,
       emergency_contacts: form.emergency_contacts || null,
@@ -307,7 +280,7 @@
       meta_description: form.meta_description || null,
       meta_title: form.meta_title || null,
       name: form.name.trim(),
-      og_image_url: ogImageMode === 'url' || ogImageMode === 'upload' ? form.og_image_url || null : null,
+      og_image_url: form.og_image_url || null,
       region: form.region || null,
       safety_overview: form.safety_overview || null,
       security_advice: form.security_advice || null,
@@ -543,24 +516,7 @@
               <h3 class="text-base font-semibold text-ink">Main image</h3>
               <p class="mt-1 text-sm text-ink/55">Used for destination cards and list views.</p>
             </div>
-            <AdminSelect label="Source" name="main_image_mode" bind:value={mainImageMode} options={imageModeOptions} />
-            {#if mainImageMode === 'url'}
-              <AdminFormInput label="Main image URL" name="main_image_url" bind:value={form.main_image_url} placeholder="https://..." />
-            {:else if mainImageMode === 'upload'}
-              <AdminFileUpload
-                label="Upload main image"
-                folder="destinations/main"
-                value={form.main_image_url}
-                helper="Use a local png, jpg, or webp destination image."
-                on:uploaded={(event) => {
-                  form.main_image_url = event.detail.url;
-                  showToast('Main image uploaded successfully.');
-                }}
-                on:error={(event) => showToast(event.detail, 'error')}
-              />
-            {:else}
-              <p class="rounded-2xl border border-dashed border-ink/15 bg-surface px-3 py-3 text-sm text-ink/55">No main image will be saved.</p>
-            {/if}
+            <MediaPicker label="Main image" media={mediaItems} uploadFolder="destinations" bind:value={form.main_image_url} />
           </section>
 
           <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
@@ -568,24 +524,7 @@
               <h3 class="text-base font-semibold text-ink">Banner image</h3>
               <p class="mt-1 text-sm text-ink/55">Used for public destination page headers.</p>
             </div>
-            <AdminSelect label="Source" name="banner_image_mode" bind:value={bannerImageMode} options={imageModeOptions} />
-            {#if bannerImageMode === 'url'}
-              <AdminFormInput label="Banner image URL" name="banner_image_url" bind:value={form.banner_image_url} placeholder="https://..." />
-            {:else if bannerImageMode === 'upload'}
-              <AdminFileUpload
-                label="Upload banner image"
-                folder="destinations/banners"
-                value={form.banner_image_url}
-                helper="Use a wide png, jpg, or webp banner image."
-                on:uploaded={(event) => {
-                  form.banner_image_url = event.detail.url;
-                  showToast('Banner image uploaded successfully.');
-                }}
-                on:error={(event) => showToast(event.detail, 'error')}
-              />
-            {:else}
-              <p class="rounded-2xl border border-dashed border-ink/15 bg-surface px-3 py-3 text-sm text-ink/55">No banner image will be saved.</p>
-            {/if}
+            <MediaPicker label="Banner image" media={mediaItems} uploadFolder="destinations" bind:value={form.banner_image_url} />
           </section>
 
           <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
@@ -593,24 +532,7 @@
               <h3 class="text-base font-semibold text-ink">Open Graph image</h3>
               <p class="mt-1 text-sm text-ink/55">Used when the destination is shared online.</p>
             </div>
-            <AdminSelect label="Source" name="og_image_mode" bind:value={ogImageMode} options={imageModeOptions} />
-            {#if ogImageMode === 'url'}
-              <AdminFormInput label="OG image URL" name="og_image_url" bind:value={form.og_image_url} placeholder="https://..." />
-            {:else if ogImageMode === 'upload'}
-              <AdminFileUpload
-                label="Upload OG image"
-                folder="destinations/og"
-                value={form.og_image_url}
-                helper="Use a social sharing image in png, jpg, or webp format."
-                on:uploaded={(event) => {
-                  form.og_image_url = event.detail.url;
-                  showToast('Open Graph image uploaded successfully.');
-                }}
-                on:error={(event) => showToast(event.detail, 'error')}
-              />
-            {:else}
-              <p class="rounded-2xl border border-dashed border-ink/15 bg-surface px-3 py-3 text-sm text-ink/55">No Open Graph image will be saved.</p>
-            {/if}
+            <MediaPicker label="Open Graph image" media={mediaItems} uploadFolder="destinations" bind:value={form.og_image_url} />
           </section>
         </div>
 

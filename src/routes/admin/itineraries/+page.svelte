@@ -8,6 +8,7 @@
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
+  import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
   import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
@@ -15,8 +16,6 @@
   import ToastStack from '$lib/components/admin/ToastStack.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
-
-  type ImageMode = 'media' | 'none' | 'url';
 
   type ItineraryDay = {
     accommodation?: string | null;
@@ -36,6 +35,7 @@
     file_name: string;
     file_url: string;
     id: string;
+    thumbnail_url?: string | null;
   };
 
   type Option = {
@@ -59,12 +59,6 @@
     title: string;
   };
 
-  const imageModeOptions: Option[] = [
-    { label: 'No image', value: 'none' },
-    { label: 'Choose from Media Library', value: 'media' },
-    { label: 'Use manual URL', value: 'url' }
-  ];
-
   let loadingTours = true;
   let loadingDays = false;
   let loadingMedia = false;
@@ -78,13 +72,10 @@
   let tourOptions: Option[] = [{ label: 'Select a tour', value: '' }];
   let days: ItineraryDay[] = [];
   let mediaItems: MediaItem[] = [];
-  let mediaOptions: Option[] = [{ label: 'Select an image', value: '' }];
   let modalOpen = false;
   let confirmOpen = false;
   let editingDay: ItineraryDay | null = null;
   let dayToDelete: ItineraryDay | null = null;
-  let imageMode: ImageMode = 'none';
-  let mediaId = '';
   let toasts: Toast[] = [];
   let form = {
     accommodation: '',
@@ -174,12 +165,9 @@
       mediaItems = response.data.items.map((item) => ({
         file_name: String(item.file_name ?? 'Untitled image'),
         file_url: String(item.file_url ?? ''),
-        id: String(item.id ?? '')
+        id: String(item.id ?? ''),
+        thumbnail_url: (item.thumbnail_url as string | null | undefined) ?? null
       })).filter((item) => item.id && item.file_url);
-      mediaOptions = [
-        { label: 'Select an image', value: '' },
-        ...mediaItems.map((item) => ({ label: item.file_name, value: item.id }))
-      ];
     } catch (requestError) {
       showToast(requestError instanceof Error ? requestError.message : 'Unable to load media images.', 'error');
     } finally {
@@ -229,8 +217,6 @@
       title: '',
       tour_id: selectedTourId
     };
-    imageMode = 'none';
-    mediaId = '';
   };
 
   const openCreateModal = async () => {
@@ -241,6 +227,7 @@
 
     editingDay = null;
     resetForm();
+    void loadMedia();
     modalOpen = true;
   };
 
@@ -256,8 +243,7 @@
       title: day.title,
       tour_id: day.tour_id
     };
-    imageMode = day.image_url ? 'url' : 'none';
-    mediaId = '';
+    void loadMedia();
     modalOpen = true;
   };
 
@@ -265,20 +251,6 @@
     modalOpen = false;
     editingDay = null;
     resetForm();
-  };
-
-  const applyImageMode = async () => {
-    if (imageMode === 'none') {
-      form.image_url = '';
-      mediaId = '';
-    }
-
-    if (imageMode === 'media') await loadMedia();
-  };
-
-  const applyMediaSelection = () => {
-    const selectedMedia = mediaItems.find((item) => item.id === mediaId);
-    form.image_url = selectedMedia?.file_url ?? '';
   };
 
   const duplicateDayExists = () => {
@@ -604,29 +576,7 @@
       </div>
 
       <div class="mt-5 rounded-[8px] border border-ink/10 bg-sand/25 p-4">
-        <div class="grid gap-4 md:grid-cols-[260px_1fr]">
-          <AdminSelect label="Image source" name="image_mode" bind:value={imageMode} options={imageModeOptions} on:change={applyImageMode} />
-
-          {#if imageMode === 'media'}
-            <AdminSelect label={loadingMedia ? 'Loading media...' : 'Media Library image'} name="media_id" bind:value={mediaId} options={mediaOptions} on:change={applyMediaSelection} />
-          {:else if imageMode === 'url'}
-            <AdminFormInput label="Image URL" name="image_url" bind:value={form.image_url} placeholder="https://..." />
-          {:else}
-            <div class="rounded-2xl border border-dashed border-ink/15 bg-surface/70 p-4 text-sm leading-6 text-ink/58">
-              No image will be attached to this itinerary day.
-            </div>
-          {/if}
-        </div>
-
-        {#if form.image_url}
-          <div class="mt-4 flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-ink/10">
-            <img class="h-16 w-24 rounded-xl object-cover" src={form.image_url} alt="Selected itinerary visual" />
-            <div class="min-w-0">
-              <p class="text-sm font-semibold text-ink">Selected image</p>
-              <p class="truncate text-xs text-ink/50">{form.image_url}</p>
-            </div>
-          </div>
-        {/if}
+        <MediaPicker label="Day image" media={mediaItems} uploadFolder="itineraries" bind:value={form.image_url} />
       </div>
 
       <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

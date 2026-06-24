@@ -22,6 +22,7 @@
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
+  import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
   import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
@@ -48,10 +49,9 @@
     tours?: Relation;
   };
 
-  type MediaItem = { file_name: string; file_url: string; id: string };
+  type MediaItem = { file_name: string; file_url: string; id: string; thumbnail_url?: string | null };
   type Option = { label: string; value: string };
   type Toast = { id: string; message: string; type: 'error' | 'success' };
-  type ImageMode = 'media' | 'url';
   type ViewMode = 'grid' | 'list';
 
   const statusOptions: Option[] = [
@@ -64,11 +64,6 @@
     { label: 'Image', value: 'image' },
     { label: 'Video', value: 'video' },
     { label: 'Document', value: 'document' }
-  ];
-
-  const imageModeOptions: Option[] = [
-    { label: 'Choose from Media Library', value: 'media' },
-    { label: 'Manual URL', value: 'url' }
   ];
 
   const emptyForm = () => ({
@@ -85,7 +80,6 @@
 
   let rows: GalleryItem[] = [];
   let mediaItems: MediaItem[] = [];
-  let mediaOptions: Option[] = [{ label: 'Select an image', value: '' }];
   let destinationOptions: Option[] = [{ label: 'No destination', value: '' }];
   let tourOptions: Option[] = [{ label: 'No tour', value: '' }];
   let destinationFilterOptions: Option[] = [{ label: 'All destinations', value: 'all' }];
@@ -109,8 +103,6 @@
   let editing: GalleryItem | null = null;
   let toDelete: GalleryItem | null = null;
   let form = emptyForm();
-  let imageMode: ImageMode = 'media';
-  let mediaId = '';
   let toasts: Toast[] = [];
 
   // backend orders by sort_order; apply stable secondary sort by created_at
@@ -175,7 +167,6 @@
     try {
       const res = await api.media.list({ file_type: 'image', limit: 200 });
       mediaItems = (res.data.items as unknown as MediaItem[]).filter((m) => m.file_url);
-      mediaOptions = [{ label: 'Select an image', value: '' }, ...mediaItems.map((m) => ({ label: m.file_name, value: m.id }))];
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Unable to load media library.', 'error');
     } finally {
@@ -186,8 +177,6 @@
   const openCreate = async () => {
     editing = null;
     form = emptyForm();
-    imageMode = 'media';
-    mediaId = '';
     modalOpen = true;
     await loadMedia();
   };
@@ -205,18 +194,11 @@
       title: item.title ?? '',
       tour_id: item.tour_id ?? ''
     };
-    imageMode = 'url';
-    mediaId = '';
     modalOpen = true;
     await loadMedia();
   };
 
   const closeModal = () => { modalOpen = false; editing = null; form = emptyForm(); };
-
-  const applyMediaSelection = () => {
-    const found = mediaItems.find((m) => m.id === mediaId);
-    form.image_url = found?.file_url ?? '';
-  };
 
   const payload = () => ({
     alt_text: form.alt_text.trim() || null,
@@ -440,20 +422,7 @@
       <div class="mt-6 grid gap-4 lg:grid-cols-[300px_1fr]">
         <!-- image picker + preview -->
         <div class="grid content-start gap-3 rounded-[8px] border border-ink/10 bg-sand/25 p-4">
-          <AdminSelect label="Image source" name="image_mode" bind:value={imageMode} options={imageModeOptions} />
-          {#if imageMode === 'media'}
-            <AdminSelect label={loadingMedia ? 'Loading...' : 'Media Library'} name="media_id" bind:value={mediaId} options={mediaOptions} on:change={applyMediaSelection} />
-          {:else}
-            <AdminFormInput label="Image URL" name="image_url" bind:value={form.image_url} placeholder="https://..." />
-          {/if}
-
-          <div class="aspect-[4/3] overflow-hidden rounded-2xl bg-surface ring-1 ring-ink/10">
-            {#if form.image_url}
-              <img class="h-full w-full object-cover" src={form.image_url} alt="Preview" />
-            {:else}
-              <div class="grid h-full w-full place-items-center text-ink/25"><ImageIcon size={34} /></div>
-            {/if}
-          </div>
+          <MediaPicker label="Image" media={mediaItems} uploadFolder="gallery" aspect="aspect-[4/3]" bind:value={form.image_url} />
         </div>
 
         <!-- fields -->

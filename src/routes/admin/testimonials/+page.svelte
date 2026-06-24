@@ -10,6 +10,7 @@
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
+  import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
   import StatusBadge from '$lib/components/admin/StatusBadge.svelte';
   import ToastStack from '$lib/components/admin/ToastStack.svelte';
@@ -32,21 +33,14 @@
   };
 
   type TourOption = { id: string; slug: string; title: string };
-  type MediaItem = { file_name: string; file_url: string; id: string };
+  type MediaItem = { file_name: string; file_url: string; id: string; thumbnail_url?: string | null };
   type Option = { label: string; value: string };
   type Toast = { id: string; message: string; type: 'error' | 'success' };
-  type ImageMode = 'media' | 'none' | 'url';
 
   const statusOptions: Option[] = [
     { label: 'Draft', value: 'draft' },
     { label: 'Published', value: 'published' },
     { label: 'Archived', value: 'archived' }
-  ];
-
-  const imageModeOptions: Option[] = [
-    { label: 'No image', value: 'none' },
-    { label: 'Manual URL', value: 'url' },
-    { label: 'Choose from Media Library', value: 'media' }
   ];
 
   const ratingFilterOptions: Option[] = [
@@ -81,7 +75,6 @@
   let tourOptions: Option[] = [{ label: 'No tour', value: '' }];
   let tourFilterOptions: Option[] = [{ label: 'All tours', value: 'all' }];
   let mediaItems: MediaItem[] = [];
-  let mediaOptions: Option[] = [{ label: 'Select an image', value: '' }];
 
   let loading = true;
   let loadingMedia = false;
@@ -100,8 +93,6 @@
   let editing: Testimonial | null = null;
   let toDelete: Testimonial | null = null;
   let form = emptyForm();
-  let imageMode: ImageMode = 'none';
-  let mediaId = '';
   let toasts: Toast[] = [];
 
   const showToast = (message: string, type: Toast['type'] = 'success') => {
@@ -157,7 +148,6 @@
     try {
       const res = await api.media.list({ file_type: 'image', limit: 200 });
       mediaItems = (res.data.items as unknown as MediaItem[]).filter((m) => m.file_url);
-      mediaOptions = [{ label: 'Select an image', value: '' }, ...mediaItems.map((m) => ({ label: m.file_name, value: m.id }))];
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Unable to load media library.', 'error');
     } finally {
@@ -168,8 +158,7 @@
   const openCreate = () => {
     editing = null;
     form = emptyForm();
-    imageMode = 'none';
-    mediaId = '';
+    void loadMedia();
     modalOpen = true;
   };
 
@@ -186,22 +175,11 @@
       status: t.status,
       tour_id: t.tour_id ?? ''
     };
-    imageMode = t.client_image_url ? 'url' : 'none';
-    mediaId = '';
+    void loadMedia();
     modalOpen = true;
   };
 
   const closeModal = () => { modalOpen = false; editing = null; form = emptyForm(); };
-
-  const applyImageMode = async () => {
-    if (imageMode === 'none') { form.client_image_url = ''; mediaId = ''; }
-    if (imageMode === 'media') await loadMedia();
-  };
-
-  const applyMediaSelection = () => {
-    const found = mediaItems.find((m) => m.id === mediaId);
-    form.client_image_url = found?.file_url ?? '';
-  };
 
   const payload = () => ({
     client_country: form.client_country.trim() || null,
@@ -410,22 +388,7 @@
 
         <!-- client image -->
         <div class="rounded-[8px] border border-ink/10 bg-sand/25 p-4">
-          <div class="grid gap-4 sm:grid-cols-[220px_1fr]">
-            <AdminSelect label="Client image" name="image_mode" bind:value={imageMode} options={imageModeOptions} on:change={applyImageMode} />
-            {#if imageMode === 'media'}
-              <AdminSelect label={loadingMedia ? 'Loading...' : 'Media Library'} name="media_id" bind:value={mediaId} options={mediaOptions} on:change={applyMediaSelection} />
-            {:else if imageMode === 'url'}
-              <AdminFormInput label="Image URL" name="client_image_url" bind:value={form.client_image_url} placeholder="https://..." />
-            {:else}
-              <div class="grid place-items-center rounded-2xl border border-dashed border-ink/15 bg-surface/70 p-3 text-sm text-ink/50">No client image.</div>
-            {/if}
-          </div>
-          {#if form.client_image_url}
-            <div class="mt-4 flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-ink/10">
-              <img class="h-12 w-12 rounded-full object-cover" src={form.client_image_url} alt="Client preview" />
-              <p class="min-w-0 truncate text-xs text-ink/55">{form.client_image_url}</p>
-            </div>
-          {/if}
+          <MediaPicker label="Client image" media={mediaItems} uploadFolder="testimonials" aspect="aspect-square" bind:value={form.client_image_url} />
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2">

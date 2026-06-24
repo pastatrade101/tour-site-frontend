@@ -7,6 +7,7 @@
   import AdminFormInput from './AdminFormInput.svelte';
   import AdminPageHeader from './AdminPageHeader.svelte';
   import AdminSelect from './AdminSelect.svelte';
+  import MediaPicker from './MediaPicker.svelte';
   import AdminTextArea from './AdminTextArea.svelte';
   import ToastStack from './ToastStack.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
@@ -15,22 +16,15 @@
   export let mode: 'create' | 'edit' = 'create';
   export let postId = '';
 
-  type ImageMode = 'media' | 'none' | 'url';
   type PublishStatus = 'archived' | 'draft' | 'published';
   type Option = { label: string; value: string };
   type Toast = { id: string; message: string; type: 'error' | 'success' };
-  type MediaItem = { file_name: string; file_url: string; id: string };
+  type MediaItem = { file_name: string; file_url: string; id: string; thumbnail_url?: string | null };
 
   const statusOptions: Option[] = [
     { label: 'Draft', value: 'draft' },
     { label: 'Published', value: 'published' },
     { label: 'Archived', value: 'archived' }
-  ];
-
-  const imageModeOptions: Option[] = [
-    { label: 'No image', value: 'none' },
-    { label: 'Manual URL', value: 'url' },
-    { label: 'Choose from Media Library', value: 'media' }
   ];
 
   let loading = mode === 'edit';
@@ -42,12 +36,6 @@
 
   let categoryOptions: Option[] = [{ label: 'No category', value: '' }];
   let mediaItems: MediaItem[] = [];
-  let mediaOptions: Option[] = [{ label: 'Choose image', value: '' }];
-
-  let featuredImageMode: ImageMode = 'none';
-  let ogImageMode: ImageMode = 'none';
-  let featuredMediaId = '';
-  let ogMediaId = '';
 
   let form = {
     author_name: '',
@@ -69,8 +57,6 @@
   const slugify = (v: string) => v.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
   $: if (!slugManuallyEdited) form.slug = slugify(form.title);
-  $: if (featuredImageMode === 'none') form.featured_image_url = '';
-  $: if (ogImageMode === 'none') form.og_image_url = '';
 
   const showToast = (message: string, type: Toast['type'] = 'success') => {
     const id = crypto.randomUUID();
@@ -79,12 +65,6 @@
   };
 
   const dismissToast = (e: CustomEvent<string>) => { toasts = toasts.filter((t) => t.id !== e.detail); };
-
-  const applyMediaSelection = (target: 'featured' | 'og', mediaId: string) => {
-    const found = mediaItems.find((m) => m.id === mediaId);
-    if (target === 'featured') form.featured_image_url = found?.file_url ?? '';
-    if (target === 'og') form.og_image_url = found?.file_url ?? '';
-  };
 
   // ─── data loading ─────────────────────────────────────────────────────────
 
@@ -102,10 +82,6 @@
       ];
 
       mediaItems = (media.data.items as MediaItem[]).filter((m) => m.file_url);
-      mediaOptions = [
-        { label: 'Choose image', value: '' },
-        ...mediaItems.map((m) => ({ label: m.file_name, value: m.id }))
-      ];
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Unable to load options.', 'error');
     } finally {
@@ -136,8 +112,6 @@
         title: String(post.title ?? '')
       };
 
-      featuredImageMode = form.featured_image_url ? 'url' : 'none';
-      ogImageMode = form.og_image_url ? 'url' : 'none';
       slugManuallyEdited = true;
     } catch (err) {
       error = err instanceof Error ? err.message : 'Unable to load blog post.';
@@ -244,29 +218,7 @@
             <h2 class="mt-1 text-lg font-bold text-ink">Post thumbnail</h2>
           </div>
 
-          <div class="grid gap-4 sm:grid-cols-[220px_1fr]">
-            <AdminSelect label="Image source" name="featured_image_mode" bind:value={featuredImageMode} options={imageModeOptions} />
-            {#if featuredImageMode === 'media'}
-              <AdminSelect
-                label={loadingOptions ? 'Loading media...' : 'Media Library'}
-                name="featured_media_id"
-                bind:value={featuredMediaId}
-                options={mediaOptions}
-                on:change={() => applyMediaSelection('featured', featuredMediaId)}
-              />
-            {:else if featuredImageMode === 'url'}
-              <AdminFormInput label="Image URL" name="featured_image_url" bind:value={form.featured_image_url} placeholder="https://..." />
-            {:else}
-              <div class="rounded-2xl border border-dashed border-ink/15 bg-sand/20 p-4 text-sm text-ink/50">No featured image will be set.</div>
-            {/if}
-          </div>
-
-          {#if form.featured_image_url}
-            <div class="flex items-center gap-3 rounded-2xl bg-sand/30 p-3 ring-1 ring-ink/10">
-              <img class="h-14 w-20 rounded-xl object-cover" src={form.featured_image_url} alt="Featured preview" />
-              <p class="min-w-0 truncate text-xs text-ink/55">{form.featured_image_url}</p>
-            </div>
-          {/if}
+          <MediaPicker label="Featured image" media={mediaItems} uploadFolder="blog" bind:value={form.featured_image_url} />
         </div>
 
         <!-- publish settings -->
@@ -304,29 +256,7 @@
             <AdminTextArea label="Meta description" name="meta_description" bind:value={form.meta_description} rows={3} placeholder="Summary shown in search snippets (150–160 chars)" />
           </div>
 
-          <div class="grid gap-4 sm:grid-cols-[220px_1fr]">
-            <AdminSelect label="OG image source" name="og_image_mode" bind:value={ogImageMode} options={imageModeOptions} />
-            {#if ogImageMode === 'media'}
-              <AdminSelect
-                label={loadingOptions ? 'Loading media...' : 'Media Library'}
-                name="og_media_id"
-                bind:value={ogMediaId}
-                options={mediaOptions}
-                on:change={() => applyMediaSelection('og', ogMediaId)}
-              />
-            {:else if ogImageMode === 'url'}
-              <AdminFormInput label="OG image URL" name="og_image_url" bind:value={form.og_image_url} placeholder="https://... (1200×630 recommended)" />
-            {:else}
-              <div class="rounded-2xl border border-dashed border-ink/15 bg-sand/20 p-4 text-sm text-ink/50">No OG image override set.</div>
-            {/if}
-          </div>
-
-          {#if form.og_image_url}
-            <div class="flex items-center gap-3 rounded-2xl bg-sand/30 p-3 ring-1 ring-ink/10">
-              <img class="h-14 w-20 rounded-xl object-cover" src={form.og_image_url} alt="OG preview" />
-              <p class="min-w-0 truncate text-xs text-ink/55">{form.og_image_url}</p>
-            </div>
-          {/if}
+          <MediaPicker label="OG image (1200×630 recommended)" media={mediaItems} uploadFolder="blog" bind:value={form.og_image_url} />
         </div>
       </div>
 

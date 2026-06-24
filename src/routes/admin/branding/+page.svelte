@@ -13,14 +13,13 @@
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
-  import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
+  import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import ToastStack from '$lib/components/admin/ToastStack.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
 
-  type Option = { label: string; value: string };
-  type MediaItem = { file_name: string; file_url: string; id: string };
+  type MediaItem = { file_name: string; file_url: string; id: string; thumbnail_url?: string | null };
   type Toast = { id: string; message: string; type: 'error' | 'success' };
 
   const colorFields: { hint: string; key: keyof BrandColors; label: string }[] = [
@@ -41,10 +40,7 @@
   let form: Branding = structuredClone(defaultBranding);
   let savedColors: BrandColors = { ...defaultColors };
 
-  let mediaOptions: Option[] = [{ label: 'Pick from Media Library', value: '' }];
   let mediaItems: MediaItem[] = [];
-  let logoMediaId = '';
-  let faviconMediaId = '';
 
   const showToast = (message: string, type: Toast['type'] = 'success') => {
     const id = crypto.randomUUID();
@@ -83,22 +79,11 @@
       savedColors = { ...form.colors };
 
       mediaItems = (mediaRes.data.items as unknown as MediaItem[]).filter((m) => m.file_url);
-      mediaOptions = [{ label: 'Pick from Media Library', value: '' }, ...mediaItems.map((m) => ({ label: m.file_name, value: m.id }))];
     } catch (err) {
       error = err instanceof Error ? err.message : 'Unable to load branding.';
     } finally {
       loading = false;
     }
-  };
-
-  const pickLogo = () => {
-    const found = mediaItems.find((m) => m.id === logoMediaId);
-    if (found) form.logo_url = found.file_url;
-  };
-
-  const pickFavicon = () => {
-    const found = mediaItems.find((m) => m.id === faviconMediaId);
-    if (found) form.favicon_url = found.file_url;
   };
 
   const resetColors = () => {
@@ -209,28 +194,8 @@
             <h2 class="mt-1 text-lg font-bold text-ink">Brand assets</h2>
           </div>
           <div class="grid gap-5 sm:grid-cols-2">
-            <div class="grid gap-3">
-              <AdminFormInput label="Logo URL" name="logo_url" bind:value={form.logo_url} placeholder="https://... or /images/logo.svg" />
-              <AdminSelect label="Or pick from Media Library" name="logo_media" bind:value={logoMediaId} options={mediaOptions} on:change={pickLogo} />
-              <div class="grid h-24 place-items-center rounded-2xl border border-ink/10 bg-sand/30 p-3">
-                {#if form.logo_url}
-                  <img class="max-h-20 max-w-full object-contain" src={form.logo_url} alt="Logo preview" />
-                {:else}
-                  <span class="text-xs text-ink/40">No logo set</span>
-                {/if}
-              </div>
-            </div>
-            <div class="grid gap-3">
-              <AdminFormInput label="Favicon URL" name="favicon_url" bind:value={form.favicon_url} placeholder="https://... or /favicon.png" />
-              <AdminSelect label="Or pick from Media Library" name="favicon_media" bind:value={faviconMediaId} options={mediaOptions} on:change={pickFavicon} />
-              <div class="grid h-24 place-items-center rounded-2xl border border-ink/10 bg-sand/30 p-3">
-                {#if form.favicon_url}
-                  <img class="h-12 w-12 rounded-lg object-cover ring-1 ring-ink/10" src={form.favicon_url} alt="Favicon preview" />
-                {:else}
-                  <span class="text-xs text-ink/40">No favicon set</span>
-                {/if}
-              </div>
-            </div>
+            <MediaPicker label="Logo" media={mediaItems} uploadFolder="branding" fit="object-contain" aspect="aspect-[16/9]" bind:value={form.logo_url} />
+            <MediaPicker label="Favicon" media={mediaItems} uploadFolder="branding" fit="object-contain" aspect="aspect-square" bind:value={form.favicon_url} />
           </div>
         </section>
 

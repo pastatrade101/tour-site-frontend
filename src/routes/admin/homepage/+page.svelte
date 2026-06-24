@@ -13,11 +13,13 @@
     X
   } from '@lucide/svelte';
   import { api } from '$lib/api/client';
+  import { imgUrl } from '$lib/img';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
+  import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
   import ToastStack from '$lib/components/admin/ToastStack.svelte';
@@ -38,10 +40,9 @@
     title?: string | null;
   };
 
-  type MediaItem = { file_name: string; file_url: string; id: string };
+  type MediaItem = { file_name: string; file_url: string; id: string; thumbnail_url?: string | null };
   type Option = { label: string; value: string };
   type Toast = { id: string; message: string; type: 'error' | 'success' };
-  type ImageMode = 'media' | 'none' | 'url';
 
   const recommendedKeys = [
     'hero',
@@ -59,12 +60,6 @@
     'cost_ranges'
   ];
 
-  const imageModeOptions: Option[] = [
-    { label: 'No image', value: 'none' },
-    { label: 'Manual URL', value: 'url' },
-    { label: 'Choose from Media Library', value: 'media' }
-  ];
-
   const emptyForm = () => ({
     button_text: '',
     button_url: '',
@@ -79,7 +74,6 @@
 
   let rows: Section[] = [];
   let mediaItems: MediaItem[] = [];
-  let mediaOptions: Option[] = [{ label: 'Select an image', value: '' }];
 
   let loading = true;
   let loadingMedia = false;
@@ -94,8 +88,6 @@
   let toDelete: Section | null = null;
   let form = emptyForm();
   let extraDataText = '{}';
-  let imageMode: ImageMode = 'none';
-  let mediaId = '';
   let toasts: Toast[] = [];
 
   // ── background & overlay (stored inside extra_data) ───────────────────────
@@ -272,7 +264,6 @@
     try {
       const res = await api.media.list({ file_type: 'image', limit: 200 });
       mediaItems = (res.data.items as unknown as MediaItem[]).filter((m) => m.file_url);
-      mediaOptions = [{ label: 'Select an image', value: '' }, ...mediaItems.map((m) => ({ label: m.file_name, value: m.id }))];
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Unable to load media library.', 'error');
     } finally {
@@ -290,8 +281,7 @@
     logos = [];
     slides = [];
     costRanges = [];
-    imageMode = 'none';
-    mediaId = '';
+    void loadMedia();
     modalOpen = true;
   };
 
@@ -315,22 +305,11 @@
     costRanges = extraToCostRanges(ed);
     const rest = Object.fromEntries(Object.entries(ed).filter(([key]) => !MANAGED_KEYS.includes(key)));
     extraDataText = Object.keys(rest).length ? JSON.stringify(rest, null, 2) : '{}';
-    imageMode = section.image_url ? 'url' : 'none';
-    mediaId = '';
+    void loadMedia();
     modalOpen = true;
   };
 
   const closeModal = () => { modalOpen = false; editing = null; form = emptyForm(); extraDataText = '{}'; bg = emptyBg(); logos = []; slides = []; costRanges = []; mediaPicker = null; };
-
-  const applyImageMode = async () => {
-    if (imageMode === 'none') { form.image_url = ''; mediaId = ''; }
-    if (imageMode === 'media') await loadMedia();
-  };
-
-  const applyMediaSelection = () => {
-    const found = mediaItems.find((m) => m.id === mediaId);
-    form.image_url = found?.file_url ?? '';
-  };
 
   const save = async () => {
     if (!/^[a-z0-9_]{2,}$/.test(form.section_key.trim())) {
@@ -569,19 +548,7 @@
 
         <!-- image -->
         <div class="rounded-[8px] border border-ink/10 bg-sand/25 p-4">
-          <div class="grid gap-4 sm:grid-cols-[220px_1fr]">
-            <AdminSelect label="Image source" name="image_mode" bind:value={imageMode} options={imageModeOptions} on:change={applyImageMode} />
-            {#if imageMode === 'media'}
-              <AdminSelect label={loadingMedia ? 'Loading...' : 'Media Library'} name="media_id" bind:value={mediaId} options={mediaOptions} on:change={applyMediaSelection} />
-            {:else if imageMode === 'url'}
-              <AdminFormInput label="Image URL" name="image_url" bind:value={form.image_url} placeholder="https://..." />
-            {:else}
-              <div class="grid place-items-center rounded-2xl border border-dashed border-ink/15 bg-surface/70 p-3 text-sm text-ink/50">No image.</div>
-            {/if}
-          </div>
-          {#if form.image_url && imageMode !== 'none'}
-            <img class="mt-4 h-28 w-full rounded-2xl object-cover ring-1 ring-ink/10" src={form.image_url} alt="Section preview" />
-          {/if}
+          <MediaPicker label="Section image" media={mediaItems} uploadFolder="homepage" bind:value={form.image_url} />
         </div>
 
         <!-- background video + overlay -->
@@ -745,7 +712,7 @@
             {#if bg.video}
               <!-- svelte-ignore a11y-media-has-caption -->
               <video class="absolute inset-0 h-full w-full object-cover" style={`object-position:${bg.media_position}`} src={bg.video} autoplay muted loop playsinline></video>
-            {:else if form.image_url && imageMode !== 'none'}
+            {:else if form.image_url}
               <img class="absolute inset-0 h-full w-full object-cover" style={`object-position:${bg.media_position}`} src={form.image_url} alt="" />
             {/if}
             {#if bgHasMedia}
@@ -821,7 +788,7 @@
                 title={m.file_name}
                 on:click={() => pickMedia(m.file_url)}
               >
-                <img class="max-h-full max-w-full object-contain" src={m.file_url} alt={m.file_name} loading="lazy" />
+                <img class="max-h-full max-w-full object-contain" src={imgUrl(m.thumbnail_url || m.file_url, 300)} alt={m.file_name} loading="lazy" />
               </button>
             {/each}
           </div>

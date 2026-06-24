@@ -1,7 +1,8 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { Image as ImageIcon, Link as LinkIcon, Search, Trash2, X } from '@lucide/svelte';
+  import { Image as ImageIcon, Link as LinkIcon, Search, Trash2, Upload, X } from '@lucide/svelte';
   import { imgUrl } from '$lib/img';
+  import { api } from '$lib/api/client';
 
   type MediaItem = { id: string; file_name: string; file_url: string; thumbnail_url?: string | null };
 
@@ -9,19 +10,50 @@
   export let label = 'Image';
   export let media: MediaItem[] = [];
   export let aspect = 'aspect-[16/9]';
+  export let uploadFolder = 'uploads';
+  export let fit = 'object-cover'; // use 'object-contain' for logos/favicons
 
   const dispatch = createEventDispatcher<{ change: string }>();
 
   let open = false; // library modal
   let urlMode = false; // paste-url input
   let search = '';
+  let uploaded: MediaItem[] = []; // images uploaded in this session
+  let uploading = false;
+  let uploadError = '';
+  let fileInput: HTMLInputElement;
 
+  $: allMedia = [...uploaded, ...media];
   $: filtered = search.trim()
-    ? media.filter((m) => m.file_name.toLowerCase().includes(search.trim().toLowerCase()))
-    : media;
+    ? allMedia.filter((m) => m.file_name.toLowerCase().includes(search.trim().toLowerCase()))
+    : allMedia;
 
   const select = (url: string) => { value = url; open = false; dispatch('change', url); };
   const clear = () => { value = ''; urlMode = false; dispatch('change', ''); };
+
+  const onFileChange = async (event: Event) => {
+    const file = (event.currentTarget as HTMLInputElement).files?.[0];
+    if (!file) return;
+    uploading = true;
+    uploadError = '';
+    try {
+      const res = await api.upload.image(file, uploadFolder);
+      const data = res.data as { url: string; media?: { id?: string; thumbnail_url?: string | null } };
+      const item: MediaItem = {
+        id: data.media?.id ?? data.url,
+        file_name: file.name,
+        file_url: data.url,
+        thumbnail_url: data.media?.thumbnail_url ?? null
+      };
+      uploaded = [item, ...uploaded];
+      select(data.url);
+    } catch (err) {
+      uploadError = err instanceof Error ? err.message : 'Upload failed.';
+    } finally {
+      uploading = false;
+      if (fileInput) fileInput.value = '';
+    }
+  };
 
   // Render the modal on <body> so a transformed admin ancestor can't break
   // position:fixed (which would push the dialog out of the viewport).
@@ -36,7 +68,7 @@
 
   {#if value}
     <div class="relative overflow-hidden rounded-xl border border-ink/10 bg-surface">
-      <img class={`w-full object-cover ${aspect}`} src={imgUrl(value, 800)} alt={label} loading="lazy" decoding="async" />
+      <img class={`w-full ${fit} ${aspect}`} src={imgUrl(value, 800)} alt={label} loading="lazy" decoding="async" />
       <button type="button" class="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-ink/60 text-white backdrop-blur transition hover:bg-ink/80" on:click={clear} aria-label="Remove image">
         <Trash2 size={15} />
       </button>
@@ -72,16 +104,27 @@
     <button class="absolute inset-0 cursor-default bg-ink/55 backdrop-blur-sm" type="button" aria-label="Close" on:click={() => (open = false)}></button>
     <div class="relative flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-ink/10 bg-surface shadow-2xl">
       <div class="flex items-center gap-3 border-b border-ink/10 p-4">
-        <p class="text-sm font-bold text-ink">Media Library</p>
+        <p class="hidden text-sm font-bold text-ink sm:block">Media Library</p>
         <div class="flex flex-1 items-center gap-2 rounded-lg border border-ink/12 bg-sand/20 px-3">
           <Search size={16} class="text-ink/40" />
           <input class="h-9 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink/40" placeholder="Search images…" bind:value={search} />
         </div>
+        <button
+          type="button"
+          class="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-forest px-3 text-xs font-bold text-white transition hover:bg-deep-green disabled:opacity-60"
+          on:click={() => fileInput.click()}
+          disabled={uploading}
+        >
+          <Upload size={14} /> {uploading ? 'Uploading…' : 'Upload'}
+        </button>
         <button type="button" class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-ink/10 text-ink transition hover:bg-sand" on:click={() => (open = false)} aria-label="Close"><X size={18} /></button>
       </div>
+      {#if uploadError}
+        <p class="border-b border-ink/10 bg-red-50 px-4 py-2 text-xs font-medium text-red-600">{uploadError}</p>
+      {/if}
       <div class="grid grid-cols-2 gap-3 overflow-y-auto p-4 sm:grid-cols-3 md:grid-cols-4" data-lenis-prevent>
         {#if !filtered.length}
-          <p class="col-span-full py-12 text-center text-sm text-ink/45">No images found.</p>
+          <p class="col-span-full py-12 text-center text-sm text-ink/45">No images found. Use <b>Upload</b> to add one.</p>
         {:else}
           {#each filtered as m (m.id)}
             <button
@@ -107,3 +150,5 @@
     </div>
   </div>
 {/if}
+
+<input class="hidden" type="file" accept="image/png,image/jpeg,image/webp" bind:this={fileInput} on:change={onFileChange} />
