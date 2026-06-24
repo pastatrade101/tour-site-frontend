@@ -2,6 +2,7 @@
   import { ArrowRight } from '@lucide/svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
+  import { trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
   import { staggeredCardReveal } from '$lib/animations/motion';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
@@ -92,6 +93,7 @@
     try {
       const response = await api.destinations.get(slug);
       destination = response.data;
+      trackEvent('destination_page_view', { destination: destination?.name });
     } catch (requestError) {
       error = requestError instanceof Error ? requestError.message : 'Unable to load destination.';
       destination = placeholderDestinations.find((item) => item.slug === slug) ?? placeholderDestinations[0];

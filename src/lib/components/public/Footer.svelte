@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Mail, Phone } from '@lucide/svelte';
+  import { trackEvent } from '$lib/analytics';
   import { brand } from '$lib/brand';
   import { publicSettings, settingText } from '$lib/settings';
 
@@ -37,12 +38,12 @@
       {#if contactEmail || contactPhone}
         <div class="mt-4 grid gap-1.5 text-sm text-white/70">
           {#if contactEmail}
-            <a class="inline-flex w-fit items-center gap-2 transition hover:text-white" href={`mailto:${contactEmail}`}>
+            <a class="inline-flex w-fit items-center gap-2 transition hover:text-white" href={`mailto:${contactEmail}`} on:click={() => trackEvent('email_click')}>
               <Mail size={15} class="text-white/50" />{contactEmail}
             </a>
           {/if}
           {#if contactPhone}
-            <a class="inline-flex w-fit items-center gap-2 transition hover:text-white" href={`tel:${contactPhone}`}>
+            <a class="inline-flex w-fit items-center gap-2 transition hover:text-white" href={`tel:${contactPhone}`} on:click={() => trackEvent('phone_click')}>
               <Phone size={15} class="text-white/50" />{contactPhone}
             </a>
           {/if}

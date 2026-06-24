@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { trackEvent } from '$lib/analytics';
   import { tilt } from '$lib/animations';
   import ShortlistButton from './ShortlistButton.svelte';
   import type { Tour } from '$lib/types';
@@ -20,7 +21,7 @@
   <div class="absolute right-3 top-3 z-10">
     <ShortlistButton {item} />
   </div>
-  <a href={`/tours/${tour.slug}`} class="flex h-full flex-col">
+  <a href={`/tours/${tour.slug}`} class="flex h-full flex-col" on:click={() => trackEvent('tour_card_click', { tour_id: tour.id, tour_title: tour.title })}>
     <div class="aspect-[4/3] overflow-hidden bg-skywash">
       {#if tour.main_image_url}
         <img class="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-110" src={tour.main_image_url} alt={tour.title} loading="lazy" />

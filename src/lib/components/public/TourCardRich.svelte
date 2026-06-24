@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ArrowRight, MapPin, Star } from '@lucide/svelte';
+  import { trackEvent } from '$lib/analytics';
   import { tilt } from '$lib/animations';
   import ShortlistButton from './ShortlistButton.svelte';
   import type { Tour } from '$lib/types';
@@ -47,7 +48,7 @@
     <ShortlistButton {item} />
   </div>
 
-  <a href={`/tours/${tour.slug}`} class="flex h-full flex-col">
+  <a href={`/tours/${tour.slug}`} class="flex h-full flex-col" on:click={() => trackEvent('tour_card_click', { tour_id: tour.id, tour_title: tour.title })}>
     <!-- Image + overlay title + badges -->
     <div class="relative aspect-[16/10] overflow-hidden bg-skywash">
       {#if tour.main_image_url}

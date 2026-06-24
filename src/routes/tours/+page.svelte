@@ -4,6 +4,7 @@
   import { Check, MapPin, Search, SlidersHorizontal, Star, X } from '@lucide/svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
+  import { trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
   import { revealHeading, staggeredCardReveal } from '$lib/animations';
   import { EXPERIENCE_TO_CATEGORY, PERSONA_ORDER, PERSONAS } from '$lib/data/personas';
@@ -146,8 +147,10 @@
     for (const [k, v] of Object.entries(changes)) v ? next.set(k, v) : next.delete(k);
     return `/tours${next.toString() ? `?${next}` : ''}`;
   };
-  const writeUrl = (changes: Record<string, string | null>) =>
+  const writeUrl = (changes: Record<string, string | null>) => {
+    trackEvent('tour_filter_used', { metadata: { filters: Object.keys(changes) } });
     void goto(withParams(changes), { replaceState: true, noScroll: true, keepFocus: true });
+  };
 
   const toggleCategory = (slug: string) => {
     const next = new Set(urlCategories);
