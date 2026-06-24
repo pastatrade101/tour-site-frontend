@@ -5,13 +5,18 @@
   export let subtitle = '';
   export let compact = false;
 
-  const steps = [
+  type Step = { title: string; text: string };
+  const defaultSteps: Step[] = [
     { title: 'Tell us your travel idea', text: 'Share your dates, budget and what you dream of doing.' },
     { title: 'We review the details', text: 'We look at your timing, budget and preferences — honestly.' },
     { title: 'We suggest the best-fit trip', text: 'A tailored itinerary shaped around you, not a fixed package.' },
     { title: 'You refine it with a specialist', text: 'Adjust pace, lodges and activities until it feels right.' },
     { title: 'You confirm when ready', text: 'No pressure, no payment to start — you decide if and when.' }
   ];
+
+  // Callers can pass a tailored set (e.g. the Plan My Trip sidebar); defaults
+  // keep every existing usage unchanged.
+  export let steps: Step[] = defaultSteps;
 </script>
 
 {#if compact}

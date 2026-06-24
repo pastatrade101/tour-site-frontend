@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowRight, Compass, HeartHandshake, ShieldCheck, Sparkles } from '@lucide/svelte';
+  import { ArrowRight, Compass, HeartHandshake, ShieldCheck, Sparkles, UserCheck } from '@lucide/svelte';
   import { openAiAdvisor } from '$lib/aiAdvisor';
   import { revealHeading } from '$lib/animations';
   import PlanMyTripForm from '$lib/components/public/PlanMyTripForm.svelte';
@@ -11,7 +11,15 @@
   const assurances = [
     { icon: ShieldCheck, title: 'Honest, local expertise', text: 'Advice from people who live and travel East Africa every day.' },
     { icon: Compass, title: 'Tailored to you', text: 'A plan shaped around your dates, budget, and travel style.' },
-    { icon: HeartHandshake, title: 'No pressure, no payment yet', text: 'This is a planning request — you decide if and when to book.' }
+    { icon: HeartHandshake, title: 'No pressure, no payment yet', text: 'This is a planning request — you decide if and when to book.' },
+    { icon: UserCheck, title: 'Human review', text: 'Every request is reviewed by a local specialist before confirmation.' }
+  ];
+
+  const planningSteps = [
+    { title: 'Tell us your travel idea', text: 'Share your dates, budget, destination, and what you dream of doing.' },
+    { title: 'We review the details', text: 'A local specialist checks availability, season, route, and realistic options.' },
+    { title: 'You receive a tailored plan', text: 'We suggest the best route, stays, activities, and next steps.' },
+    { title: 'You decide', text: 'No pressure. You only book when the plan feels right.' }
   ];
 </script>
 
@@ -59,7 +67,7 @@
     </div>
 
     <div class="mt-8 rounded-2xl border border-ink/10 bg-white p-5 shadow-soft">
-      <PlanningProcess compact title="How planning works" />
+      <PlanningProcess compact title="How planning works" steps={planningSteps} />
     </div>
   </aside>
 
