@@ -12,6 +12,7 @@
   import PersistentCTA from '$lib/components/public/PersistentCTA.svelte';
   import ShortlistFab from '$lib/components/public/ShortlistFab.svelte';
   import { consent } from '$lib/consent';
+  import { setupPwaInstall } from '$lib/pwa';
   import { initSmoothScrolling, setupGsap } from '$lib/animations';
   import { api } from '$lib/api/client';
   import { applyBranding, branding } from '$lib/branding';
@@ -73,6 +74,7 @@
     void setupGsap();
     void loadBranding();
     void loadPublicSettings();
+    setupPwaInstall();
     return () => {
       smoothScrollCleanup?.();
     };

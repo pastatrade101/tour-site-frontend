@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { afterNavigate, goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { ArrowRight, ChevronDown, CircleHelp, Menu, MessageCircle, Search, TicketsPlane, User, X } from '@lucide/svelte';
+  import { ArrowDownToLine, ArrowRight, ChevronDown, CircleHelp, Menu, MessageCircle, Search, TicketsPlane, User, X } from '@lucide/svelte';
   import { fade, fly } from 'svelte/transition';
   import { api } from '$lib/api/client';
   import { openAiAdvisor } from '$lib/aiAdvisor';
@@ -11,6 +11,7 @@
   import { brand } from '$lib/brand';
   import { aiAdvisorEnabled, publicSettings, settingText } from '$lib/settings';
   import ThemeToggle from './ThemeToggle.svelte';
+  import { canInstall, promptInstall } from '$lib/pwa';
 
   type NavLink = { href: string; label: string; image?: string };
   type NavItem = { dropdown?: 'destinations' | 'tours'; href: string; label: string };
@@ -217,6 +218,11 @@
             Need help?
           </a>
         {/if}
+        {#if $canInstall}
+          <button type="button" class="inline-flex items-center gap-1.5 rounded-full bg-forest px-3 py-1.5 text-white transition hover:bg-deep-green" on:click={() => promptInstall()}>
+            <ArrowDownToLine size={14} strokeWidth={2.6} /> Install app
+          </button>
+        {/if}
         <ThemeToggle />
       </div>
 
@@ -409,6 +415,11 @@
         </nav>
 
         <div class="mt-6 grid gap-2.5 border-t border-ink/10 pt-5">
+          {#if $canInstall}
+            <button type="button" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-forest px-4 py-3 text-sm font-bold text-white transition hover:bg-deep-green" on:click={() => { void promptInstall(); menuOpen = false; }}>
+              <ArrowDownToLine size={18} strokeWidth={2.6} /> Install app
+            </button>
+          {/if}
           <div class="flex items-center justify-between rounded-2xl border border-ink/10 px-4 py-2.5">
             <span class="text-sm font-semibold text-ink/70">Appearance</span>
             <ThemeToggle />
