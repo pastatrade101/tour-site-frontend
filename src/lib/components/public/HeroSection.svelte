@@ -97,7 +97,7 @@
   const submit = () => void goto(destination ? `/tours?destination=${destination}` : '/tours');
 </script>
 
-<section class="relative overflow-hidden bg-deep-green">
+<section class="relative overflow-hidden bg-deep-green dark:bg-[#0b100e]">
   <!-- background slider -->
   {#each slides as slide, i (slide.url)}
     <div
@@ -116,8 +116,8 @@
       {/if}
     </div>
   {/each}
-  <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-deep-green/55 to-deep-green/25"></div>
-  <div class="absolute inset-0 bg-gradient-to-r from-deep-green/75 via-deep-green/25 to-transparent"></div>
+  <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-deep-green/55 to-deep-green/25 dark:from-[#0b100e] dark:via-[#0b100e]/75 dark:to-[#0b100e]/35"></div>
+  <div class="absolute inset-0 bg-gradient-to-r from-deep-green/75 via-deep-green/25 to-transparent dark:from-[#0b100e]/90 dark:via-[#0b100e]/40 dark:to-transparent"></div>
 
   <!-- content -->
   <div class="relative z-10 mx-auto w-full max-w-[1500px] px-5 pb-16 pt-12 md:px-8 md:py-28 lg:py-32">
@@ -126,7 +126,7 @@
       {#key index}
         <div class="min-h-[132px] sm:min-h-[230px] lg:min-h-[256px]">
           <span
-            class="inline-flex items-center gap-2 rounded-full bg-surface/12 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-savanna backdrop-blur"
+            class="inline-flex items-center gap-2 rounded-full bg-white/12 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-savanna backdrop-blur"
             in:fly={{ y: 12, duration: 450 }}
           >
             <Star size={13} fill="currentColor" /> {current.eyebrow}
@@ -157,7 +157,7 @@
       <div class="mt-4 hidden flex-wrap items-center gap-2 sm:flex">
         <span class="text-sm font-medium text-white/70">Popular:</span>
         {#each quick as q}
-          <a class="rounded-full border border-white/25 bg-surface/10 px-3 py-1 text-sm font-semibold text-white backdrop-blur transition hover:bg-surface/20" href={q.href}>{q.label}</a>
+          <a class="rounded-full border border-white/25 bg-white/10 px-3 py-1 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20" href={q.href}>{q.label}</a>
         {/each}
       </div>
 
@@ -166,7 +166,7 @@
         <a class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-goldfinch-gold px-6 font-bold text-heading shadow-lg transition hover:brightness-105 sm:w-auto" href="/plan-my-trip">
           {primaryCta} <ArrowRight size={18} strokeWidth={2.6} />
         </a>
-        <a class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-white/35 px-6 font-semibold text-white transition hover:bg-surface/10 sm:w-auto" href={secondaryCtaUrl}>{secondaryCta}</a>
+        <a class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-white/35 px-6 font-semibold text-white transition hover:bg-white/10 sm:w-auto" href={secondaryCtaUrl}>{secondaryCta}</a>
         <span class="hidden items-center gap-1.5 text-sm text-white/75 sm:inline-flex">
           <ShieldCheck size={15} class="text-savanna" /> Free, no-obligation planning · No hidden costs
         </span>
@@ -179,7 +179,7 @@
     <div class="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 gap-2" role="tablist" aria-label="Hero slides">
       {#each slides as slide, i (slide.url)}
         <button
-          class={`h-2 rounded-full transition-all ${i === index ? 'w-7 bg-goldfinch-gold' : 'w-2 bg-surface/50 hover:bg-surface/80'}`}
+          class={`h-2 rounded-full transition-all ${i === index ? 'w-7 bg-goldfinch-gold' : 'w-2 bg-white/50 hover:bg-white/80'}`}
           type="button"
           aria-label={`Show slide ${i + 1}${slide.label ? ` — ${slide.label}` : ''}`}
           aria-selected={i === index}
