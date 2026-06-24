@@ -62,6 +62,13 @@ html.dark .admin-shell {
   --c-forest: 217 164 65;
 }
 
+/* Same treatment for the public nav mega-menu dropdown: its dark panel makes
+   green accents (the "All …" link, arrow and hover states) too dim, so use
+   gold there in dark mode. */
+html.dark .nav-dropdown {
+  --c-forest: 217 164 65;
+}
+
 body {
   direction: ltr;
   margin: 0;
