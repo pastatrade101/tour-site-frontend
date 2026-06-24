@@ -8,6 +8,7 @@
   import Footer from '$lib/components/public/Footer.svelte';
   import GoldfinchAIAdvisor from '$lib/components/public/GoldfinchAIAdvisor.svelte';
   import ConsentBanner from '$lib/components/public/ConsentBanner.svelte';
+  import JsonLd from '$lib/components/public/JsonLd.svelte';
   import PersistentCTA from '$lib/components/public/PersistentCTA.svelte';
   import ShortlistFab from '$lib/components/public/ShortlistFab.svelte';
   import { consent } from '$lib/consent';
@@ -85,16 +86,11 @@
   <meta property="og:description" content={$branding.positioning} />
   <meta property="og:type" content="website" />
   <link rel="canonical" href={canonicalUrl} />
-  <script type="application/ld+json">
-    {JSON.stringify({
-      '@context': 'https://schema.org',
-      '@type': 'TravelAgency',
-      name: $branding.company_name,
-      url: orgUrl,
-      slogan: $branding.tagline
-    })}
-  </script>
 </svelte:head>
+
+<!-- Org-wide schema (JsonLd injects via {@html}; a {mustache} inside <script> is
+     not interpolated by Svelte, which is what broke the old inline block). -->
+<JsonLd data={{ '@type': 'TravelAgency', name: $branding.company_name, url: orgUrl, slogan: $branding.tagline }} />
 
 {#if !isAdmin}
   <Navbar />
