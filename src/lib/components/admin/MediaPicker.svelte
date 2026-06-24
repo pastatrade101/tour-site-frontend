@@ -36,7 +36,7 @@
 
   {#if value}
     <div class="relative overflow-hidden rounded-xl border border-ink/10 bg-surface">
-      <img class={`w-full object-cover ${aspect}`} src={value} alt={label} />
+      <img class={`w-full object-cover ${aspect}`} src={imgUrl(value, 800)} alt={label} loading="lazy" decoding="async" />
       <button type="button" class="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-ink/60 text-white backdrop-blur transition hover:bg-ink/80" on:click={clear} aria-label="Remove image">
         <Trash2 size={15} />
       </button>
@@ -89,7 +89,16 @@
               class={`group overflow-hidden rounded-xl border text-left transition hover:-translate-y-0.5 ${value === m.file_url ? 'border-goldfinch-gold ring-2 ring-goldfinch-gold/40' : 'border-ink/10 hover:border-forest/40'}`}
               on:click={() => select(m.file_url)}
             >
-              <img class="aspect-square w-full bg-sand/30 object-cover" src={imgUrl(m.file_url, 300)} alt={m.file_name} loading="lazy" decoding="async" />
+              <img
+                class="aspect-square w-full bg-sand/30 object-cover opacity-0 transition-opacity duration-300"
+                src={imgUrl(m.file_url, 300)}
+                alt={m.file_name}
+                width="300"
+                height="300"
+                loading="lazy"
+                decoding="async"
+                on:load={(e) => ((e.currentTarget as HTMLImageElement).style.opacity = '1')}
+              />
               <span class="block truncate px-2 py-1.5 text-[11px] text-ink/60">{m.file_name}</span>
             </button>
           {/each}
