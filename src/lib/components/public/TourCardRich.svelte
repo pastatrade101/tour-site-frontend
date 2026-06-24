@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ArrowRight, MapPin, Star } from '@lucide/svelte';
   import { trackEvent } from '$lib/analytics';
+  import { imgUrl } from '$lib/img';
   import { tilt } from '$lib/animations';
   import ShortlistButton from './ShortlistButton.svelte';
   import type { Tour } from '$lib/types';
@@ -52,7 +53,7 @@
     <!-- Image + overlay title + badges -->
     <div class="relative aspect-[16/10] overflow-hidden bg-skywash">
       {#if tour.main_image_url}
-        <img class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]" src={tour.main_image_url} alt={tour.title} loading="lazy" />
+        <img class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]" src={imgUrl(tour.main_image_url, 700)} alt={tour.title} loading="lazy" decoding="async" />
       {/if}
       <div class="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-deep-green/90 via-deep-green/30 to-transparent"></div>
 

@@ -6,6 +6,7 @@
   import { api } from '$lib/api/client';
   import { revealHeading } from '$lib/animations';
   import { brand } from '$lib/brand';
+  import { imgUrl } from '$lib/img';
   import type { Destination } from '$lib/types';
 
   export let title = 'Plan East Africa With Confidence';
@@ -107,7 +108,7 @@
       {#if loaded.has(i)}
         <img
           class="h-full w-full object-cover"
-          src={slide.url}
+          src={imgUrl(slide.url, 1280)}
           alt={slide.label ?? 'East Africa'}
           loading={i === 0 ? 'eager' : 'lazy'}
           decoding="async"

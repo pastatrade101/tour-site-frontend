@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tilt } from '$lib/animations';
+  import { imgUrl } from '$lib/img';
   import type { Destination } from '$lib/types';
 
   export let destination: Destination;
@@ -11,7 +12,7 @@
   <a href={`/destinations?d=${destination.slug}`} class="flex h-full flex-col">
     <div class="aspect-[4/3] overflow-hidden bg-skywash">
       {#if imageUrl}
-        <img class="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-110" src={imageUrl} alt={destination.name} loading="lazy" />
+        <img class="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-110" src={imgUrl(imageUrl, 800)} alt={destination.name} loading="lazy" decoding="async" />
       {/if}
     </div>
     <div class="flex flex-1 flex-col p-5">
