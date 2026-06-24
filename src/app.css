@@ -54,6 +54,14 @@ html.dark .bg-goldfinch-gold {
   color: rgb(var(--c-deep-green));
 }
 
+/* In the dark admin, the brand green is too dim as an accent on the near-black
+   canvas — remap it to gold so labels, durations and accents read clearly.
+   Scoped to .admin-shell + dark only, so the public site and light mode are
+   untouched. ApexCharts use their own JS colors and are unaffected. */
+html.dark .admin-shell {
+  --c-forest: 217 164 65;
+}
+
 body {
   direction: ltr;
   margin: 0;

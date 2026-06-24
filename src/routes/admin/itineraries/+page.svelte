@@ -462,7 +462,7 @@
             on:click={() => selectTour(tour.id)}
           >
             <p class="font-semibold text-ink">{tour.title}</p>
-            <p class="mt-1 text-xs text-ink/55">{tour.destination || tour.slug}</p>
+            <p class="mt-1 text-xs text-ink/55 dark:text-ink/75">{tour.destination || tour.slug}</p>
             <p class="mt-3 text-xs font-semibold text-forest">{formatDuration(tour)}</p>
           </button>
         {/each}
