@@ -8,6 +8,7 @@
   import { publicSettings, settingText } from '$lib/settings';
   import { shortlist } from '$lib/shortlist';
   import Button from './Button.svelte';
+  import CountrySelect from './CountrySelect.svelte';
   import FormInput from './FormInput.svelte';
   import SelectInput from './SelectInput.svelte';
   import SpecialistCard from './SpecialistCard.svelte';
@@ -240,7 +241,10 @@
     </div>
     <div class="grid gap-4 md:grid-cols-2">
       <FormInput label="Phone / WhatsApp" name="phone" bind:value={phone} placeholder="+255 ..." />
-      <FormInput label="Country" name="country" bind:value={country} placeholder="Where you're travelling from" />
+      <div class="grid gap-2 text-sm font-medium text-ink">
+        <span>Country</span>
+        <CountrySelect bind:value={country} placeholder="Search your country..." />
+      </div>
     </div>
 
     <div class="grid gap-4 md:grid-cols-2">

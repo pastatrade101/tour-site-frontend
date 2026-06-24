@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import { AlertCircle, CheckCircle2, Copy, MapPin, ShieldCheck } from '@lucide/svelte';
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
@@ -60,6 +61,7 @@
   let submitted = false;
   let copied = false;
   let errors: Record<string, string> = {};
+  let bodyEl: HTMLDivElement;
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -111,6 +113,8 @@
 
     if (!validate()) {
       errorMessage = 'Please check the highlighted fields and try again.';
+      await tick();
+      (bodyEl?.querySelector('span.text-red-600') as HTMLElement | null)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
       return;
     }
 
@@ -202,21 +206,24 @@
     <Button type="button" variant="secondary" on:click={resetForm}>Submit another request</Button>
   </div>
 {:else}
-  <form class="relative grid gap-5 rounded-2xl border border-ink/10 bg-white p-5 shadow-soft md:p-6" on:submit|preventDefault={submit} novalidate>
-    <div>
-      <p class="text-sm font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">Booking request</p>
-      <h3 class="mt-1 text-2xl font-bold tracking-normal text-deep-green">Request this trip with confidence</h3>
-      <p class="mt-1 text-sm leading-6 text-ink/65">Share a few details and a local specialist will tailor your plan. No payment is taken now — this is a request, not a final booking.</p>
+  <form class="relative flex max-h-[88vh] flex-col overflow-hidden rounded-2xl border border-ink/10 bg-white shadow-soft" on:submit|preventDefault={submit} novalidate>
+    <!-- Header — stays visible while the body scrolls -->
+    <div class="shrink-0 border-b border-ink/10 px-5 py-4 md:px-6">
+      <p class="text-xs font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">Booking request</p>
+      <h3 class="mt-0.5 text-xl font-bold tracking-normal text-deep-green">Request this trip with confidence</h3>
+      {#if tour}
+        <div class="mt-3 flex items-center gap-2.5 rounded-xl border border-forest/20 bg-forest/[0.05] px-3 py-2">
+          <MapPin size={15} class="shrink-0 text-forest" />
+          <span class="text-[10px] font-bold uppercase tracking-[0.14em] text-forest/70">Trip</span>
+          <span class="truncate text-sm font-bold text-deep-green">{tour.title}</span>
+        </div>
+      {:else}
+        <p class="mt-1 text-sm leading-6 text-ink/65">Share a few details and a local specialist will tailor your plan — no payment now.</p>
+      {/if}
     </div>
 
-    {#if tour}
-      <div class="flex items-center gap-2.5 rounded-xl border border-forest/20 bg-forest/[0.05] px-3.5 py-2.5">
-        <MapPin size={16} class="shrink-0 text-forest" />
-        <span class="text-[11px] font-bold uppercase tracking-[0.14em] text-forest/70">Trip</span>
-        <span class="truncate text-sm font-bold text-deep-green">{tour.title}</span>
-      </div>
-    {/if}
-
+    <!-- Body — the only part that scrolls -->
+    <div class="grid flex-1 gap-4 overflow-y-auto px-5 py-4 md:px-6" bind:this={bodyEl}>
     <!-- ── Contact details ─────────────────────────────────────────────────── -->
     <fieldset class="grid gap-4">
       <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Contact details</legend>
@@ -247,7 +254,7 @@
     </fieldset>
 
     <!-- ── Trip details ────────────────────────────────────────────────────── -->
-    <fieldset class="grid gap-4 border-t border-ink/10 pt-5">
+    <fieldset class="grid gap-4 border-t border-ink/10 pt-4">
       <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Trip details</legend>
       <div class="grid gap-4 md:grid-cols-2">
         <label class="grid gap-1.5 text-sm font-medium text-ink">
@@ -293,7 +300,7 @@
     </fieldset>
 
     <!-- ── Preferences ─────────────────────────────────────────────────────── -->
-    <fieldset class="grid gap-4 border-t border-ink/10 pt-5">
+    <fieldset class="grid gap-4 border-t border-ink/10 pt-4">
       <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Preferences</legend>
       <div class="grid gap-2 text-sm font-medium text-ink">
         <span>What are you interested in? <span class="font-normal text-ink/45">(select any)</span></span>
@@ -322,7 +329,7 @@
     </fieldset>
 
     <!-- ── Special requests ────────────────────────────────────────────────── -->
-    <fieldset class="grid gap-4 border-t border-ink/10 pt-5">
+    <fieldset class="grid gap-4 border-t border-ink/10 pt-4">
       <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Special requests</legend>
       <label class="grid gap-1.5 text-sm font-medium text-ink">
         <span>Special requests</span>
@@ -333,24 +340,29 @@
         <textarea class={inputBase + ' border-ink/15 focus:border-forest focus:ring-forest/15'} rows={3} bind:value={message} placeholder="Must-see places, special occasions, group details..."></textarea>
       </label>
     </fieldset>
+    </div>
+    <!-- /Body -->
 
     <!-- Honeypot: hidden from humans, tempting to bots. -->
     <div class="absolute left-[-9999px] top-0 h-0 w-0 overflow-hidden" aria-hidden="true">
       <label>Company<input type="text" name="hp_company" tabindex="-1" autocomplete="off" bind:value={hp_company} /></label>
     </div>
 
-    {#if errorMessage}
-      <div class="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-        <AlertCircle size={18} class="mt-0.5 shrink-0" />
-        <span>{errorMessage}</span>
-      </div>
-    {/if}
+    <!-- Footer — submit button always visible above the fold -->
+    <div class="shrink-0 space-y-2.5 border-t border-ink/10 bg-white px-5 py-3.5 md:px-6">
+      {#if errorMessage}
+        <div class="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-700">
+          <AlertCircle size={15} class="mt-0.5 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      {/if}
 
-    <Button type="submit" className="w-full">{submitting ? 'Sending your request...' : 'Submit Booking Request'}</Button>
+      <Button type="submit" className="w-full">{submitting ? 'Sending your request...' : 'Submit Booking Request'}</Button>
 
-    <p class="flex items-center justify-center gap-1.5 text-center text-xs text-ink/50">
-      <ShieldCheck size={13} class="text-forest" />
-      Your details are kept private and used only to plan your trip.
-    </p>
+      <p class="flex items-center justify-center gap-1.5 text-center text-xs text-ink/50">
+        <ShieldCheck size={13} class="text-forest" />
+        Your details are kept private and used only to plan your trip.
+      </p>
+    </div>
   </form>
 {/if}
