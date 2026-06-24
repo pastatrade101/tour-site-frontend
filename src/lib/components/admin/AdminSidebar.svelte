@@ -196,6 +196,8 @@
     }
   }
 
+  const year = new Date().getFullYear();
+
   const handleNavigate = () => {
     onCloseMobile();
   };
@@ -284,5 +286,10 @@
       {/each}
     </div>
   </nav>
-  <!-- Profile + Logout live in the top-bar account menu (no duplicate here). -->
+
+  <!-- Copyright (hidden when the sidebar is collapsed). Profile + Logout live in
+       the top-bar account menu. -->
+  <div class={`border-t border-white/10 px-4 py-3 ${collapsed ? 'lg:hidden' : ''}`}>
+    <p class="text-[11px] leading-5 text-savanna/45">© {year} Goldfinch Adventures.<br />All rights reserved.</p>
+  </div>
 </aside>
