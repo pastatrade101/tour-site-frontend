@@ -319,7 +319,9 @@ export const api = {
     overview: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/overview${queryString(params)}`),
     leads: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/leads${queryString(params)}`),
     funnel: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/funnel${queryString(params)}`),
-    timeseries: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/timeseries${queryString(params)}`)
+    timeseries: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/timeseries${queryString(params)}`),
+    traffic: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/traffic${queryString(params)}`),
+    integrations: () => apiRequest<Record<string, unknown>>('/analytics/integrations')
   },
   payments: {
     list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Record<string, unknown>>>(`/payments${queryString(params)}`),

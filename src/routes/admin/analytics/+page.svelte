@@ -27,6 +27,11 @@
   };
   type Funnel = { stages: Array<{ key: string; label: string; value: number }>; rates: Record<string, number> };
   type Traffic = { byDay: Array<{ date: string; visitors: number; whatsapp: number; ai: number; events: number }>; byDevice: Tally; topEvents: Tally };
+  type Ga4 = {
+    configured: boolean; error?: string; activeUsers: number; totalUsers: number; sessions: number; pageViews: number;
+    byDay: Array<{ date: string; users: number; sessions: number; pageViews: number }>;
+    topPages: Tally; sources: Tally; countries: Tally; devices: Tally;
+  };
 
   const RANGES = [
     { k: 'today', l: 'Today' }, { k: 'yesterday', l: 'Yesterday' }, { k: '7d', l: '7 days' },
@@ -39,6 +44,7 @@
   let leads: LeadData | null = null;
   let funnel: Funnel | null = null;
   let traffic: Traffic | null = null;
+  let ga4: Ga4 | null = null;
 
   const CHART_FONT = 'Figtree, Inter, sans-serif';
   const LABEL = '#94a3b8';
@@ -47,16 +53,18 @@
     loading = true;
     const params = { range };
     try {
-      const [o, l, f, t] = await Promise.all([
+      const [o, l, f, t, g] = await Promise.all([
         api.analytics.overview(params), api.analytics.leads(params),
-        api.analytics.funnel(params), api.analytics.timeseries(params)
+        api.analytics.funnel(params), api.analytics.timeseries(params),
+        api.analytics.traffic(params)
       ]);
       overview = o.data as Overview;
       leads = l.data as LeadData;
       funnel = f.data as Funnel;
       traffic = t.data as Traffic;
+      ga4 = g.data as Ga4;
     } catch {
-      overview = null; leads = null; funnel = null; traffic = null;
+      overview = null; leads = null; funnel = null; traffic = null; ga4 = null;
     } finally {
       loading = false;
     }
@@ -123,9 +131,18 @@
 
   // Pre-clean ranked lists in the script (Svelte {@const} can't live under a <div>).
   const cleanRows = (t: Tally, n = 6) => {
-    const rows = t.filter((x) => x.label !== 'Not specified' && x.value > 0).slice(0, n);
+    const rows = (t ?? []).filter((x) => x.label !== 'Not specified' && x.label !== '(not set)' && x.value > 0).slice(0, n);
     return { rows, max: Math.max(1, ...rows.map((x) => x.value)) };
   };
+
+  $: ga4ListBlocks = ga4
+    ? [
+        { title: 'Top pages', list: cleanRows(ga4.topPages, 8) },
+        { title: 'Traffic sources', list: cleanRows(ga4.sources) },
+        { title: 'Countries', list: cleanRows(ga4.countries) },
+        { title: 'Devices', list: cleanRows(ga4.devices, 3) }
+      ]
+    : [];
 
   $: funnelMax = funnel ? Math.max(1, ...funnel.stages.map((s) => s.value)) : 1;
   $: breakdownBlocks = leads
@@ -178,6 +195,68 @@
         </article>
       {/each}
     </div>
+
+    <!-- GA4 traffic (Phase 2) -->
+    {#if ga4}
+      <div class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-card">
+        <div class="mb-4 flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Website traffic · GA4</p>
+            <h3 class="mt-1 text-xl font-bold text-ink">Visitors &amp; sources</h3>
+          </div>
+          {#if ga4.configured}
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-600">
+              <span class="h-2 w-2 rounded-full bg-emerald-500"></span>{ga4.activeUsers} active now
+            </span>
+          {/if}
+        </div>
+
+        {#if !ga4.configured}
+          <div class="grid place-items-center gap-2 rounded-xl border border-dashed border-ink/15 bg-sand/20 px-6 py-10 text-center">
+            <p class="text-sm font-semibold text-ink/70">GA4 isn't connected yet</p>
+            <p class="max-w-md text-xs text-ink/55">Add GA4_PROPERTY_ID, GOOGLE_CLIENT_EMAIL and GOOGLE_PRIVATE_KEY to the backend to see visitors, sessions, page views, sources, countries and devices here. Lead &amp; funnel analytics above already work without it.</p>
+            <a class="mt-1 text-xs font-bold text-forest underline" href="/admin/settings/integrations">Check integration status →</a>
+          </div>
+        {:else if ga4.error}
+          <p class="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">GA4 error: {ga4.error}</p>
+        {:else}
+          <div class="grid gap-4 sm:grid-cols-4">
+            {#each [['Users', ga4.totalUsers], ['Sessions', ga4.sessions], ['Page views', ga4.pageViews], ['Active now', ga4.activeUsers]] as [label, value]}
+              <div class="rounded-xl border border-ink/10 bg-sand/25 p-4">
+                <p class="text-2xl font-extrabold text-ink">{value}</p>
+                <p class="mt-0.5 text-xs font-semibold text-ink/55">{label}</p>
+              </div>
+            {/each}
+          </div>
+          {#if ga4ListBlocks.length}
+            <div class="mt-4 grid gap-5 lg:grid-cols-2 xl:grid-cols-4">
+              {#each ga4ListBlocks as block}
+                <div>
+                  <p class="text-xs font-bold text-ink/70">{block.title}</p>
+                  {#if block.list.rows.length}
+                    <div class="mt-2 grid gap-2">
+                      {#each block.list.rows as row}
+                        <div>
+                          <div class="flex items-center justify-between text-[11px]">
+                            <span class="truncate font-semibold text-ink/70" title={row.label}>{row.label}</span>
+                            <span class="font-bold text-ink/50">{row.value}</span>
+                          </div>
+                          <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-sand/50">
+                            <div class="h-full rounded-full bg-gradient-to-r from-forest to-goldfinch-gold" style={`width: ${(row.value / block.list.max) * 100}%`}></div>
+                          </div>
+                        </div>
+                      {/each}
+                    </div>
+                  {:else}
+                    <p class="mt-2 text-xs text-ink/45">No data.</p>
+                  {/if}
+                </div>
+              {/each}
+            </div>
+          {/if}
+        {/if}
+      </div>
+    {/if}
 
     <!-- funnel -->
     {#if funnel}

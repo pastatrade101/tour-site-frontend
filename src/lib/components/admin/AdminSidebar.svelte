@@ -22,6 +22,7 @@
     Images,
     LayoutDashboard,
     ChartColumnBig,
+    Plug,
     ListCheck,
     Mail,
     Map,
@@ -113,6 +114,7 @@
         { href: '/admin/roles', label: 'Roles & Permissions', icon: ShieldCheck },
         { href: '/admin/branding', label: 'Branding', icon: Palette },
         { href: '/admin/settings', label: 'Settings', icon: Settings },
+        { href: '/admin/settings/integrations', label: 'Integrations', icon: Plug },
         { href: '/admin/audit-logs', label: 'Audit Logs', icon: ScrollText }
       ]
     }

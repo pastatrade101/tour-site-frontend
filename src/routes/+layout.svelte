@@ -1,6 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
+  import { env as publicEnv } from '$env/dynamic/public';
   import { onMount } from 'svelte';
   import '../app.css';
   import Navbar from '$lib/components/public/Navbar.svelte';
@@ -45,10 +46,29 @@
     }
   };
 
+  // Load GA4 (gtag) on the public site only if a measurement id is configured.
+  // This activates trackEvent's GA4 path. NOTE: consent gating (EU) is Phase 3 —
+  // only set PUBLIC_GA4_MEASUREMENT_ID once you have a consent banner if required.
+  const loadGa4 = () => {
+    const id = publicEnv.PUBLIC_GA4_MEASUREMENT_ID;
+    if (!browser || !id || isAdmin || document.getElementById('ga4-src')) return;
+    const script = document.createElement('script');
+    script.id = 'ga4-src';
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${id}`;
+    document.head.appendChild(script);
+    const w = window as unknown as { dataLayer: unknown[]; gtag: (...args: unknown[]) => void };
+    w.dataLayer = w.dataLayer || [];
+    w.gtag = function gtag() { w.dataLayer.push(arguments); };
+    w.gtag('js', new Date());
+    w.gtag('config', id, { anonymize_ip: true });
+  };
+
   onMount(() => {
     void setupGsap();
     void loadBranding();
     void loadPublicSettings();
+    loadGa4();
     return () => {
       smoothScrollCleanup?.();
     };

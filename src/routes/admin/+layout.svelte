@@ -26,6 +26,7 @@
     '/admin/messages': 'Messages',
     '/admin/branding': 'Branding',
     '/admin/settings': 'Settings',
+    '/admin/settings/integrations': 'Integrations',
     '/admin/users': 'Admin Users',
     '/admin/roles': 'Roles and Permissions',
     '/admin/audit-logs': 'Audit Logs',
