@@ -3,6 +3,7 @@
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
   import Button from './Button.svelte';
+  import CountrySelect from './CountrySelect.svelte';
   import type { Tour } from '$lib/types';
 
   export let tour: Tour | null = null;
@@ -237,11 +238,11 @@
           <input class={cls('phone')} type="tel" bind:value={phone} on:input={() => clearErr('phone')} placeholder="+255 ..." autocomplete="tel" />
           {#if errors.phone}<span class="text-xs text-red-600">{errors.phone}</span>{/if}
         </label>
-        <label class="grid gap-1.5 text-sm font-medium text-ink">
+        <div class="grid gap-1.5 text-sm font-medium text-ink">
           <span>Country</span>
-          <input class={cls('country')} bind:value={country} on:input={() => clearErr('country')} placeholder="Where you're travelling from" autocomplete="country-name" />
+          <CountrySelect bind:value={country} invalid={Boolean(errors.country)} on:change={() => clearErr('country')} placeholder="Search your country..." />
           {#if errors.country}<span class="text-xs text-red-600">{errors.country}</span>{/if}
-        </label>
+        </div>
       </div>
     </fieldset>
 
