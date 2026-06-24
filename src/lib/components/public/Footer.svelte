@@ -20,6 +20,11 @@
   $: contactPhone = settingText(s, 'contact_phone');
   $: socials = SOCIAL.filter((item) => settingText(s, item.key));
 
+  // Legal links: use the admin-set URL when provided, else the on-site page.
+  $: privacyUrl = settingText(s, 'privacy_policy_url') || '/privacy';
+  $: termsUrl = settingText(s, 'terms_url') || '/terms';
+  $: cancellationUrl = settingText(s, 'cancellation_policy_url') || '/cancellation-policy';
+
   const year = new Date().getFullYear();
 </script>
 
@@ -89,9 +94,14 @@
   </div>
 
   <div class="border-t border-white/10">
-    <div class="container-shell flex flex-col gap-2 py-5 text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between">
+    <div class="container-shell flex flex-col gap-3 py-5 text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between">
       <p>© {year} {settingText(s, 'company_name') || brand.companyName}. All rights reserved.</p>
-      <p>{tagline}</p>
+      <nav class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        <a class="transition hover:text-white" href={privacyUrl}>Privacy Policy</a>
+        <a class="transition hover:text-white" href={termsUrl}>Terms</a>
+        <a class="transition hover:text-white" href={cancellationUrl}>Cancellation Policy</a>
+        <a class="transition hover:text-white" href="/data-retention">Data Retention</a>
+      </nav>
     </div>
   </div>
 </footer>
