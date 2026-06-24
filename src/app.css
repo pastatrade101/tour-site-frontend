@@ -21,15 +21,25 @@
   --c-surface: 255 255 255; /* cards / inputs (was bg-white) */
   --c-canvas: 248 250 248; /* page background */
   --c-heading: 15 47 36; /* heading text == deep-green in light */
+}
 
-  color: rgb(var(--c-ink));
-  background-color: rgb(var(--c-canvas));
+/* Base page text + background. Set as literals on `html` (not via var() on
+   :root) so the dark override below reliably wins — a var() reference declared
+   on the same element it's defined on does not pick up the .dark override. */
+html {
+  color: #18211f;
+  background-color: #f8faf8;
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease;
 }
 
 /* Dark theme: flips surfaces/text/borders. Brand accents (deep-green/forest/
    gold/clay) intentionally stay so the identity is preserved. */
 html.dark {
   color-scheme: dark;
+  color: #e0e6e2; /* matches --c-ink (dark) */
+  background-color: #0e1311; /* matches --c-canvas (dark) */
   --c-ink: 224 230 226; /* body + border ink → light */
   --c-sand: 30 38 33; /* warm light surface → dark */
   --c-savanna: 41 52 46;
@@ -41,12 +51,6 @@ html.dark {
 /* Keep text readable on bright brand accents that stay light in dark mode. */
 html.dark .bg-goldfinch-gold {
   color: rgb(var(--c-deep-green));
-}
-
-html {
-  transition:
-    background-color 0.25s ease,
-    color 0.25s ease;
 }
 
 body {
