@@ -7,8 +7,10 @@
   import Navbar from '$lib/components/public/Navbar.svelte';
   import Footer from '$lib/components/public/Footer.svelte';
   import GoldfinchAIAdvisor from '$lib/components/public/GoldfinchAIAdvisor.svelte';
+  import ConsentBanner from '$lib/components/public/ConsentBanner.svelte';
   import PersistentCTA from '$lib/components/public/PersistentCTA.svelte';
   import ShortlistFab from '$lib/components/public/ShortlistFab.svelte';
+  import { consent } from '$lib/consent';
   import { initSmoothScrolling, setupGsap } from '$lib/animations';
   import { api } from '$lib/api/client';
   import { applyBranding, branding } from '$lib/branding';
@@ -46,9 +48,8 @@
     }
   };
 
-  // Load GA4 (gtag) on the public site only if a measurement id is configured.
-  // This activates trackEvent's GA4 path. NOTE: consent gating (EU) is Phase 3 —
-  // only set PUBLIC_GA4_MEASUREMENT_ID once you have a consent banner if required.
+  // Load GA4 (gtag) on the public site — gated by consent ('granted') above and a
+  // configured PUBLIC_GA4_MEASUREMENT_ID. This activates trackEvent's GA4 path.
   const loadGa4 = () => {
     const id = publicEnv.PUBLIC_GA4_MEASUREMENT_ID;
     if (!browser || !id || isAdmin || document.getElementById('ga4-src')) return;
@@ -64,11 +65,13 @@
     w.gtag('config', id, { anonymize_ip: true });
   };
 
+  // Load GA4 only once the visitor has explicitly granted consent.
+  $: if (browser && $consent === 'granted') loadGa4();
+
   onMount(() => {
     void setupGsap();
     void loadBranding();
     void loadPublicSettings();
-    loadGa4();
     return () => {
       smoothScrollCleanup?.();
     };
@@ -108,4 +111,5 @@
   {#if showAdvisor}
     <GoldfinchAIAdvisor />
   {/if}
+  <ConsentBanner />
 {/if}

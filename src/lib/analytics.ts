@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { API_URL } from '$lib/config/env';
+import { getConsent } from '$lib/consent';
 
 // ----------------------------------------------------------------------------
 // trackEvent — one helper for both analytics layers.
@@ -60,6 +61,9 @@ const deviceType = (): 'mobile' | 'tablet' | 'desktop' => {
 
 export const trackEvent = (eventName: AnalyticsEventName, meta: EventMeta = {}): void => {
   if (!browser) return;
+  // Respect an explicit decline. (Undecided still allows PII-free first-party
+  // tracking; GA4 only fires once gtag is loaded, which waits for 'granted'.)
+  if (getConsent() === 'denied') return;
   try {
     const payload: Record<string, unknown> = {
       event_name: eventName,
