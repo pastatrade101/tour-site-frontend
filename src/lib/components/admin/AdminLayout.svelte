@@ -44,7 +44,6 @@
       collapsed={sidebarCollapsed}
       {currentPath}
       mobileOpen={mobileSidebarOpen}
-      {user}
       onCloseMobile={() => (mobileSidebarOpen = false)}
       onLogout={logout}
       onToggleDesktop={() => (sidebarCollapsed = !sidebarCollapsed)}

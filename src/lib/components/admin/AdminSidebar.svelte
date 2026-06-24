@@ -42,7 +42,6 @@
   export let collapsed = false;
   export let currentPath = '/admin';
   export let mobileOpen = false;
-  export let user: { email?: string; name?: string; role?: string } | null = null;
   export let onCloseMobile: () => void = () => {};
   export let onLogout: () => void = () => {};
   export let onToggleDesktop: () => void = () => {};
@@ -199,16 +198,6 @@
     }
   }
 
-  const initials = (value?: string) => {
-    const source = value || user?.email || 'Admin';
-    return source
-      .split(/\s+|@/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join('');
-  };
-
   const handleNavigate = () => {
     onCloseMobile();
   };
@@ -299,18 +288,7 @@
   </nav>
 
   <div class="border-t border-white/10 p-3">
-    <div class={`mb-2 rounded-2xl border border-white/10 bg-white/10 p-3 transition ${collapsed ? 'lg:grid lg:place-items-center lg:p-2' : ''}`}>
-      <div class="flex min-w-0 items-center gap-3">
-        <div class="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-savanna text-xs font-bold text-deep-green">
-          {initials(user?.name)}
-        </div>
-        <div class={`min-w-0 transition ${collapsed ? 'lg:hidden lg:opacity-0' : 'opacity-100'}`}>
-          <p class="truncate text-sm font-semibold text-white">{user?.name || 'Admin User'}</p>
-          <p class="truncate text-xs text-savanna/60">{user?.role || user?.email || 'Goldfinch CMS'}</p>
-        </div>
-      </div>
-    </div>
-
+    <!-- Profile card removed — it lives in the top-bar account menu (no duplicate). -->
     <button
       class={`flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-savanna/80 transition hover:bg-red-500/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/70 ${collapsed ? 'lg:justify-center lg:px-0' : ''}`}
       type="button"
