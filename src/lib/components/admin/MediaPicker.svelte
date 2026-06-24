@@ -3,7 +3,7 @@
   import { Image as ImageIcon, Link as LinkIcon, Search, Trash2, X } from '@lucide/svelte';
   import { imgUrl } from '$lib/img';
 
-  type MediaItem = { id: string; file_name: string; file_url: string };
+  type MediaItem = { id: string; file_name: string; file_url: string; thumbnail_url?: string | null };
 
   export let value = '';
   export let label = 'Image';
@@ -91,7 +91,7 @@
             >
               <img
                 class="aspect-square w-full bg-sand/30 object-cover opacity-0 transition-opacity duration-300"
-                src={imgUrl(m.file_url, 300)}
+                src={imgUrl(m.thumbnail_url || m.file_url, 300)}
                 alt={m.file_name}
                 width="300"
                 height="300"

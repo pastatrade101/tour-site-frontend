@@ -23,6 +23,7 @@
   type MediaItem = {
     file_name: string;
     file_url: string;
+    thumbnail_url?: string | null;
     id: string;
   };
 
