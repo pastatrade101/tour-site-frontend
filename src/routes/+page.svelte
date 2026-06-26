@@ -63,7 +63,12 @@
   $: ctaImage = typeof sections.final_cta?.image_url === 'string' ? sections.final_cta.image_url : '';
   $: ctaVideo = typeof ctaExtra.background_video === 'string' ? ctaExtra.background_video : '';
   $: ctaPosition = typeof ctaExtra.media_position === 'string' ? ctaExtra.media_position : 'center';
-  $: ctaHasMedia = Boolean(ctaImage || ctaVideo);
+  // Fallback background image for the final CTA when no admin media is set, so
+  // the band is a photo with an overlay rather than a flat colour. Admin image
+  // (sections.final_cta.image_url) still overrides this.
+  const DEFAULT_CTA_IMAGE =
+    'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1600&q=70';
+  $: ctaImageResolved = ctaImage || DEFAULT_CTA_IMAGE;
   $: ctaOverlayColor = typeof ctaExtra.overlay_color === 'string' ? ctaExtra.overlay_color : '#0F2F24';
   $: ctaOverlayOpacity = typeof ctaExtra.overlay_opacity === 'number' ? ctaExtra.overlay_opacity : 0.7;
   $: ctaOverlayStyle =
@@ -249,17 +254,13 @@
     <!-- background media layer (admin-configurable: video > image > brand gradient) -->
     {#if ctaVideo}
       <!-- svelte-ignore a11y-media-has-caption -->
-      <video class="absolute inset-0 h-full w-full object-cover" style={`object-position:${ctaPosition}`} src={ctaVideo} poster={ctaImage || undefined} autoplay muted loop playsinline></video>
-    {:else if ctaImage}
-      <img class="absolute inset-0 h-full w-full object-cover" style={`object-position:${ctaPosition}`} src={ctaImage} alt="" />
+      <video class="absolute inset-0 h-full w-full object-cover" style={`object-position:${ctaPosition}`} src={ctaVideo} poster={ctaImageResolved} autoplay muted loop playsinline></video>
     {:else}
-      <div class="absolute inset-0 bg-gradient-to-br from-deep-green via-forest to-deep-green"></div>
+      <img class="absolute inset-0 h-full w-full object-cover" style={`object-position:${ctaPosition}`} src={ctaImageResolved} alt="" loading="lazy" decoding="async" />
     {/if}
 
-    <!-- overlay (color + opacity + optional gradient) only over real media -->
-    {#if ctaHasMedia}
-      <div class="absolute inset-0" style={ctaOverlayStyle}></div>
-    {/if}
+    <!-- green overlay so the photo shows through but the text stays crisp -->
+    <div class="absolute inset-0" style={ctaOverlayStyle}></div>
 
     <!-- decorative depth -->
     <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-goldfinch-gold/20 blur-3xl"></div>
