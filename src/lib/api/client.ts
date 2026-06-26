@@ -315,6 +315,15 @@ export const api = {
     updateNotes: (id: string, body: Record<string, unknown>) => apiRequest(`/bookings/${id}/notes`, { method: 'PUT', body }),
     remove: (id: string) => apiRequest(`/bookings/${id}`, { method: 'DELETE' })
   },
+  trip: {
+    // Public magic-link portal (cookie session; apiRequest already sends credentials).
+    session: (token: string) => apiRequest<Record<string, unknown>>('/trip/session', { method: 'POST', body: { token } }),
+    me: () => apiRequest<Record<string, unknown>>('/trip/me'),
+    message: (message: string) => apiRequest('/trip/message', { method: 'POST', body: { message } }),
+    logout: () => apiRequest('/trip/logout', { method: 'POST' }),
+    // Admin: generate a secure link to share with the traveller.
+    adminCreateLink: (booking_id: string) => apiRequest<{ url: string; expiresAt: string }>('/trip/admin/links', { method: 'POST', body: { booking_id } })
+  },
   analytics: {
     overview: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/overview${queryString(params)}`),
     leads: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/leads${queryString(params)}`),

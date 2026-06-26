@@ -6,6 +6,7 @@
     ClipboardList,
     Edit,
     Eye,
+    Link as LinkIcon,
     Mail,
     Phone,
     Plus,
@@ -85,6 +86,7 @@
   let saving = false;
   let deleting = false;
   let savingNotes = false;
+  let creatingLink = false;
   let error = '';
 
   let search = '';
@@ -355,6 +357,26 @@
     }
   };
 
+  const copyTripLink = async () => {
+    if (!viewing || creatingLink) return;
+    creatingLink = true;
+    try {
+      const res = await api.trip.adminCreateLink(viewing.id);
+      const url = res.data?.url ?? '';
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast('Secure trip link copied — send it to the traveller.');
+      } catch {
+        // Clipboard blocked (e.g. insecure context) — surface the link so it can be copied manually.
+        showToast(`Trip link: ${url}`);
+      }
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Unable to create trip link.', 'error');
+    } finally {
+      creatingLink = false;
+    }
+  };
+
   const openDelete = (b: Booking) => { toDelete = b; confirmOpen = true; };
   const confirmDelete = async () => {
     if (!toDelete) return;
@@ -568,7 +590,10 @@
 
       <div class="flex flex-col-reverse gap-3 border-t border-ink/10 bg-sand/20 p-4 sm:flex-row sm:items-center sm:justify-between">
         <button class="inline-flex h-10 items-center gap-2 rounded-xl border border-red-200 bg-surface px-3 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-50" type="button" on:click={() => viewing && openDelete(viewing)}><Trash2 size={14} />Archive</button>
-        <AdminButton type="button" on:click={() => viewing && openEdit(viewing)}><Edit size={15} />Edit Booking</AdminButton>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <button class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-ink/15 bg-surface px-3 text-xs font-semibold text-ink/75 shadow-sm transition hover:bg-sand disabled:opacity-60" type="button" disabled={creatingLink} on:click={copyTripLink}><LinkIcon size={14} />{creatingLink ? 'Generating…' : 'Copy trip link'}</button>
+          <AdminButton type="button" on:click={() => viewing && openEdit(viewing)}><Edit size={15} />Edit Booking</AdminButton>
+        </div>
       </div>
     </div>
   </div>
