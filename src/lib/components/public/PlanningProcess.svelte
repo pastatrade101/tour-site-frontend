@@ -7,11 +7,12 @@
 
   type Step = { title: string; text: string };
   const defaultSteps: Step[] = [
-    { title: 'Tell us your travel idea', text: 'Share your dates, budget and what you dream of doing.' },
-    { title: 'We review the details', text: 'We look at your timing, budget and preferences — honestly.' },
-    { title: 'We suggest the best-fit trip', text: 'A tailored itinerary shaped around you, not a fixed package.' },
-    { title: 'You refine it with a specialist', text: 'Adjust pace, lodges and activities until it feels right.' },
-    { title: 'You confirm when ready', text: 'No pressure, no payment to start — you decide if and when.' }
+    { title: 'Discover', text: 'Share your dates, budget and what you dream of doing — in a conversation, not a checkout.' },
+    { title: 'Design', text: 'A specialist shapes a tailored itinerary around you, never a fixed package.' },
+    { title: 'Refine', text: 'Adjust the pace, lodges and activities together until it feels exactly right.' },
+    { title: 'Confirm', text: 'No pressure and no payment to start — you decide if and when to book.' },
+    { title: 'Travel', text: 'Enjoy your journey with a local team reachable throughout your trip.' },
+    { title: 'Aftercare', text: 'We check in when you are home and help you plan the next adventure.' }
   ];
 
   // Callers can pass a tailored set (e.g. the Plan My Trip sidebar); defaults
@@ -34,14 +35,14 @@
   </div>
 {:else}
   <div class="text-center">
-    {#if title}<h2 class="text-3xl font-bold tracking-normal text-ink md:text-4xl">{title}</h2>{/if}
-    {#if subtitle}<p class="mx-auto mt-3 max-w-2xl text-base leading-7 text-ink/65">{subtitle}</p>{/if}
-    <ol class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+    {#if title}<h2 class="text-3xl font-semibold tracking-normal text-heading md:text-[38px]">{title}</h2>{/if}
+    {#if subtitle}<p class="mx-auto mt-3 max-w-2xl text-base leading-8 text-ink/65">{subtitle}</p>{/if}
+    <ol class="mt-12 grid gap-5 text-left sm:grid-cols-2 lg:grid-cols-3">
       {#each steps as step, i}
-        <li class="relative flex flex-col items-center text-center lg:items-start lg:text-left">
-          <span class="grid h-12 w-12 place-items-center rounded-2xl bg-goldfinch-gold text-lg font-extrabold text-heading shadow-sm">{i + 1}</span>
-          <p class="mt-4 font-bold text-heading">{step.title}</p>
-          <p class="mt-1 text-sm leading-6 text-ink/70">{step.text}</p>
+        <li class="relative overflow-hidden rounded-2xl border border-ink/10 bg-surface p-6 shadow-soft">
+          <span class="text-4xl font-semibold text-goldfinch-gold">{(i + 1).toString().padStart(2, '0')}</span>
+          <h3 class="mt-3 text-lg font-semibold text-heading">{step.title}</h3>
+          <p class="mt-2 text-sm leading-7 text-ink/65">{step.text}</p>
         </li>
       {/each}
     </ol>

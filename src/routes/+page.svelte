@@ -7,19 +7,18 @@
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import { faqLd } from '$lib/seo';
-  import FeaturedTripsShowcase from '$lib/components/public/FeaturedTripsShowcase.svelte';
-  import PopularDestinationsPromo from '$lib/components/public/PopularDestinationsPromo.svelte';
-  import StatsCounter from '$lib/components/public/StatsCounter.svelte';
   import HeroSection from '$lib/components/public/HeroSection.svelte';
+  import IntroBand from '$lib/components/public/IntroBand.svelte';
+  import WhyGoldfinch from '$lib/components/public/WhyGoldfinch.svelte';
+  import SeasonsBand from '$lib/components/public/SeasonsBand.svelte';
+  import ImpactBand from '$lib/components/public/ImpactBand.svelte';
+  import LeadCaptureForm from '$lib/components/public/LeadCaptureForm.svelte';
   import PartnerStrip from '$lib/components/public/PartnerStrip.svelte';
-  import TrustStrip from '$lib/components/public/TrustStrip.svelte';
   import PlanningProcess from '$lib/components/public/PlanningProcess.svelte';
-  import PopularActivitiesSlider from '$lib/components/public/PopularActivitiesSlider.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import TestimonialCard from '$lib/components/public/TestimonialCard.svelte';
   import PriceRangeBlock from '$lib/components/public/PriceRangeBlock.svelte';
   import DealCard from '$lib/components/public/DealCard.svelte';
-  import TripFinderBand from '$lib/components/public/TripFinderBand.svelte';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
   import { placeholderDestinations, placeholderFaqs, placeholderPosts, placeholderTestimonials, placeholderTours } from '$lib/data/placeholders';
   import type { BlogPost, Destination, FAQ, Testimonial, Tour } from '$lib/types';
@@ -133,29 +132,39 @@
   secondaryCtaUrl={typeof heroExtra.secondary_cta_url === 'string' ? heroExtra.secondary_cta_url : '/tours'}
 />
 
-<TrustStrip />
+<!-- 2 · Intro + stats -->
+<IntroBand />
 
-<!-- Trip Finder entry (spec §4.1 B) -->
-<TripFinderBand />
+<!-- 3 · Safari Packages (destinations grid) -->
+<section class="bg-canvas py-16 md:py-24" use:sectionReveal>
+  <div class="container-shell">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <SectionHeader eyebrow="Where to go" title={cms('featured_destinations', 'title', 'Safari Packages')} description={cms('featured_destinations', 'subtitle', 'From the Serengeti to Zanzibar — find the Tanzania experience that fits you.')} />
+      <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href="/destinations">
+        View all destinations <ArrowRight size={16} />
+      </a>
+    </div>
+    <div class="mt-10 grid gap-6 md:grid-cols-3" use:staggeredCardReveal>
+      {#each destinations as destination}
+        <DestinationCard {destination} />
+      {/each}
+    </div>
+  </div>
+</section>
 
-<PopularActivitiesSlider />
+<!-- 4 · Your Safari, Your Way -->
+<WhyGoldfinch />
 
-<FeaturedTripsShowcase />
-
-<PopularDestinationsPromo />
-
-<StatsCounter />
-
-<section class="relative overflow-hidden bg-gradient-to-b from-sand/55 via-surface to-surface py-14 md:py-20" use:sectionReveal>
-  <span class="pointer-events-none absolute -right-24 top-10 h-72 w-72 rounded-full bg-goldfinch-gold/10 blur-3xl" aria-hidden="true"></span>
-  <div class="container-shell relative">
+<!-- 5 · Top Tour Packages -->
+<section class="bg-surface py-16 md:py-24" use:sectionReveal>
+  <div class="container-shell">
     <div class="mx-auto max-w-2xl text-center" use:fadeUpOnScroll={{ y: 14 }}>
-      <p class="font-serif text-xl italic text-clay">Limited Time Offers</p>
-      <h2 class="mt-4 text-3xl font-extrabold tracking-tight text-heading md:text-[40px]">
-        {cms('featured_tours', 'title', 'Exclusive Safari Deals & Travel Offers')}
+      <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">Handpicked journeys</p>
+      <h2 class="mt-3 text-3xl font-semibold tracking-tight text-heading md:text-[38px]">
+        {cms('featured_tours', 'title', 'Top Tour Packages')}
       </h2>
-      <p class="mt-3 text-[15px] font-medium leading-7 text-ink/70 md:text-lg">
-        {cms('featured_tours', 'subtitle', 'Handpicked Tanzania safari, Kilimanjaro and Zanzibar experiences at our best seasonal prices — limited spots, big value.')}
+      <p class="mt-4 text-[15px] leading-8 text-ink/70 md:text-lg">
+        {cms('featured_tours', 'subtitle', 'Our most-loved safari, Kilimanjaro and Zanzibar itineraries — each fully tailorable to you.')}
       </p>
     </div>
     <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal>
@@ -163,11 +172,14 @@
         <DealCard {tour} index={i} />
       {/each}
     </div>
+    <div class="mt-10 flex justify-center">
+      <a class="inline-flex h-12 items-center gap-2 rounded-full border border-ink/15 px-6 font-semibold text-ink transition hover:bg-sand" href="/tours">View all tours <ArrowRight size={16} /></a>
+    </div>
   </div>
 </section>
 
-<!-- typical cost band (spec §4.1 F / §6) -->
-<section class="bg-sand/40 py-14 md:py-20" use:sectionReveal>
+<!-- 6 · Typical cost -->
+<section class="bg-sand/40 py-16 md:py-24" use:sectionReveal>
   <div class="container-shell">
     <PriceRangeBlock
       title={cms('cost_ranges', 'title', 'What trips typically cost')}
@@ -177,44 +189,52 @@
   </div>
 </section>
 
-<section class="bg-surface py-14" use:sectionReveal>
+<!-- 7 · Best times to visit -->
+<SeasonsBand />
+
+<!-- 8 · Plan your dream (dark form band) -->
+<section class="bg-deep-green py-16 text-white md:py-24" use:sectionReveal>
+  <div class="container-shell grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+    <div>
+      <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">Plan your dream trip</p>
+      <h2 class="mt-3 text-3xl font-semibold text-white md:text-[38px]">Plan Your Dream Tanzania Safari</h2>
+      <p class="mt-4 leading-8 text-white/80">Tell us a few details and a local specialist will craft a confident, tailor-made plan — with no pressure and no payment to start.</p>
+      <div class="mt-7 space-y-3">
+        {#each ['Fully tailored to your dates & budget', 'A reply within one business day', 'Honest advice, never a hard sell'] as point}
+          <div class="flex items-center gap-3 text-white/85">
+            <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-goldfinch-gold/25 text-goldfinch-gold"><Check size={13} strokeWidth={3} /></span>
+            {point}
+          </div>
+        {/each}
+      </div>
+    </div>
+    <LeadCaptureForm title="Safari details" compact />
+  </div>
+</section>
+
+<!-- 9 · Our Process -->
+<section class="bg-canvas py-16 md:py-24" use:sectionReveal>
   <div class="container-shell">
-    <div class="flex flex-wrap items-end justify-between gap-4">
-      <SectionHeader eyebrow="Places" title={cms('featured_destinations', 'title', 'Destinations')} description={cms('featured_destinations', 'subtitle', 'Destination content can be managed from the CMS.')} />
-      <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href="/destinations">
-        See all Destinations <ArrowRight size={16} />
-      </a>
-    </div>
-    <div class="mt-8 grid gap-6 md:grid-cols-3" use:staggeredCardReveal>
-      {#each destinations as destination}
-        <DestinationCard {destination} />
-      {/each}
+    <PlanningProcess
+      title={cms('how_it_works', 'title', 'Our Process')}
+      subtitle={cms('how_it_works', 'subtitle', 'A calm, transparent process — no pressure, and no payment to start.')}
+    />
+    <div class="mt-12 flex justify-center">
+      <a class="inline-flex h-12 items-center gap-2 rounded-full bg-goldfinch-gold px-7 font-bold text-heading shadow-sm transition hover:brightness-105" href="/plan-my-trip">Start planning <ArrowRight size={18} /></a>
     </div>
   </div>
 </section>
 
-<section class="container-shell py-14" use:sectionReveal>
-  <div class="flex flex-wrap items-end justify-between gap-4">
-    <SectionHeader eyebrow="Stories" title={cms('blog_preview', 'title', 'Latest Blog Posts')} description={cms('blog_preview', 'subtitle', 'Blog posts are pulled from the backend when available.')} />
-    <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href="/blog">
-      View all <ArrowRight size={16} />
-    </a>
-  </div>
-  <div class="mt-8 grid gap-6 md:grid-cols-3" use:staggeredCardReveal>
-    {#each posts as post}
-      <BlogCard {post} />
-    {/each}
-  </div>
-</section>
-
-<section class="bg-surface py-14 md:py-20" use:sectionReveal>
+<!-- 10 · Reviews + partner logos -->
+<section class="bg-surface py-16 md:py-24" use:sectionReveal>
   <div class="container-shell">
     <div class="mx-auto max-w-2xl text-center" use:fadeUpOnScroll={{ y: 14 }}>
-      <h2 class="text-3xl font-extrabold tracking-normal text-heading md:text-[40px]">
-        {cms('testimonials', 'title', 'What Our Travelers Say')}
+      <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">Loved by travellers</p>
+      <h2 class="mt-3 text-3xl font-semibold tracking-normal text-heading md:text-[38px]">
+        {cms('testimonials', 'title', '200+ Verified Reviews')}
       </h2>
-      <p class="mx-auto mt-3 max-w-xl text-[15px] font-medium leading-7 text-ink/70 md:text-lg">
-        {cms('testimonials', 'subtitle', 'Real stories from travelers who planned their East Africa trip with confidence.')}
+      <p class="mx-auto mt-4 max-w-xl text-[15px] leading-8 text-ink/70 md:text-lg">
+        {cms('testimonials', 'subtitle', 'Real stories from travellers who planned their trip with confidence.')}
       </p>
     </div>
     <div class="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 18, stagger: 0.07 }}>
@@ -225,30 +245,39 @@
   </div>
 </section>
 
-{#if faqs.length}
-  <JsonLd data={faqLd(faqs.map((f) => ({ q: f.question, a: f.answer })))} />
+{#if partnersActive}
+  <PartnerStrip logos={partnerLogos} title={cms('partners', 'title', 'Trusted by leading travel partners')} />
 {/if}
-<section class="bg-sand/40 py-14 md:py-16" use:sectionReveal>
-  <div class="container-shell grid gap-8 md:grid-cols-[0.7fr_1.3fr]">
-    <SectionHeader eyebrow="Good to Know" title="Frequently Asked Questions" description="Honest answers to the questions East Africa travelers ask most." />
-    <FAQAccordion {faqs} />
+
+<!-- 11 · Blog -->
+<section class="bg-canvas py-16 md:py-24" use:sectionReveal>
+  <div class="container-shell">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <SectionHeader eyebrow="Stories" title={cms('blog_preview', 'title', 'Latest Stories & Guides')} description={cms('blog_preview', 'subtitle', 'Tips, guides and inspiration from our East Africa specialists.')} />
+      <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href="/blog">View all <ArrowRight size={16} /></a>
+    </div>
+    <div class="mt-8 grid gap-6 md:grid-cols-3" use:staggeredCardReveal>
+      {#each posts as post}
+        <BlogCard {post} />
+      {/each}
+    </div>
   </div>
 </section>
 
-<section class="bg-surface py-14 md:py-20" use:sectionReveal>
-  <div class="container-shell">
-    <PlanningProcess
-      title={cms('how_it_works', 'title', 'How planning works')}
-      subtitle={cms('how_it_works', 'subtitle', 'A calm, transparent process — no pressure, and no payment to start.')}
-    />
-    <div class="mt-10 flex justify-center">
-      <a
-        class="inline-flex h-12 items-center gap-2 rounded-xl bg-deep-green px-7 font-bold text-white shadow-sm transition hover:bg-forest"
-        href="/plan-my-trip"
-      >
-        Start planning <ArrowRight size={18} />
-      </a>
+<!-- 12 · Impact -->
+<ImpactBand />
+
+<!-- 13 · FAQ -->
+{#if faqs.length}
+  <JsonLd data={faqLd(faqs.map((f) => ({ q: f.question, a: f.answer })))} />
+{/if}
+<section class="bg-surface py-16 md:py-24" use:sectionReveal>
+  <div class="container-shell grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
+    <div>
+      <SectionHeader eyebrow="Good to know" title="Tanzania Safari FAQs" description="Honest answers to the questions travellers ask most." />
+      <a class="mt-6 inline-flex h-12 items-center gap-2 rounded-full bg-[#25D366] px-6 font-bold text-white shadow-sm transition hover:brightness-105" href="/contact"><MessageCircle size={18} /> Ask us on WhatsApp</a>
     </div>
+    <FAQAccordion {faqs} />
   </div>
 </section>
 
@@ -315,8 +344,4 @@
       </div>
     </div>
   </section>
-{/if}
-
-{#if partnersActive}
-  <PartnerStrip logos={partnerLogos} title={cms('partners', 'title', 'Trusted by leading travel partners')} />
 {/if}
