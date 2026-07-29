@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { API_URL } from '$lib/config/env';
-import type { Activity, AdvisorDonePayload, AdvisorMeta, AdvisorPageContext, AdvisorRecommendation, AiChatResponse, ApiResponse, BlogPost, Comparison, Country, Destination, FAQ, Lodge, MigrationEntry, Paginated, Review, ReviewSummary, SafetyTopic, Testimonial, Tour, TravelStyle, TripPoint } from '$lib/types';
+import type { Activity, AdvisorDonePayload, AdvisorMeta, AdvisorPageContext, AdvisorRecommendation, AiChatResponse, ApiResponse, BlogPost, Comparison, Country, Destination, FAQ, Lodge, MigrationEntry, PageSeo, Paginated, Review, ReviewSummary, SafetyTopic, Testimonial, Tour, TravelStyle, TripPoint } from '$lib/types';
 
 type QueryValue = string | number | boolean | undefined | null;
 type RequestOptions = Omit<RequestInit, 'body'> & {
@@ -412,6 +412,15 @@ export const api = {
     list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Record<string, unknown>>>(`/errors${queryString(params)}`),
     update: (id: string, body: Record<string, unknown>) => apiRequest(`/errors/${id}`, { method: 'PUT', body }),
     remove: (id: string) => apiRequest(`/errors/${id}`, { method: 'DELETE' })
+  },
+  pageSeo: {
+    // Public resolver used by the site to fetch a path's SEO override (or match:false).
+    resolve: (path: string) => apiRequest<{ match: boolean; seo?: Record<string, unknown> }>(`/page-seo/resolve${queryString({ path })}`),
+    list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<PageSeo>>(`/page-seo${queryString(params)}`),
+    get: (id: string) => apiRequest<PageSeo>(`/page-seo/${id}`),
+    create: (body: Record<string, unknown>) => apiRequest('/page-seo', { method: 'POST', body }),
+    update: (id: string, body: Record<string, unknown>) => apiRequest(`/page-seo/${id}`, { method: 'PUT', body }),
+    remove: (id: string) => apiRequest(`/page-seo/${id}`, { method: 'DELETE' })
   },
   homepage: {
     get: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>[]>(`/homepage${queryString(params)}`),

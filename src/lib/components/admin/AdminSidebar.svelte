@@ -39,6 +39,7 @@
     Signpost,
     Star,
     Tags,
+    TriangleAlert,
     Users
   } from '@lucide/svelte';
   import { brand } from '$lib/brand';
@@ -121,6 +122,8 @@
         { href: '/admin/settings', label: 'Settings', icon: Settings },
         { href: '/admin/settings/integrations', label: 'Integrations', icon: Plug },
         { href: '/admin/redirects', label: 'Redirects', icon: Signpost },
+        { href: '/admin/page-seo', label: 'Page SEO', icon: Globe },
+        { href: '/admin/error-logs', label: 'Error Logs', icon: TriangleAlert },
         { href: '/admin/audit-logs', label: 'Audit Logs', icon: ScrollText }
       ]
     }

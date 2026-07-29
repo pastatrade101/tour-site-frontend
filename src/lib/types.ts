@@ -303,6 +303,23 @@ export type ReviewSummary = {
   by_platform: Array<{ platform: string; count: number; average: number }>;
 };
 
+// Per-page SEO override (Tier 2). When a row exists for a path, the public page
+// uses these values on top of the site defaults; absence changes nothing.
+export type PageSeo = {
+  id: string;
+  path: string;
+  title?: string | null;
+  meta_description?: string | null;
+  og_title?: string | null;
+  og_description?: string | null;
+  og_image_url?: string | null;
+  canonical_url?: string | null;
+  robots?: string;
+  structured_data?: Record<string, unknown> | unknown[] | null;
+  is_active?: boolean;
+  created_at?: string;
+};
+
 // Serengeti Great Migration month-by-month calendar entry.
 export type MigrationEntry = {
   id: string;

@@ -28,6 +28,55 @@
   $: canonicalUrl = `${siteOrigin}${$page.url.pathname}`;
   $: orgUrl = `${siteOrigin}/`;
 
+  // ── Per-page SEO overrides (Tier 2) ─────────────────────────────────────────
+  // Fetched client-side per path. When there is NO override row, every computed
+  // value below equals the exact site default, so the <head> is unchanged. Admin
+  // pages are skipped. Public pages that don't have a row are byte-for-byte the
+  // same as before this feature existed.
+  type SeoOverride = {
+    title?: string | null;
+    meta_description?: string | null;
+    og_title?: string | null;
+    og_description?: string | null;
+    og_image_url?: string | null;
+    canonical_url?: string | null;
+    robots?: string | null;
+    structured_data?: Record<string, unknown> | unknown[] | null;
+  };
+  let seoOverride: SeoOverride | null = null;
+  let lastSeoPath = '';
+
+  const loadSeoOverride = async (path: string) => {
+    try {
+      const res = await api.pageSeo.resolve(path);
+      if (path !== lastSeoPath) return; // a newer navigation won — ignore stale result
+      seoOverride = res.data.match && res.data.seo ? (res.data.seo as SeoOverride) : null;
+    } catch {
+      if (path === lastSeoPath) seoOverride = null; // resolver unavailable → keep defaults
+    }
+  };
+
+  $: if (browser) {
+    if (isAdmin) {
+      seoOverride = null;
+      lastSeoPath = $page.url.pathname;
+    } else if ($page.url.pathname !== lastSeoPath) {
+      lastSeoPath = $page.url.pathname;
+      seoOverride = null; // fall back to defaults while resolving
+      void loadSeoOverride($page.url.pathname);
+    }
+  }
+
+  // Effective head values: override ?? current default (defaults are byte-identical to before).
+  $: seoTitle = seoOverride?.title || $branding.site_name;
+  $: seoDescription = seoOverride?.meta_description || `${$branding.tagline}. ${$branding.positioning}`;
+  $: seoOgTitle = seoOverride?.og_title || seoOverride?.title || $branding.site_name;
+  $: seoOgDescription = seoOverride?.og_description || seoOverride?.meta_description || $branding.positioning;
+  $: seoCanonical = seoOverride?.canonical_url || canonicalUrl;
+  $: seoOgImage = seoOverride?.og_image_url || '';
+  $: seoRobots = seoOverride?.robots || '';
+  $: seoStructured = seoOverride?.structured_data && !Array.isArray(seoOverride.structured_data) ? seoOverride.structured_data : null;
+
   let smoothScrollCleanup: (() => void) | undefined;
 
   $: if (browser) {
@@ -82,17 +131,23 @@
 </script>
 
 <svelte:head>
-  <title>{$branding.site_name}</title>
-  <meta name="description" content={`${$branding.tagline}. ${$branding.positioning}`} />
-  <meta property="og:title" content={$branding.site_name} />
-  <meta property="og:description" content={$branding.positioning} />
+  <title>{seoTitle}</title>
+  <meta name="description" content={seoDescription} />
+  <meta property="og:title" content={seoOgTitle} />
+  <meta property="og:description" content={seoOgDescription} />
   <meta property="og:type" content="website" />
-  <link rel="canonical" href={canonicalUrl} />
+  {#if seoOgImage}<meta property="og:image" content={seoOgImage} />{/if}
+  <link rel="canonical" href={seoCanonical} />
+  {#if seoRobots}<meta name="robots" content={seoRobots} />{/if}
 </svelte:head>
 
 <!-- Org-wide schema (JsonLd injects via {@html}; a {mustache} inside <script> is
      not interpolated by Svelte, which is what broke the old inline block). -->
 <JsonLd data={{ '@type': 'TravelAgency', name: $branding.company_name, url: orgUrl, slogan: $branding.tagline }} />
+<!-- Per-page structured data override (Tier 2), only when an admin has set one. -->
+{#if seoStructured}
+  <JsonLd data={seoStructured} />
+{/if}
 
 {#if !isAdmin}
   <Navbar />
