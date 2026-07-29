@@ -1,25 +1,34 @@
 <script lang="ts">
-  import { Compass, HeartHandshake, ShieldCheck } from '@lucide/svelte';
+  import { Compass, HeartHandshake, ShieldCheck, Star, MapPin, Leaf } from '@lucide/svelte';
   import { fadeUpOnScroll } from '$lib/animations';
+
+  const ICONS: Record<string, typeof Compass> = {
+    compass: Compass,
+    assistance: HeartHandshake,
+    shield: ShieldCheck,
+    star: Star,
+    map: MapPin,
+    leaf: Leaf
+  };
 
   export let eyebrow = 'Why travel with us';
   export let title = 'Your Safari, Your Way';
   export let subtitle =
     'We listen first, then design. Every trip is shaped around your dates, budget and the kind of journey you want.';
 
-  const features = [
+  export let features: Array<{ icon: string; title: string; body: string }> = [
     {
-      icon: Compass,
+      icon: 'compass',
       title: '100% Tailored Safaris',
       body: 'Every itinerary is built around you — never a fixed, off-the-shelf package.'
     },
     {
-      icon: HeartHandshake,
+      icon: 'assistance',
       title: 'Expert Local Assistance',
       body: 'Real specialists who live and travel Tanzania, reachable before and throughout your trip.'
     },
     {
-      icon: ShieldCheck,
+      icon: 'shield',
       title: 'Trusted Local Operator',
       body: 'Licensed, insured and honest — no pressure, and no payment to start planning.'
     }
@@ -35,13 +44,14 @@
     </div>
 
     <div class="mt-12 grid gap-6 md:grid-cols-3">
-      {#each features as feature}
+      {#each features as f}
+        {@const Icon = ICONS[f.icon] ?? Compass}
         <div class="rounded-2xl border border-ink/10 bg-canvas p-7 shadow-soft">
           <span class="grid h-12 w-12 place-items-center rounded-full bg-goldfinch-gold/15 text-goldfinch-gold">
-            <svelte:component this={feature.icon} size={22} />
+            <Icon size={22} />
           </span>
-          <h3 class="mt-5 text-lg font-semibold text-heading">{feature.title}</h3>
-          <p class="mt-2 text-ink/65 leading-7">{feature.body}</p>
+          <h3 class="mt-5 text-lg font-semibold text-heading">{f.title}</h3>
+          <p class="mt-2 text-ink/65 leading-7">{f.body}</p>
         </div>
       {/each}
     </div>

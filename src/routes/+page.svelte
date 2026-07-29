@@ -18,7 +18,7 @@
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import TestimonialCard from '$lib/components/public/TestimonialCard.svelte';
   import PriceRangeBlock from '$lib/components/public/PriceRangeBlock.svelte';
-  import DealCard from '$lib/components/public/DealCard.svelte';
+  import TourPackages from '$lib/components/public/TourPackages.svelte';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
   import { placeholderDestinations, placeholderFaqs, placeholderPosts, placeholderTestimonials, placeholderTours } from '$lib/data/placeholders';
   import type { BlogPost, Destination, FAQ, Testimonial, Tour } from '$lib/types';
@@ -90,6 +90,47 @@
     return Array.isArray(r) ? (r as Array<{ label: string; from: string; note?: string }>) : [];
   })();
 
+  // ── New reference sections — all editable in Admin → Homepage. Each reads its
+  // section (title/subtitle/image/button) + `extra_data` (eyebrow + arrays like
+  // stats/features/seasons/points). Empty values are dropped so the component's
+  // built-in defaults show, keeping every section editable but never blank.
+  const arr = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
+  const clean = (o: Record<string, unknown>): Record<string, unknown> =>
+    Object.fromEntries(
+      Object.entries(o).filter((e) => {
+        const v = e[1];
+        return v != null && !(typeof v === 'string' && !v.trim()) && !(Array.isArray(v) && !v.length);
+      })
+    );
+  $: introExtra = (sections.intro?.extra_data ?? {}) as Record<string, unknown>;
+  $: whyExtra = (sections.why_us?.extra_data ?? {}) as Record<string, unknown>;
+  $: seasonsExtra = (sections.seasons?.extra_data ?? {}) as Record<string, unknown>;
+  $: impactExtra = (sections.impact?.extra_data ?? {}) as Record<string, unknown>;
+  $: featuredToursExtra = (sections.featured_tours?.extra_data ?? {}) as Record<string, unknown>;
+  $: introProps = clean({
+    eyebrow: introExtra.eyebrow,
+    title: sections.intro?.title,
+    body: sections.intro?.subtitle,
+    stats: arr(introExtra.stats),
+    cert: arr(introExtra.cert_items).length
+      ? { title: (introExtra.cert_title as string) || 'Conservation & community', items: arr(introExtra.cert_items) }
+      : undefined
+  });
+  $: whyProps = clean({ eyebrow: whyExtra.eyebrow, title: sections.why_us?.title, subtitle: sections.why_us?.subtitle, features: arr(whyExtra.features) });
+  $: seasonsProps = clean({ eyebrow: seasonsExtra.eyebrow, title: sections.seasons?.title, subtitle: sections.seasons?.subtitle, seasons: arr(seasonsExtra.seasons) });
+  $: impactProps = clean({
+    eyebrow: impactExtra.eyebrow,
+    title: sections.impact?.title,
+    body: sections.impact?.subtitle,
+    points: arr(impactExtra.points),
+    imageUrl: sections.impact?.image_url,
+    badge: impactExtra.badge,
+    badgeLabel: impactExtra.badge_label,
+    primaryCta: sections.impact?.button_text,
+    primaryCtaUrl: sections.impact?.button_url
+  });
+  $: tourProps = clean({ eyebrow: featuredToursExtra.eyebrow, title: sections.featured_tours?.title, subtitle: sections.featured_tours?.subtitle });
+
   onMount(async () => {
     try {
       const [tourResponse, destinationResponse, postResponse, testimonialResponse, faqResponse, homepageResponse] = await Promise.all([
@@ -133,7 +174,7 @@
 />
 
 <!-- 2 · Intro + stats -->
-<IntroBand />
+<IntroBand {...introProps} />
 
 <!-- 3 · Safari Packages (overlay image cards) -->
 <section class="bg-surface py-16 md:py-24" use:sectionReveal>
@@ -166,30 +207,10 @@
 </section>
 
 <!-- 4 · Your Safari, Your Way -->
-<WhyGoldfinch />
+<WhyGoldfinch {...whyProps} />
 
-<!-- 5 · Top Tour Packages -->
-<section class="bg-surface py-16 md:py-24" use:sectionReveal>
-  <div class="container-shell">
-    <div class="mx-auto max-w-2xl text-center" use:fadeUpOnScroll={{ y: 14 }}>
-      <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">Handpicked journeys</p>
-      <h2 class="mt-3 text-3xl font-semibold tracking-tight text-heading md:text-[38px]">
-        {cms('featured_tours', 'title', 'Top Tour Packages')}
-      </h2>
-      <p class="mt-4 text-[15px] leading-8 text-ink/70 md:text-lg">
-        {cms('featured_tours', 'subtitle', 'Our most-loved safari, Kilimanjaro and Zanzibar itineraries — each fully tailorable to you.')}
-      </p>
-    </div>
-    <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal>
-      {#each tours as tour, i}
-        <DealCard {tour} index={i} />
-      {/each}
-    </div>
-    <div class="mt-10 flex justify-center">
-      <a class="inline-flex h-12 items-center gap-2 rounded-full border border-ink/15 px-6 font-semibold text-ink transition hover:bg-sand" href="/tours">View all tours <ArrowRight size={16} /></a>
-    </div>
-  </div>
-</section>
+<!-- 5 · Top Tour Packages (filter tabs + can't-find band) -->
+<TourPackages {tours} {...tourProps} />
 
 <!-- 6 · Typical cost -->
 <section class="bg-sand/40 py-16 md:py-24" use:sectionReveal>
@@ -203,7 +224,7 @@
 </section>
 
 <!-- 7 · Best times to visit -->
-<SeasonsBand />
+<SeasonsBand {...seasonsProps} />
 
 <!-- 8 · Plan your dream (dark form band) -->
 <section class="bg-deep-green py-16 text-white md:py-24" use:sectionReveal>
@@ -278,7 +299,7 @@
 </section>
 
 <!-- 12 · Impact -->
-<ImpactBand />
+<ImpactBand {...impactProps} />
 
 <!-- 13 · FAQ -->
 {#if faqs.length}

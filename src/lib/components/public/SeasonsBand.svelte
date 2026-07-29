@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { Check } from '@lucide/svelte';
+  import { Check, Sun, Sprout, CloudSun } from '@lucide/svelte';
   import { fadeUpOnScroll } from '$lib/animations';
+
+  const ICONS = { gold: Sun, green: Sprout, clay: CloudSun };
 
   type Season = {
     name: string;
@@ -67,11 +69,17 @@
 
     <div class="mt-12 grid gap-6 md:grid-cols-3">
       {#each seasons as season}
+        {@const Icon = ICONS[season.tone]}
         <div class="overflow-hidden rounded-2xl border border-ink/10 bg-surface shadow-soft">
           <div class={bandClasses[season.tone]}>
-            <div class="p-5">
-              <h3 class="text-lg font-semibold">{season.name}</h3>
-              <p class="mt-0.5 text-sm font-medium opacity-80">{season.months}</p>
+            <div class="flex items-center gap-3 p-5">
+              <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/20">
+                <Icon size={18} />
+              </span>
+              <div>
+                <h3 class="text-lg font-semibold leading-tight">{season.name}</h3>
+                <p class="mt-0.5 text-sm font-medium opacity-80">{season.months}</p>
+              </div>
             </div>
           </div>
           <div class="space-y-3 p-5">
