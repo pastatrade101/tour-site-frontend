@@ -12,6 +12,8 @@
   import WhyGoldfinch from '$lib/components/public/WhyGoldfinch.svelte';
   import SeasonsBand from '$lib/components/public/SeasonsBand.svelte';
   import ImpactBand from '$lib/components/public/ImpactBand.svelte';
+  import MigrationCalendar from '$lib/components/public/MigrationCalendar.svelte';
+  import ReviewsWidget from '$lib/components/public/ReviewsWidget.svelte';
   import LeadCaptureForm from '$lib/components/public/LeadCaptureForm.svelte';
   import PartnerStrip from '$lib/components/public/PartnerStrip.svelte';
   import PlanningProcess from '$lib/components/public/PlanningProcess.svelte';
@@ -226,6 +228,9 @@
 <!-- 7 · Best times to visit -->
 <SeasonsBand {...seasonsProps} />
 
+<!-- 7b · Serengeti Great Migration calendar (self-hiding until published entries exist) -->
+<MigrationCalendar />
+
 <!-- 8 · Plan your dream (dark form band) -->
 <section class="bg-deep-green py-16 text-white md:py-24" use:sectionReveal>
   <div class="container-shell grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
@@ -258,6 +263,9 @@
     </div>
   </div>
 </section>
+
+<!-- 9b · Platform reviews trust widget + AggregateRating JSON-LD (self-hiding until approved reviews exist) -->
+<ReviewsWidget />
 
 <!-- 10 · Reviews + partner logos -->
 <section class="bg-surface py-16 md:py-24" use:sectionReveal>

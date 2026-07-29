@@ -5,6 +5,7 @@
   import {
     Bot,
     CalendarDays,
+    CalendarRange,
     ChevronDown,
     ChevronLeft,
     CircleDollarSign,
@@ -35,6 +36,8 @@
     ScrollText,
     Settings,
     ShieldCheck,
+    Signpost,
+    Star,
     Tags,
     Users
   } from '@lucide/svelte';
@@ -93,6 +96,8 @@
         { href: '/admin/gallery', label: 'Gallery', icon: Images },
         { href: '/admin/media', label: 'Media Library', icon: Image },
         { href: '/admin/testimonials', label: 'Testimonials', icon: MessageCircleHeart },
+        { href: '/admin/reviews', label: 'Reviews', icon: Star },
+        { href: '/admin/migration-calendar', label: 'Migration Calendar', icon: CalendarRange },
         { href: '/admin/faqs', label: 'FAQs', icon: CircleHelp },
         { href: '/admin/safety', label: 'Safety Guide', icon: ShieldCheck },
         { href: '/admin/travel-styles', label: 'Travel Styles', icon: Heart },
@@ -115,6 +120,7 @@
         { href: '/admin/branding', label: 'Branding', icon: Palette },
         { href: '/admin/settings', label: 'Settings', icon: Settings },
         { href: '/admin/settings/integrations', label: 'Integrations', icon: Plug },
+        { href: '/admin/redirects', label: 'Redirects', icon: Signpost },
         { href: '/admin/audit-logs', label: 'Audit Logs', icon: ScrollText }
       ]
     }

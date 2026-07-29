@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { API_URL } from '$lib/config/env';
-import type { Activity, AdvisorDonePayload, AdvisorMeta, AdvisorPageContext, AdvisorRecommendation, AiChatResponse, ApiResponse, BlogPost, Comparison, Country, Destination, FAQ, Lodge, Paginated, SafetyTopic, Testimonial, Tour, TravelStyle, TripPoint } from '$lib/types';
+import type { Activity, AdvisorDonePayload, AdvisorMeta, AdvisorPageContext, AdvisorRecommendation, AiChatResponse, ApiResponse, BlogPost, Comparison, Country, Destination, FAQ, Lodge, MigrationEntry, Paginated, Review, ReviewSummary, SafetyTopic, Testimonial, Tour, TravelStyle, TripPoint } from '$lib/types';
 
 type QueryValue = string | number | boolean | undefined | null;
 type RequestOptions = Omit<RequestInit, 'body'> & {
@@ -380,6 +380,38 @@ export const api = {
     create: (body: Record<string, unknown>) => apiRequest('/faqs', { method: 'POST', body }),
     update: (id: string, body: Record<string, unknown>) => apiRequest(`/faqs/${id}`, { method: 'PUT', body }),
     remove: (id: string) => apiRequest(`/faqs/${id}`, { method: 'DELETE' })
+  },
+  reviews: {
+    list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Review>>(`/reviews${queryString(params)}`),
+    summary: (params?: Record<string, QueryValue>) => apiRequest<ReviewSummary>(`/reviews/summary${queryString(params)}`),
+    get: (id: string) => apiRequest<Review>(`/reviews/${id}`),
+    create: (body: Record<string, unknown>) => apiRequest('/reviews', { method: 'POST', body }),
+    update: (id: string, body: Record<string, unknown>) => apiRequest(`/reviews/${id}`, { method: 'PUT', body }),
+    remove: (id: string) => apiRequest(`/reviews/${id}`, { method: 'DELETE' })
+  },
+  migrationCalendar: {
+    list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<MigrationEntry>>(`/migration-calendar${queryString(params)}`),
+    get: (id: string) => apiRequest<MigrationEntry>(`/migration-calendar/${id}`),
+    create: (body: Record<string, unknown>) => apiRequest('/migration-calendar', { method: 'POST', body }),
+    update: (id: string, body: Record<string, unknown>) => apiRequest(`/migration-calendar/${id}`, { method: 'PUT', body }),
+    remove: (id: string) => apiRequest(`/migration-calendar/${id}`, { method: 'DELETE' })
+  },
+  redirects: {
+    // Public resolver used by hooks.server.ts to turn a 404 into a 301/302.
+    resolve: (path: string) => apiRequest<{ match: boolean; to_path?: string; status_code?: number }>(`/redirects/resolve${queryString({ path })}`),
+    list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Record<string, unknown>>>(`/redirects${queryString(params)}`),
+    get: (id: string) => apiRequest<Record<string, unknown>>(`/redirects/${id}`),
+    create: (body: Record<string, unknown>) => apiRequest('/redirects', { method: 'POST', body }),
+    update: (id: string, body: Record<string, unknown>) => apiRequest(`/redirects/${id}`, { method: 'PUT', body }),
+    remove: (id: string) => apiRequest(`/redirects/${id}`, { method: 'DELETE' })
+  },
+  errors: {
+    // Public ingest — a broken URL / 404 reported from the browser (aggregated server-side).
+    report: (body: { url: string; error_type?: string; referrer?: string | null; error_message?: string | null }) =>
+      apiRequest('/errors', { method: 'POST', body }),
+    list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Record<string, unknown>>>(`/errors${queryString(params)}`),
+    update: (id: string, body: Record<string, unknown>) => apiRequest(`/errors/${id}`, { method: 'PUT', body }),
+    remove: (id: string) => apiRequest(`/errors/${id}`, { method: 'DELETE' })
   },
   homepage: {
     get: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>[]>(`/homepage${queryString(params)}`),

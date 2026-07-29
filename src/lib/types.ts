@@ -274,6 +274,46 @@ export type Testimonial = {
   sort_order?: number;
 };
 
+// Platform-attributed review (TripAdvisor / SafariBookings / Google). Distinct
+// from Testimonial: powers the reviews trust widget + AggregateRating JSON-LD.
+export type ReviewPlatform = 'TripAdvisor' | 'SafariBookings' | 'Google';
+
+export type Review = {
+  id: string;
+  platform: ReviewPlatform;
+  author_name: string;
+  author_initials?: string;
+  author_photo_url?: string | null;
+  country?: string;
+  message: string;
+  rating: number;
+  source_url?: string;
+  tour_id?: string | null;
+  tour_title?: string | null;
+  status?: 'pending' | 'approved';
+  is_featured?: boolean;
+  sort_order?: number;
+  created_at?: string;
+};
+
+// GET /reviews/summary — aggregate for AggregateRating rich snippets.
+export type ReviewSummary = {
+  count: number;
+  average: number;
+  by_platform: Array<{ platform: string; count: number; average: number }>;
+};
+
+// Serengeti Great Migration month-by-month calendar entry.
+export type MigrationEntry = {
+  id: string;
+  month: string;
+  location?: string;
+  note?: string;
+  image_url?: string;
+  display_order?: number;
+  is_published?: boolean;
+};
+
 export type FAQ = {
   id: string;
   question: string;
