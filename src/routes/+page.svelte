@@ -3,7 +3,7 @@
   import { ArrowRight, Check, MessageCircle } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
-  import DestinationCard from '$lib/components/public/DestinationCard.svelte';
+  import PackageCard from '$lib/components/public/PackageCard.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import { faqLd } from '$lib/seo';
@@ -135,19 +135,32 @@
 <!-- 2 · Intro + stats -->
 <IntroBand />
 
-<!-- 3 · Safari Packages (destinations grid) -->
-<section class="bg-canvas py-16 md:py-24" use:sectionReveal>
+<!-- 3 · Safari Packages (overlay image cards) -->
+<section class="bg-surface py-16 md:py-24" use:sectionReveal>
   <div class="container-shell">
-    <div class="flex flex-wrap items-end justify-between gap-4">
-      <SectionHeader eyebrow="Where to go" title={cms('featured_destinations', 'title', 'Safari Packages')} description={cms('featured_destinations', 'subtitle', 'From the Serengeti to Zanzibar — find the Tanzania experience that fits you.')} />
-      <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href="/destinations">
-        View all destinations <ArrowRight size={16} />
-      </a>
+    <div class="mx-auto max-w-2xl text-center" use:fadeUpOnScroll={{ y: 14 }}>
+      <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">Browse by type</p>
+      <h2 class="mt-3 text-3xl font-semibold tracking-tight text-heading md:text-[38px]">
+        {cms('featured_destinations', 'title', 'Safari Packages')}
+      </h2>
+      <p class="mt-4 text-[15px] leading-8 text-ink/70 md:text-lg">
+        {cms('featured_destinations', 'subtitle', 'From the Serengeti to Zanzibar — find your perfect Tanzania experience.')}
+      </p>
     </div>
-    <div class="mt-10 grid gap-6 md:grid-cols-3" use:staggeredCardReveal>
+    <div class="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal>
       {#each destinations as destination}
-        <DestinationCard {destination} />
+        <PackageCard
+          title={destination.name}
+          subtitle={destination.short_description || destination.region || destination.country || ''}
+          image={destination.main_image_url || destination.image_url || destination.banner_image_url || ''}
+          href={`/destinations?d=${destination.slug}`}
+        />
       {/each}
+    </div>
+    <div class="mt-12 flex justify-center">
+      <a class="inline-flex h-12 items-center gap-2 rounded-full bg-deep-green px-7 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-sm transition hover:bg-forest" href="/destinations">
+        View all safari packages <ArrowRight size={16} />
+      </a>
     </div>
   </div>
 </section>
