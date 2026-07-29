@@ -332,6 +332,7 @@ export const api = {
     funnel: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/funnel${queryString(params)}`),
     timeseries: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/timeseries${queryString(params)}`),
     traffic: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/traffic${queryString(params)}`),
+    sessions: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/sessions${queryString(params)}`),
     integrations: () => apiRequest<Record<string, unknown>>('/analytics/integrations')
   },
   payments: {

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { CheckCircle2, Mail, Send } from '@lucide/svelte';
   import { api } from '$lib/api/client';
+  import { getAttribution } from '$lib/analytics';
 
   export let tourTitle = '';
 
@@ -33,7 +34,7 @@
         email: email.trim(),
         source: 'email_itinerary',
         message: tourTitle ? `Please email me the "${tourTitle}" itinerary.` : 'Please email me this itinerary.',
-        lead_context: { intent: 'email_itinerary', ...(tourTitle ? { tour_interest: tourTitle } : {}) }
+        lead_context: { intent: 'email_itinerary', ...(tourTitle ? { tour_interest: tourTitle } : {}), attribution: getAttribution() }
       });
       done = true;
     } catch (e) {

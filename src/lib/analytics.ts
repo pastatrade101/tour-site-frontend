@@ -93,3 +93,81 @@ export const trackEvent = (eventName: AnalyticsEventName, meta: EventMeta = {}):
     // analytics must never throw
   }
 };
+
+// ── Session attribution (Tier 2) ─────────────────────────────────────────────
+// First-touch: on the first visit we capture UTM + external referrer and persist
+// them (localStorage), so a lead submitted later still carries the source that
+// brought the visitor. PII-free. Never throws.
+const ATTR_KEY = 'gf_attr';
+const SESSION_SENT_KEY = 'gf_session_sent';
+const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'] as const;
+
+const captureAttribution = (): Record<string, string> => {
+  const out: Record<string, string> = {};
+  try {
+    const params = new URLSearchParams(window.location.search);
+    for (const key of UTM_KEYS) {
+      const v = params.get(key);
+      if (v) out[key] = v.slice(0, 200);
+    }
+    const ref = document.referrer;
+    if (ref) {
+      try {
+        if (new URL(ref).host !== window.location.host) out.referrer = ref.slice(0, 500);
+      } catch {
+        /* malformed referrer — ignore */
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return out;
+};
+
+const storedAttribution = (): Record<string, string> => {
+  if (!browser) return {};
+  try {
+    return JSON.parse(localStorage.getItem(ATTR_KEY) || '{}') as Record<string, string>;
+  } catch {
+    return {};
+  }
+};
+
+/** First-touch attribution + session id, to attach to a lead's lead_context. */
+export const getAttribution = (): Record<string, string> => {
+  const sid = getSessionId();
+  return { ...(sid ? { session_id: sid } : {}), ...storedAttribution() };
+};
+
+/** Fire the session attribution beacon once per browser session. Never throws. */
+export const trackSession = (): void => {
+  if (!browser) return;
+  if (getConsent() === 'denied') return;
+  try {
+    // First-touch: only persist attribution the first time we ever see this browser.
+    if (localStorage.getItem(ATTR_KEY) === null) {
+      localStorage.setItem(ATTR_KEY, JSON.stringify(captureAttribution()));
+    }
+    // Send at most once per tab session.
+    if (sessionStorage.getItem(SESSION_SENT_KEY)) return;
+    sessionStorage.setItem(SESSION_SENT_KEY, '1');
+
+    const attr = storedAttribution();
+    const payload: Record<string, unknown> = {
+      session_id: getSessionId(),
+      device_type: deviceType(),
+      landing_path: window.location.pathname,
+      referrer: attr.referrer ?? null
+    };
+    for (const key of UTM_KEYS) if (attr[key]) payload[key] = attr[key];
+
+    void fetch(`${API_URL}/analytics/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true
+    }).catch(() => {});
+  } catch {
+    // analytics must never throw
+  }
+};

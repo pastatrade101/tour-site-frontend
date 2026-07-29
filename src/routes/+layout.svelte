@@ -15,6 +15,7 @@
   import { setupPwaInstall } from '$lib/pwa';
   import { initSmoothScrolling, setupGsap } from '$lib/animations';
   import { api } from '$lib/api/client';
+  import { trackSession } from '$lib/analytics';
   import { applyBranding, branding } from '$lib/branding';
   import { SITE_URL } from '$lib/config/env';
   import { aiAdvisorEnabled, loadPublicSettings, publicSettings } from '$lib/settings';
@@ -124,6 +125,7 @@
     void loadBranding();
     void loadPublicSettings();
     setupPwaInstall();
+    if (!isAdmin) trackSession(); // fire-and-forget attribution beacon (public only)
     return () => {
       smoothScrollCleanup?.();
     };

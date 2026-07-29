@@ -2,7 +2,7 @@
   import { onMount, tick } from 'svelte';
   import { AlertCircle, CheckCircle2, Copy, MapPin, ShieldCheck } from '@lucide/svelte';
   import { page } from '$app/stores';
-  import { trackEvent } from '$lib/analytics';
+  import { getAttribution, trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
   import Button from './Button.svelte';
   import CountrySelect from './CountrySelect.svelte';
@@ -134,6 +134,7 @@
     if (trip_duration.trim()) lead_context.trip_duration = trip_duration.trim();
     if (travel_interests.length) lead_context.travel_interests = travel_interests.join(', ');
     if (accommodation_preference) lead_context.accommodation_preference = accommodation_preference;
+    lead_context.attribution = getAttribution(); // first-touch source/campaign + session id
 
     submitting = true;
     try {

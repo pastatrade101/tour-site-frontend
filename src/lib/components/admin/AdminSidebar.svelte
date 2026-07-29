@@ -40,7 +40,8 @@
     Star,
     Tags,
     TriangleAlert,
-    Users
+    Users,
+    Waypoints
   } from '@lucide/svelte';
   import { brand } from '$lib/brand';
 
@@ -64,7 +65,7 @@
   };
 
   const groups: NavGroup[] = [
-    { label: 'Dashboard', links: [{ href: '/admin', label: 'Overview', icon: LayoutDashboard, exact: true }, { href: '/admin/analytics', label: 'Analytics', icon: ChartColumnBig }] },
+    { label: 'Dashboard', links: [{ href: '/admin', label: 'Overview', icon: LayoutDashboard, exact: true }, { href: '/admin/analytics', label: 'Analytics', icon: ChartColumnBig }, { href: '/admin/attribution', label: 'Attribution', icon: Waypoints }] },
     {
       label: 'Tour Management',
       links: [

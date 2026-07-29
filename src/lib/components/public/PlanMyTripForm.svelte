@@ -3,7 +3,7 @@
   import { get } from 'svelte/store';
   import { AlertCircle, CheckCircle2, Copy, MapPin, Scale, ShieldCheck } from '@lucide/svelte';
   import { page } from '$app/stores';
-  import { trackEvent } from '$lib/analytics';
+  import { getAttribution, trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
   import { defaultSpecialist } from '$lib/data/specialists';
   import { publicSettings, settingText } from '$lib/settings';
@@ -240,6 +240,7 @@
     if (accommodation_preference) lead_context.accommodation_preference = accommodation_preference;
     if (tripContext) lead_context.tour_interest = tripContext;
     if (referrerTopic) lead_context.topic = referrerTopic;
+    lead_context.attribution = getAttribution(); // first-touch source/campaign + session id
 
     submitting = true;
     try {
