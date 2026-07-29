@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { fly } from 'svelte/transition';
-  import { ArrowRight, Check, Star } from '@lucide/svelte';
+  import { ArrowRight, Check, ChevronDown, Star } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import { revealHeading } from '$lib/animations';
   import { brand } from '$lib/brand';
@@ -33,6 +33,17 @@
   let timer: ReturnType<typeof setInterval> | undefined;
   let loaded = new Set<number>([0]);
 
+  // Fill exactly the viewport height *below* the (solid) nav so the hero is one
+  // clean screen — measured at runtime, robust to whatever the nav height is.
+  let sectionEl: HTMLElement;
+  let heroMinH = '100svh';
+  const setHeight = () => {
+    if (!sectionEl) return;
+    const top = sectionEl.getBoundingClientRect().top + window.scrollY;
+    heroMinH = `calc(100svh - ${Math.max(0, Math.round(top))}px)`;
+  };
+  const scrollDown = () => window.scrollTo({ top: (sectionEl?.offsetTop ?? 0) + (sectionEl?.offsetHeight ?? 0), behavior: 'smooth' });
+
   $: {
     loaded.add(index);
     if (images.length > 1) loaded.add((index + 1) % images.length);
@@ -46,9 +57,11 @@
     if (images.length > 1 && !reduce) timer = setInterval(() => { index = (index + 1) % images.length; }, 6500);
   };
   const goSlide = (i: number) => { index = i; startAuto(); };
-  onDestroy(stop);
+  onDestroy(() => { stop(); if (typeof window !== 'undefined') window.removeEventListener('resize', setHeight); });
 
   onMount(async () => {
+    setHeight();
+    window.addEventListener('resize', setHeight, { passive: true });
     const first = images[0];
     try {
       const dest = await api.destinations.list({ status: 'published', limit: 12 });
@@ -66,7 +79,7 @@
   });
 </script>
 
-<section class="relative flex min-h-[100svh] items-center overflow-hidden bg-deep-green dark:bg-[#0b100e]">
+<section bind:this={sectionEl} class="relative flex min-h-[560px] items-end overflow-hidden bg-deep-green dark:bg-[#0b100e]" style={`min-height:${heroMinH}`}>
   <!-- rotating background images -->
   {#each images as src, i (src)}
     <div class={`absolute inset-0 transition-opacity duration-[1200ms] ease-out ${i === index ? 'opacity-100' : 'opacity-0'}`} aria-hidden={i === index ? undefined : 'true'}>
@@ -79,8 +92,8 @@
   <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-deep-green/45 to-deep-green/15 dark:from-[#0b100e] dark:via-[#0b100e]/70 dark:to-[#0b100e]/30"></div>
   <div class="absolute inset-0 bg-gradient-to-r from-deep-green/80 via-deep-green/30 to-transparent dark:from-[#0b100e]/90 dark:via-[#0b100e]/40 dark:to-transparent"></div>
 
-  <!-- content -->
-  <div class="relative z-10 mx-auto w-full max-w-[1500px] px-5 py-28 md:px-8">
+  <!-- content (bottom-left, like the reference) -->
+  <div class="relative z-10 mx-auto w-full max-w-[1500px] px-5 pb-20 pt-24 md:px-8 md:pb-24">
     <div class="max-w-2xl text-white">
       <span class="inline-flex items-center gap-2 rounded-full bg-white/12 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-savanna backdrop-blur" in:fly={{ y: 12, duration: 450 }}>
         <Star size={13} fill="currentColor" /> {eyebrow}
@@ -96,10 +109,10 @@
       </p>
 
       <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <a class="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-goldfinch-gold px-7 font-bold text-heading shadow-lg transition hover:brightness-105 sm:w-auto" href={primaryCtaUrl}>
+        <a class="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full bg-goldfinch-gold px-8 font-bold text-heading shadow-lg transition hover:brightness-105 sm:w-auto" href={primaryCtaUrl}>
           {primaryCta} <ArrowRight size={18} strokeWidth={2.6} />
         </a>
-        <a class="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-xl border border-white/40 bg-white/5 px-7 font-semibold text-white backdrop-blur transition hover:bg-white/15 sm:w-auto" href={secondaryCtaUrl}>
+        <a class="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full border border-white/45 bg-white/5 px-8 font-semibold text-white backdrop-blur transition hover:bg-white/15 sm:w-auto" href={secondaryCtaUrl}>
           {secondaryCta}
         </a>
       </div>
@@ -115,11 +128,21 @@
     </div>
   </div>
 
-  <!-- slide dots -->
+  <!-- scroll-down cue (bottom center) -->
+  <button
+    type="button"
+    class="group absolute bottom-5 left-1/2 z-10 grid h-10 w-10 -translate-x-1/2 place-items-center rounded-full text-white/85 transition hover:text-white"
+    aria-label="Scroll down"
+    on:click={scrollDown}
+  >
+    <ChevronDown size={26} strokeWidth={2.4} class="motion-safe:animate-bounce" />
+  </button>
+
+  <!-- slide dots (bottom right) -->
   {#if images.length > 1}
-    <div class="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 gap-2" role="tablist" aria-label="Hero background">
+    <div class="absolute bottom-7 right-6 z-10 flex gap-2 md:right-10" role="tablist" aria-label="Hero background">
       {#each images as _src, i (i)}
-        <button class={`h-2 rounded-full transition-all ${i === index ? 'w-7 bg-goldfinch-gold' : 'w-2 bg-white/50 hover:bg-white/80'}`} type="button" role="tab" aria-selected={i === index} aria-label={`Background ${i + 1}`} on:click={() => goSlide(i)}></button>
+        <button class={`h-2 rounded-full transition-all ${i === index ? 'w-7 bg-goldfinch-gold' : 'w-2.5 bg-white/50 hover:bg-white/80'}`} type="button" role="tab" aria-selected={i === index} aria-label={`Background ${i + 1}`} on:click={() => goSlide(i)}></button>
       {/each}
     </div>
   {/if}
