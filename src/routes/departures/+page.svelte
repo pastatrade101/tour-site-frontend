@@ -173,7 +173,7 @@
 <section class="bg-sand/40 py-12 md:py-16">
   <div class="container-shell">
     <!-- ── filter bar ──────────────────────────────────────────────────── -->
-    <div class="rounded-[8px] border border-ink/10 bg-surface p-4 shadow-[0_14px_44px_rgba(15,47,36,0.06)] sm:p-5">
+    <div class="rounded-[8px] border border-ink/10 bg-surface p-4 shadow-[0_14px_44px_rgba(57,61,50,0.06)] sm:p-5">
       <div class="grid gap-3 lg:grid-cols-[1.4fr_repeat(4,1fr)_auto] lg:items-end">
         <label class="grid gap-2 text-sm font-medium text-ink">
           <span>Search</span>
@@ -213,7 +213,7 @@
         <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.05 }}>
           {#each grouped as g (g.tour.tour_id)}
             {@const dates = expanded.has(g.tour.tour_id) ? g.dates : g.dates.slice(0, 3)}
-            <article class="group flex flex-col overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_14px_40px_rgba(15,47,36,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(15,47,36,0.16)]" use:tilt={{ max: 5 }}>
+            <article class="group flex flex-col overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_14px_40px_rgba(57,61,50,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(57,61,50,0.16)]" use:tilt={{ max: 5 }}>
               <div class="relative aspect-[16/10] overflow-hidden bg-skywash">
                 {#if g.tour.main_image_url}
                   <img class="h-full w-full object-cover transition duration-300 group-hover:scale-105" src={g.tour.main_image_url} alt={g.tour.tour_title} loading="lazy" />

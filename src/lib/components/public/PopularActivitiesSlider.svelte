@@ -124,7 +124,7 @@
     >
       {#each activities as activity}
         <article
-          class="activity-card group relative flex h-full flex-col overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_14px_40px_rgba(15,47,36,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(15,47,36,0.16)]"
+          class="activity-card group relative flex h-full flex-col overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_14px_40px_rgba(57,61,50,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(57,61,50,0.16)]"
           use:tilt={{ max: 5 }}
         >
           <a href={activity.href} class="relative block aspect-[16/10] overflow-hidden bg-skywash">

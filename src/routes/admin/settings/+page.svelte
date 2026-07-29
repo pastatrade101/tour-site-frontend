@@ -42,9 +42,9 @@
       { key: 'brand_statement', label: 'Brand statement', type: 'textarea', public: true, default: 'Travelers do not need more options. They need more confidence.' },
       { key: 'logo_url', label: 'Logo', type: 'image', public: true, helper: 'Public logo image.' },
       { key: 'favicon_url', label: 'Favicon', type: 'image', public: true },
-      { key: 'primary_color', label: 'Primary color', type: 'color', public: true, default: '#1f4d3a' },
-      { key: 'secondary_color', label: 'Secondary color', type: 'color', public: true, default: '#0F2F24' },
-      { key: 'accent_color', label: 'Accent color', type: 'color', public: true, default: '#D9A441' }
+      { key: 'primary_color', label: 'Primary color', type: 'color', public: true, default: '#2D3027' },
+      { key: 'secondary_color', label: 'Secondary color', type: 'color', public: true, default: '#393D32' },
+      { key: 'accent_color', label: 'Accent color', type: 'color', public: true, default: '#E4A92E' }
     ] },
     { key: 'contact', label: 'Contact', icon: MapPin, fields: [
       { key: 'contact_email', label: 'Contact email', type: 'email', public: true },
@@ -277,7 +277,7 @@
       </nav>
 
       <!-- form area -->
-      <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-surface p-5 shadow-[0_14px_44px_rgba(15,47,36,0.06)] sm:p-6">
+      <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-surface p-5 shadow-[0_14px_44px_rgba(57,61,50,0.06)] sm:p-6">
         <div class="flex items-center gap-3 border-b border-ink/10 pb-4">
           <svelte:component this={group.icon} size={20} class="text-forest" />
           <h2 class="text-lg font-bold text-ink">{group.label} settings</h2>
@@ -345,7 +345,7 @@
 <!-- sticky save bar -->
 {#if !loading && !error}
   <div class="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center p-4">
-    <div class="pointer-events-auto flex w-full max-w-[1500px] items-center justify-between gap-4 rounded-2xl border border-ink/10 bg-surface/95 px-5 py-3 shadow-[0_-6px_30px_rgba(15,47,36,0.12)] backdrop-blur">
+    <div class="pointer-events-auto flex w-full max-w-[1500px] items-center justify-between gap-4 rounded-2xl border border-ink/10 bg-surface/95 px-5 py-3 shadow-[0_-6px_30px_rgba(57,61,50,0.12)] backdrop-blur">
       <p class="text-sm font-medium text-ink/60">
         {#if hasChanges}<span class="font-bold text-goldfinch-gold">{dirtyKeys.length}</span> unsaved change{dirtyKeys.length === 1 ? '' : 's'}{:else}All changes saved{/if}
       </p>
@@ -360,7 +360,7 @@
 <!-- media picker modal -->
 {#if mediaPickerFor}
   <div class="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4 backdrop-blur-sm" transition:fade={{ duration: 140 }}>
-    <div class="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-[0_24px_80px_rgba(15,47,36,0.18)]" transition:scale={{ duration: 160, start: 0.98 }}>
+    <div class="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-[0_24px_80px_rgba(57,61,50,0.18)]" transition:scale={{ duration: 160, start: 0.98 }}>
       <div class="flex items-center justify-between border-b border-ink/10 bg-sand/30 p-4">
         <h3 class="text-base font-bold text-ink">Choose an image</h3>
         <button class="grid h-9 w-9 place-items-center rounded-xl border border-ink/10 bg-surface text-ink shadow-sm transition hover:bg-sand" type="button" aria-label="Close" on:click={() => (mediaPickerFor = null)}><X size={16} /></button>

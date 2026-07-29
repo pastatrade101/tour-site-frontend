@@ -168,7 +168,7 @@
   });
 </script>
 
-<header class={`sticky top-0 z-40 border-b bg-surface transition-[box-shadow,border-color] duration-[400ms] ease-out ${scrolled ? 'border-transparent shadow-[0_8px_28px_rgba(15,47,36,0.10)]' : 'border-ink/10'}`} use:navbarEntrance>
+<header class={`sticky top-0 z-40 border-b bg-surface transition-[box-shadow,border-color] duration-[400ms] ease-out ${scrolled ? 'border-transparent shadow-[0_8px_28px_rgba(57,61,50,0.10)]' : 'border-ink/10'}`} use:navbarEntrance>
   <!-- ── mobile top bar ─────────────────────────────────────────────────── -->
   <div class="flex h-[70px] items-center justify-between gap-3 px-4 sm:px-5 lg:hidden">
     <button class="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 bg-surface text-ink" type="button" aria-label="Toggle menu" aria-expanded={menuOpen} on:click={() => (menuOpen = !menuOpen)}>
@@ -278,7 +278,7 @@
                 {@const feat = FEATURE[item.dropdown]}
                 <div
                   id={`dd-${item.dropdown}`}
-                  class="absolute left-0 top-full z-50 grid w-[660px] grid-cols-[1fr_248px] overflow-hidden rounded-2xl border border-ink/10 bg-surface shadow-[0_24px_60px_rgba(15,47,36,0.18)]"
+                  class="absolute left-0 top-full z-50 grid w-[660px] grid-cols-[1fr_248px] overflow-hidden rounded-2xl border border-ink/10 bg-surface shadow-[0_24px_60px_rgba(57,61,50,0.18)]"
                   role="menu"
                   transition:fly={{ y: 6, duration: 140 }}
                 >

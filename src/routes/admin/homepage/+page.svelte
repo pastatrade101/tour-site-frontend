@@ -103,12 +103,12 @@
     { label: 'Bottom right', value: 'right bottom' }
   ];
   const BG_KEYS = ['background_video', 'overlay_color', 'overlay_opacity', 'overlay_gradient', 'media_position'];
-  const emptyBg = () => ({ video: '', overlay_color: '#0F2F24', overlay_opacity: '60', overlay_gradient: true, media_position: 'center' });
+  const emptyBg = () => ({ video: '', overlay_color: '#393D32', overlay_opacity: '60', overlay_gradient: true, media_position: 'center' });
   let bg = emptyBg();
 
   const hexToRgba = (hex: string, alpha: number) => {
     const match = /^#?([0-9a-fA-F]{6})$/.exec(hex);
-    if (!match) return `rgba(15,47,36,${alpha})`;
+    if (!match) return `rgba(57,61,50,${alpha})`;
     const n = parseInt(match[1], 16);
     return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
   };
@@ -121,7 +121,7 @@
 
   const extraToBg = (ed: Record<string, unknown>) => ({
     video: typeof ed.background_video === 'string' ? ed.background_video : '',
-    overlay_color: typeof ed.overlay_color === 'string' ? ed.overlay_color : '#0F2F24',
+    overlay_color: typeof ed.overlay_color === 'string' ? ed.overlay_color : '#393D32',
     overlay_opacity: ed.overlay_opacity != null ? String(Math.round(Number(ed.overlay_opacity) * 100)) : '60',
     overlay_gradient: ed.overlay_gradient !== false,
     media_position: typeof ed.media_position === 'string' ? ed.media_position : 'center'
@@ -129,7 +129,7 @@
 
   const bgToExtra = (): Record<string, unknown> => ({
     ...(bg.video.trim() ? { background_video: bg.video.trim() } : {}),
-    overlay_color: bg.overlay_color || '#0F2F24',
+    overlay_color: bg.overlay_color || '#393D32',
     overlay_opacity: overlayAlpha,
     overlay_gradient: bg.overlay_gradient,
     media_position: bg.media_position || 'center'
@@ -453,7 +453,7 @@
   {:else}
     <div class="grid gap-4">
       {#each sorted as section, index (section.id)}
-        <article class={`grid gap-4 rounded-[8px] border bg-surface p-5 shadow-[0_14px_44px_rgba(15,47,36,0.06)] lg:grid-cols-[auto_140px_1fr_auto] lg:items-center ${section.is_active ? 'border-ink/10' : 'border-dashed border-ink/20 opacity-75'}`} transition:fade={{ duration: 120 }}>
+        <article class={`grid gap-4 rounded-[8px] border bg-surface p-5 shadow-[0_14px_44px_rgba(57,61,50,0.06)] lg:grid-cols-[auto_140px_1fr_auto] lg:items-center ${section.is_active ? 'border-ink/10' : 'border-dashed border-ink/20 opacity-75'}`} transition:fade={{ duration: 120 }}>
           <!-- reorder -->
           <div class="flex flex-row gap-1 lg:flex-col">
             <button class="grid h-8 w-8 place-items-center rounded-lg border border-ink/10 bg-surface text-ink/55 transition hover:bg-sand/70 disabled:opacity-30" type="button" aria-label="Move up" disabled={index === 0 || reordering} on:click={() => move(section, 'up')}>
@@ -513,7 +513,7 @@
 {#if modalOpen}
   <div class="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4 backdrop-blur-sm" transition:fade={{ duration: 140 }}>
     <form
-      class="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-[10px] border border-ink/10 bg-surface p-6 shadow-[0_24px_80px_rgba(15,47,36,0.18)]"
+      class="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-[10px] border border-ink/10 bg-surface p-6 shadow-[0_24px_80px_rgba(57,61,50,0.18)]"
       transition:scale={{ duration: 160, start: 0.98 }}
       on:submit|preventDefault={save}
     >
@@ -749,7 +749,7 @@
 />
 
 {#if deleting}
-  <div class="fixed bottom-4 right-4 z-[70] rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_40px_rgba(15,47,36,0.18)]">
+  <div class="fixed bottom-4 right-4 z-[70] rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_40px_rgba(57,61,50,0.18)]">
     Deleting section...
   </div>
 {/if}
@@ -760,7 +760,7 @@
     transition:fade={{ duration: 140 }}
   >
     <div
-      class="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-[0_24px_80px_rgba(15,47,36,0.18)]"
+      class="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-[0_24px_80px_rgba(57,61,50,0.18)]"
       transition:scale={{ duration: 160, start: 0.98 }}
     >
       <div class="flex items-center justify-between border-b border-ink/10 bg-sand/30 p-4">

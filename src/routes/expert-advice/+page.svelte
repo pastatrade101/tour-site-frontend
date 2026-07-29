@@ -113,7 +113,7 @@
     </div>
 
     <!-- compare promo -->
-    <div class="group mt-10 flex flex-col items-start justify-between gap-3 rounded-[12px] border border-ink/10 bg-surface p-6 shadow-[0_14px_40px_rgba(15,47,36,0.07)] transition hover:border-goldfinch-gold/40 hover:shadow-[0_26px_60px_rgba(15,47,36,0.16)] sm:flex-row sm:items-center">
+    <div class="group mt-10 flex flex-col items-start justify-between gap-3 rounded-[12px] border border-ink/10 bg-surface p-6 shadow-[0_14px_40px_rgba(57,61,50,0.07)] transition hover:border-goldfinch-gold/40 hover:shadow-[0_26px_60px_rgba(57,61,50,0.16)] sm:flex-row sm:items-center">
       <div class="flex items-start gap-3">
         <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-forest/10 text-forest"><GitCompare size={20} /></span>
         <div>

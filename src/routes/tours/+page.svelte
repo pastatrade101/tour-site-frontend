@@ -415,7 +415,7 @@
     padding: 0.25rem 0.75rem;
     font-size: 0.875rem;
     font-weight: 600;
-    color: #1f4d3a;
+    color: #2D3027;
     transition: background 0.15s;
   }
   :global(.chip:hover) {

@@ -28,8 +28,12 @@ export default {
         savanna: 'rgb(var(--c-savanna) / <alpha-value>)'
       },
       fontFamily: {
-        // Admin UI font (Attex-style). Public site keeps its default font.
-        admin: ['Figtree', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
+        // Brand type system: Inter for body/UI/labels, Source Serif 4 for
+        // headings & display (see brand guidelines). `admin` = Inter too.
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+        serif: ['Source Serif 4', 'Georgia', 'Times New Roman', 'serif'],
+        display: ['Source Serif 4', 'Georgia', 'serif'],
+        admin: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
       },
       boxShadow: {
         soft: '0 18px 50px rgba(24, 33, 31, 0.08)',
@@ -37,16 +41,16 @@ export default {
         card: '0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06)',
         'card-hover': '0 8px 24px rgba(16, 24, 40, 0.10)'
       },
-      // Tighter corners site-wide for a crisp, editorial tour feel.
-      // `full` (pills/avatars) and `none` keep their Tailwind defaults.
+      // Softer, warmer corners from the brand guidelines (buttons/inputs ~13px,
+      // cards ~16px, feature ~22px). `full` (pills/avatars) keeps its default.
       borderRadius: {
-        sm: '2px',
-        DEFAULT: '3px',
-        md: '4px',
-        lg: '5px',
-        xl: '6px',
-        '2xl': '8px',
-        '3xl': '10px'
+        sm: '6px',
+        DEFAULT: '8px',
+        md: '10px',
+        lg: '12px',
+        xl: '14px',
+        '2xl': '16px',
+        '3xl': '22px'
       }
     }
   },

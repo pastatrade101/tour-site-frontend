@@ -35,7 +35,7 @@
 
   <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
     {#each rows as row}
-      <div class="group relative flex min-h-[200px] flex-col overflow-hidden rounded-2xl border border-ink/10 bg-surface p-5 shadow-soft transition duration-300 hover:-translate-y-1 hover:border-goldfinch-gold/40 hover:shadow-[0_20px_44px_rgba(15,47,36,0.14)]">
+      <div class="group relative flex min-h-[200px] flex-col overflow-hidden rounded-2xl border border-ink/10 bg-surface p-5 shadow-soft transition duration-300 hover:-translate-y-1 hover:border-goldfinch-gold/40 hover:shadow-[0_20px_44px_rgba(57,61,50,0.14)]">
         <!-- very faint photo texture -->
         <img
           class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.08] transition duration-700 group-hover:scale-105 group-hover:opacity-[0.14]"

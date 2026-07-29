@@ -27,7 +27,7 @@
   };
 </script>
 
-<article class="group relative flex h-full flex-col overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_14px_40px_rgba(15,47,36,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(15,47,36,0.16)]" use:tilt={{ max: 5 }}>
+<article class="group relative flex h-full flex-col overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_14px_40px_rgba(57,61,50,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(57,61,50,0.16)]" use:tilt={{ max: 5 }}>
   <a href={`/tours/${tour.slug}`} class="relative block aspect-[4/3] overflow-hidden bg-skywash">
     {#if image}
       <img class="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-110" src={image} alt={tour.title} loading="lazy" />

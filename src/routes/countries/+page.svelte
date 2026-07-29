@@ -41,7 +41,7 @@
   {:else}
     <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.05 }}>
       {#each countries as c (c.slug)}
-        <a class="group relative flex h-72 flex-col justify-end overflow-hidden rounded-[12px] bg-deep-green shadow-[0_14px_40px_rgba(15,47,36,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(15,47,36,0.16)]" href={`/countries/${c.slug}`} use:tilt={{ max: 5 }}>
+        <a class="group relative flex h-72 flex-col justify-end overflow-hidden rounded-[12px] bg-deep-green shadow-[0_14px_40px_rgba(57,61,50,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(57,61,50,0.16)]" href={`/countries/${c.slug}`} use:tilt={{ max: 5 }}>
           {#if c.hero_image_url}
             <img class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105" src={c.hero_image_url} alt={c.name} loading="lazy" />
           {/if}

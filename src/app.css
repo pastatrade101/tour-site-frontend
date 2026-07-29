@@ -7,54 +7,76 @@
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
   /* Branded color tokens (space-separated RGB for Tailwind's <alpha-value>).
-     These defaults match the original brand hex values exactly. The admin
-     Branding page overrides them at runtime via document.documentElement. */
-  --c-deep-green: 15 47 36; /* #0F2F24 */
-  --c-forest: 31 77 58; /* #1f4d3a */
-  --c-goldfinch-gold: 217 164 65; /* #D9A441 */
-  --c-savanna: 233 216 166; /* #E9D8A6 */
-  --c-sand: 247 241 227; /* #F7F1E3 */
-  --c-ink: 24 33 31; /* #18211f */
-  --c-clay: 160 85 48; /* #a05530 — darkened for AA contrast on white AND cream/sand */
+     Values from the Goldfinch brand guidelines. The admin Branding page can
+     override them at runtime via a :root <style> tag. */
+  --c-deep-green: 57 61 50; /* #393D32 — primary, structure, headings, dark bands */
+  --c-forest: 45 48 39; /* #2D3027 — green hover / deepest bands */
+  --c-goldfinch-gold: 228 169 46; /* #E4A92E — action: buttons, accents, emphasis */
+  --c-savanna: 241 227 200; /* #F1E3C8 — beige: soft cream, light text on dark */
+  --c-sand: 241 227 200; /* #F1E3C8 — beige: soft panels, icon chips */
+  --c-ink: 57 61 50; /* #393D32 — primary text */
+  --c-clay: 170 61 29; /* #AA3D1D — rust: secondary accent */
 
   /* Theme surfaces (light). Dark values are overridden in `html.dark` below. */
-  --c-surface: 255 255 255; /* cards / inputs (was bg-white) */
-  --c-canvas: 248 250 248; /* page background */
-  --c-heading: 15 47 36; /* heading text == deep-green in light */
+  --c-surface: 255 255 255; /* #FFFFFF — clean cards / inputs */
+  --c-canvas: 243 239 231; /* #F3EFE7 — warm cream page background */
+  --c-heading: 57 61 50; /* #393D32 — heading text */
 }
 
 /* Base page text + background. Set as literals on `html` (not via var() on
    :root) so the dark override below reliably wins — a var() reference declared
    on the same element it's defined on does not pick up the .dark override. */
 html {
-  color: #18211f;
-  background-color: #f8faf8;
+  color: #393d32;
+  background-color: #f3efe7;
   transition:
     background-color 0.25s ease,
     color 0.25s ease;
 }
 
-/* Dark theme: flips surfaces/text/borders. Brand accents (deep-green/forest/
-   gold/clay) intentionally stay so the identity is preserved. */
+/* Public headings use Source Serif 4 (calm, classical); body/UI stay Inter.
+   Weight comes from the utility class on each heading. The admin CMS keeps a
+   sans heading (utilitarian), so it's reset back below. */
+h1,
+h2,
+h3,
+h4 {
+  font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+  letter-spacing: -0.01em;
+}
+.admin-shell h1,
+.admin-shell h2,
+.admin-shell h3,
+.admin-shell h4 {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: normal;
+}
+/* Escape hatch: an explicit font-sans utility always wins back the sans face. */
+.font-sans {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Dark theme: flips surfaces/text/borders. Brand accents (deep-green/gold/clay)
+   intentionally stay so the identity is preserved. */
 html.dark {
   color-scheme: dark;
-  color: #e0e6e2; /* matches --c-ink (dark) */
-  background-color: #0e1311; /* matches --c-canvas (dark) */
-  --c-ink: 224 230 226; /* body + border ink → light */
-  --c-sand: 30 38 33; /* warm light surface → dark (only ever a background) */
+  color: #ebe7dd; /* matches --c-ink (dark) */
+  background-color: #191b16; /* matches --c-canvas (dark) */
+  --c-ink: 235 231 221; /* body + border ink → warm light */
+  --c-sand: 45 48 39; /* warm panel surface → dark green */
   /* --c-savanna intentionally NOT flipped: it's used as light *text* on the
      always-dark green sidebar/footer/hero, so it must stay light cream. */
-  --c-surface: 23 30 27; /* cards */
-  --c-canvas: 14 19 17; /* page background */
-  --c-heading: 233 238 234; /* headings → light */
-  --c-clay: 224 150 110; /* lighter terracotta so text-clay reads on dark (light uses a darker clay for AA on white) */
+  --c-surface: 34 37 30; /* cards */
+  --c-canvas: 25 27 22; /* page background */
+  --c-heading: 240 236 227; /* headings → light */
+  --c-clay: 214 122 92; /* lighter rust so text-clay reads on dark */
 }
 
 /* Dark mode site-wide: the brand green is too dim as an accent on dark surfaces,
    so remap it to gold — labels, active states, icons, borders and rings all read
-   clearly. (ApexCharts use their own JS colors and are unaffected.) */
+   clearly. */
 html.dark {
-  --c-forest: 217 164 65;
+  --c-forest: 228 169 46;
 }
 
 /* Keep text readable on bright accent fills in dark mode (gold CTAs, and the
@@ -66,11 +88,10 @@ html.dark .bg-clay {
 
 /* The remap above also turns solid forest BUTTON fills gold — keep those green
    so their white labels stay readable and primary (gold) vs secondary (green)
-   buttons stay distinct. Only accent uses (text, icons, borders, rings, tab
-   underlines) read gold. Faint bg-forest/NN tiles keep the gold tint. */
+   buttons stay distinct. */
 html.dark .bg-forest,
 html.dark [class~="hover:bg-forest"]:hover {
-  background-color: rgb(31 77 58);
+  background-color: rgb(45 48 39);
 }
 
 body {

@@ -233,7 +233,7 @@
      Auto-hides on scroll-down so it never covers content. -->
 {#if !$aiAdvisorOpen}
   <button
-    class={`fixed bottom-24 right-4 z-[60] grid h-14 w-14 place-items-center rounded-full bg-deep-green text-white shadow-[0_14px_40px_rgba(15,47,36,0.35)] transition-all duration-300 ease-out hover:bg-forest sm:inline-flex sm:h-auto sm:w-auto sm:items-center sm:gap-2.5 sm:px-5 sm:py-3.5 sm:font-bold md:bottom-6 md:right-6 ${
+    class={`fixed bottom-24 right-4 z-[60] grid h-14 w-14 place-items-center rounded-full bg-deep-green text-white shadow-[0_14px_40px_rgba(57,61,50,0.35)] transition-all duration-300 ease-out hover:bg-forest sm:inline-flex sm:h-auto sm:w-auto sm:items-center sm:gap-2.5 sm:px-5 sm:py-3.5 sm:font-bold md:bottom-6 md:right-6 ${
       launcherHidden ? 'pointer-events-none translate-y-28 opacity-0' : 'translate-y-0 opacity-100'
     }`}
     type="button"
@@ -248,7 +248,7 @@
 <!-- Panel -->
 {#if $aiAdvisorOpen}
   <div
-    class="fixed inset-0 z-[60] flex flex-col bg-surface md:inset-auto md:bottom-6 md:right-6 md:h-[640px] md:max-h-[85vh] md:w-[400px] md:rounded-[16px] md:border md:border-ink/10 md:shadow-[0_30px_80px_rgba(15,47,36,0.28)]"
+    class="fixed inset-0 z-[60] flex flex-col bg-surface md:inset-auto md:bottom-6 md:right-6 md:h-[640px] md:max-h-[85vh] md:w-[400px] md:rounded-[16px] md:border md:border-ink/10 md:shadow-[0_30px_80px_rgba(57,61,50,0.28)]"
     role="dialog"
     aria-label="Goldfinch AI Travel Advisor"
     transition:fly={motion(20, 220)}

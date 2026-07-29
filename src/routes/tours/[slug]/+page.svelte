@@ -344,7 +344,7 @@
       <div>
         <!-- sticky booking summary card -->
         <div class="lg:sticky lg:top-24">
-          <div class="overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_18px_50px_rgba(15,47,36,0.10)]">
+          <div class="overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_18px_50px_rgba(57,61,50,0.10)]">
             <div class="bg-gradient-to-br from-deep-green to-forest p-5 text-white">
               <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-savanna">From</p>
               <p class="mt-0.5 text-3xl font-extrabold leading-none">

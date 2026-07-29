@@ -416,7 +416,7 @@
       icon={Route}
     />
   {:else if !selectedTour}
-    <div class="grid gap-4 rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(15,47,36,0.06)]">
+    <div class="grid gap-4 rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
       <div>
         <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Select a parent tour</p>
         <h2 class="mt-1 text-xl font-bold text-ink">Itinerary days are child records</h2>
@@ -441,7 +441,7 @@
       </div>
     </div>
   {:else}
-    <section class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(15,47,36,0.06)]">
+    <section class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Selected parent tour</p>
@@ -487,7 +487,7 @@
     {:else}
       <div class="grid gap-4">
         {#each sortedDays as day}
-          <article class="grid gap-4 rounded-[8px] border border-ink/10 bg-surface p-4 shadow-[0_16px_44px_rgba(15,47,36,0.055)] lg:grid-cols-[auto_1fr_auto] lg:items-start">
+          <article class="grid gap-4 rounded-[8px] border border-ink/10 bg-surface p-4 shadow-[0_16px_44px_rgba(57,61,50,0.055)] lg:grid-cols-[auto_1fr_auto] lg:items-start">
             <div class="grid h-16 w-16 place-items-center rounded-2xl bg-forest text-center text-white shadow-sm shadow-forest/15">
               <span class="text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">Day</span>
               <strong class="-mt-3 text-2xl">{day.day_number}</strong>
@@ -548,7 +548,7 @@
 
 {#if modalOpen}
   <div class="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4 backdrop-blur-sm" transition:fade={{ duration: 140 }}>
-    <form class="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_24px_80px_rgba(15,47,36,0.18)] sm:p-6" transition:scale={{ duration: 160, start: 0.98 }} on:submit|preventDefault={saveDay}>
+    <form class="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_24px_80px_rgba(57,61,50,0.18)] sm:p-6" transition:scale={{ duration: 160, start: 0.98 }} on:submit|preventDefault={saveDay}>
       <div class="flex items-start justify-between gap-4">
         <div>
           <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">{editingDay ? 'Edit itinerary day' : 'New itinerary day'}</p>
@@ -602,7 +602,7 @@
 />
 
 {#if deleting}
-  <div class="fixed bottom-4 right-4 z-[70] rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_40px_rgba(15,47,36,0.18)]">
+  <div class="fixed bottom-4 right-4 z-[70] rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_40px_rgba(57,61,50,0.18)]">
     Deleting itinerary day...
   </div>
 {/if}

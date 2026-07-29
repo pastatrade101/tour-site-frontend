@@ -138,7 +138,7 @@
       {/key}
 
       <!-- search on top -->
-      <form class="mt-5 flex items-center gap-2 rounded-lg bg-surface p-2 shadow-[0_20px_50px_rgba(15,47,36,0.30)] sm:mt-7" on:submit|preventDefault={submit}>
+      <form class="mt-5 flex items-center gap-2 rounded-lg bg-surface p-2 shadow-[0_20px_50px_rgba(57,61,50,0.30)] sm:mt-7" on:submit|preventDefault={submit}>
         <label class="flex h-14 flex-1 items-center gap-2.5 rounded-md border border-ink/15 bg-black/[0.03] px-3">
           <MapPin class="shrink-0 text-forest" size={20} strokeWidth={2.4} />
           <select class="w-full cursor-pointer appearance-none bg-transparent text-[15px] font-semibold text-ink outline-none" bind:value={destination} aria-label="Choose a destination">

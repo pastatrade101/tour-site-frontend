@@ -3,9 +3,9 @@
 // ready to spread into <ChartCanvas {...cfg} />. Labels/grids use a neutral gray
 // that reads on both light and dark surfaces.
 
-export const CHART_PALETTE = ['#D9A441', '#1F4D3A', '#0F2F24', '#94a3b8', '#b86b45', '#E9D8A6', '#6b8e23', '#f87171'];
-const GOLD = '#D9A441';
-const FOREST = '#1F4D3A';
+export const CHART_PALETTE = ['#E4A92E', '#2D3027', '#393D32', '#94a3b8', '#AA3D1D', '#F1E3C8', '#6b8e23', '#f87171'];
+const GOLD = '#E4A92E';
+const FOREST = '#2D3027';
 const TICK = '#94a3b8';
 const GRID = 'rgba(148,163,184,0.16)';
 const ANIM = { duration: 850, easing: 'easeOutQuart' as const };

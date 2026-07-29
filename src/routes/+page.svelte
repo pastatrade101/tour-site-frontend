@@ -53,7 +53,7 @@
 
   const hexToRgba = (hex: string, alpha: number) => {
     const match = /^#?([0-9a-fA-F]{6})$/.exec(hex);
-    if (!match) return `rgba(15,47,36,${alpha})`;
+    if (!match) return `rgba(57,61,50,${alpha})`;
     const n = parseInt(match[1], 16);
     return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
   };
@@ -69,7 +69,7 @@
   const DEFAULT_CTA_IMAGE =
     'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1600&q=70';
   $: ctaImageResolved = ctaImage || DEFAULT_CTA_IMAGE;
-  $: ctaOverlayColor = typeof ctaExtra.overlay_color === 'string' ? ctaExtra.overlay_color : '#0F2F24';
+  $: ctaOverlayColor = typeof ctaExtra.overlay_color === 'string' ? ctaExtra.overlay_color : '#393D32';
   $: ctaOverlayOpacity = typeof ctaExtra.overlay_opacity === 'number' ? ctaExtra.overlay_opacity : 0.7;
   $: ctaOverlayStyle =
     ctaExtra.overlay_gradient !== false
