@@ -122,12 +122,15 @@
 </script>
 
 <HeroSection
-  title={cms('hero', 'title', 'Plan East Africa With Confidence')}
-  description={cms('hero', 'subtitle', 'Honest safari, Kilimanjaro, gorilla trekking and beach advice from local experts.')}
+  eyebrow={typeof heroExtra.eyebrow === 'string' ? heroExtra.eyebrow : 'Rated 4.9/5 by travellers'}
+  title={cms('hero', 'title', 'Witness the Greatest')}
+  highlight={typeof heroExtra.title_highlight === 'string' ? heroExtra.title_highlight : 'Wildlife Show on Earth'}
+  description={cms('hero', 'subtitle', 'Great Migration river crossings, honest safari, Kilimanjaro and Zanzibar advice — planned around you by Tanzanian local experts.')}
   imageUrl={cms('hero', 'image_url', '/images/surf-hero.jpg')}
   primaryCta={cms('hero', 'button_text', 'Plan My Trip')}
-  secondaryCta={typeof heroExtra.secondary_cta_text === 'string' ? heroExtra.secondary_cta_text : 'Talk to a Travel Advisor'}
-  secondaryCtaUrl={typeof heroExtra.secondary_cta_url === 'string' ? heroExtra.secondary_cta_url : '/contact'}
+  primaryCtaUrl={cms('hero', 'button_url', '/plan-my-trip')}
+  secondaryCta={typeof heroExtra.secondary_cta_text === 'string' ? heroExtra.secondary_cta_text : 'Explore Tours'}
+  secondaryCtaUrl={typeof heroExtra.secondary_cta_url === 'string' ? heroExtra.secondary_cta_url : '/tours'}
 />
 
 <TrustStrip />
