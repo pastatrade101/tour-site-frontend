@@ -50,6 +50,12 @@
     return typeof value === 'string' && value.trim() ? value : fallback;
   };
 
+  // Same, for a string field inside a section's extra_data (e.g. eyebrows).
+  const cmsExtra = (key: string, field: string, fallback: string) => {
+    const value = (sections[key]?.extra_data as Record<string, unknown> | undefined)?.[field];
+    return typeof value === 'string' && value.trim() ? value : fallback;
+  };
+
   $: heroExtra = (sections.hero?.extra_data ?? {}) as Record<string, unknown>;
 
   const hexToRgba = (hex: string, alpha: number) => {
@@ -133,6 +139,16 @@
   });
   $: tourProps = clean({ eyebrow: featuredToursExtra.eyebrow, title: sections.featured_tours?.title, subtitle: sections.featured_tours?.subtitle });
 
+  // "Plan your dream" band bullets + Final-CTA trust chips — CMS-overridable via
+  // extra_data.points / extra_data.trust_points, falling back to the current text.
+  $: planDreamExtra = (sections.plan_dream?.extra_data ?? {}) as Record<string, unknown>;
+  $: planDreamPoints = arr<string>(planDreamExtra.points).length
+    ? arr<string>(planDreamExtra.points)
+    : ['Fully tailored to your dates & budget', 'A reply within one business day', 'Honest advice, never a hard sell'];
+  $: ctaTrustPoints = arr<string>(ctaExtra.trust_points).length
+    ? arr<string>(ctaExtra.trust_points)
+    : ['Local experts', 'No payment to plan', 'Honest, tailored advice'];
+
   onMount(async () => {
     try {
       const [tourResponse, destinationResponse, postResponse, testimonialResponse, faqResponse, homepageResponse] = await Promise.all([
@@ -182,7 +198,7 @@
 <section class="bg-surface py-16 md:py-24" use:sectionReveal>
   <div class="container-shell">
     <div class="mx-auto max-w-2xl text-center" use:fadeUpOnScroll={{ y: 14 }}>
-      <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">Browse by type</p>
+      <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">{cmsExtra('featured_destinations', 'eyebrow', 'Browse by type')}</p>
       <h2 class="mt-3 text-3xl font-semibold tracking-tight text-heading md:text-[38px]">
         {cms('featured_destinations', 'title', 'Safari Packages')}
       </h2>
@@ -229,17 +245,21 @@
 <SeasonsBand {...seasonsProps} />
 
 <!-- 7b · Serengeti Great Migration calendar (self-hiding until published entries exist) -->
-<MigrationCalendar />
+<MigrationCalendar
+  eyebrow={cmsExtra('migration_section', 'eyebrow', 'Great Migration')}
+  title={cms('migration_section', 'title', 'Follow the herds, month by month')}
+  subtitle={cms('migration_section', 'subtitle', 'Where the wildebeest and zebra roam across the Serengeti through the year — so you can plan your safari around the action.')}
+/>
 
 <!-- 8 · Plan your dream (dark form band) -->
 <section class="bg-deep-green py-16 text-white md:py-24" use:sectionReveal>
   <div class="container-shell grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
     <div>
-      <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">Plan your dream trip</p>
-      <h2 class="mt-3 text-3xl font-semibold text-white md:text-[38px]">Plan Your Dream Tanzania Safari</h2>
-      <p class="mt-4 leading-8 text-white/80">Tell us a few details and a local specialist will craft a confident, tailor-made plan — with no pressure and no payment to start.</p>
+      <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">{cmsExtra('plan_dream', 'eyebrow', 'Plan your dream trip')}</p>
+      <h2 class="mt-3 text-3xl font-semibold text-white md:text-[38px]">{cms('plan_dream', 'title', 'Plan Your Dream Tanzania Safari')}</h2>
+      <p class="mt-4 leading-8 text-white/80">{cms('plan_dream', 'subtitle', 'Tell us a few details and a local specialist will craft a confident, tailor-made plan — with no pressure and no payment to start.')}</p>
       <div class="mt-7 space-y-3">
-        {#each ['Fully tailored to your dates & budget', 'A reply within one business day', 'Honest advice, never a hard sell'] as point}
+        {#each planDreamPoints as point}
           <div class="flex items-center gap-3 text-white/85">
             <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-goldfinch-gold/25 text-goldfinch-gold"><Check size={13} strokeWidth={3} /></span>
             {point}
@@ -247,7 +267,7 @@
         {/each}
       </div>
     </div>
-    <LeadCaptureForm title="Safari details" compact />
+    <LeadCaptureForm title={cmsExtra('plan_dream', 'form_title', 'Safari details')} compact />
   </div>
 </section>
 
@@ -265,13 +285,17 @@
 </section>
 
 <!-- 9b · Platform reviews trust widget + AggregateRating JSON-LD (self-hiding until approved reviews exist) -->
-<ReviewsWidget />
+<ReviewsWidget
+  eyebrow={cmsExtra('reviews_section', 'eyebrow', 'Loved by travellers')}
+  title={cms('reviews_section', 'title', 'Real reviews from real safaris')}
+  subtitle={cms('reviews_section', 'subtitle', 'Verified ratings from travellers across TripAdvisor, SafariBookings and Google.')}
+/>
 
 <!-- 10 · Reviews + partner logos -->
 <section class="bg-surface py-16 md:py-24" use:sectionReveal>
   <div class="container-shell">
     <div class="mx-auto max-w-2xl text-center" use:fadeUpOnScroll={{ y: 14 }}>
-      <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">Loved by travellers</p>
+      <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">{cmsExtra('testimonials', 'eyebrow', 'Loved by travellers')}</p>
       <h2 class="mt-3 text-3xl font-semibold tracking-normal text-heading md:text-[38px]">
         {cms('testimonials', 'title', '200+ Verified Reviews')}
       </h2>
@@ -295,7 +319,7 @@
 <section class="bg-canvas py-16 md:py-24" use:sectionReveal>
   <div class="container-shell">
     <div class="flex flex-wrap items-end justify-between gap-4">
-      <SectionHeader eyebrow="Stories" title={cms('blog_preview', 'title', 'Latest Stories & Guides')} description={cms('blog_preview', 'subtitle', 'Tips, guides and inspiration from our East Africa specialists.')} />
+      <SectionHeader eyebrow={cmsExtra('blog_preview', 'eyebrow', 'Stories')} title={cms('blog_preview', 'title', 'Latest Stories & Guides')} description={cms('blog_preview', 'subtitle', 'Tips, guides and inspiration from our East Africa specialists.')} />
       <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href="/blog">View all <ArrowRight size={16} /></a>
     </div>
     <div class="mt-8 grid gap-6 md:grid-cols-3" use:staggeredCardReveal>
@@ -316,8 +340,8 @@
 <section class="bg-surface py-16 md:py-24" use:sectionReveal>
   <div class="container-shell grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
     <div>
-      <SectionHeader eyebrow="Good to know" title="Tanzania Safari FAQs" description="Honest answers to the questions travellers ask most." />
-      <a class="mt-6 inline-flex h-12 items-center gap-2 rounded-full bg-[#25D366] px-6 font-bold text-white shadow-sm transition hover:brightness-105" href="/contact"><MessageCircle size={18} /> Ask us on WhatsApp</a>
+      <SectionHeader eyebrow={cmsExtra('faq', 'eyebrow', 'Good to know')} title={cms('faq', 'title', 'Tanzania Safari FAQs')} description={cms('faq', 'subtitle', 'Honest answers to the questions travellers ask most.')} />
+      <a class="mt-6 inline-flex h-12 items-center gap-2 rounded-full bg-[#25D366] px-6 font-bold text-white shadow-sm transition hover:brightness-105" href={cms('faq', 'button_url', '/contact')}><MessageCircle size={18} /> {cms('faq', 'button_text', 'Ask us on WhatsApp')}</a>
     </div>
     <FAQAccordion {faqs} />
   </div>
@@ -346,7 +370,7 @@
 
     <div class="container-shell relative py-16 text-center md:py-24" use:fadeUpOnScroll={{ y: 18 }}>
       <div class="mx-auto max-w-3xl">
-        <p class="font-serif text-xl italic text-savanna">Start Your Journey</p>
+        <p class="font-serif text-xl italic text-savanna">{cmsExtra('final_cta', 'eyebrow', 'Start Your Journey')}</p>
 
         <h2 class="mt-5 text-3xl font-extrabold leading-[1.1] tracking-normal md:text-[44px]">
           {cms('final_cta', 'title', 'Ready to Plan Your East Africa Adventure?')}
@@ -374,7 +398,7 @@
         </div>
 
         <div class="mt-10 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-sm font-medium text-white/70">
-          {#each ['Local experts', 'No payment to plan', 'Honest, tailored advice'] as point}
+          {#each ctaTrustPoints as point}
             <span class="inline-flex items-center gap-2">
               <span class="grid h-5 w-5 place-items-center rounded-full bg-goldfinch-gold/20 text-goldfinch-gold">
                 <Check size={12} strokeWidth={3} />
