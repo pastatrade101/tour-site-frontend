@@ -14,7 +14,6 @@
   import LodgeCard from '$lib/components/public/LodgeCard.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
-  import { placeholderDestinations } from '$lib/data/placeholders';
   import { breadcrumbLd } from '$lib/seo';
   import { FileCheck, HeartPulse, Phone, Plane, Shield, ShieldCheck } from '@lucide/svelte';
   import type { Activity, BlogPost, Destination, Lodge, Tour, TripPoint } from '$lib/types';
@@ -96,7 +95,7 @@
       trackEvent('destination_page_view', { destination: destination?.name });
     } catch (requestError) {
       error = requestError instanceof Error ? requestError.message : 'Unable to load destination.';
-      destination = placeholderDestinations.find((item) => item.slug === slug) ?? placeholderDestinations[0];
+      destination = null;
     } finally {
       loading = false;
     }

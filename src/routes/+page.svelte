@@ -22,7 +22,6 @@
   import PriceRangeBlock from '$lib/components/public/PriceRangeBlock.svelte';
   import TourPackages from '$lib/components/public/TourPackages.svelte';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
-  import { placeholderDestinations, placeholderFaqs, placeholderPosts, placeholderTestimonials, placeholderTours } from '$lib/data/placeholders';
   import type { BlogPost, Destination, FAQ, Testimonial, Tour } from '$lib/types';
   import type { PageData } from './$types';
 
@@ -40,14 +39,14 @@
     title?: string | null;
   };
 
-  // Above-the-fold content is SSR-loaded in +page.ts (hero config, featured tours,
-  // destinations) so the landing page arrives rendered. Below-the-fold lists
-  // (posts, testimonials, faqs) are filled in onMount.
-  let tours: Tour[] = data.tours.length ? data.tours : placeholderTours;
-  let destinations: Destination[] = data.destinations.length ? data.destinations : placeholderDestinations;
-  let posts: BlogPost[] = placeholderPosts;
-  let testimonials: Testimonial[] = placeholderTestimonials;
-  let faqs: FAQ[] = placeholderFaqs;
+  // Real CMS content only — no fabricated placeholder fallbacks. Above-the-fold
+  // (tours, destinations, hero config) is SSR-loaded in +page.ts; below-the-fold
+  // lists are filled in onMount. Any section with an empty list hides itself.
+  let tours: Tour[] = data.tours ?? [];
+  let destinations: Destination[] = data.destinations ?? [];
+  let posts: BlogPost[] = [];
+  let testimonials: Testimonial[] = [];
+  let faqs: FAQ[] = [];
   let sections: Record<string, HomeSection> = Object.fromEntries(
     (data.homeSections as unknown as HomeSection[]).map((s) => [s.section_key, s])
   );
@@ -166,13 +165,13 @@
         api.testimonials.list({ limit: 6 }),
         api.faqs.list({ limit: 5 })
       ]);
-      posts = postResponse.data.items.length ? postResponse.data.items : placeholderPosts;
-      testimonials = testimonialResponse.data.items.length ? testimonialResponse.data.items : placeholderTestimonials;
-      faqs = faqResponse.data.items.length ? faqResponse.data.items : placeholderFaqs;
+      posts = postResponse.data.items ?? [];
+      testimonials = testimonialResponse.data.items ?? [];
+      faqs = faqResponse.data.items ?? [];
     } catch {
-      posts = placeholderPosts;
-      testimonials = placeholderTestimonials;
-      faqs = placeholderFaqs;
+      posts = [];
+      testimonials = [];
+      faqs = [];
     }
   });
 </script>
@@ -192,7 +191,8 @@
 <!-- 2 · Intro + stats -->
 <IntroBand {...introProps} />
 
-<!-- 3 · Safari Packages (overlay image cards) -->
+<!-- 3 · Safari Packages — hidden when there are no destinations -->
+{#if destinations.length}
 <section class="bg-surface py-16 md:py-24" use:sectionReveal>
   <div class="container-shell">
     <div class="mx-auto max-w-2xl text-center" use:fadeUpOnScroll={{ y: 14 }}>
@@ -221,12 +221,15 @@
     </div>
   </div>
 </section>
+{/if}
 
 <!-- 4 · Your Safari, Your Way -->
 <WhyGoldfinch {...whyProps} />
 
-<!-- 5 · Top Tour Packages (filter tabs + can't-find band) -->
-<TourPackages {tours} {...tourProps} />
+<!-- 5 · Top Tour Packages — hidden when there are no tours -->
+{#if tours.length}
+  <TourPackages {tours} {...tourProps} />
+{/if}
 
 <!-- 6 · Typical cost -->
 <section class="bg-sand/40 py-16 md:py-24" use:sectionReveal>
@@ -289,7 +292,8 @@
   subtitle={cms('reviews_section', 'subtitle', 'Verified ratings from travellers across TripAdvisor, SafariBookings and Google.')}
 />
 
-<!-- 10 · Reviews + partner logos -->
+<!-- 10 · Reviews — hidden when there are no testimonials -->
+{#if testimonials.length}
 <section class="bg-surface py-16 md:py-24" use:sectionReveal>
   <div class="container-shell">
     <div class="mx-auto max-w-2xl text-center" use:fadeUpOnScroll={{ y: 14 }}>
@@ -308,12 +312,14 @@
     </div>
   </div>
 </section>
+{/if}
 
 {#if partnersActive}
   <PartnerStrip logos={partnerLogos} title={cms('partners', 'title', 'Trusted by leading travel partners')} />
 {/if}
 
-<!-- 11 · Blog -->
+<!-- 11 · Blog — hidden when there are no posts -->
+{#if posts.length}
 <section class="bg-canvas py-16 md:py-24" use:sectionReveal>
   <div class="container-shell">
     <div class="flex flex-wrap items-end justify-between gap-4">
@@ -327,6 +333,7 @@
     </div>
   </div>
 </section>
+{/if}
 
 <!-- 12 · Impact -->
 <ImpactBand {...impactProps} />
@@ -334,7 +341,6 @@
 <!-- 13 · FAQ -->
 {#if faqs.length}
   <JsonLd data={faqLd(faqs.map((f) => ({ q: f.question, a: f.answer })))} />
-{/if}
 <section class="bg-surface py-16 md:py-24" use:sectionReveal>
   <div class="container-shell grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
     <div>
@@ -344,6 +350,7 @@
     <FAQAccordion {faqs} />
   </div>
 </section>
+{/if}
 
 {#if sections.final_cta?.is_active !== false && (sections.final_cta?.title || sections.final_cta?.button_text)}
   <section class="relative w-full overflow-hidden text-white" use:sectionReveal>

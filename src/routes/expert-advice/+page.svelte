@@ -5,10 +5,8 @@
   import { openAiAdvisor } from '$lib/aiAdvisor';
   import { fadeUpOnScroll, revealHeading, staggeredCardReveal } from '$lib/animations';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
-  import EmptyState from '$lib/components/public/EmptyState.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
-  import { placeholderFaqs, placeholderPosts } from '$lib/data/placeholders';
   import { aiAdvisorEnabled, publicSettings } from '$lib/settings';
   import type { BlogPost, FAQ } from '$lib/types';
 
@@ -33,8 +31,8 @@
       api.blog.list({ status: 'published', limit: 24 }),
       api.faqs.list({ limit: 8 })
     ]);
-    posts = postRes.status === 'fulfilled' && postRes.value.data.items.length ? postRes.value.data.items : placeholderPosts;
-    faqs = faqRes.status === 'fulfilled' && faqRes.value.data.items.length ? faqRes.value.data.items : placeholderFaqs;
+    posts = postRes.status === 'fulfilled' ? postRes.value.data.items : [];
+    faqs = faqRes.status === 'fulfilled' ? faqRes.value.data.items : [];
     loading = false;
   });
 </script>
@@ -92,6 +90,7 @@
 {/if}
 
 <!-- Latest guides -->
+{#if loading || posts.length}
 <section class="bg-sand/30 py-12 md:py-16">
   <div class="container-shell">
     <p class="font-serif text-xl italic text-clay">Guides</p>
@@ -101,8 +100,6 @@
     <div class="mt-8">
       {#if loading}
         <LoadingState message="Loading guides..." />
-      {:else if posts.length === 0}
-        <EmptyState title="Guides coming soon" message="We're writing honest planning guides — in the meantime, ask our AI advisor anything." />
       {:else}
         <div class="grid gap-6 md:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.06 }}>
           {#each posts as post (post.slug)}
@@ -127,6 +124,7 @@
     </div>
   </div>
 </section>
+{/if}
 
 <!-- FAQ -->
 {#if faqs.length}

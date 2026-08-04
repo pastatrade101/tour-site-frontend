@@ -10,15 +10,14 @@
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import ScoreBars from '$lib/components/public/ScoreBars.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
-  import { placeholderDestinations } from '$lib/data/placeholders';
   import type { Destination, Tour } from '$lib/types';
   import type { PageData } from './$types';
 
   export let data: PageData;
 
-  // Destinations are SSR-loaded in +page.ts, so the cards are in the initial HTML
-  // (no loading flash). Fall back to bundled placeholders only if the load failed.
-  let destinations: Destination[] = data.destinations.length ? data.destinations : placeholderDestinations;
+  // Destinations are SSR-loaded in +page.ts (real CMS content only — no fabricated
+  // placeholders). An empty list renders a friendly empty state below.
+  let destinations: Destination[] = data.destinations ?? [];
   let loading = false;
   let activeCountry = 'All';
   let relatedTours: Tour[] = [];
@@ -184,7 +183,11 @@
    {/key}
   </section>
 {:else}
-  <section class="container-shell py-20 text-center text-ink/70">No destinations yet.</section>
+  <section class="container-shell py-24 text-center">
+    <h1 class="text-3xl font-semibold text-heading md:text-4xl">Destinations coming soon</h1>
+    <p class="mx-auto mt-3 max-w-md text-[15px] leading-7 text-ink/65">We’re curating our East Africa destinations. In the meantime, tell us where you’d love to go and a local expert will help you plan.</p>
+    <a href="/plan-my-trip" class="mt-7 inline-flex h-12 items-center gap-2 rounded-full bg-goldfinch-gold px-7 font-bold text-heading shadow-sm transition hover:brightness-105">Plan my trip <ArrowRight size={18} /></a>
+  </section>
 {/if}
 
 <style>

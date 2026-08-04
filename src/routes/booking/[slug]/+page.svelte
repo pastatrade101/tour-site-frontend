@@ -5,10 +5,9 @@
   import { api } from '$lib/api/client';
   import { revealHeading } from '$lib/animations';
   import BookingForm from '$lib/components/public/BookingForm.svelte';
-  import { placeholderTours } from '$lib/data/placeholders';
   import type { Tour } from '$lib/types';
 
-  let tour: Tour = placeholderTours[0];
+  let tour: Tour | null = null;
   let loading = true;
 
   const rel = (value: unknown, key: string) => {
@@ -17,23 +16,24 @@
     return '';
   };
 
-  $: destination = rel((tour as Record<string, unknown>).destinations, 'name');
-  $: heroImage = tour.main_image_url || tour.banner_image_url || '';
-  $: durationLabel = tour.duration_days ? `${tour.duration_days} days${tour.duration_nights ? ` / ${tour.duration_nights} nights` : ''}` : '';
+  $: destination = tour ? rel((tour as Record<string, unknown>).destinations, 'name') : '';
+  $: heroImage = tour ? tour.main_image_url || tour.banner_image_url || '' : '';
+  $: durationLabel = tour?.duration_days ? `${tour.duration_days} days${tour.duration_nights ? ` / ${tour.duration_nights} nights` : ''}` : '';
 
   onMount(async () => {
     const slug = $page.params.slug ?? '';
     try {
       const response = await api.tours.get(slug);
-      tour = response.data;
+      tour = response.data ?? null;
     } catch {
-      tour = placeholderTours.find((item) => item.slug === slug) ?? placeholderTours[0];
+      tour = null;
     } finally {
       loading = false;
     }
   });
 </script>
 
+{#if tour}
 <section class="container-shell grid items-start gap-10 py-12 lg:grid-cols-[0.85fr_1.15fr] lg:py-16">
   <!-- tour summary -->
   <aside class="lg:sticky lg:top-24">
@@ -84,3 +84,11 @@
     <BookingForm {tour} />
   </div>
 </section>
+{:else if !loading}
+  <section class="container-shell flex flex-col items-center justify-center py-24 text-center">
+    <p class="font-serif text-xl italic text-clay">Booking</p>
+    <h1 class="mt-2 text-3xl font-bold tracking-normal text-heading md:text-4xl">Booking not found</h1>
+    <p class="mt-4 max-w-md text-sm leading-6 text-ink/65">We couldn't find the tour you're trying to book. It may no longer be available.</p>
+    <a href="/tours" class="mt-8 inline-flex items-center rounded-full bg-forest px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-forest/90">Browse tours</a>
+  </section>
+{/if}

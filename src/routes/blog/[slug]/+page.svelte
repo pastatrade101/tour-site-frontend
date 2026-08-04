@@ -9,13 +9,12 @@
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
-  import { placeholderPosts } from '$lib/data/placeholders';
   import { breadcrumbLd } from '$lib/seo';
   import type { BlogPost, Destination } from '$lib/types';
 
   $: origin = $page.url.origin;
 
-  let post: BlogPost = placeholderPosts[0];
+  let post: BlogPost | null = null;
   let loading = true;
 
   // Relevant content for onward navigation (loaded best-effort after the article).
@@ -44,9 +43,9 @@
     exploreDestinations = [];
     try {
       const response = await api.blog.get(slug);
-      post = response.data;
+      post = response.data ?? null;
     } catch {
-      post = placeholderPosts.find((item) => item.slug === slug) ?? placeholderPosts[0];
+      post = null;
     } finally {
       loading = false;
     }
@@ -63,6 +62,14 @@
 <article class="container-shell py-14">
   {#if loading}
     <LoadingState message="Loading article..." />
+  {:else if !post}
+    <div class="mx-auto max-w-xl py-20 text-center">
+      <h1 class="text-3xl font-bold text-heading">Story not found</h1>
+      <p class="mt-4 text-lg text-ink/70">We couldn't find the article you were looking for.</p>
+      <a class="mt-8 inline-flex h-11 items-center gap-2 rounded-xl bg-deep-green px-6 font-bold text-white transition hover:bg-forest" href="/blog">
+        Back to the journal <ArrowRight size={16} />
+      </a>
+    </div>
   {:else}
     <JsonLd data={breadcrumbLd(origin, [{ name: 'Home', path: '/' }, { name: 'Expert Advice', path: '/expert-advice' }, { name: post.title, path: `/blog/${post.slug}` }])} />
     <nav class="mb-6 flex items-center gap-2 text-sm">

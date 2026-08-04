@@ -12,7 +12,6 @@
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import RangeSlider from '$lib/components/public/RangeSlider.svelte';
   import TourCardRich from '$lib/components/public/TourCardRich.svelte';
-  import { placeholderTours } from '$lib/data/placeholders';
   import type { Tour } from '$lib/types';
   import type { PageData } from './$types';
 
@@ -33,7 +32,7 @@
 
   // ---- data (allTours is SSR-loaded in +page.ts; filtering is client-side) ----
   export let data: PageData;
-  let allTours: Tour[] = data.tours.length ? data.tours : placeholderTours;
+  let allTours: Tour[] = data.tours ?? [];
   let loading = false;
   let error = '';
 

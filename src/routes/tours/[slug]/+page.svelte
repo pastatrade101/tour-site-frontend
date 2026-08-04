@@ -19,7 +19,6 @@
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
-  import { placeholderTours } from '$lib/data/placeholders';
   import type { BlogPost, Tour } from '$lib/types';
 
   let tour: Tour | null = null;
@@ -129,7 +128,7 @@
       tour = response.data;
     } catch (requestError) {
       error = requestError instanceof Error ? requestError.message : 'Unable to load tour.';
-      tour = placeholderTours.find((item) => item.slug === slug) ?? placeholderTours[0];
+      tour = null;
     } finally {
       loading = false;
     }
