@@ -297,8 +297,12 @@
                     <div class="mt-3 grid grid-cols-2 gap-1">
                       {#each links as link (link.href)}
                         <a class="group/li flex items-center gap-3 rounded-xl p-2 transition hover:bg-sand/60" href={link.href} role="menuitem">
-                          <span class="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-deep-green">
-                            {#if link.image}<img class="h-full w-full object-cover transition duration-500 group-hover/li:scale-105" src={link.image} alt={link.label} loading="lazy" />{/if}
+                          <span class={`grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg ${link.image ? 'bg-deep-green' : 'bg-gradient-to-br from-sand to-savanna/45 ring-1 ring-goldfinch-gold/20'}`}>
+                            {#if link.image}
+                              <img class="h-full w-full object-cover transition duration-500 group-hover/li:scale-105" src={link.image} alt={link.label} loading="lazy" />
+                            {:else}
+                              <svelte:component this={item.dropdown === 'destinations' ? MapPin : Compass} size={18} strokeWidth={2} class="text-forest/55 transition group-hover/li:text-forest" />
+                            {/if}
                           </span>
                           <span class="min-w-0 flex-1">
                             <span class="block truncate text-sm font-bold text-heading transition group-hover/li:text-forest">{link.label}</span>
