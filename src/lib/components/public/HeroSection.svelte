@@ -18,6 +18,11 @@
   export let secondaryCta = 'Explore Tours';
   export let secondaryCtaUrl = '/tours';
   export let trustPoints: string[] = ['Local experts', 'No payment to plan', 'Honest, tailored advice'];
+  // Dark-overlay strength over the hero image, 0–100. 0 = no overlay at all (full
+  // image clarity). Driven per-homepage from the CMS hero section's overlay
+  // opacity slider (Admin → Homepage → hero → Background & overlay).
+  export let overlay = 0;
+  $: overlayOpacity = Math.max(0, Math.min(100, Number(overlay) || 0)) / 100;
 
   // Background image(s): the CMS hero image, or the bundled brand default. The
   // slider only rotates through REAL published-destination photos (added in
@@ -83,9 +88,14 @@
       {/if}
     </div>
   {/each}
-  <!-- overlays: keep the left/bottom dark for legible text -->
-  <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-deep-green/45 to-deep-green/15 dark:from-[#0b100e] dark:via-[#0b100e]/70 dark:to-[#0b100e]/30"></div>
-  <div class="absolute inset-0 bg-gradient-to-r from-deep-green/80 via-deep-green/30 to-transparent dark:from-[#0b100e]/90 dark:via-[#0b100e]/40 dark:to-transparent"></div>
+  <!-- Overlay: CMS-controllable darkness for legible text. 0 = no overlay at all
+       (the layer isn't rendered), so the image shows at full clarity. -->
+  {#if overlayOpacity > 0}
+    <div class="absolute inset-0" style={`opacity:${overlayOpacity}`} aria-hidden="true">
+      <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-deep-green/45 to-deep-green/15 dark:from-[#0b100e] dark:via-[#0b100e]/70 dark:to-[#0b100e]/30"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-deep-green/80 via-deep-green/30 to-transparent dark:from-[#0b100e]/90 dark:via-[#0b100e]/40 dark:to-transparent"></div>
+    </div>
+  {/if}
 
   <!-- content (bottom-left, like the reference) -->
   <div class="relative z-10 mx-auto w-full max-w-[1500px] px-5 pb-20 pt-24 md:px-8 md:pb-24">

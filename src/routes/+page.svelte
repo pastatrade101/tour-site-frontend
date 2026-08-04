@@ -177,6 +177,7 @@
 </script>
 
 <HeroSection
+  overlay={heroExtra.overlay_opacity === undefined || heroExtra.overlay_opacity === null || heroExtra.overlay_opacity === '' ? 0 : (Number(heroExtra.overlay_opacity) || 0) * 100}
   eyebrow={typeof heroExtra.eyebrow === 'string' ? heroExtra.eyebrow : 'Rated 4.9/5 by travellers'}
   title={cms('hero', 'title', 'Witness the Greatest')}
   highlight={typeof heroExtra.title_highlight === 'string' ? heroExtra.title_highlight : 'Wildlife Show on Earth'}
