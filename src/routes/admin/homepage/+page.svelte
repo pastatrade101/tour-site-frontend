@@ -53,6 +53,7 @@
     'gallery_preview',
     'faq_preview',
     'blog_preview',
+    'migration_section',
     'ai_advisor_cta',
     'final_cta',
     'partners',

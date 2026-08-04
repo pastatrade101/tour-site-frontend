@@ -247,6 +247,7 @@
 
 <!-- 7b · Serengeti Great Migration calendar (self-hiding until published entries exist) -->
 <MigrationCalendar
+  active={sections.migration_section?.is_active !== false}
   eyebrow={cmsExtra('migration_section', 'eyebrow', 'Great Migration')}
   title={cms('migration_section', 'title', 'Follow the herds, month by month')}
   subtitle={cms('migration_section', 'subtitle', 'Where the wildebeest and zebra roam across the Serengeti through the year — so you can plan your safari around the action.')}

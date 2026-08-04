@@ -12,6 +12,8 @@
   export let eyebrow = 'Great Migration';
   export let title = 'Follow the herds, month by month';
   export let subtitle = 'Where the wildebeest and zebra roam across the Serengeti through the year — so you can plan your safari around the action.';
+  // Toggle the whole section from Admin → Homepage (migration_section.is_active).
+  export let active = true;
 
   let entries: MigrationEntry[] = [];
   let loaded = false;
@@ -35,7 +37,7 @@
   });
 </script>
 
-{#if hasEntries}
+{#if active && hasEntries}
   <section class="bg-canvas py-16 md:py-24" use:sectionReveal>
     <div class="container-shell">
       <div class="mx-auto max-w-2xl text-center" use:fadeUpOnScroll={{ y: 14 }}>
