@@ -73,7 +73,6 @@
         { href: '/admin/tours', label: 'Tours', icon: Map, exact: true },
         { href: '/admin/categories', label: 'Categories', icon: Tags },
         { href: '/admin/destinations', label: 'Destinations', icon: MapPin },
-        { href: '/admin/countries', label: 'Countries', icon: Globe },
         { href: '/admin/lodges', label: 'Lodges & Camps', icon: Hotel },
         { href: '/admin/activities', label: 'Activities', icon: Compass },
         { href: '/admin/trip-points', label: 'Start & End Points', icon: Plane },

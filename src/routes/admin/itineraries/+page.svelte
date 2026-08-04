@@ -387,10 +387,7 @@
   <AdminPageHeader
     eyebrow="Tour Management"
     title="Itineraries"
-    description="Build day-by-day plans as child records attached to a selected parent tour package."
-    actionLabel="Add Day"
-    actionIcon={Plus}
-    on:action={openCreateModal}
+    description="Pick a tour to build its day-by-day plan — or edit it inside the full tour editor."
   />
 
   <AdminToolbar className="grid gap-3 lg:grid-cols-[1fr_360px] lg:items-end">
