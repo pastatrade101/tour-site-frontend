@@ -207,7 +207,9 @@
     description="Manage tour packages, publishing status, AI matching data, pricing, image assets, and SEO metadata."
     actionLabel="New Tour"
     actionIcon={Plus}
+    secondaryLabel="Import CSV"
     on:action={() => goto('/admin/tours/new')}
+    on:secondary={() => goto('/admin/tours/import')}
   />
 
   <AdminToolbar className="grid gap-3 xl:grid-cols-[1fr_170px_190px_170px_150px_150px_150px_auto] xl:items-end">

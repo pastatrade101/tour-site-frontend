@@ -40,6 +40,7 @@
     Star,
     Tags,
     TriangleAlert,
+    Upload,
     Users,
     Waypoints
   } from '@lucide/svelte';
@@ -79,7 +80,8 @@
         { href: '/admin/itineraries', label: 'Itineraries', icon: Route },
         { href: '/admin/available-dates', label: 'Available Dates', icon: CalendarDays },
         { href: '/admin/pricing-options', label: 'Pricing Options', icon: CircleDollarSign },
-        { href: '/admin/tour-details', label: 'Tour Details', icon: ListCheck }
+        { href: '/admin/tour-details', label: 'Tour Details', icon: ListCheck },
+        { href: '/admin/import', label: 'Import Content (CSV)', icon: Upload }
       ]
     },
     {

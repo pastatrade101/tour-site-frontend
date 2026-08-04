@@ -173,7 +173,27 @@ export const api = {
     get: (slug: string) => apiRequest<Tour>(`/tours/${slug}`),
     create: (body: Record<string, unknown>) => apiRequest<Tour>('/tours', { method: 'POST', body }),
     update: (id: string, body: Record<string, unknown>) => apiRequest<Tour>(`/tours/${id}`, { method: 'PUT', body }),
-    remove: (id: string) => apiRequest(`/tours/${id}`, { method: 'DELETE' })
+    remove: (id: string) => apiRequest(`/tours/${id}`, { method: 'DELETE' }),
+    importCsv: (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return apiRequest<{
+        summary: { total: number; created: number; updated: number; failed: number };
+        results: Array<{
+          line: number;
+          status: 'ok' | 'error';
+          action?: 'created' | 'updated';
+          title?: string;
+          slug?: string;
+          days?: number;
+          inclusions?: number;
+          exclusions?: number;
+          price_options?: number;
+          warnings?: string[];
+          error?: string;
+        }>;
+      }>('/itinerary-import', { method: 'POST', body: formData });
+    }
   },
   departures: {
     list: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>[]>(`/departures${queryString(params)}`)
@@ -332,8 +352,31 @@ export const api = {
     funnel: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/funnel${queryString(params)}`),
     timeseries: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/timeseries${queryString(params)}`),
     traffic: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/traffic${queryString(params)}`),
+    clarity: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/clarity${queryString(params)}`),
+    intelligence: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/website-intelligence${queryString(params)}`),
+    uxInsights: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/ux-insights${queryString(params)}`),
     sessions: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/sessions${queryString(params)}`),
     integrations: () => apiRequest<Record<string, unknown>>('/analytics/integrations')
+  },
+  imports: {
+    entities: () =>
+      apiRequest<{
+        entities: Array<{ key: string; label: string; description: string; keys: string[]; headers: string[]; example: string[] }>;
+      }>('/import/entities'),
+    run: (entity: string, file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return apiRequest<{
+        summary: { total: number; created: number; updated: number; failed: number };
+        results: Array<{ line: number; status: 'ok' | 'error'; action?: 'created' | 'updated'; title?: string; slug?: string; warnings?: string[]; error?: string }>;
+      }>(`/import/${entity}`, { method: 'POST', body: formData });
+    },
+    resetInfo: () => apiRequest<{ tables: string[] }>('/import/reset'),
+    reset: (confirm: string) =>
+      apiRequest<{ total: number; results: Array<{ table: string; deleted: number; error?: string }> }>('/import/reset', {
+        method: 'POST',
+        body: { confirm }
+      })
   },
   payments: {
     list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Record<string, unknown>>>(`/payments${queryString(params)}`),

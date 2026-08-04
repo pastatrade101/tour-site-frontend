@@ -1,6 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
+  import { afterNavigate } from '$app/navigation';
   import { env as publicEnv } from '$env/dynamic/public';
   import { onMount } from 'svelte';
   import '../app.css';
@@ -15,7 +16,8 @@
   import { setupPwaInstall } from '$lib/pwa';
   import { initSmoothScrolling, setupGsap } from '$lib/animations';
   import { api } from '$lib/api/client';
-  import { trackSession } from '$lib/analytics';
+  import { trackSession, trackPageView } from '$lib/analytics';
+  import { loadClarity } from '$lib/clarity';
   import { applyBranding, branding } from '$lib/branding';
   import { SITE_URL } from '$lib/config/env';
   import { aiAdvisorEnabled, loadPublicSettings, publicSettings } from '$lib/settings';
@@ -100,11 +102,17 @@
     }
   };
 
+  // Local dev / preview hosts must never pollute the production GA4 / Clarity data.
+  const isProdHost = () =>
+    browser && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname) && !window.location.hostname.endsWith('.local');
+
   // Load GA4 (gtag) on the public site — gated by consent ('granted') above and a
-  // configured PUBLIC_GA4_MEASUREMENT_ID. This activates trackEvent's GA4 path.
+  // configured PUBLIC_GA4_MEASUREMENT_ID. send_page_view is off so the SPA page-view
+  // tracker (afterNavigate → trackPageView) is the single source of truth; we send
+  // the current page once here to catch the entry page.
   const loadGa4 = () => {
     const id = publicEnv.PUBLIC_GA4_MEASUREMENT_ID;
-    if (!browser || !id || isAdmin || document.getElementById('ga4-src')) return;
+    if (!browser || !id || isAdmin || !isProdHost() || document.getElementById('ga4-src')) return;
     const script = document.createElement('script');
     script.id = 'ga4-src';
     script.async = true;
@@ -114,11 +122,27 @@
     w.dataLayer = w.dataLayer || [];
     w.gtag = function gtag() { w.dataLayer.push(arguments); };
     w.gtag('js', new Date());
-    w.gtag('config', id, { anonymize_ip: true });
+    w.gtag('config', id, { anonymize_ip: true, send_page_view: false });
+    trackPageView();
   };
 
-  // Load GA4 only once the visitor has explicitly granted consent.
-  $: if (browser && $consent === 'granted') loadGa4();
+  // Microsoft Clarity — UX companion to GA4 (session recordings, heatmaps, rage/dead
+  // clicks). Same gates as GA4: consent granted, production host, public site, and a
+  // configured PUBLIC_CLARITY_PROJECT_ID. Clarity handles SPA route changes itself.
+  const loadClarityIfReady = () => {
+    const id = publicEnv.PUBLIC_CLARITY_PROJECT_ID;
+    if (!browser || !id || isAdmin || !isProdHost()) return;
+    loadClarity(id);
+  };
+
+  // Load analytics (GA4 + Clarity) only once the visitor has explicitly granted consent.
+  $: if (browser && $consent === 'granted') { loadGa4(); loadClarityIfReady(); }
+
+  // One page_view per navigation (initial + every client-side route change). Deduped
+  // + query-stripped inside trackPageView. Public site only.
+  afterNavigate(() => {
+    if (!isAdmin) trackPageView();
+  });
 
   onMount(() => {
     void setupGsap();
