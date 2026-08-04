@@ -19,16 +19,12 @@
   export let secondaryCtaUrl = '/tours';
   export let trustPoints: string[] = ['Local experts', 'No payment to plan', 'Honest, tailored advice'];
 
-  const U = '?auto=format&fit=crop&w=1600&q=70';
-  const FALLBACK = [
-    `https://images.unsplash.com/photo-1516426122078-c23e76319801${U}`,
-    `https://images.unsplash.com/photo-1547471080-7cc2caa01a7e${U}`,
-    `https://images.unsplash.com/photo-1605731414532-6b26976cc153${U}`,
-    `https://images.unsplash.com/photo-1535941339077-2dd1c7963098${U}`
-  ];
-
-  // Rotating background images (the headline stays fixed on the brand pitch).
-  let images: string[] = [imageUrl && !imageUrl.startsWith('/images/') ? imageUrl : FALLBACK[0]];
+  // Background image(s): the CMS hero image, or the bundled brand default. The
+  // slider only rotates through REAL published-destination photos (added in
+  // onMount) — no fabricated stock images. With no CMS content it's one clean
+  // brand image, no rotation.
+  const BRAND_FALLBACK = '/images/surf-hero.jpg';
+  let images: string[] = [imageUrl || BRAND_FALLBACK];
   let index = 0;
   let timer: ReturnType<typeof setInterval> | undefined;
   let loaded = new Set<number>([0]);
@@ -72,9 +68,8 @@
         .slice(0, 5);
       images = [first, ...urls.filter((u) => u !== first)];
     } catch {
-      images = [first, ...FALLBACK.filter((u) => u !== first)];
+      images = [first];
     }
-    if (images.length <= 1) images = [first, ...FALLBACK.filter((u) => u !== first)];
     startAuto();
   });
 </script>
