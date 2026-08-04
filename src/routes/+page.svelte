@@ -178,15 +178,15 @@
 
 <HeroSection
   overlay={heroExtra.overlay_opacity === undefined || heroExtra.overlay_opacity === null || heroExtra.overlay_opacity === '' ? 0 : (Number(heroExtra.overlay_opacity) || 0) * 100}
-  eyebrow={typeof heroExtra.eyebrow === 'string' ? heroExtra.eyebrow : 'Rated 4.9/5 by travellers'}
-  title={cms('hero', 'title', 'Witness the Greatest')}
-  highlight={typeof heroExtra.title_highlight === 'string' ? heroExtra.title_highlight : 'Wildlife Show on Earth'}
+  eyebrow={typeof heroExtra.eyebrow === 'string' ? heroExtra.eyebrow : 'Tanzania & East Africa specialists'}
+  title={cms('hero', 'title', 'Tailor-Made East Africa Safaris')}
+  highlight={typeof heroExtra.title_highlight === 'string' ? heroExtra.title_highlight : 'Planned by Local Experts'}
   description={cms('hero', 'subtitle', 'Great Migration river crossings, honest safari, Kilimanjaro and Zanzibar advice — planned around you by Tanzanian local experts.')}
   imageUrl={cms('hero', 'image_url', '/images/surf-hero.jpg')}
   primaryCta={cms('hero', 'button_text', 'Plan My Trip')}
   primaryCtaUrl={cms('hero', 'button_url', '/plan-my-trip')}
-  secondaryCta={typeof heroExtra.secondary_cta_text === 'string' ? heroExtra.secondary_cta_text : 'Explore Tours'}
-  secondaryCtaUrl={typeof heroExtra.secondary_cta_url === 'string' ? heroExtra.secondary_cta_url : '/tours'}
+  secondaryCta={typeof heroExtra.secondary_cta_text === 'string' ? heroExtra.secondary_cta_text : 'Talk to a Travel Advisor'}
+  secondaryCtaUrl={typeof heroExtra.secondary_cta_url === 'string' ? heroExtra.secondary_cta_url : '/contact'}
 />
 
 <!-- 2 · Intro + stats -->

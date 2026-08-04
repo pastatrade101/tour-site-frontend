@@ -78,8 +78,12 @@
     <!-- Body -->
     <div class="flex flex-1 flex-col p-5">
       <p class="text-lg font-extrabold text-forest">
-        From {tour.currency ?? 'USD'} {(tour.price_from ?? 0).toLocaleString()}
-        <span class="text-sm font-semibold text-ink/70">pp</span>
+        {#if tour.price_from}
+          From {tour.currency ?? 'USD'} {tour.price_from.toLocaleString()}
+          <span class="text-sm font-semibold text-ink/70">pp</span>
+        {:else}
+          Price on request
+        {/if}
       </p>
 
       {#if metaBits.length}

@@ -88,7 +88,6 @@
         <a class="w-fit transition hover:text-white" href="/about">About</a>
         <a class="w-fit transition hover:text-white" href="/safety">Health &amp; Safety</a>
         <a class="w-fit transition hover:text-white" href="/contact">Contact</a>
-        <a class="w-fit transition hover:text-white" href="/admin">{brand.adminName}</a>
       </div>
     </div>
   </div>

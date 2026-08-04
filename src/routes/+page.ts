@@ -11,8 +11,8 @@ import { cachedJson } from '$lib/cache';
 export const load: PageLoad = async ({ fetch }) => {
   try {
     const [toursBody, destBody, homeBody] = await Promise.all([
-      cachedJson<{ data?: { items?: Tour[] } }>(`${API_URL}/tours?limit=3`, fetch),
-      cachedJson<{ data?: { items?: Destination[] } }>(`${API_URL}/destinations?limit=3`, fetch),
+      cachedJson<{ data?: { items?: Tour[] } }>(`${API_URL}/tours?status=published&limit=3`, fetch),
+      cachedJson<{ data?: { items?: Destination[] } }>(`${API_URL}/destinations?status=published&limit=3`, fetch),
       cachedJson<{ data?: Record<string, unknown>[] }>(`${API_URL}/homepage`, fetch)
     ]);
     return {

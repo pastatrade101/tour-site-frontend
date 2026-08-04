@@ -6,6 +6,7 @@
   import { revealHeading } from '$lib/animations';
   import { brand } from '$lib/brand';
   import { imgUrl } from '$lib/img';
+  import { trackEvent } from '$lib/analytics';
   import type { Destination } from '$lib/types';
 
   export let eyebrow = 'Rated 4.9/5 by travellers';
@@ -17,7 +18,7 @@
   export let primaryCtaUrl = '/plan-my-trip';
   export let secondaryCta = 'Explore Tours';
   export let secondaryCtaUrl = '/tours';
-  export let trustPoints: string[] = ['Local experts', 'No payment to plan', 'Honest, tailored advice'];
+  export let trustPoints: string[] = ['Local experts', 'Tailor-made itineraries', 'No payment to start planning'];
   // Dark-overlay strength over the hero image, 0–100. 0 = no overlay at all (full
   // image clarity). Driven per-homepage from the CMS hero section's overlay
   // opacity slider (Admin → Homepage → hero → Background & overlay).
@@ -114,10 +115,10 @@
       </p>
 
       <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <a class="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full bg-goldfinch-gold px-8 font-bold text-heading shadow-lg transition hover:brightness-105 sm:w-auto" href={primaryCtaUrl}>
+        <a class="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full bg-goldfinch-gold px-8 font-bold text-heading shadow-lg transition hover:brightness-105 sm:w-auto" href={primaryCtaUrl} on:click={() => trackEvent('cta_click', { cta_name: primaryCta, cta_location: 'hero', cta_type: 'primary' })}>
           {primaryCta} <ArrowRight size={18} strokeWidth={2.6} />
         </a>
-        <a class="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full border border-white/45 bg-white/5 px-8 font-semibold text-white backdrop-blur transition hover:bg-white/15 sm:w-auto" href={secondaryCtaUrl}>
+        <a class="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full border border-white/45 bg-white/5 px-8 font-semibold text-white backdrop-blur transition hover:bg-white/15 sm:w-auto" href={secondaryCtaUrl} on:click={() => trackEvent('cta_click', { cta_name: secondaryCta, cta_location: 'hero', cta_type: 'secondary' })}>
           {secondaryCta}
         </a>
       </div>

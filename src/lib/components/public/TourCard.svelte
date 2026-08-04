@@ -29,11 +29,11 @@
       {/if}
     </div>
     <div class="flex flex-1 flex-col p-5">
-      <p class="text-sm font-semibold text-clay">{tour.duration_days ?? 1} days</p>
+      <p class="text-sm font-semibold text-clay">{tour.duration_days ? `${tour.duration_days} ${tour.duration_days === 1 ? 'day' : 'days'}` : 'Customisable itinerary'}</p>
       <h3 class="mt-2 text-xl font-bold tracking-normal text-ink">{tour.title}</h3>
-      <p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/70">{tour.short_description}</p>
+      {#if tour.short_description}<p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/70">{tour.short_description}</p>{/if}
       <div class="mt-auto flex items-center justify-between pt-5 text-sm">
-        <span class="font-semibold text-forest">From {tour.currency ?? 'USD'} {tour.price_from ?? 0}</span>
+        <span class="font-semibold text-forest">{#if tour.price_from}From {tour.currency ?? 'USD'} {tour.price_from.toLocaleString()}{:else}Price on request{/if}</span>
         <span class="font-semibold text-ink">View</span>
       </div>
     </div>
