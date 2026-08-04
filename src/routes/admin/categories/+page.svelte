@@ -7,6 +7,7 @@
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminFileUpload from '$lib/components/admin/AdminFileUpload.svelte';
+  import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
@@ -53,7 +54,8 @@
   };
 
   type IconAssetMode = 'none' | 'icon_url' | 'icon_upload' | 'lottie_url' | 'lottie_upload';
-  type ImageAssetMode = 'none' | 'image_url' | 'image_upload';
+
+  type MediaItem = { file_name: string; file_url: string; id: string; thumbnail_url?: string | null };
 
   type Toast = {
     id: string;
@@ -91,13 +93,9 @@
     { label: 'Upload Lottie file', value: 'lottie_upload' }
   ];
 
-  const imageAssetOptions = [
-    { label: 'No category image', value: 'none' },
-    { label: 'Paste image URL', value: 'image_url' },
-    { label: 'Upload image file', value: 'image_upload' }
-  ];
-
   let rows: Category[] = [];
+  let mediaItems: MediaItem[] = [];
+  let loadingMedia = false;
   let loading = true;
   let saving = false;
   let deleting = false;
@@ -111,9 +109,7 @@
   let categoryToDelete: Category | null = null;
   let form = emptyForm();
   let iconAssetMode: IconAssetMode = 'none';
-  let imageAssetMode: ImageAssetMode = 'none';
   let lastIconAssetMode: IconAssetMode = 'none';
-  let lastImageAssetMode: ImageAssetMode = 'none';
   let toasts: Toast[] = [];
 
   const slugify = (value: string) =>
@@ -133,10 +129,18 @@
     lastIconAssetMode = iconAssetMode;
   }
 
-  $: if (modalOpen && imageAssetMode !== lastImageAssetMode) {
-    form.image_url = '';
-    lastImageAssetMode = imageAssetMode;
-  }
+  const loadMedia = async () => {
+    if (mediaItems.length || loadingMedia) return;
+    loadingMedia = true;
+    try {
+      const res = await api.media.list({ file_type: 'image', limit: 200 });
+      mediaItems = (res.data.items as unknown as MediaItem[]).filter((m) => m.file_url);
+    } catch (requestError) {
+      showToast(requestError instanceof Error ? requestError.message : 'Unable to load media library.', 'error');
+    } finally {
+      loadingMedia = false;
+    }
+  };
 
   const showToast = (message: string, type: Toast['type'] = 'success') => {
     const id = crypto.randomUUID();
@@ -168,18 +172,17 @@
     }
   };
 
-  const openCreateModal = () => {
+  const openCreateModal = async () => {
     editingCategory = null;
     form = emptyForm();
     iconAssetMode = 'none';
-    imageAssetMode = 'none';
     lastIconAssetMode = iconAssetMode;
-    lastImageAssetMode = imageAssetMode;
     slugManuallyEdited = false;
     modalOpen = true;
+    await loadMedia();
   };
 
-  const openEditModal = (category: Category) => {
+  const openEditModal = async (category: Category) => {
     editingCategory = category;
     form = {
       description: category.description ?? '',
@@ -197,11 +200,10 @@
       status: category.status ?? 'draft'
     };
     iconAssetMode = category.lottie_url ? 'lottie_url' : category.icon_url ? 'icon_url' : 'none';
-    imageAssetMode = category.image_url ? 'image_url' : 'none';
     lastIconAssetMode = iconAssetMode;
-    lastImageAssetMode = imageAssetMode;
     slugManuallyEdited = true;
     modalOpen = true;
+    await loadMedia();
   };
 
   const closeModal = () => {
@@ -210,9 +212,7 @@
     slugManuallyEdited = false;
     form = emptyForm();
     iconAssetMode = 'none';
-    imageAssetMode = 'none';
     lastIconAssetMode = iconAssetMode;
-    lastImageAssetMode = imageAssetMode;
   };
 
   const payload = () => ({
@@ -221,7 +221,7 @@
     fitness: form.fitness || null,
     highlights: form.highlights.split('\n').map((s) => s.trim()).filter(Boolean),
     icon_url: iconAssetMode === 'icon_url' || iconAssetMode === 'icon_upload' ? form.icon_url || null : null,
-    image_url: imageAssetMode === 'image_url' || imageAssetMode === 'image_upload' ? form.image_url || null : null,
+    image_url: form.image_url.trim() || null,
     lottie_url: iconAssetMode === 'lottie_url' || iconAssetMode === 'lottie_upload' ? form.lottie_url || null : null,
     meta_description: form.meta_description || null,
     meta_title: form.meta_title || null,
@@ -458,28 +458,10 @@
           <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
             <div>
               <h3 class="text-base font-semibold text-ink">Category image</h3>
-              <p class="mt-1 text-sm text-ink/55">Choose one image source for category cards and headers.</p>
+              <p class="mt-1 text-sm text-ink/55">Pick from the Media Library, upload a new file, or paste a URL. Used for category cards, headers and the Tours menu thumbnails.</p>
             </div>
 
-            <AdminSelect label="Source" name="image_asset_mode" bind:value={imageAssetMode} options={imageAssetOptions} />
-
-            {#if imageAssetMode === 'image_url'}
-              <AdminFormInput label="Image URL" name="image_url" bind:value={form.image_url} placeholder="https://..." />
-            {:else if imageAssetMode === 'image_upload'}
-              <AdminFileUpload
-                label="Upload image file"
-                folder="categories/images"
-                value={form.image_url}
-                helper="Use a local png, jpg, or webp category image."
-                on:uploaded={(event) => {
-                  form.image_url = event.detail.url;
-                  showToast('Category image uploaded successfully.');
-                }}
-                on:error={(event) => showToast(event.detail, 'error')}
-              />
-            {:else}
-              <p class="rounded-2xl border border-dashed border-ink/15 bg-surface px-3 py-3 text-sm text-ink/55">No category image will be saved.</p>
-            {/if}
+            <MediaPicker label="Category image" media={mediaItems} uploadFolder="categories/images" aspect="aspect-[16/9]" bind:value={form.image_url} />
           </section>
         </div>
 
