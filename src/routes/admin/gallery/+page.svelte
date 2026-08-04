@@ -14,6 +14,8 @@
     Plus,
     Search,
     Trash2,
+    Upload,
+    UploadCloud,
     X
   } from '@lucide/svelte';
   import { api } from '$lib/api/client';
@@ -256,6 +258,94 @@
     return { icon: ImageIcon, classes: 'bg-sky-50 text-sky-600 ring-sky-200/60' };
   };
 
+  // ── bulk upload: add many images at once, one gallery item per image ────────
+  type BulkFile = { id: string; name: string; title: string; status: 'uploading' | 'done' | 'error'; url?: string; thumb?: string; error?: string };
+
+  let bulkOpen = false;
+  let bulkFiles: BulkFile[] = [];
+  let bulkShared = { status: 'draft' as GalleryItem['status'], media_type: 'image' as GalleryItem['media_type'], destination_id: '', tour_id: '', sort_order: '0' };
+  let bulkCreating = false;
+  let bulkDragging = false;
+  let bulkInput: HTMLInputElement;
+
+  $: bulkReady = bulkFiles.filter((f) => f.status === 'done' && f.url);
+  $: bulkUploading = bulkFiles.some((f) => f.status === 'uploading');
+
+  const prettyTitle = (name: string) => name.replace(/\.[^./\\]+$/, '').replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+
+  const openBulk = () => {
+    bulkFiles = [];
+    bulkShared = { status: 'draft', media_type: 'image', destination_id: '', tour_id: '', sort_order: '0' };
+    bulkOpen = true;
+  };
+  const closeBulk = () => { bulkOpen = false; bulkFiles = []; };
+  const removeBulk = (id: string) => { bulkFiles = bulkFiles.filter((f) => f.id !== id); };
+  const setBulk = (id: string, patch: Partial<BulkFile>) => { bulkFiles = bulkFiles.map((f) => (f.id === id ? { ...f, ...patch } : f)); };
+
+  const uploadOne = async (bf: BulkFile, file: File) => {
+    try {
+      const res = await api.upload.image(file, 'gallery');
+      const data = res.data as { url: string; media?: { thumbnail_url?: string | null } };
+      setBulk(bf.id, { status: 'done', url: data.url, thumb: data.media?.thumbnail_url ?? data.url });
+    } catch (err) {
+      setBulk(bf.id, { status: 'error', error: err instanceof Error ? err.message : 'Upload failed.' });
+    }
+  };
+
+  const addFiles = async (files: File[]) => {
+    const images = files.filter((f) => f.type.startsWith('image/'));
+    if (!images.length) { showToast('Only image files can be added.', 'error'); return; }
+    if (images.length !== files.length) showToast('Skipped non-image files.', 'error');
+    const entries = images.map((file) => ({ file, bf: { id: crypto.randomUUID(), name: file.name, title: prettyTitle(file.name), status: 'uploading' as const } as BulkFile }));
+    bulkFiles = [...bulkFiles, ...entries.map((e) => e.bf)];
+    // upload with a small concurrency pool so many files don't hammer the server
+    const queue = [...entries];
+    const worker = async () => { let n; while ((n = queue.shift())) await uploadOne(n.bf, n.file); };
+    await Promise.all([worker(), worker(), worker()]);
+  };
+
+  const onBulkFiles = async (event: Event) => {
+    const input = event.currentTarget as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+    await addFiles(files);
+  };
+  const onBulkDrop = async (event: DragEvent) => {
+    bulkDragging = false;
+    await addFiles(Array.from(event.dataTransfer?.files ?? []));
+  };
+
+  const createBulk = async () => {
+    const ready = bulkFiles.filter((f) => f.status === 'done' && f.url);
+    if (!ready.length) { showToast('Upload at least one image first.', 'error'); return; }
+    bulkCreating = true;
+    const base = Number(bulkShared.sort_order || 0);
+    let ok = 0, failed = 0;
+    for (let i = 0; i < ready.length; i++) {
+      const bf = ready[i];
+      try {
+        await api.gallery.create({
+          alt_text: bf.title.trim() || null,
+          caption: null,
+          destination_id: bulkShared.destination_id || null,
+          image_url: bf.url!.trim(),
+          media_type: bulkShared.media_type,
+          sort_order: base + i,
+          status: bulkShared.status,
+          title: bf.title.trim() || null,
+          tour_id: bulkShared.tour_id || null
+        });
+        ok++;
+      } catch {
+        failed++;
+      }
+    }
+    bulkCreating = false;
+    if (ok) showToast(`${ok} gallery item${ok === 1 ? '' : 's'} created${failed ? ` · ${failed} failed` : ''}.`, failed ? 'error' : 'success');
+    else showToast('Unable to create gallery items.', 'error');
+    if (ok) { closeBulk(); await load(); }
+  };
+
   onMount(async () => {
     await Promise.all([load(), loadRelations()]);
   });
@@ -268,8 +358,10 @@
     eyebrow="Content Management"
     title="Gallery"
     description="Curate published images for the gallery page, destination pages, and tour pages — separate from the Media Library."
+    secondaryLabel="Bulk Upload"
     actionLabel="New Gallery Item"
     actionIcon={Plus}
+    on:secondary={openBulk}
     on:action={openCreate}
   />
 
@@ -453,6 +545,106 @@
       </div>
     </form>
   </div>
+{/if}
+
+{#if bulkOpen}
+  <div class="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4 backdrop-blur-sm" transition:fade={{ duration: 140 }}>
+    <div class="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-[0_24px_80px_rgba(57,61,50,0.18)]" transition:scale={{ duration: 160, start: 0.98 }}>
+      <div class="flex items-start justify-between gap-4 border-b border-ink/10 p-6">
+        <div>
+          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Bulk upload</p>
+          <h2 class="mt-1 text-2xl font-bold text-ink">Add multiple images</h2>
+          <p class="mt-1 text-sm text-ink/60">Upload many images at once — each becomes its own gallery item using the shared settings below.</p>
+        </div>
+        <button class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-ink/10 bg-surface text-ink shadow-sm transition hover:bg-sand" type="button" aria-label="Close" on:click={closeBulk}>
+          <X size={18} />
+        </button>
+      </div>
+
+      <div class="grid gap-5 overflow-y-auto p-6">
+        <!-- shared settings applied to every uploaded image -->
+        <div class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/25 p-4 sm:grid-cols-2 lg:grid-cols-3">
+          <AdminSelect label="Status" name="bulk_status" bind:value={bulkShared.status} options={statusOptions} />
+          <AdminSelect label="Media type" name="bulk_media_type" bind:value={bulkShared.media_type} options={mediaTypeOptions} />
+          <AdminFormInput label="Starting sort order" name="bulk_sort" type="number" bind:value={bulkShared.sort_order} />
+          <AdminSelect label="Linked destination (optional)" name="bulk_destination" bind:value={bulkShared.destination_id} options={destinationOptions} />
+          <AdminSelect label="Linked tour (optional)" name="bulk_tour" bind:value={bulkShared.tour_id} options={tourOptions} />
+        </div>
+
+        <!-- dropzone -->
+        <button
+          type="button"
+          class={`grid place-items-center gap-2 rounded-[10px] border-2 border-dashed px-6 py-10 text-center transition ${bulkDragging ? 'border-forest bg-forest/5' : 'border-ink/20 bg-sand/20 hover:border-forest/50 hover:bg-sand/40'}`}
+          on:click={() => bulkInput.click()}
+          on:dragover|preventDefault={() => (bulkDragging = true)}
+          on:dragleave|preventDefault={() => (bulkDragging = false)}
+          on:drop|preventDefault={onBulkDrop}
+        >
+          <UploadCloud size={28} class="text-forest" />
+          <span class="text-sm font-semibold text-ink">Click to choose images, or drag & drop</span>
+          <span class="text-xs text-ink/50">PNG, JPG or WebP — you can select many at once</span>
+        </button>
+
+        {#if bulkFiles.length}
+          <div class="grid gap-3">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-semibold text-ink">{bulkFiles.length} image{bulkFiles.length === 1 ? '' : 's'} · <span class="text-forest">{bulkReady.length} ready</span>{#if bulkUploading} · <span class="text-ink/50">uploading…</span>{/if}</p>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {#each bulkFiles as f (f.id)}
+                <div class="flex gap-3 rounded-[8px] border border-ink/10 bg-surface p-2.5 shadow-sm">
+                  <div class="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-sand/40">
+                    {#if f.thumb || f.url}
+                      <img class="h-full w-full object-cover" src={f.thumb || f.url} alt={f.title} loading="lazy" />
+                    {:else}
+                      <span class="grid h-full w-full place-items-center text-ink/30"><ImageIcon size={20} /></span>
+                    {/if}
+                    {#if f.status === 'uploading'}
+                      <span class="absolute inset-0 grid place-items-center bg-ink/40">
+                        <span class="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+                      </span>
+                    {/if}
+                  </div>
+                  <div class="grid min-w-0 flex-1 content-start gap-1.5">
+                    <input
+                      class="w-full rounded-md border border-ink/12 bg-surface px-2 py-1.5 text-xs font-medium text-ink outline-none focus:border-forest focus:ring-2 focus:ring-forest/15"
+                      value={f.title}
+                      placeholder="Image title"
+                      aria-label="Image title"
+                      on:input={(e) => setBulk(f.id, { title: (e.currentTarget as HTMLInputElement).value })}
+                    />
+                    {#if f.status === 'error'}
+                      <span class="truncate text-[11px] font-semibold text-red-600" title={f.error}>Failed — {f.error}</span>
+                    {:else if f.status === 'done'}
+                      <span class="text-[11px] font-semibold text-forest">Ready</span>
+                    {:else}
+                      <span class="text-[11px] text-ink/45">Uploading…</span>
+                    {/if}
+                  </div>
+                  <button type="button" class="grid h-7 w-7 shrink-0 place-items-center self-start rounded-lg border border-ink/10 text-ink/50 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600" aria-label="Remove" on:click={() => removeBulk(f.id)}>
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </div>
+
+      <div class="flex flex-col-reverse gap-3 border-t border-ink/10 p-6 sm:flex-row sm:justify-between">
+        <button type="button" class="inline-flex h-11 items-center gap-1.5 rounded-xl border border-ink/12 bg-surface px-4 text-sm font-semibold text-ink/75 transition hover:bg-sand disabled:opacity-60" on:click={() => bulkInput.click()} disabled={bulkCreating}>
+          <Upload size={15} /> Add more
+        </button>
+        <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <AdminButton variant="secondary" type="button" on:click={closeBulk}>Cancel</AdminButton>
+          <AdminButton type="button" disabled={bulkCreating || bulkUploading || bulkReady.length === 0} on:click={createBulk}>
+            {bulkCreating ? 'Creating…' : `Create ${bulkReady.length} gallery item${bulkReady.length === 1 ? '' : 's'}`}
+          </AdminButton>
+        </div>
+      </div>
+    </div>
+  </div>
+  <input class="hidden" type="file" accept="image/png,image/jpeg,image/webp" multiple bind:this={bulkInput} on:change={onBulkFiles} />
 {/if}
 
 <ConfirmModal
