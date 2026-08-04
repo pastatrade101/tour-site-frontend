@@ -231,7 +231,8 @@
   <TourPackages {tours} {...tourProps} />
 {/if}
 
-<!-- 6 · Typical cost -->
+<!-- 6 · Typical cost — hidden when there are no CMS price ranges -->
+{#if sections.cost_ranges?.is_active !== false && costRanges.length}
 <section class="bg-sand/40 py-16 md:py-24" use:sectionReveal>
   <div class="container-shell">
     <PriceRangeBlock
@@ -241,6 +242,7 @@
     />
   </div>
 </section>
+{/if}
 
 <!-- 7 · Best times to visit -->
 <SeasonsBand {...seasonsProps} />

@@ -1,32 +1,16 @@
 <script lang="ts">
   import { ArrowRight, ShieldCheck } from '@lucide/svelte';
 
-  // Honest "typical cost" band (spec §4.1 F / §6). Rows can be overridden from the
-  // CMS (cost_ranges section → extra_data.ranges); otherwise sensible defaults show.
+  // Honest "typical cost" band (spec §4.1 F / §6). Rows come from the CMS
+  // (cost_ranges section → extra_data.ranges); the section hides when there are none.
   export let title = '';
   export let subtitle = '';
   export let ranges: Array<{ label: string; from: string; note?: string; image?: string }> = [];
 
-  const defaults = [
-    { label: 'Safari', from: 'from $1,500', note: 'Guiding, park fees & lodges', image: 'https://images.unsplash.com/photo-1516426122078-c23e76319801' },
-    { label: 'Kilimanjaro', from: 'from $1,900', note: 'Guides, crew, meals & route support', image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b' },
-    { label: 'Zanzibar beach', from: 'from $850', note: 'Beach stays & transfers', image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e' },
-    { label: 'Gorilla trekking', from: 'from $2,400', note: 'Includes the gorilla permit', image: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e' }
-  ];
-
-  // Keyword → image fallback so CMS-provided rows still get a fitting backdrop.
-  const FALLBACK_IMG = 'https://images.unsplash.com/photo-1516426122078-c23e76319801';
-  const imageFor = (row: { label: string; image?: string }) => {
-    if (row.image) return row.image;
-    const s = row.label.toLowerCase();
-    if (/kilimanjaro|trek|climb|mountain/.test(s)) return 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b';
-    if (/beach|zanzibar|coast|island/.test(s)) return 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e';
-    if (/gorilla|primate|chimp/.test(s)) return 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e';
-    if (/migration|safari|wildlife|game/.test(s)) return 'https://images.unsplash.com/photo-1516426122078-c23e76319801';
-    return FALLBACK_IMG;
-  };
-
-  $: rows = ranges.length ? ranges : defaults;
+  // Real CMS rows only — no fabricated default prices or stock images. Rows come
+  // from Admin → Homepage (cost_ranges → extra_data.ranges); the section hides
+  // itself when there are none.
+  $: rows = ranges;
 </script>
 
 <div>
@@ -36,14 +20,16 @@
   <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
     {#each rows as row}
       <div class="group relative flex min-h-[200px] flex-col overflow-hidden rounded-2xl border border-ink/10 bg-surface p-5 shadow-soft transition duration-300 hover:-translate-y-1 hover:border-goldfinch-gold/40 hover:shadow-[0_20px_44px_rgba(57,61,50,0.14)]">
-        <!-- very faint photo texture -->
-        <img
-          class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.08] transition duration-700 group-hover:scale-105 group-hover:opacity-[0.14]"
-          src={imageFor(row)}
-          alt=""
-          aria-hidden="true"
-          loading="lazy"
-        />
+        <!-- very faint photo texture (only when the CMS row provides an image) -->
+        {#if row.image}
+          <img
+            class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.08] transition duration-700 group-hover:scale-105 group-hover:opacity-[0.14]"
+            src={row.image}
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+          />
+        {/if}
         <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-surface/40 via-transparent to-transparent"></div>
         <div class="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-goldfinch-gold/0 via-goldfinch-gold/60 to-goldfinch-gold/0 opacity-0 transition group-hover:opacity-100"></div>
 
