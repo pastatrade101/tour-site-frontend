@@ -62,10 +62,14 @@
   let confirmOpen = false;
   let mediaToEdit: MediaItem | null = null;
   let mediaToDelete: MediaItem | null = null;
-  let uploadFiles: FileList | null = null;
-  let uploadFileName = '';
+  type UploadItem = { id: string; file: File; name: string; size: number; status: 'queued' | 'uploading' | 'done' | 'error'; error?: string };
+  let uploadItems: UploadItem[] = [];
   let uploadAltText = '';
   let uploadCaption = '';
+  let uploadDragging = false;
+  let uploadInput: HTMLInputElement;
+
+  $: uploadPending = uploadItems.filter((u) => u.status === 'queued' || u.status === 'error').length;
   let editAltText = '';
   let editCaption = '';
   let toasts: Toast[] = [];
@@ -120,14 +124,37 @@
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   };
 
-  const handleUploadFileChange = (event: Event) => {
-    uploadFiles = (event.currentTarget as HTMLInputElement).files;
-    uploadFileName = uploadFiles?.[0]?.name ?? '';
+  const MAX_UPLOAD = 5 * 1024 * 1024;
+  const prettyName = (name: string) => name.replace(/\.[^./\\]+$/, '').replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const setUploadItem = (id: string, patch: Partial<UploadItem>) => {
+    uploadItems = uploadItems.map((u) => (u.id === id ? { ...u, ...patch } : u));
   };
 
+  const addUploadFiles = (files: File[]) => {
+    const images = files.filter((f) => f.type.startsWith('image/'));
+    const withinSize = images.filter((f) => f.size <= MAX_UPLOAD);
+    if (images.length !== files.length) showToast('Skipped non-image files.', 'error');
+    const tooBig = images.length - withinSize.length;
+    if (tooBig) showToast(`${tooBig} file${tooBig === 1 ? '' : 's'} over 5MB skipped.`, 'error');
+    uploadItems = [
+      ...uploadItems,
+      ...withinSize.map((file) => ({ id: crypto.randomUUID(), file, name: file.name, size: file.size, status: 'queued' as const }))
+    ];
+  };
+
+  const handleUploadFileChange = (event: Event) => {
+    const input = event.currentTarget as HTMLInputElement;
+    addUploadFiles(Array.from(input.files ?? []));
+    input.value = '';
+  };
+  const onUploadDrop = (event: DragEvent) => {
+    uploadDragging = false;
+    addUploadFiles(Array.from(event.dataTransfer?.files ?? []));
+  };
+  const removeUploadItem = (id: string) => { uploadItems = uploadItems.filter((u) => u.id !== id); };
+
   const resetUpload = () => {
-    uploadFiles = null;
-    uploadFileName = '';
+    uploadItems = [];
     uploadAltText = '';
     uploadCaption = '';
   };
@@ -142,33 +169,42 @@
     resetUpload();
   };
 
-  const uploadMedia = async () => {
-    const file = uploadFiles?.[0];
-    if (!file) {
-      showToast('Choose an image file first.', 'error');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('Image must be 5MB or smaller.', 'error');
-      return;
-    }
-
-    uploading = true;
-
+  const uploadOne = async (item: UploadItem) => {
+    setUploadItem(item.id, { status: 'uploading', error: undefined });
     try {
-      await api.upload.image(file, 'media', {
-        alt_text: uploadAltText,
-        caption: uploadCaption
+      await api.upload.image(item.file, 'media', {
+        alt_text: uploadAltText.trim() || prettyName(item.name),
+        caption: uploadCaption.trim()
       });
-      showToast('Media uploaded successfully.');
-      closeUploadModal();
+      setUploadItem(item.id, { status: 'done' });
+    } catch (requestError) {
+      setUploadItem(item.id, { status: 'error', error: requestError instanceof Error ? requestError.message : 'Upload failed.' });
+    }
+  };
+
+  const uploadMedia = async () => {
+    const pending = uploadItems.filter((u) => u.status === 'queued' || u.status === 'error');
+    if (!pending.length) {
+      showToast('Choose at least one image first.', 'error');
+      return;
+    }
+    uploading = true;
+    // upload with a small concurrency pool so many files don't hammer the server
+    const queue = [...pending];
+    const worker = async () => { let n; while ((n = queue.shift())) await uploadOne(n); };
+    await Promise.all([worker(), worker(), worker()]);
+    uploading = false;
+
+    const ids = new Set(pending.map((p) => p.id));
+    const ok = uploadItems.filter((u) => ids.has(u.id) && u.status === 'done').length;
+    const failed = uploadItems.filter((u) => ids.has(u.id) && u.status === 'error').length;
+    if (ok) {
+      showToast(`${ok} image${ok === 1 ? '' : 's'} uploaded${failed ? ` · ${failed} failed` : ''}.`, failed ? 'error' : 'success');
       page = 1;
       await loadMedia();
-    } catch (requestError) {
-      showToast(requestError instanceof Error ? requestError.message : 'Unable to upload media.', 'error');
-    } finally {
-      uploading = false;
+      if (!failed) closeUploadModal();
+    } else {
+      showToast('Unable to upload media.', 'error');
     }
   };
 
@@ -409,37 +445,81 @@
 
 {#if uploadModalOpen}
   <div class="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4 backdrop-blur-sm" transition:fade={{ duration: 140 }}>
-    <div class="w-full max-w-xl rounded-[10px] border border-ink/10 bg-surface p-6 shadow-[0_24px_80px_rgba(57,61,50,0.18)]" transition:scale={{ duration: 160, start: 0.98 }}>
-      <div class="flex items-start justify-between gap-4">
+    <form class="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-[0_24px_80px_rgba(57,61,50,0.18)]" transition:scale={{ duration: 160, start: 0.98 }} on:submit|preventDefault={uploadMedia}>
+      <div class="flex items-start justify-between gap-4 border-b border-ink/10 p-6">
         <div>
           <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Upload media</p>
-          <h2 class="mt-2 text-2xl font-bold tracking-normal text-ink">Add Image</h2>
+          <h2 class="mt-1 text-2xl font-bold tracking-normal text-ink">Add Images</h2>
+          <p class="mt-1 text-sm text-ink/60">Upload one or many images at once. Alt text &amp; caption below apply to all of them.</p>
         </div>
-        <button class="grid h-10 w-10 place-items-center rounded-2xl border border-ink/10 bg-surface text-ink shadow-sm transition hover:bg-sand" type="button" aria-label="Close modal" on:click={closeUploadModal}>
+        <button class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-ink/10 bg-surface text-ink shadow-sm transition hover:bg-sand" type="button" aria-label="Close modal" on:click={closeUploadModal}>
           <X size={18} />
         </button>
       </div>
 
-      <form class="mt-6 grid gap-4" on:submit|preventDefault={uploadMedia}>
-        <label class="grid gap-2 text-sm font-medium text-ink">
-          <span>Image file</span>
-          <input class="rounded-2xl border border-dashed border-forest/25 bg-sand/25 px-4 py-4 text-sm text-ink file:mr-3 file:rounded-xl file:border-0 file:bg-forest file:px-4 file:py-2 file:text-xs file:font-semibold file:text-white hover:border-goldfinch-gold/45" type="file" accept="image/jpeg,image/png,image/webp" on:change={handleUploadFileChange} />
-          <span class="text-xs text-ink/55">{uploadFileName || 'JPG, PNG, or WebP. Maximum 5MB.'}</span>
-        </label>
+      <div class="grid gap-4 overflow-y-auto p-6">
+        <!-- dropzone -->
+        <button
+          type="button"
+          class={`grid place-items-center gap-2 rounded-[10px] border-2 border-dashed px-6 py-9 text-center transition ${uploadDragging ? 'border-forest bg-forest/5' : 'border-ink/20 bg-sand/20 hover:border-forest/50 hover:bg-sand/40'}`}
+          on:click={() => uploadInput.click()}
+          on:dragover|preventDefault={() => (uploadDragging = true)}
+          on:dragleave|preventDefault={() => (uploadDragging = false)}
+          on:drop|preventDefault={onUploadDrop}
+        >
+          <Upload size={26} class="text-forest" />
+          <span class="text-sm font-semibold text-ink">Click to choose images, or drag &amp; drop</span>
+          <span class="text-xs text-ink/50">JPG, PNG or WebP · max 5MB each · select many at once</span>
+        </button>
 
-        <AdminFormInput label="Alt text" name="upload_alt_text" bind:value={uploadAltText} placeholder="Describe the image for accessibility" />
-        <AdminTextArea label="Caption" name="upload_caption" bind:value={uploadCaption} rows={3} placeholder="Optional CMS caption." />
+        <AdminFormInput label="Alt text (applied to all — blank uses each file name)" name="upload_alt_text" bind:value={uploadAltText} placeholder="Describe the images for accessibility" />
+        <AdminTextArea label="Caption (applied to all, optional)" name="upload_caption" bind:value={uploadCaption} rows={2} placeholder="Optional CMS caption." />
 
-        <div class="flex justify-end gap-3 pt-2">
-          <AdminButton variant="secondary" type="button" on:click={closeUploadModal}>Cancel</AdminButton>
-          <AdminButton type="submit" disabled={uploading}>
-            <Upload size={15} />
-            {uploading ? 'Uploading...' : 'Upload Image'}
-          </AdminButton>
-        </div>
-      </form>
-    </div>
+        {#if uploadItems.length}
+          <div class="grid gap-2">
+            <p class="text-sm font-semibold text-ink">{uploadItems.length} file{uploadItems.length === 1 ? '' : 's'} selected</p>
+            <div class="grid gap-2">
+              {#each uploadItems as u (u.id)}
+                <div class="flex items-center gap-3 rounded-lg border border-ink/10 bg-surface px-3 py-2 shadow-sm">
+                  <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-sand/50 text-ink/45">
+                    {#if u.status === 'uploading'}
+                      <span class="h-4 w-4 animate-spin rounded-full border-2 border-forest/30 border-t-forest"></span>
+                    {:else}
+                      <ImageIcon size={16} />
+                    {/if}
+                  </span>
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-medium text-ink" title={u.name}>{u.name}</p>
+                    <p class="text-[11px] text-ink/50">
+                      {formatFileSize(u.size)}
+                      {#if u.status === 'done'} · <span class="font-semibold text-forest">Uploaded</span>
+                      {:else if u.status === 'error'} · <span class="font-semibold text-red-600" title={u.error}>Failed — {u.error}</span>
+                      {:else if u.status === 'uploading'} · <span class="text-ink/50">Uploading…</span>
+                      {:else} · <span class="text-ink/50">Queued</span>{/if}
+                    </p>
+                  </div>
+                  {#if u.status !== 'uploading'}
+                    <button type="button" class="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-ink/10 text-ink/50 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600" aria-label="Remove" on:click={() => removeUploadItem(u.id)}>
+                      <X size={14} />
+                    </button>
+                  {/if}
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </div>
+
+      <div class="flex justify-end gap-3 border-t border-ink/10 p-6">
+        <AdminButton variant="secondary" type="button" on:click={closeUploadModal}>Cancel</AdminButton>
+        <AdminButton type="submit" disabled={uploading || uploadPending === 0}>
+          <Upload size={15} />
+          {uploading ? 'Uploading…' : `Upload ${uploadPending} image${uploadPending === 1 ? '' : 's'}`}
+        </AdminButton>
+      </div>
+    </form>
   </div>
+  <input class="hidden" type="file" accept="image/jpeg,image/png,image/webp" multiple bind:this={uploadInput} on:change={handleUploadFileChange} />
 {/if}
 
 {#if editModalOpen && mediaToEdit}
