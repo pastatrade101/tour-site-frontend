@@ -23,8 +23,24 @@ const queryString = (params: Record<string, QueryValue> = {}) => {
   return value ? `?${value}` : '';
 };
 
+// Client-only, short-lived cache for ANONYMOUS GETs so repeat / back-forward
+// navigation renders instantly from memory instead of re-fetching the DB. It
+// never caches authenticated (admin) requests, and any write clears it, so a
+// visitor never sees stale content beyond the TTL and admin stays always-fresh.
+type CacheEntry = { at: number; result: unknown };
+const getCache = new Map<string, CacheEntry>();
+const GET_TTL = 5 * 60 * 1000; // 5 minutes
+
 export const apiRequest = async <T>(path: string, options: RequestOptions = {}) => {
   const token = authToken();
+  const method = (options.method ?? 'GET').toUpperCase();
+  const cacheable = browser && !token && method === 'GET';
+
+  if (cacheable) {
+    const hit = getCache.get(path);
+    if (hit && Date.now() - hit.at < GET_TTL) return hit.result as ApiResponse<T>;
+  }
+
   const headers = new Headers(options.headers);
   const isFormData = options.body instanceof FormData;
 
@@ -53,6 +69,10 @@ export const apiRequest = async <T>(path: string, options: RequestOptions = {}) 
   if (!response.ok || !result.success) {
     throw new Error(result.message || 'API request failed.');
   }
+
+  if (cacheable) getCache.set(path, { at: Date.now(), result });
+  // A write may have changed listings — drop the anonymous cache so the next read is fresh.
+  if (browser && method !== 'GET') getCache.clear();
 
   return result;
 };

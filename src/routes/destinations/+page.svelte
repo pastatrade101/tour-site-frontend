@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { fade, fly } from 'svelte/transition';
   import { ArrowRight, Sparkles } from '@lucide/svelte';
   import { browser } from '$app/environment';
@@ -13,25 +12,19 @@
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { placeholderDestinations } from '$lib/data/placeholders';
   import type { Destination, Tour } from '$lib/types';
+  import type { PageData } from './$types';
 
-  let destinations: Destination[] = placeholderDestinations;
-  let loading = true;
+  export let data: PageData;
+
+  // Destinations are SSR-loaded in +page.ts, so the cards are in the initial HTML
+  // (no loading flash). Fall back to bundled placeholders only if the load failed.
+  let destinations: Destination[] = data.destinations.length ? data.destinations : placeholderDestinations;
+  let loading = false;
   let activeCountry = 'All';
   let relatedTours: Tour[] = [];
 
   const reduce = prefersReducedMotion();
   const ms = (n: number) => (reduce ? 0 : n);
-
-  onMount(async () => {
-    try {
-      const res = await api.destinations.list({ status: 'published', limit: 100 });
-      if (res.data.items.length) destinations = res.data.items;
-    } catch {
-      // keep placeholders
-    } finally {
-      loading = false;
-    }
-  });
 
   $: countries = ['All', ...new Set(destinations.map((d) => d.country).filter((c): c is string => Boolean(c)))];
   $: filtered = activeCountry === 'All' ? destinations : destinations.filter((d) => d.country === activeCountry);

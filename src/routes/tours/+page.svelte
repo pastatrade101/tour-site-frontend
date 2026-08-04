@@ -5,7 +5,6 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { trackEvent } from '$lib/analytics';
-  import { api } from '$lib/api/client';
   import { revealHeading, staggeredCardReveal } from '$lib/animations';
   import { EXPERIENCE_TO_CATEGORY, PERSONA_ORDER, PERSONAS } from '$lib/data/personas';
   import EmptyState from '$lib/components/public/EmptyState.svelte';
@@ -15,6 +14,7 @@
   import TourCardRich from '$lib/components/public/TourCardRich.svelte';
   import { placeholderTours } from '$lib/data/placeholders';
   import type { Tour } from '$lib/types';
+  import type { PageData } from './$types';
 
   // ---- canonical comfort tiers ----
   const TIERS = [
@@ -31,9 +31,10 @@
     return v;
   };
 
-  // ---- data ----
-  let allTours: Tour[] = [];
-  let loading = true;
+  // ---- data (allTours is SSR-loaded in +page.ts; filtering is client-side) ----
+  export let data: PageData;
+  let allTours: Tour[] = data.tours.length ? data.tours : placeholderTours;
+  let loading = false;
   let error = '';
 
   // ---- local (non-URL) filter state ----
@@ -59,22 +60,6 @@
   })();
   $: personaCfg = persona ? PERSONAS[persona] : null;
 
-  const load = async () => {
-    loading = true;
-    error = '';
-    try {
-      const res = await api.tours.list({ status: 'published', limit: 100 });
-      const items = res.data.items ?? [];
-      allTours = items.length ? items : placeholderTours;
-    } catch (err) {
-      error = err instanceof Error ? err.message : 'Unable to load tours.';
-      allTours = placeholderTours;
-    } finally {
-      loading = false;
-    }
-    initRanges();
-  };
-
   const initRanges = () => {
     const prices = allTours.map((t) => t.price_from ?? 0).filter((n) => n > 0);
     const durs = allTours.map((t) => t.duration_days ?? 0).filter((n) => n > 0);
@@ -89,7 +74,7 @@
     rangesReady = true;
   };
 
-  onMount(load);
+  onMount(initRanges);
 
   // ---- facet option lists (derived from the loaded tours) ----
   const distinctBy = <T,>(arr: T[], key: (x: T) => string | undefined) => {

@@ -24,6 +24,9 @@
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
   import { placeholderDestinations, placeholderFaqs, placeholderPosts, placeholderTestimonials, placeholderTours } from '$lib/data/placeholders';
   import type { BlogPost, Destination, FAQ, Testimonial, Tour } from '$lib/types';
+  import type { PageData } from './$types';
+
+  export let data: PageData;
 
   type HomeSection = {
     button_text?: string | null;
@@ -37,12 +40,17 @@
     title?: string | null;
   };
 
-  let tours: Tour[] = placeholderTours;
-  let destinations: Destination[] = placeholderDestinations;
+  // Above-the-fold content is SSR-loaded in +page.ts (hero config, featured tours,
+  // destinations) so the landing page arrives rendered. Below-the-fold lists
+  // (posts, testimonials, faqs) are filled in onMount.
+  let tours: Tour[] = data.tours.length ? data.tours : placeholderTours;
+  let destinations: Destination[] = data.destinations.length ? data.destinations : placeholderDestinations;
   let posts: BlogPost[] = placeholderPosts;
   let testimonials: Testimonial[] = placeholderTestimonials;
   let faqs: FAQ[] = placeholderFaqs;
-  let sections: Record<string, HomeSection> = {};
+  let sections: Record<string, HomeSection> = Object.fromEntries(
+    (data.homeSections as unknown as HomeSection[]).map((s) => [s.section_key, s])
+  );
 
   // CMS lookup with a safe fallback so the existing design never breaks.
   const cms = (key: string, field: keyof HomeSection, fallback: string) => {
@@ -149,32 +157,22 @@
     ? arr<string>(ctaExtra.trust_points)
     : ['Local experts', 'No payment to plan', 'Honest, tailored advice'];
 
+  // Below-the-fold lists only — above-the-fold (tours, destinations, sections) is
+  // already in `data` from the SSR load, so we don't refetch it here.
   onMount(async () => {
     try {
-      const [tourResponse, destinationResponse, postResponse, testimonialResponse, faqResponse, homepageResponse] = await Promise.all([
-        api.tours.list({ limit: 3 }),
-        api.destinations.list({ limit: 3 }),
+      const [postResponse, testimonialResponse, faqResponse] = await Promise.all([
         api.blog.list({ limit: 3 }),
         api.testimonials.list({ limit: 6 }),
-        api.faqs.list({ limit: 5 }),
-        api.homepage.get()
+        api.faqs.list({ limit: 5 })
       ]);
-
-      tours = tourResponse.data.items.length ? tourResponse.data.items : placeholderTours;
-      destinations = destinationResponse.data.items.length ? destinationResponse.data.items : placeholderDestinations;
       posts = postResponse.data.items.length ? postResponse.data.items : placeholderPosts;
       testimonials = testimonialResponse.data.items.length ? testimonialResponse.data.items : placeholderTestimonials;
       faqs = faqResponse.data.items.length ? faqResponse.data.items : placeholderFaqs;
-
-      const sectionList = (homepageResponse.data ?? []) as unknown as HomeSection[];
-      sections = Object.fromEntries(sectionList.map((section) => [section.section_key, section]));
     } catch {
-      tours = placeholderTours;
-      destinations = placeholderDestinations;
       posts = placeholderPosts;
       testimonials = placeholderTestimonials;
       faqs = placeholderFaqs;
-      sections = {};
     }
   });
 </script>
