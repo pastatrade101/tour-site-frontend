@@ -5,12 +5,11 @@
   import { ArrowDownToLine, ArrowRight, ChevronDown, ChevronRight, CircleHelp, Compass, Globe, MapPin, Menu, MessageCircle, Search, TicketsPlane, User, X } from '@lucide/svelte';
   import { fade, fly } from 'svelte/transition';
   import { api } from '$lib/api/client';
-  import { openAiAdvisor } from '$lib/aiAdvisor';
   import { trackEvent } from '$lib/analytics';
   import { navbarEntrance } from '$lib/animations';
   import { brand } from '$lib/brand';
   import { imgUrl } from '$lib/img';
-  import { aiAdvisorEnabled, publicSettings, settingText } from '$lib/settings';
+  import { publicSettings, settingText } from '$lib/settings';
   import { canInstall, promptInstall } from '$lib/pwa';
 
   type NavLink = { href: string; label: string; image?: string; description?: string };
@@ -129,7 +128,6 @@
 
   // ── WhatsApp CTA (from public settings, with safe fallback) ─────────────────
   $: s = $publicSettings;
-  $: aiOn = aiAdvisorEnabled(s);
   $: waNumber = settingText(s, 'whatsapp_number') || '+255 700 000 000';
   $: waMessage = settingText(s, 'whatsapp_default_message') || 'Hello Goldfinch Adventures, I would like help planning an East Africa trip.';
   $: waDigits = waNumber.replace(/[^0-9]/g, '');
@@ -247,17 +245,10 @@
       </form>
 
       <div class="flex items-center gap-4 text-[13px] font-semibold">
-        {#if aiOn}
-          <button type="button" class="inline-flex items-center gap-1 text-forest transition hover:text-heading" on:click={() => openAiAdvisor()}>
-            <CircleHelp size={15} strokeWidth={2.6} />
-            Need help?
-          </button>
-        {:else}
-          <a class="inline-flex items-center gap-1 text-forest transition hover:text-heading" href="/contact">
-            <CircleHelp size={15} strokeWidth={2.6} />
-            Need help?
-          </a>
-        {/if}
+        <a class="inline-flex items-center gap-1 text-forest transition hover:text-heading" href="/contact">
+          <CircleHelp size={15} strokeWidth={2.6} />
+          Need help?
+        </a>
         {#if $canInstall}
           <button type="button" class="inline-flex items-center gap-1.5 rounded-full bg-forest px-3 py-1.5 text-white transition hover:bg-deep-green" on:click={() => promptInstall()}>
             <ArrowDownToLine size={14} strokeWidth={2.6} /> Install app
@@ -437,7 +428,10 @@
     <div use:portal class="fixed inset-0 z-[120] lg:hidden" transition:fade={{ duration: 120 }}>
       <button class="absolute inset-0 bg-black/45 backdrop-blur-md" type="button" aria-label="Close menu" on:click={() => (menuOpen = false)}></button>
 
-      <aside class="absolute right-0 top-0 flex min-h-dvh w-[86vw] min-w-[300px] max-w-[380px] flex-col overflow-y-auto border-l border-ink/10 bg-surface px-5 py-5 shadow-[-20px_0_55px_rgba(0,0,0,0.12)]" transition:fly={{ x: 60, duration: 200 }}>
+      <!-- h-dvh (not min-h) so the panel is capped at the viewport and its content
+           scrolls internally — with min-h it grew past the screen and the links
+           below the fold (e.g. an open accordion) were unreachable. -->
+      <aside class="absolute right-0 top-0 flex h-dvh w-[86vw] min-w-[300px] max-w-[380px] flex-col overflow-y-auto overscroll-contain border-l border-ink/10 bg-surface px-5 py-5 shadow-[-20px_0_55px_rgba(0,0,0,0.12)]" transition:fly={{ x: 60, duration: 200 }}>
         <div class="flex items-center justify-between gap-4">
           <a href="/" class="flex shrink-0 items-center gap-2.5" on:click={() => (menuOpen = false)}>
             <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-10 w-10 shrink-0 object-contain" />
@@ -455,16 +449,6 @@
           <button class="grid h-8 w-8 shrink-0 place-items-center rounded-full text-[#111]" type="submit" aria-label="Search tours"><Search size={17} strokeWidth={2.6} /></button>
           <input class="min-w-0 flex-1 bg-transparent px-1 text-sm font-medium outline-none placeholder:text-[#a9a9a9]" aria-label="Search tour packages" placeholder="Search tours..." bind:value={searchQuery} />
         </form>
-
-        {#if aiOn}
-          <button
-            type="button"
-            class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-deep-green px-4 py-3 text-sm font-bold text-white transition hover:bg-forest"
-            on:click={() => { openAiAdvisor(); menuOpen = false; }}
-          >
-            <CircleHelp size={16} strokeWidth={2.6} /> Ask our AI advisor
-          </button>
-        {/if}
 
         <nav class="mt-5 grid gap-1" aria-label="Mobile">
           {#each NAV as item}

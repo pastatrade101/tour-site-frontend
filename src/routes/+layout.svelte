@@ -7,9 +7,9 @@
   import '../app.css';
   import Navbar from '$lib/components/public/Navbar.svelte';
   import Footer from '$lib/components/public/Footer.svelte';
-  import GoldfinchAIAdvisor from '$lib/components/public/GoldfinchAIAdvisor.svelte';
   import ConsentBanner from '$lib/components/public/ConsentBanner.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
+  import BackToTop from '$lib/components/public/BackToTop.svelte';
   import PersistentCTA from '$lib/components/public/PersistentCTA.svelte';
   import ShortlistFab from '$lib/components/public/ShortlistFab.svelte';
   import { consent } from '$lib/consent';
@@ -20,11 +20,9 @@
   import { loadClarity } from '$lib/clarity';
   import { applyBranding, branding } from '$lib/branding';
   import { SITE_URL } from '$lib/config/env';
-  import { aiAdvisorEnabled, loadPublicSettings, publicSettings } from '$lib/settings';
+  import { loadPublicSettings } from '$lib/settings';
 
   $: isAdmin = $page.url.pathname.startsWith('/admin');
-  // Admins can hide the whole AI advisor from Settings → AI.
-  $: showAdvisor = aiAdvisorEnabled($publicSettings);
 
   // Site origin from PUBLIC_SITE_URL (.env), falling back to the live request origin.
   $: siteOrigin = SITE_URL || $page.url.origin;
@@ -186,9 +184,7 @@
   <!-- clearance so the fixed mobile CTA bar never covers footer content -->
   <div class="h-16 lg:hidden" aria-hidden="true"></div>
   <ShortlistFab />
+  <BackToTop />
   <PersistentCTA />
-  {#if showAdvisor}
-    <GoldfinchAIAdvisor />
-  {/if}
   <ConsentBanner />
 {/if}

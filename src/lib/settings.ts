@@ -57,6 +57,6 @@ export const settingBool = (settings: Record<string, unknown>, key: string, fall
   return fallback;
 };
 
-/** Whether the public AI advisor (widget + entry points) should be shown. */
-export const aiAdvisorEnabled = (settings: Record<string, unknown>): boolean =>
-  settingBool(settings, 'ai_enabled', true) && settingBool(settings, 'ai_widget_enabled', true);
+/** The public AI advisor has been removed from the site — every entry point
+ *  (widget, nav links, page CTAs) checks this and self-hides. */
+export const aiAdvisorEnabled = (_settings: Record<string, unknown>): boolean => false;
