@@ -1,28 +1,27 @@
 <script lang="ts">
   import { ArrowRight, Check, MessageCircle } from '@lucide/svelte';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
-  import DestinationCard from '$lib/components/public/DestinationCard.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import type { GalleryCardItem } from '$lib/components/public/GalleryCard.svelte';
   import GalleryViewer from '$lib/components/public/GalleryViewer.svelte';
   import { SAMPLE_GALLERY } from '$lib/data/sampleGallery';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import { faqLd } from '$lib/seo';
-  import HeroSection from '$lib/components/public/HeroSection.svelte';
-  import IntroBand from '$lib/components/public/IntroBand.svelte';
   import TopDestinations from '$lib/components/public/TopDestinations.svelte';
-  import WhyGoldfinch from '$lib/components/public/WhyGoldfinch.svelte';
+  import HomeHero from '$lib/components/public/home/HomeHero.svelte';
+  import HomeExperiences from '$lib/components/public/home/HomeExperiences.svelte';
+  import HomeDestinationsCarousel from '$lib/components/public/home/HomeDestinationsCarousel.svelte';
+  import HomeItineraries from '$lib/components/public/home/HomeItineraries.svelte';
+  import HomeWhyChoose from '$lib/components/public/home/HomeWhyChoose.svelte';
+  import HomeAdvisorNote from '$lib/components/public/home/HomeAdvisorNote.svelte';
+  import HomeHowPlanned from '$lib/components/public/home/HomeHowPlanned.svelte';
+  import HomeTravellerStories from '$lib/components/public/home/HomeTravellerStories.svelte';
+  import HomePlanningBand from '$lib/components/public/home/HomePlanningBand.svelte';
   import SeasonsBand from '$lib/components/public/SeasonsBand.svelte';
   import ImpactBand from '$lib/components/public/ImpactBand.svelte';
   import MigrationCalendar from '$lib/components/public/MigrationCalendar.svelte';
-  import ReviewsWidget from '$lib/components/public/ReviewsWidget.svelte';
   import LeadCaptureForm from '$lib/components/public/LeadCaptureForm.svelte';
-  import PartnerStrip from '$lib/components/public/PartnerStrip.svelte';
-  import PlanningProcess from '$lib/components/public/PlanningProcess.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
-  import TestimonialCard from '$lib/components/public/TestimonialCard.svelte';
-  import PriceRangeBlock from '$lib/components/public/PriceRangeBlock.svelte';
-  import TourPackages from '$lib/components/public/TourPackages.svelte';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
   import { imgUrl } from '$lib/img';
   import type { BlogPost, Destination, FAQ, MigrationEntry, Review, ReviewSummary, Testimonial, Tour } from '$lib/types';
@@ -54,6 +53,7 @@
   let reviews: Review[] = data.reviews ?? [];
   let migrationEntries: MigrationEntry[] = data.migrationEntries ?? [];
   let galleryItems: GalleryCardItem[] = (data.galleryItems ?? []) as GalleryCardItem[];
+  let categories: Record<string, unknown>[] = (data.categories ?? []) as Record<string, unknown>[];
   let sections: Record<string, HomeSection> = Object.fromEntries(
     (data.homeSections as unknown as HomeSection[]).map((s) => [s.section_key, s])
   );
@@ -131,6 +131,18 @@
   $: impactExtra = (sections.impact?.extra_data ?? {}) as Record<string, unknown>;
   $: featuredToursExtra = (sections.featured_tours?.extra_data ?? {}) as Record<string, unknown>;
   $: faqExtra = (sections.faq?.extra_data ?? {}) as Record<string, unknown>;
+  $: advisorExtra = (sections.advisor_note?.extra_data ?? {}) as Record<string, unknown>;
+  $: howExtra = (sections.how_it_works?.extra_data ?? {}) as Record<string, unknown>;
+  // Experiences cards come from published tour categories (real CMS records).
+  $: experienceItems = categories
+    .map((c) => ({
+      name: String(c.name ?? c.slug ?? ''),
+      slug: String(c.slug ?? ''),
+      description: String(c.description ?? c.who_its_for ?? ''),
+      image: String(c.image_url ?? ''),
+      href: `/safari-styles/${String(c.slug ?? '')}`
+    }))
+    .filter((c) => c.name && c.slug);
   $: introProps = clean({
     eyebrow: introExtra.eyebrow,
     title: sections.intro?.title,
@@ -196,28 +208,107 @@
   <link rel="preload" as="image" href={imgUrl(heroImageResolved, 1800, 72)} fetchpriority="high" />
 </svelte:head>
 
+<!-- ─────────────────────────────────────────────────────────────────────────
+     Homepage spine — section order and UI ported from the Safari Connect
+     reference build. Every section stays CMS-gated and renders only real data.
+     ───────────────────────────────────────────────────────────────────────── -->
+
+<!-- 1 · Hero -->
 {#if isSectionActive('hero')}
-  <HeroSection
-    overlay={heroExtra.overlay_opacity === undefined || heroExtra.overlay_opacity === null || heroExtra.overlay_opacity === '' ? 44 : (Number(heroExtra.overlay_opacity) || 0) * 100}
+  <HomeHero
     eyebrow={typeof heroExtra.eyebrow === 'string' ? heroExtra.eyebrow : 'Tanzania & East Africa specialists'}
-    title={cms('hero', 'title', 'Tailor-Made East Africa Safaris')}
-    highlight={typeof heroExtra.title_highlight === 'string' ? heroExtra.title_highlight : 'Planned by Local Experts'}
+    title={cms('hero', 'title', 'Plan your African safari,')}
+    highlight={typeof heroExtra.title_highlight === 'string' ? heroExtra.title_highlight : 'your way.'}
     description={cms('hero', 'subtitle', 'Great Migration river crossings, honest safari, Kilimanjaro and Zanzibar advice — planned around you by Tanzanian local experts.')}
     imageUrl={heroImageResolved}
-    imageUrls={heroSlides}
-    primaryCta={cms('hero', 'button_text', 'Plan My Trip')}
-    primaryCtaUrl={cms('hero', 'button_url', '/plan-my-trip')}
-    secondaryCta={typeof heroExtra.secondary_cta_text === 'string' ? heroExtra.secondary_cta_text : 'Talk to a Travel Advisor'}
-    secondaryCtaUrl={typeof heroExtra.secondary_cta_url === 'string' ? heroExtra.secondary_cta_url : '/contact'}
+    primaryCta={{ label: cms('hero', 'button_text', 'Plan My Trip'), href: cms('hero', 'button_url', '/plan-my-trip') }}
+    secondaryCta={{
+      label: typeof heroExtra.secondary_cta_text === 'string' ? heroExtra.secondary_cta_text : 'Talk to a Travel Advisor',
+      href: typeof heroExtra.secondary_cta_url === 'string' ? heroExtra.secondary_cta_url : '/contact'
+    }}
+    trustPoints={arr(heroExtra.trust_points)}
   />
 {/if}
 
-<!-- 2 · Intro + stats -->
-{#if isSectionActive('intro')}
-  <IntroBand {...introProps} />
+<!-- 2 · Experiences — real published tour categories -->
+{#if isSectionActive('experiences') && experienceItems.length}
+  <HomeExperiences
+    items={experienceItems}
+    eyebrow={cmsExtra('experiences', 'eyebrow', 'Ways to Travel')}
+    title={cms('experiences', 'title', 'What Kind of Tanzania Trip Are You Imagining?')}
+    subtitle={cms('experiences', 'subtitle', "You do not need to know the perfect route yet. Start with the experience that feels closest to your trip, and we'll help connect the right places, timing, lodges, transfers and pace.")}
+  />
 {/if}
 
-<!-- 2b · Top destinations mosaic — real destinations, hidden when empty -->
+<!-- 3 · Destinations carousel -->
+{#if isSectionActive('featured_destinations') && destinations.length}
+  <HomeDestinationsCarousel
+    {destinations}
+    eyebrow={cmsExtra('featured_destinations', 'eyebrow', 'Top Destinations')}
+    title={cms('featured_destinations', 'title', 'The Places That Shape the Journey')}
+    subtitle={cms('featured_destinations', 'subtitle', 'Some places are best for wildlife. Others are better for beaches, scenery or culture. We help you combine them in the right order.')}
+  />
+{/if}
+
+<!-- 4 · Featured itineraries -->
+{#if isSectionActive('featured_tours') && tours.length}
+  <HomeItineraries
+    {tours}
+    eyebrow={cmsExtra('featured_tours', 'eyebrow', 'Featured Itineraries')}
+    title={cms('featured_tours', 'title', 'Trip Ideas You Can Shape Around You')}
+    subtitle={cms('featured_tours', 'subtitle', 'These are not rigid packages. They are starting points — useful examples of how safari, beach, Kilimanjaro, culture and seasonal wildlife routes can be built around your travel dates.')}
+    ctaHref={cms('featured_tours', 'button_url', '/tours')}
+    ctaLabel={cms('featured_tours', 'button_text', 'Browse all itineraries')}
+  />
+{/if}
+
+<!-- 5 · Why Goldfinch -->
+{#if isSectionActive('why_us')}
+  <HomeWhyChoose
+    eyebrow={cmsExtra('why_us', 'eyebrow', 'Why Goldfinch')}
+    title={cms('why_us', 'title', 'A Local Team to Help You Make Sense of Tanzania')}
+    subtitle={cms('why_us', 'subtitle', 'Tanzania has many possible routes. That is the good part — and also the confusing part. We help you understand what fits your dates, budget and pace.')}
+    {...clean({ features: arr(whyExtra.features) })}
+  />
+{/if}
+
+<!-- 6 · Advisor's note -->
+{#if isSectionActive('advisor_note')}
+  <HomeAdvisorNote
+    eyebrow={cmsExtra('advisor_note', 'eyebrow', "An Advisor's Note")}
+    title={cms('advisor_note', 'title', 'The Trip Is Won or Lost in the Planning Details')}
+    body={cms('advisor_note', 'subtitle', 'Most travel mistakes happen before arrival. The wrong route, too many one-night stops, poor lodge locations or badly timed transfers can make even a beautiful trip feel tiring.')}
+    {...clean({ points: arr(advisorExtra.points) })}
+    imageUrl={cms('advisor_note', 'image_url', heroImageResolved)}
+    ctaLabel={cms('advisor_note', 'button_text', 'Talk to a Travel Advisor')}
+    ctaHref={cms('advisor_note', 'button_url', '/contact')}
+  />
+{/if}
+
+<!-- 7 · How your trip is planned -->
+{#if isSectionActive('how_it_works')}
+  <HomeHowPlanned
+    eyebrow={cmsExtra('how_it_works', 'eyebrow', 'How Your Trip Is Planned')}
+    title={cms('how_it_works', 'title', 'Simple Planning. Clear Routes. Local Support.')}
+    subtitle={cms('how_it_works', 'subtitle', "You do not need to arrive with a finished itinerary. Share the basics, and we'll help turn the idea into a route that makes sense.")}
+    {...clean({ steps: arr(howExtra.steps) })}
+  />
+{/if}
+
+<!-- 8 · Traveller stories — real approved reviews only -->
+{#if isSectionActive('reviews_section') && reviews.length}
+  <HomeTravellerStories
+    {reviews}
+    summary={reviewSummary}
+    eyebrow={cmsExtra('reviews_section', 'eyebrow', 'What Travellers Say')}
+    title={cms('reviews_section', 'title', 'Reviews from Tanzania Travellers')}
+  />
+{/if}
+
+<!-- ── Goldfinch-only sections (not in the reference layout) — each stays
+     CMS-toggleable so they can be switched off for a pure reference flow. ── -->
+
+<!-- 8b · Top destinations mosaic -->
 {#if isSectionActive('top_destinations') && destinations.length}
   <TopDestinations
     {destinations}
@@ -227,155 +318,19 @@
   />
 {/if}
 
-<!-- 3 · Destinations — hidden when there are no destinations -->
-{#if isSectionActive('featured_destinations') && destinations.length}
-<section class="relative overflow-hidden bg-surface py-14 md:py-20" use:sectionReveal>
-  <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-goldfinch-gold/35 to-transparent" aria-hidden="true"></div>
-  <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-canvas/70 to-transparent" aria-hidden="true"></div>
-  <div class="container-shell">
-    <div class="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between" use:fadeUpOnScroll={{ y: 14 }}>
-      <div class="max-w-2xl">
-        <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">{cmsExtra('featured_destinations', 'eyebrow', 'Keep exploring')}</p>
-        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-heading md:text-[38px]">
-          {cms('featured_destinations', 'title', 'More destinations')}
-        </h2>
-        <p class="mt-4 text-[15px] leading-8 text-ink/70 md:text-lg">
-          {cms('featured_destinations', 'subtitle', 'Handpicked places across Tanzania, from the Serengeti to the coast.')}
-        </p>
-      </div>
-      <a class="hidden shrink-0 items-center gap-2 rounded-[8px] border border-goldfinch-gold/40 bg-surface px-5 py-2.5 text-sm font-bold text-clay shadow-sm transition hover:bg-goldfinch-gold hover:text-heading sm:inline-flex" href={destinationCtaUrl}>
-        {destinationCtaText} <ArrowRight size={15} strokeWidth={2.4} />
-      </a>
-    </div>
-    <div class="relative mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3" use:staggeredCardReveal>
-      {#each destinations.slice(0, 6) as destination}
-        <DestinationCard {destination} />
-      {/each}
-    </div>
-    <div class="mt-10 flex justify-center sm:hidden">
-      <a class="inline-flex h-12 items-center gap-2 rounded-[8px] bg-deep-green px-7 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-sm transition hover:bg-forest" href={destinationCtaUrl}>
-        {destinationCtaText} <ArrowRight size={16} />
-      </a>
-    </div>
-  </div>
-</section>
-{/if}
-
-<!-- 4 · Your Safari, Your Way -->
-{#if isSectionActive('why_us')}
-  <WhyGoldfinch {...whyProps} />
-{/if}
-
-<!-- 5 · Top Tour Packages — hidden when there are no tours -->
-{#if isSectionActive('featured_tours') && tours.length}
-  <TourPackages {tours} {...tourProps} />
-{/if}
-
-<!-- 6 · Typical cost — hidden when there are no CMS price ranges -->
-{#if sections.cost_ranges?.is_active !== false && costRanges.length}
-<section class="relative overflow-hidden bg-sand/40 py-14 md:py-20" use:sectionReveal>
-  <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-goldfinch-gold/25 to-transparent" aria-hidden="true"></div>
-  <div class="container-shell">
-    <PriceRangeBlock
-      title={cms('cost_ranges', 'title', 'What trips typically cost')}
-      subtitle={cms('cost_ranges', 'subtitle', 'A confident brand is upfront about price — here are honest starting points by trip type.')}
-      ranges={costRanges}
-    />
-  </div>
-</section>
-{/if}
-
-<!-- 7 · Best times to visit -->
+<!-- 8c · Best times to visit -->
 {#if isSectionActive('seasons')}
   <SeasonsBand {...seasonsProps} />
 {/if}
 
-<!-- 7b · Serengeti Great Migration calendar (self-hiding until published entries exist) -->
+<!-- 8d · Serengeti Great Migration calendar (self-hiding until entries exist) -->
 <MigrationCalendar
-  active={sections.migration_section?.is_active !== false}
   entries={migrationEntries}
+  active={sections.migration_section?.is_active !== false}
   eyebrow={cmsExtra('migration_section', 'eyebrow', 'Great Migration')}
-  title={cms('migration_section', 'title', 'Follow the herds, month by month')}
-  subtitle={cms('migration_section', 'subtitle', 'Where the wildebeest and zebra roam across the Serengeti through the year — so you can plan your safari around the action.')}
+  title={cms('migration_section', 'title', 'Where the herds are, month by month')}
+  subtitle={cms('migration_section', 'subtitle', 'Plan around the river crossings and calving season with our month-by-month guide.')}
 />
-
-<!-- 8 · Plan your dream (dark form band) -->
-{#if isSectionActive('plan_dream')}
-<section class="relative overflow-hidden bg-deep-green py-14 text-white md:py-20" use:sectionReveal>
-  <div class="pointer-events-none absolute inset-0 opacity-[0.06]" style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1.6px); background-size: 28px 28px;" aria-hidden="true"></div>
-  <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-goldfinch-gold/35 to-transparent" aria-hidden="true"></div>
-  <div class="container-shell relative grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
-    <div class="max-w-xl">
-      <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">{cmsExtra('plan_dream', 'eyebrow', 'Plan your dream trip')}</p>
-      <h2 class="mt-3 text-3xl font-semibold leading-tight text-white md:text-[38px]">{cms('plan_dream', 'title', 'Plan Your Dream Tanzania Safari')}</h2>
-      <p class="mt-4 leading-8 text-white/80">{cms('plan_dream', 'subtitle', 'Tell us a few details and a local specialist will craft a confident, tailor-made plan — with no pressure and no payment to start.')}</p>
-      <div class="mt-7 grid gap-3">
-        {#each planDreamPoints as point}
-          <div class="flex items-center gap-3 text-white/85">
-            <span class="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] bg-goldfinch-gold/25 text-goldfinch-gold"><Check size={13} strokeWidth={3} /></span>
-            {point}
-          </div>
-        {/each}
-      </div>
-    </div>
-    <LeadCaptureForm title={cmsExtra('plan_dream', 'form_title', 'Safari details')} compact />
-  </div>
-</section>
-{/if}
-
-<!-- 9 · Our Process -->
-{#if isSectionActive('how_it_works')}
-<section class="relative overflow-hidden bg-canvas py-14 md:py-20" use:sectionReveal>
-  <div class="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-surface/70 to-transparent" aria-hidden="true"></div>
-  <div class="container-shell">
-    <PlanningProcess
-      title={cms('how_it_works', 'title', 'Our Process')}
-      subtitle={cms('how_it_works', 'subtitle', 'A calm, transparent process — no pressure, and no payment to start.')}
-    />
-    <div class="mt-12 flex justify-center">
-      <a class="inline-flex h-12 items-center gap-2 rounded-[8px] bg-goldfinch-gold px-7 font-bold text-heading shadow-sm transition hover:brightness-105" href={processCtaUrl}>{processCtaText} <ArrowRight size={18} /></a>
-    </div>
-  </div>
-</section>
-{/if}
-
-<!-- 9b · Platform reviews trust widget + AggregateRating JSON-LD (self-hiding until approved reviews exist) -->
-{#if isSectionActive('reviews_section')}
-  <ReviewsWidget
-    summary={reviewSummary}
-    reviews={reviews}
-    eyebrow={cmsExtra('reviews_section', 'eyebrow', 'Loved by travellers')}
-    title={cms('reviews_section', 'title', 'Real reviews from real safaris')}
-    subtitle={cms('reviews_section', 'subtitle', 'Verified ratings from travellers across TripAdvisor, SafariBookings and Google.')}
-  />
-{/if}
-
-<!-- 10 · Reviews — hidden when there are no testimonials -->
-{#if isSectionActive('testimonials') && testimonials.length}
-<section class="relative overflow-hidden bg-surface py-14 md:py-20" use:sectionReveal>
-  <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-goldfinch-gold/25 to-transparent" aria-hidden="true"></div>
-  <div class="container-shell">
-    <div class="mx-auto max-w-2xl text-center" use:fadeUpOnScroll={{ y: 14 }}>
-      <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">{cmsExtra('testimonials', 'eyebrow', 'Loved by travellers')}</p>
-      <h2 class="mt-3 text-3xl font-semibold tracking-normal text-heading md:text-[38px]">
-        {cms('testimonials', 'title', '200+ Verified Reviews')}
-      </h2>
-      <p class="mx-auto mt-4 max-w-xl text-[15px] leading-8 text-ink/70 md:text-lg">
-        {cms('testimonials', 'subtitle', 'Real stories from travellers who planned their trip with confidence.')}
-      </p>
-    </div>
-    <div class="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 18, stagger: 0.07 }}>
-      {#each testimonials as testimonial}
-        <TestimonialCard {testimonial} />
-      {/each}
-    </div>
-  </div>
-</section>
-{/if}
-
-{#if partnersActive}
-  <PartnerStrip logos={partnerLogos} title={cms('partners', 'title', 'Trusted by leading travel partners')} />
-{/if}
 
 <!-- 10b · Gallery preview -->
 {#if isSectionActive('gallery_preview') && galleryDisplay.length}
@@ -445,65 +400,14 @@
   </div>
 </section>
 {/if}
-
-{#if isSectionActive('final_cta') && (sections.final_cta?.title || sections.final_cta?.button_text)}
-  <section class="relative w-full overflow-hidden text-white" use:sectionReveal>
-    <!-- background media layer (admin-configurable: video > image > brand gradient) -->
-    {#if ctaVideo}
-      <!-- svelte-ignore a11y-media-has-caption -->
-      <video class="absolute inset-0 h-full w-full object-cover" style={`object-position:${ctaPosition}`} src={ctaVideo} poster={imgUrl(ctaImageResolved, 1800)} autoplay muted loop playsinline></video>
-    {:else}
-      <img class="absolute inset-0 h-full w-full object-cover" style={`object-position:${ctaPosition}`} src={imgUrl(ctaImageResolved, 1800)} alt="" loading="lazy" decoding="async" />
-    {/if}
-
-    <!-- green overlay so the photo shows through but the text stays crisp -->
-    <div class="absolute inset-0" style={ctaOverlayStyle}></div>
-
-    <div
-      class="pointer-events-none absolute inset-0 opacity-[0.06]"
-      style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1.6px); background-size: 26px 26px;"
-    ></div>
-
-    <div class="container-shell relative py-14 text-center md:py-20" use:fadeUpOnScroll={{ y: 18 }}>
-      <div class="mx-auto max-w-3xl">
-        <p class="font-serif text-xl italic text-savanna">{cmsExtra('final_cta', 'eyebrow', 'Start Your Journey')}</p>
-
-        <h2 class="mt-5 text-3xl font-extrabold leading-[1.1] tracking-normal md:text-[44px]">
-          {cms('final_cta', 'title', 'Ready to Plan Your East Africa Adventure?')}
-        </h2>
-
-        <p class="mx-auto mt-4 max-w-xl text-[15px] font-medium leading-7 text-white/75 md:text-lg">
-          {cms('final_cta', 'subtitle', 'Talk to a local expert and travel with confidence — no payment needed to start planning.')}
-        </p>
-
-        <div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <a
-            class="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-7 text-sm font-bold text-heading shadow-lg shadow-goldfinch-gold/20 transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/60 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green sm:w-auto md:h-[52px] md:text-base"
-            href={cms('final_cta', 'button_url', '/plan-my-trip')}
-          >
-            {cms('final_cta', 'button_text', 'Plan My Trip')}
-            <ArrowRight size={18} strokeWidth={2.6} class="transition-transform group-hover:translate-x-0.5" />
-          </a>
-          <a
-            class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] border border-white/25 bg-surface/5 px-7 text-sm font-bold text-white backdrop-blur transition hover:bg-surface/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 sm:w-auto md:h-[52px] md:text-base"
-            href={ctaSecondaryUrl}
-          >
-            <MessageCircle size={17} strokeWidth={2.4} />
-            {ctaSecondaryText}
-          </a>
-        </div>
-
-        <div class="mt-10 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-sm font-medium text-white/70">
-          {#each ctaTrustPoints as point}
-            <span class="inline-flex items-center gap-2">
-              <span class="grid h-5 w-5 place-items-center rounded-[5px] bg-goldfinch-gold/20 text-goldfinch-gold">
-                <Check size={12} strokeWidth={3} />
-              </span>
-              {point}
-            </span>
-          {/each}
-        </div>
-      </div>
-    </div>
-  </section>
+<!-- 9 · Planning form band (closing section, as in the reference layout) -->
+{#if isSectionActive('plan_dream')}
+  <HomePlanningBand
+    eyebrow={cmsExtra('plan_dream', 'eyebrow', 'Start Planning')}
+    title={cms('plan_dream', 'title', 'Tell Us the Tanzania Trip You Have in Mind')}
+    subtitle={cms('plan_dream', 'subtitle', "Share your travel dates, group size and the experiences you are considering. We'll help you understand the best route, timing, pace and logistics.")}
+    {...clean({ points: planDreamPoints })}
+  >
+    <LeadCaptureForm compact title={cms('plan_dream', 'button_text', 'Start your trip plan')} />
+  </HomePlanningBand>
 {/if}

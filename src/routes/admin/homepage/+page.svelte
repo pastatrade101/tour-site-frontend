@@ -113,6 +113,32 @@
       }
     },
     {
+      key: 'experiences',
+      label: 'Experiences (ways to travel)',
+      surface: 'public',
+      description: 'Intro copy above the homepage experience selector. The cards themselves come from published tour categories (Safari Styles).',
+      fields: ['title', 'subtitle', 'extra: eyebrow'],
+      preset: {
+        title: 'What Kind of Tanzania Trip Are You Imagining?',
+        subtitle: "You do not need to know the perfect route yet. Start with the experience that feels closest to your trip, and we'll help connect the right places, timing, lodges, transfers and pace.",
+        extra_data: { eyebrow: 'Ways to Travel' }
+      }
+    },
+    {
+      key: 'advisor_note',
+      label: "Advisor's note",
+      surface: 'public',
+      description: 'Editorial band about why planning details matter. Extra JSON `points` is a list of {title, text} bullets.',
+      fields: ['title', 'subtitle', 'image', 'button', 'extra: eyebrow, points'],
+      preset: {
+        title: 'The Trip Is Won or Lost in the Planning Details',
+        subtitle: 'Most travel mistakes happen before arrival. The wrong route, too many one-night stops, poor lodge locations or badly timed transfers can make even a beautiful trip feel tiring.',
+        button_text: 'Talk to a Travel Advisor',
+        button_url: '/contact',
+        extra_data: { eyebrow: "An Advisor's Note" }
+      }
+    },
+    {
       key: 'top_destinations',
       label: 'Top destinations mosaic',
       surface: 'public',
