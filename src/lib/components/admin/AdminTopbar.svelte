@@ -1,8 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { scale } from 'svelte/transition';
-  import { Bell, ChevronDown, LogOut, Mail, Menu, Moon, PanelLeftClose, PanelLeftOpen, ShieldCheck, Sun } from '@lucide/svelte';
-  import { theme, toggleTheme } from '$lib/theme';
+  import { Bell, ChevronDown, LogOut, Mail, Menu, PanelLeftClose, PanelLeftOpen, ShieldCheck } from '@lucide/svelte';
 
   type AdminUser = {
     avatar_url?: string;
@@ -68,16 +67,6 @@
     </div>
 
     <div class="flex items-center gap-2">
-      <button
-        class="grid h-11 w-11 place-items-center rounded-2xl border border-ink/10 bg-surface text-ink/70 shadow-sm transition hover:border-goldfinch-gold/40 hover:bg-sand hover:text-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/30"
-        type="button"
-        on:click={toggleTheme}
-        aria-label={$theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        title={$theme === 'dark' ? 'Light mode' : 'Dark mode'}
-      >
-        {#if $theme === 'dark'}<Sun size={18} />{:else}<Moon size={18} />{/if}
-      </button>
-
       <button class="hidden h-11 w-11 place-items-center rounded-2xl border border-ink/10 bg-surface text-ink/70 shadow-sm transition hover:border-goldfinch-gold/40 hover:bg-sand hover:text-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/30 sm:grid" type="button" aria-label="Notifications">
         <Bell size={18} />
       </button>

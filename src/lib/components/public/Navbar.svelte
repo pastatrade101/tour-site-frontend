@@ -11,7 +11,6 @@
   import { brand } from '$lib/brand';
   import { imgUrl } from '$lib/img';
   import { aiAdvisorEnabled, publicSettings, settingText } from '$lib/settings';
-  import ThemeToggle from './ThemeToggle.svelte';
   import { canInstall, promptInstall } from '$lib/pwa';
 
   type NavLink = { href: string; label: string; image?: string; description?: string };
@@ -73,6 +72,22 @@
   let mobileAccordion: '' | DropdownKey = '';
   let searchQuery = '';
   let scrolled = false;
+
+  // The mega-menu is `fixed` (to escape the collapsing header's overflow), so we
+  // position it under the hovered nav item by measuring that item's rect, and
+  // clamp it so a wide menu never spills off the right edge.
+  const MEGA_W = 1000;
+  let ddLeft = 16;
+  let ddTop = 120;
+  const openDropdownAt = (key: DropdownKey | undefined, el: EventTarget | null) => {
+    openDropdown = key ?? '';
+    if (el instanceof HTMLElement && typeof window !== 'undefined') {
+      const rect = el.getBoundingClientRect();
+      const w = Math.min(MEGA_W, window.innerWidth - 32);
+      ddLeft = Math.max(16, Math.min(rect.left, window.innerWidth - w - 16));
+      ddTop = rect.bottom;
+    }
+  };
 
   const submitSearch = () => {
     const query = searchQuery.trim();
@@ -233,7 +248,6 @@
             <ArrowDownToLine size={14} strokeWidth={2.6} /> Install app
           </button>
         {/if}
-        <ThemeToggle />
       </div>
 
       <a href="/admin/login" class="inline-flex h-12 items-center gap-2.5 rounded-xl bg-deep-green px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-forest">
@@ -262,7 +276,7 @@
           {@const links = item.dropdown === 'destinations' ? destinations : item.dropdown === 'tours' ? tours : item.dropdown === 'safariStyles' ? categories : []}
           {#if item.dropdown && links.length}
             <!-- svelte-ignore a11y-no-static-element-interactions -->
-            <div class="nav-dropdown relative" on:mouseenter={() => (openDropdown = item.dropdown ?? '')} on:mouseleave={() => (openDropdown = '')}>
+            <div class="nav-dropdown relative" on:mouseenter={(e) => openDropdownAt(item.dropdown, e.currentTarget)} on:mouseleave={() => (openDropdown = '')}>
               <div class="flex items-center">
                 <a
                   class={`relative inline-flex items-center gap-1 rounded px-2.5 py-4 text-sm font-semibold transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40 ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink/80'}`}
@@ -292,7 +306,8 @@
                 {@const previewLinks = links.slice(0, 6)}
                 <div
                   id={`dd-${item.dropdown}`}
-                  class={`fixed left-1/2 ${scrolled ? 'top-[54px]' : 'top-[134px]'} z-50 grid w-[1080px] max-w-[calc(100vw-2rem)] -translate-x-1/2 grid-cols-[minmax(0,1fr)_360px] overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-[0_26px_76px_rgba(57,61,50,0.22)]`}
+                  class="fixed z-50 grid w-[min(1000px,calc(100vw-2rem))] grid-cols-[minmax(0,1fr)_340px] overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-[0_26px_76px_rgba(57,61,50,0.22)]"
+                  style={`left:${ddLeft}px;top:${ddTop}px`}
                   role="menu"
                   transition:fly={{ y: 6, duration: 140 }}
                 >
@@ -490,10 +505,6 @@
               <ArrowDownToLine size={18} strokeWidth={2.6} /> Install app
             </button>
           {/if}
-          <div class="flex items-center justify-between rounded-2xl border border-ink/10 px-4 py-2.5">
-            <span class="text-sm font-semibold text-ink/70">Appearance</span>
-            <ThemeToggle />
-          </div>
           <a class="flex items-center gap-3 rounded-2xl bg-[#25D366]/10 px-4 py-3" href={waHref} target="_blank" rel="noopener noreferrer" on:click={() => { trackEvent('whatsapp_click'); menuOpen = false; }}>
             <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#25D366] text-white"><MessageCircle size={20} strokeWidth={2.6} /></span>
             <span class="grid leading-tight">
