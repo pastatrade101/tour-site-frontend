@@ -647,16 +647,18 @@
           Step {step + 1} of {STEPS.length}
         </span>
         {#if step > 0}
-          <button type="button" class="inline-flex h-12 shrink-0 items-center gap-1.5 rounded-md border border-ink/15 bg-surface px-5 text-sm font-bold text-ink/75 transition hover:bg-sand" on:click={back}>
+          <button type="button" class="gf-btn-ghost shrink-0 px-5" on:click={back}>
             <ArrowLeft size={16} /> Back
           </button>
         {/if}
         {#if step < LAST}
-          <button type="button" class="inline-flex h-12 flex-1 items-center justify-center gap-1.5 rounded-md bg-forest px-5 text-sm font-semibold text-white transition hover:bg-black" on:click={next}>
-            Continue <ArrowRight size={16} />
+          <button type="button" class="gf-btn-primary ml-auto px-6" on:click={next}>
+            Continue <ArrowRight size={16} strokeWidth={2.6} />
           </button>
         {:else}
-          <Button type="submit" className="flex-1">{submitting ? 'Sending your request...' : 'Send My Trip Request'}</Button>
+          <button type="submit" class="gf-btn-primary ml-auto px-6" disabled={submitting}>
+            {submitting ? 'Sending…' : 'Send My Trip Request'}
+          </button>
         {/if}
       </div>
       <p class="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-white/60">

@@ -18,11 +18,11 @@
   $: lineIdle = tone === 'dark' ? 'bg-white/20' : 'bg-ink/15';
 </script>
 
-<ol class="flex items-start justify-center gap-1 sm:gap-2">
+<ol class="mx-auto flex w-fit max-w-full items-start justify-center gap-1 overflow-x-auto sm:gap-2">
   {#each steps as st, i (st.key)}
     {@const done = i < current}
     {@const active = i === current}
-    <li class="flex items-start {i < steps.length - 1 ? 'flex-1' : ''}">
+    <li class="flex shrink-0 items-start">
       <div class="flex min-w-0 flex-col items-center gap-2">
         <button
           type="button"
@@ -50,7 +50,7 @@
       </div>
 
       {#if i < steps.length - 1}
-        <span class={`mt-5 h-px flex-1 ${done ? 'bg-goldfinch-gold' : lineIdle}`} aria-hidden="true"></span>
+        <span class={`mt-5 h-px w-10 shrink-0 sm:w-20 ${done ? 'bg-goldfinch-gold' : lineIdle}`} aria-hidden="true"></span>
       {/if}
     </li>
   {/each}

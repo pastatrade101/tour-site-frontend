@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { onDestroy, onMount } from 'svelte';
-  import { Check, Clock, Compass, MapPin, Search, SlidersHorizontal, Sparkles, Star, X } from '@lucide/svelte';
+  import { ArrowLeft, ArrowRight, Check, ChevronDown, Clock, Compass, MapPin, Search, SlidersHorizontal, Sparkles, Star, X } from '@lucide/svelte';
   import { trackEvent } from '$lib/analytics';
   import { staggeredCardReveal } from '$lib/animations';
   import { EXPERIENCE_TO_CATEGORY, PERSONA_ORDER, PERSONAS } from '$lib/data/personas';
@@ -143,6 +143,22 @@
   );
 
   const personaTags = (t: Tour) => t.persona_tags ?? [];
+  // ── Paging over the filtered result set ──────────────────────────────────
+  const PER_PAGE = 12;
+  let pageNum = 1;
+  // Any change to the filters/sort collapses back to the first page.
+  $: filterSignature = `${searchTerm}|${destSlug}|${[...urlCategories].join(',')}|${selectedTiers.join(',')}|${popularOnly}|${lengthLo}-${lengthHi}|${priceLo}-${priceHi}|${sort}`;
+  $: if (filterSignature) pageNum = 1;
+  $: totalPages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
+  $: safePage = Math.min(pageNum, totalPages);
+  $: paged = sorted.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
+  const goToPage = (n: number) => {
+    pageNum = Math.min(Math.max(1, n), totalPages);
+    if (typeof document !== 'undefined') {
+      document.querySelector('[data-results-top]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   $: sorted = (() => {
     const r = [...result];
     if (sort === 'price_asc') return r.sort((a, b) => (a.price_from ?? 0) - (b.price_from ?? 0));
@@ -565,7 +581,7 @@
         {/if}
       </div>
 
-      <div class="mt-5">
+      <div class="mt-5" data-results-top>
         {#if loading}
           <LoadingState message="Loading tours..." />
         {:else if error && allTours.length === 0}
@@ -583,10 +599,51 @@
           </div>
         {:else}
           <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
-            {#each sorted as tour (tour.slug)}
+            {#each paged as tour (tour.slug)}
               <TourCardRich {tour} />
             {/each}
           </div>
+
+          {#if totalPages > 1}
+            <nav class="mt-8 flex flex-wrap items-center justify-center gap-2" aria-label="Tour pages">
+              <button
+                type="button"
+                class="inline-flex h-10 items-center gap-1.5 rounded-[8px] border border-ink/15 bg-surface px-3 text-sm font-bold text-ink disabled:opacity-40"
+                disabled={safePage === 1}
+                on:click={() => goToPage(safePage - 1)}
+              >
+                <ArrowLeft size={15} /> Previous
+              </button>
+
+              {#each Array(totalPages) as _, i}
+                {@const n = i + 1}
+                <button
+                  type="button"
+                  class={`grid h-10 min-w-[40px] place-items-center rounded-[8px] border px-2 text-sm font-bold transition ${
+                    n === safePage
+                      ? 'border-goldfinch-gold bg-goldfinch-gold text-heading'
+                      : 'border-ink/15 bg-surface text-ink/70 hover:border-goldfinch-gold/50'
+                  }`}
+                  aria-current={n === safePage ? 'page' : undefined}
+                  on:click={() => goToPage(n)}
+                >
+                  {n}
+                </button>
+              {/each}
+
+              <button
+                type="button"
+                class="inline-flex h-10 items-center gap-1.5 rounded-[8px] border border-ink/15 bg-surface px-3 text-sm font-bold text-ink disabled:opacity-40"
+                disabled={safePage === totalPages}
+                on:click={() => goToPage(safePage + 1)}
+              >
+                Next <ArrowRight size={15} />
+              </button>
+            </nav>
+            <p class="mt-3 text-center text-xs text-ink/55">
+              Showing {(safePage - 1) * PER_PAGE + 1}–{Math.min(safePage * PER_PAGE, sorted.length)} of {sorted.length} tours
+            </p>
+          {/if}
         {/if}
       </div>
     </div>
