@@ -1132,7 +1132,9 @@
                 disabled={staged}
                 on:click={() => toggleLibrary(m.id)}
               >
-                <img class="aspect-square w-full bg-sand/30 object-cover" src={imgUrl(m.thumbnail_url || m.file_url, 300)} alt={m.alt_text || m.file_name} width="300" height="300" loading="lazy" decoding="async" />
+                <span class="relative block aspect-square w-full overflow-hidden bg-sand/30">
+                  <img class="absolute inset-0 h-full w-full object-cover" src={imgUrl(m.thumbnail_url || m.file_url, 300)} alt={m.alt_text || m.file_name} loading="lazy" decoding="async" />
+                </span>
                 {#if picked}
                   <span class="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-goldfinch-gold text-white shadow-sm"><CheckCircle2 size={14} /></span>
                 {:else if staged}

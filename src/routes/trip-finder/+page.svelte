@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { ArrowLeft, ArrowRight, Check, MessageCircle, Sparkles } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import { revealHeading } from '$lib/animations';
@@ -80,20 +80,30 @@
   let answers: Record<string, string> = {};
   let tours: Tour[] = [];
   let loading = true;
+  let questionEl: HTMLDivElement;
 
   $: isResults = step >= questions.length;
   $: current = questions[step];
+  $: headingText = isResults ? 'Your best-fit trips' : 'Find the right trip in a minute';
 
-  const select = (key: string, value: string) => {
+  const scrollQuestionIntoView = async () => {
+    await tick();
+    questionEl?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  };
+
+  const select = async (key: string, value: string) => {
     answers = { ...answers, [key]: value };
     step += 1;
+    await scrollQuestionIntoView();
   };
-  const back = () => {
+  const back = async () => {
     if (step > 0) step -= 1;
+    await scrollQuestionIntoView();
   };
-  const restart = () => {
+  const restart = async () => {
     answers = {};
     step = 0;
+    await scrollQuestionIntoView();
   };
 
   onMount(async () => {
@@ -183,65 +193,71 @@
     t.price_from ? `${t.currency ?? 'USD'} ${t.price_from.toLocaleString()}` : 'On request';
 </script>
 
-<section class="bg-sand/40">
-  <div class="container-shell flex min-h-[70vh] flex-col items-center py-12 md:py-16">
-    <div class="w-full max-w-2xl">
+<section class="overflow-x-hidden bg-sand/40">
+  <div class="container-shell flex min-h-[70vh] flex-col items-center py-10 sm:py-12 md:py-16">
+    <div class="min-w-0 w-full max-w-2xl">
       <div class="text-center">
         <p class="font-serif text-xl italic text-clay">Trip Finder</p>
         {#key isResults}
-          <h1 class="mx-auto mt-4 max-w-xl text-3xl font-extrabold leading-tight tracking-tight text-heading md:text-[40px]" use:revealHeading>
-            {isResults ? 'Your best-fit trips' : 'Find the right trip in a minute'}
+          <h1 class="gf-trip-mobile-heading mx-auto mt-4 max-w-[19rem] text-3xl font-extrabold leading-tight tracking-tight text-heading md:hidden">
+            {headingText}
+          </h1>
+          <h1 class="mx-auto mt-4 hidden max-w-xl text-[40px] font-extrabold leading-tight tracking-tight text-heading md:block" use:revealHeading>
+            {headingText}
           </h1>
         {/key}
         {#if !isResults}
-          <p class="mx-auto mt-3 max-w-md text-ink/70">A few quick questions and we'll recommend trips that actually fit you.</p>
+          <p class="mx-auto mt-3 max-w-full break-words text-ink/70 sm:max-w-md">A few quick questions and we'll recommend trips that actually fit you.</p>
         {/if}
       </div>
 
       {#if !isResults}
         <!-- progress -->
-        <div class="mt-8 flex items-center gap-3">
-          {#if step > 0}
-            <button type="button" class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-ink/15 bg-surface text-ink/70 transition hover:bg-surface" aria-label="Back" on:click={back}>
-              <ArrowLeft size={16} />
-            </button>
-          {/if}
-          <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-black/10">
-            <div class="h-full rounded-full bg-goldfinch-gold transition-all duration-300" style:width={`${(step / questions.length) * 100}%`}></div>
+        <div class="mt-6 min-w-0 rounded-[14px] border border-white/10 bg-deep-green p-3 shadow-[0_18px_40px_rgba(31,77,58,0.18)] sm:mt-8">
+          <div class="flex items-center gap-3">
+            {#if step > 0}
+              <button type="button" class="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] border border-white/15 bg-white/[0.06] text-white/75 transition hover:border-goldfinch-gold/45 hover:bg-white/[0.1] hover:text-white" aria-label="Back" on:click={back}>
+                <ArrowLeft size={16} />
+              </button>
+            {/if}
+            <div class="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-white/10 shadow-inner">
+              <div class="gf-trip-progress-fill h-full rounded-full bg-goldfinch-gold" style:width={`${((step + 1) / questions.length) * 100}%`}></div>
+            </div>
+            <span class="shrink-0 text-xs font-semibold text-white/65">{step + 1} / {questions.length}</span>
           </div>
-          <span class="shrink-0 text-xs font-semibold text-ink/70">{step + 1} / {questions.length}</span>
         </div>
 
         <!-- question -->
-        <div class="mt-8 rounded-[10px] border border-ink/10 bg-surface p-6 shadow-[0_18px_50px_rgba(57,61,50,0.07)] md:p-8">
-          <h2 class="text-xl font-bold text-heading md:text-2xl">{current.title}</h2>
-          {#if current.subtitle}<p class="mt-1 text-sm text-ink/70">{current.subtitle}</p>{/if}
+        <div class="gf-trip-question-card gf-panel-dark relative mt-6 min-w-0 overflow-hidden rounded-[14px] border border-white/10 p-4 shadow-[0_24px_60px_rgba(31,77,58,0.22)] sm:mt-8 sm:p-6 md:p-8" bind:this={questionEl}>
+          <h2 class="relative text-xl font-bold text-white md:text-2xl">{current.title}</h2>
+          {#if current.subtitle}<p class="relative mt-1 text-sm text-white/65">{current.subtitle}</p>{/if}
 
-          <div class={`mt-6 grid gap-3 ${current.key === 'when' ? 'grid-cols-3 sm:grid-cols-4' : 'sm:grid-cols-2'}`}>
+          <div class={`mt-5 grid gap-3 sm:mt-6 ${current.key === 'when' ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2'}`}>
             {#each current.options as opt (opt.value)}
+              {@const selected = answers[current.key] === opt.value}
               <button
                 type="button"
-                class={`group flex items-center justify-between gap-2 rounded-2xl border px-4 py-3.5 text-left transition ${
-                  answers[current.key] === opt.value
-                    ? 'border-forest bg-forest/[0.06] ring-1 ring-forest/20'
-                    : 'border-ink/12 bg-surface hover:border-forest/40 hover:bg-sand/40'
+                class={`gf-trip-option group relative flex min-h-12 items-center justify-between gap-2 rounded-[10px] border px-3 py-3 text-left sm:px-4 ${
+                  selected
+                    ? 'border-goldfinch-gold bg-goldfinch-gold text-heading ring-1 ring-goldfinch-gold/25'
+                    : 'border-white/12 bg-white/[0.055] text-white hover:border-goldfinch-gold/45 hover:bg-white/[0.085]'
                 }`}
                 on:click={() => select(current.key, opt.value)}
               >
                 <span class="min-w-0">
-                  <span class="block font-semibold text-ink">{opt.label}</span>
-                  {#if opt.hint}<span class="block text-xs text-ink/70">{opt.hint}</span>{/if}
+                  <span class={`block break-words font-semibold leading-snug ${selected ? 'text-heading' : 'text-white'}`}>{opt.label}</span>
+                  {#if opt.hint}<span class={`block text-xs ${selected ? 'text-heading/70' : 'text-white/55'}`}>{opt.hint}</span>{/if}
                 </span>
-                <ArrowRight size={16} class="shrink-0 text-ink/25 transition group-hover:text-forest" />
+                <ArrowRight size={16} class={`hidden shrink-0 transition sm:block ${selected ? 'text-heading/50' : 'text-white/30 group-hover:text-goldfinch-gold'}`} />
               </button>
             {/each}
           </div>
         </div>
 
-        <p class="mt-6 text-center text-sm text-ink/70">
-          Prefer to skip ahead?
+        <p class="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm text-ink/70">
+          <span>Prefer to skip ahead?</span>
           <a class="font-semibold text-forest hover:text-heading" href="/plan-my-trip">Talk to a specialist</a>
-          ·
+          <span aria-hidden="true">·</span>
           <a class="font-semibold text-forest hover:text-heading" href="/tours">See all tours</a>
         </p>
       {:else if loading}
@@ -304,3 +320,70 @@
     </div>
   </div>
 </section>
+
+<style>
+  .gf-trip-mobile-heading {
+    animation: gf-trip-heading-in 420ms ease-out both;
+  }
+
+  .gf-trip-progress-fill {
+    box-shadow: 0 0 18px rgb(212 175 55 / 0.34);
+    transition: width 460ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .gf-trip-question-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 12% 0%, rgb(212 175 55 / 0.18), transparent 32%),
+      linear-gradient(135deg, rgb(255 255 255 / 0.07), transparent 46%);
+    pointer-events: none;
+  }
+
+  .gf-trip-option {
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+    transition:
+      transform 180ms ease,
+      border-color 220ms ease,
+      background-color 220ms ease,
+      box-shadow 220ms ease,
+      color 220ms ease;
+  }
+
+  .gf-trip-option:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 26px rgb(0 0 0 / 0.12), inset 0 1px 0 rgb(255 255 255 / 0.12);
+  }
+
+  .gf-trip-option:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgb(212 175 55 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.12);
+  }
+
+  @keyframes gf-trip-heading-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gf-trip-mobile-heading {
+      animation: none;
+    }
+
+    .gf-trip-progress-fill,
+    .gf-trip-option {
+      transition: none;
+    }
+
+    .gf-trip-option:hover {
+      transform: none;
+    }
+  }
+</style>

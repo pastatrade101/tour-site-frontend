@@ -260,22 +260,28 @@
     return true;
   };
 
+  const scrollStepIntoView = async () => {
+    await tick();
+    bodyEl?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  };
+
   const next = async () => {
     if (!(await validateStep(step))) return;
     if (step < LAST) step += 1;
-    await tick();
-    bodyEl?.scrollTo?.({ top: 0 });
+    await scrollStepIntoView();
   };
-  const back = () => {
+  const back = async () => {
     errorMessage = '';
     errors = {};
     if (step > 0) step -= 1;
+    await scrollStepIntoView();
   };
-  const goStep = (i: number) => {
+  const goStep = async (i: number) => {
     if (i < step) {
       step = i;
       errorMessage = '';
       errors = {};
+      await scrollStepIntoView();
     }
   };
 
@@ -448,7 +454,7 @@
     <p class="text-center text-xs text-ink/70">A confirmation email is on its way to the address you provided.</p>
   </div>
 {:else}
-  <form class="gf-panel-dark relative rounded-2xl border border-white/10 p-5 shadow-soft md:p-6" on:submit|preventDefault={submit} novalidate>
+  <form class="gf-panel-dark relative min-w-0 overflow-hidden rounded-[14px] border border-white/10 p-4 shadow-soft sm:p-5 md:p-6" on:submit|preventDefault={submit} novalidate>
     <div>
       <p class="text-sm font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">Plan My Trip</p>
       <h3 class="mt-1 font-serif text-2xl font-semibold tracking-normal text-white">Tell us about your dream trip</h3>
@@ -635,21 +641,21 @@
     {/if}
 
     <div class="mt-5">
-      <div class="flex items-center gap-3">
-        <span class="mr-auto hidden text-[11px] font-bold uppercase tracking-[0.14em] text-ink/45 sm:block">
+      <div class="grid grid-cols-2 gap-3 sm:flex sm:items-center">
+        <span class="mr-auto hidden text-[11px] font-bold uppercase tracking-[0.14em] text-white/45 sm:block">
           Step {step + 1} of {STEPS.length}
         </span>
         {#if step > 0}
-          <button type="button" class="gf-btn-ghost shrink-0 px-5" on:click={back}>
+          <button type="button" class="gf-btn-ghost w-full justify-center px-3 sm:w-auto sm:px-5" on:click={back}>
             <ArrowLeft size={16} /> Back
           </button>
         {/if}
         {#if step < LAST}
-          <button type="button" class="gf-btn-primary ml-auto px-6" on:click={next}>
+          <button type="button" class={`gf-btn-primary w-full justify-center px-4 sm:ml-auto sm:w-auto sm:px-6 ${step === 0 ? 'col-span-2' : ''}`} on:click={next}>
             Continue <ArrowRight size={16} strokeWidth={2.6} />
           </button>
         {:else}
-          <button type="submit" class="gf-btn-primary ml-auto px-6" disabled={submitting}>
+          <button type="submit" class="gf-btn-primary w-full justify-center px-4 sm:ml-auto sm:w-auto sm:px-6" disabled={submitting}>
             {submitting ? 'Sending…' : 'Send My Trip Request'}
           </button>
         {/if}

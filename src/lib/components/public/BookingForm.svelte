@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, Copy, Download, MapPin, MessageCircle, ShieldCheck } from '@lucide/svelte';
+  import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, Copy, Download, MapPin, MessageCircle, ShieldCheck } from '@lucide/svelte';
   import { page } from '$app/stores';
   import { getAttribution, trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
@@ -8,6 +8,7 @@
   import { publicSettings, settingText } from '$lib/settings';
   import Button from './Button.svelte';
   import CategoryPicker from './CategoryPicker.svelte';
+  import FormStepper from './FormStepper.svelte';
   import type { Tour } from '$lib/types';
 
   export let tour: Tour | null = null;
@@ -117,21 +118,25 @@
     }
     if (step < LAST) {
       step += 1;
-      await tick();
-      bodyEl?.scrollTo({ top: 0 });
+      await scrollBodyTop();
     }
   };
   const back = async () => {
     errorMessage = '';
     if (step > 0) step -= 1;
-    await tick();
-    bodyEl?.scrollTo({ top: 0 });
+    await scrollBodyTop();
   };
-  const goStep = (index: number) => {
+  const goStep = async (index: number) => {
     if (index < step) {
       step = index;
       errorMessage = '';
+      await scrollBodyTop();
     }
+  };
+
+  const scrollBodyTop = async () => {
+    await tick();
+    bodyEl?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // ── Derived summary used by the review step, the PDF and WhatsApp ────────────
@@ -257,6 +262,7 @@
     if (!validateStep(0) || !validateStep(1)) {
       errorMessage = 'Some required details are missing. Please review the earlier steps.';
       step = validateStep(0) ? 1 : 0;
+      await scrollBodyTop();
       return;
     }
 
@@ -361,9 +367,9 @@
     <Button type="button" variant="secondary" on:click={resetForm}>Submit another request</Button>
   </div>
 {:else}
-  <form class="gf-panel-dark relative flex max-h-[88vh] flex-col overflow-hidden rounded-2xl border border-white/10 shadow-soft" on:submit|preventDefault={submit} novalidate>
+  <form class="gf-panel-dark relative flex max-h-[88svh] min-h-0 min-w-0 flex-col overflow-hidden rounded-[14px] border border-white/10 shadow-soft sm:max-h-[88vh] sm:rounded-2xl" on:submit|preventDefault={submit} novalidate>
     <!-- Header + progress -->
-    <div class="shrink-0 border-b border-white/10 px-5 py-4 md:px-6">
+    <div class="shrink-0 border-b border-white/10 px-4 py-4 sm:px-5 md:px-6">
       <p class="text-xs font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">Booking request</p>
       <h3 class="mt-0.5 font-serif text-xl font-semibold tracking-normal text-white">Request this trip with confidence</h3>
       {#if tour}
@@ -374,33 +380,13 @@
         </div>
       {/if}
 
-      <!-- step indicator -->
-      <ol class="mt-4 flex items-center">
-        {#each STEPS as st, i}
-          <li class="flex items-center {i < STEPS.length - 1 ? 'flex-1' : ''}">
-            <button
-              type="button"
-              class={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold transition ${
-                i < step ? 'bg-forest text-white' : i === step ? 'bg-goldfinch-gold text-heading ring-4 ring-goldfinch-gold/20' : 'bg-sand text-ink/45'
-              } ${i < step ? 'cursor-pointer' : 'cursor-default'}`}
-              on:click={() => goStep(i)}
-              disabled={i >= step}
-              aria-current={i === step ? 'step' : undefined}
-              aria-label={`Step ${i + 1}: ${st.label}`}
-            >
-              {#if i < step}<Check size={14} strokeWidth={3} />{:else}{i + 1}{/if}
-            </button>
-            <span class={`ml-2 hidden text-xs font-semibold sm:block ${i === step ? 'text-heading' : 'text-ink/45'}`}>{st.label}</span>
-            {#if i < STEPS.length - 1}
-              <span class={`mx-2 h-0.5 flex-1 rounded ${i < step ? 'bg-forest' : 'bg-sand'}`}></span>
-            {/if}
-          </li>
-        {/each}
-      </ol>
+      <div class="mt-4">
+        <FormStepper steps={STEPS} current={step} tone="dark" onStep={goStep} />
+      </div>
     </div>
 
     <!-- Body (scrolls) -->
-    <div class="grid flex-1 gap-4 overflow-y-auto px-5 py-4 md:px-6" bind:this={bodyEl}>
+    <div class="grid min-h-0 flex-1 gap-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5 md:px-6" bind:this={bodyEl}>
       {#if step === 0}
         <fieldset class="grid gap-4">
           <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Contact details</legend>
@@ -504,9 +490,9 @@
           <div class="overflow-hidden rounded-xl border border-ink/10">
             <dl class="divide-y divide-ink/8">
               {#each summaryRows as r}
-                <div class="grid grid-cols-[130px_1fr] gap-3 px-4 py-2.5 text-sm">
-                  <dt class="font-medium text-ink/55">{r.label}</dt>
-                  <dd class="font-semibold text-heading">{r.value}</dd>
+                <div class="grid gap-1 px-3 py-3 text-sm sm:grid-cols-[130px_1fr] sm:gap-3 sm:px-4 sm:py-2.5">
+                  <dt class="text-xs font-semibold uppercase tracking-[0.1em] text-ink/50 sm:text-sm sm:normal-case sm:tracking-normal">{r.label}</dt>
+                  <dd class="break-words font-semibold text-heading">{r.value}</dd>
                 </div>
               {/each}
             </dl>
@@ -540,7 +526,7 @@
     </div>
 
     <!-- Footer nav -->
-    <div class="shrink-0 space-y-2.5 border-t border-white/10 px-5 py-3.5 md:px-6">
+    <div class="shrink-0 space-y-2.5 border-t border-white/10 px-4 py-3.5 sm:px-5 md:px-6">
       {#if errorMessage}
         <div class="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-700">
           <AlertCircle size={15} class="mt-0.5 shrink-0" />
@@ -548,18 +534,18 @@
         </div>
       {/if}
 
-      <div class="flex items-center gap-3">
+      <div class="grid grid-cols-2 gap-3 sm:flex sm:items-center">
         {#if step > 0}
-          <button type="button" class="gf-btn-ghost shrink-0 px-5" on:click={back}>
+          <button type="button" class="gf-btn-ghost w-full justify-center px-3 sm:w-auto sm:px-5" on:click={back}>
             <ArrowLeft size={16} /> Back
           </button>
         {/if}
         {#if step < LAST}
-          <button type="button" class="gf-btn-primary ml-auto px-6" on:click={next}>
+          <button type="button" class={`gf-btn-primary w-full justify-center px-4 sm:ml-auto sm:w-auto sm:px-6 ${step === 0 ? 'col-span-2' : ''}`} on:click={next}>
             Continue <ArrowRight size={16} strokeWidth={2.6} />
           </button>
         {:else}
-          <button type="submit" class="gf-btn-primary ml-auto px-6" disabled={submitting}>
+          <button type="submit" class="gf-btn-primary w-full justify-center px-4 sm:ml-auto sm:w-auto sm:px-6" disabled={submitting}>
             {submitting ? 'Sending…' : 'Submit Booking Request'}
           </button>
         {/if}
