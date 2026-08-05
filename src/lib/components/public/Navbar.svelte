@@ -96,6 +96,21 @@
     openDropdown = '';
   };
 
+  // Render the mobile drawer on <body>. The header carries a leftover GSAP
+  // transform (navbarEntrance), and a transformed ancestor re-anchors
+  // position:fixed — so inside the header the drawer's "full-screen" backdrop
+  // only covered the header's box, letting taps fall through to the page.
+  const portal = (node: HTMLElement) => {
+    document.body.appendChild(node);
+    return { destroy: () => node.remove() };
+  };
+
+  // Lock page scroll while the drawer is open so the page can't scroll or
+  // react underneath it.
+  $: if (typeof document !== 'undefined') {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+  }
+
   // ── active route ──────────────────────────────────────────────────────────
   $: path = $page.url.pathname;
   const isActive = (currentPath: string, href: string) => {
@@ -419,7 +434,7 @@
 
   <!-- ── mobile drawer ──────────────────────────────────────────────────── -->
   {#if menuOpen}
-    <div class="fixed inset-0 z-[90] lg:hidden" transition:fade={{ duration: 120 }}>
+    <div use:portal class="fixed inset-0 z-[120] lg:hidden" transition:fade={{ duration: 120 }}>
       <button class="absolute inset-0 bg-black/45 backdrop-blur-md" type="button" aria-label="Close menu" on:click={() => (menuOpen = false)}></button>
 
       <aside class="absolute right-0 top-0 flex min-h-dvh w-[86vw] min-w-[300px] max-w-[380px] flex-col overflow-y-auto border-l border-ink/10 bg-surface px-5 py-5 shadow-[-20px_0_55px_rgba(0,0,0,0.12)]" transition:fly={{ x: 60, duration: 200 }}>
