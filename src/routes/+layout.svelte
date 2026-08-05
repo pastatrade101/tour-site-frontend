@@ -10,7 +10,6 @@
   import ConsentBanner from '$lib/components/public/ConsentBanner.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import BackToTop from '$lib/components/public/BackToTop.svelte';
-  import PersistentCTA from '$lib/components/public/PersistentCTA.svelte';
   import ShortlistFab from '$lib/components/public/ShortlistFab.svelte';
   import { consent } from '$lib/consent';
   import { setupPwaInstall } from '$lib/pwa';
@@ -181,10 +180,7 @@
 
 {#if !isAdmin}
   <Footer />
-  <!-- clearance so the fixed mobile CTA bar never covers footer content -->
-  <div class="h-16 lg:hidden" aria-hidden="true"></div>
   <ShortlistFab />
   <BackToTop />
-  <PersistentCTA />
   <ConsentBanner />
 {/if}

@@ -73,13 +73,13 @@
         <div class="overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-card">
           <div class={bandClasses[season.tone]}>
             <div class="flex items-center gap-3 p-5">
-              <span class="grid h-9 w-9 shrink-0 place-items-center rounded-[8px] bg-white/20">
-                <Icon size={18} />
-              </span>
-              <div>
+              <div class="min-w-0">
                 <h3 class="text-lg font-semibold leading-tight">{season.name}</h3>
                 <p class="mt-0.5 text-sm font-medium opacity-80">{season.months}</p>
               </div>
+              <span class="ml-auto grid h-9 w-9 shrink-0 place-items-center rounded-[8px] bg-white/20">
+                <Icon size={18} />
+              </span>
             </div>
           </div>
           <div class="space-y-3 p-5">
