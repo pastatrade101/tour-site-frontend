@@ -55,12 +55,14 @@
   <div class="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100" style="background: radial-gradient(circle at 72% 12%, rgba(214,169,80,0.30), transparent 36%);" aria-hidden="true"></div>
 
   <div class="relative z-10 flex h-full min-h-[inherit] flex-col justify-between p-4 md:p-5 text-white">
-    <div class="flex items-start justify-between gap-3">
-      <span class="inline-flex items-center gap-1.5 rounded-[7px] bg-black/45 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white ring-1 ring-white/25 backdrop-blur">
-        <Icon size={13} strokeWidth={2.5} /> {mediaMeta.label}
-      </span>
+    <div class="flex items-start gap-3">
+      {#if mediaType !== 'image'}
+        <span class="inline-flex items-center gap-1.5 rounded-[7px] bg-black/50 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white ring-1 ring-white/25 backdrop-blur">
+          <Icon size={13} strokeWidth={2.5} /> {mediaMeta.label}
+        </span>
+      {/if}
       {#if relation}
-        <span class="inline-flex max-w-[64%] items-center gap-1.5 truncate rounded-[7px] bg-black/45 px-2.5 py-1 text-xs font-semibold text-white ring-1 ring-white/20 backdrop-blur">
+        <span class="ml-auto inline-flex max-w-[72%] items-center gap-1.5 truncate rounded-[7px] bg-black/50 px-2.5 py-1 text-xs font-semibold text-white ring-1 ring-white/20 backdrop-blur">
           <MapPin size={12} strokeWidth={2.5} class="shrink-0 text-goldfinch-gold" /> <span class="truncate">{relation}</span>
         </span>
       {/if}

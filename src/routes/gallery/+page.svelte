@@ -77,7 +77,7 @@
   {/if}
 </svelte:head>
 
-<section class="relative isolate overflow-hidden bg-deep-green text-white">
+<section class="relative isolate z-0 overflow-hidden bg-deep-green text-white">
   {#if heroItem?.image_url}
     <img class="absolute inset-0 h-full w-full object-cover" src={imgUrl(heroItem.image_url, 1800)} alt="" />
   {/if}
@@ -102,54 +102,50 @@
   </div>
 </section>
 
-<section class="bg-canvas py-10 md:py-14">
+<section class="relative z-10 bg-canvas py-10 md:py-14">
   <div class="container-shell">
-    <div class="-mt-20 rounded-[8px] border border-ink/10 bg-surface p-4 shadow-[0_22px_70px_rgba(57,61,50,0.14)] md:p-5">
-      <div class="grid gap-3">
-        <!-- Search: full width -->
+    <div class="relative z-10 -mt-24 rounded-[10px] border border-ink/10 bg-surface p-4 shadow-[0_28px_80px_rgba(57,61,50,0.18)] md:p-5">
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
         <label class="grid gap-2 text-sm font-semibold text-ink">
           <span>Search gallery</span>
           <span class="flex h-11 items-center gap-2 rounded-[8px] border border-ink/20 bg-canvas px-3 transition focus-within:border-forest/40 focus-within:ring-2 focus-within:ring-forest/12">
-            <Search size={16} class="text-ink/45" />
-            <input class="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink/40" bind:value={search} placeholder="Search title, caption, place..." />
+            <Search size={16} class="shrink-0 text-ink/45" />
+            <input class="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink/40" bind:value={search} placeholder="Search title, caption..." />
           </span>
         </label>
 
-        <!-- Filters: three equal selects + Clear -->
-        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(3,minmax(0,1fr))_auto] lg:items-end">
-          <label class="grid gap-2 text-sm font-semibold text-ink">
-            <span>Media</span>
-            <select class="h-11 w-full rounded-[8px] border border-ink/20 bg-canvas px-3 text-sm text-ink outline-none transition focus:border-forest/40 focus:ring-2 focus:ring-forest/12" bind:value={mediaType}>
-              {#each mediaFilters as filter}
-                <option value={filter.value}>{filter.label} ({filter.count})</option>
-              {/each}
-            </select>
-          </label>
+        <label class="grid gap-2 text-sm font-semibold text-ink">
+          <span>Media</span>
+          <select class="h-11 w-full rounded-[8px] border border-ink/20 bg-canvas px-3 text-sm text-ink outline-none transition focus:border-forest/40 focus:ring-2 focus:ring-forest/12" bind:value={mediaType}>
+            {#each mediaFilters as filter}
+              <option value={filter.value}>{filter.label} ({filter.count})</option>
+            {/each}
+          </select>
+        </label>
 
-          <label class="grid gap-2 text-sm font-semibold text-ink">
-            <span>Destination</span>
-            <select class="h-11 w-full rounded-[8px] border border-ink/20 bg-canvas px-3 text-sm text-ink outline-none transition focus:border-forest/40 focus:ring-2 focus:ring-forest/12" bind:value={destination}>
-              <option value="all">All destinations</option>
-              {#each destinationOptions as option}
-                <option value={option.value}>{option.label}</option>
-              {/each}
-            </select>
-          </label>
+        <label class="grid gap-2 text-sm font-semibold text-ink">
+          <span>Destination</span>
+          <select class="h-11 w-full rounded-[8px] border border-ink/20 bg-canvas px-3 text-sm text-ink outline-none transition focus:border-forest/40 focus:ring-2 focus:ring-forest/12" bind:value={destination}>
+            <option value="all">All destinations</option>
+            {#each destinationOptions as option}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
+        </label>
 
-          <label class="grid gap-2 text-sm font-semibold text-ink">
-            <span>Tour</span>
-            <select class="h-11 w-full rounded-[8px] border border-ink/20 bg-canvas px-3 text-sm text-ink outline-none transition focus:border-forest/40 focus:ring-2 focus:ring-forest/12" bind:value={tour}>
-              <option value="all">All tours</option>
-              {#each tourOptions as option}
-                <option value={option.value}>{option.label}</option>
-              {/each}
-            </select>
-          </label>
+        <label class="grid gap-2 text-sm font-semibold text-ink">
+          <span>Tour</span>
+          <select class="h-11 w-full rounded-[8px] border border-ink/20 bg-canvas px-3 text-sm text-ink outline-none transition focus:border-forest/40 focus:ring-2 focus:ring-forest/12" bind:value={tour}>
+            <option value="all">All tours</option>
+            {#each tourOptions as option}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
+        </label>
 
-          <button class="inline-flex h-11 items-center justify-center gap-2 rounded-[8px] border border-ink/15 bg-surface px-4 text-sm font-bold text-ink shadow-sm transition hover:border-forest/25 hover:bg-sand/40 disabled:opacity-40 sm:col-span-2 lg:col-span-1" type="button" disabled={!hasFilters} on:click={clearFilters}>
-            <X size={15} /> Clear
-          </button>
-        </div>
+        <button class="inline-flex h-11 items-center justify-center gap-2 rounded-[8px] border border-ink/15 bg-surface px-4 text-sm font-bold text-ink shadow-sm transition hover:border-forest/25 hover:bg-sand/40 disabled:opacity-40 sm:col-span-2 lg:col-span-1" type="button" disabled={!hasFilters} on:click={clearFilters}>
+          <X size={15} /> Clear
+        </button>
       </div>
     </div>
 
