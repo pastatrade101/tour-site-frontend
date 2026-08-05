@@ -427,7 +427,7 @@
                 label="Upload icon file"
                 folder="categories/icons"
                 value={form.icon_url}
-                helper="Use a png, jpg, or webp icon file."
+                helper="Use a png, jpg, webp, or avif icon file."
                 on:uploaded={(event) => {
                   form.icon_url = event.detail.url;
                   showToast('Icon file uploaded successfully.');

@@ -31,7 +31,7 @@
 <div class="rounded-lg border border-dashed border-ink/20 bg-surface p-5">
   <label class="grid gap-2 text-sm font-medium text-ink">
     <span>Image upload</span>
-    <input accept="image/jpeg,image/png,image/webp" bind:files class="rounded-md border border-ink/15 bg-surface px-3 py-2.5 text-sm" type="file" />
+    <input accept="image/jpeg,image/png,image/webp,image/avif" bind:files class="rounded-md border border-ink/15 bg-surface px-3 py-2.5 text-sm" type="file" />
   </label>
   <button class="mt-3 rounded-md bg-forest px-4 py-2 text-sm font-semibold text-white disabled:opacity-60" type="button" disabled={uploading} on:click={upload}>
     {uploading ? 'Uploading...' : 'Upload Image'}

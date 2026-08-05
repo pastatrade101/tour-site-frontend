@@ -909,7 +909,7 @@
           >
             <span class="mx-auto grid h-14 w-14 place-items-center rounded-[10px] bg-forest text-white shadow-sm"><UploadCloud size={28} /></span>
             <span class="mt-4 block text-base font-extrabold text-heading">Drop images here or click to browse</span>
-            <span class="mt-1 block text-sm text-ink/55">PNG, JPG or WebP. Select many files at once; titles are generated from file names.</span>
+            <span class="mt-1 block text-sm text-ink/55">PNG, JPG, WebP or AVIF. Select many files at once; titles are generated from file names.</span>
             {#if bulkUploading}
               <span class="mt-4 inline-flex items-center gap-2 rounded-[8px] bg-surface px-3 py-1.5 text-xs font-bold text-ink ring-1 ring-ink/10">
                 <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-forest/20 border-t-forest"></span>
@@ -996,7 +996,7 @@
       </div>
     </div>
   </div>
-  <input class="hidden" type="file" accept="image/png,image/jpeg,image/webp" multiple bind:this={bulkInput} on:change={onBulkFiles} />
+  <input class="hidden" type="file" accept="image/png,image/jpeg,image/webp,image/avif" multiple bind:this={bulkInput} on:change={onBulkFiles} />
 {/if}
 
 <ConfirmModal

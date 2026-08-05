@@ -469,7 +469,7 @@
         >
           <Upload size={26} class="text-forest" />
           <span class="text-sm font-semibold text-ink">Click to choose images, or drag &amp; drop</span>
-          <span class="text-xs text-ink/50">JPG, PNG or WebP · max 5MB each · select many at once</span>
+          <span class="text-xs text-ink/50">JPG, PNG, WebP or AVIF · max 5MB each · select many at once</span>
         </button>
 
         <AdminFormInput label="Alt text (applied to all — blank uses each file name)" name="upload_alt_text" bind:value={uploadAltText} placeholder="Describe the images for accessibility" />
@@ -519,7 +519,7 @@
       </div>
     </form>
   </div>
-  <input class="hidden" type="file" accept="image/jpeg,image/png,image/webp" multiple bind:this={uploadInput} on:change={handleUploadFileChange} />
+  <input class="hidden" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple bind:this={uploadInput} on:change={handleUploadFileChange} />
 {/if}
 
 {#if editModalOpen && mediaToEdit}

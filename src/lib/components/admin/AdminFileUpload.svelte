@@ -3,7 +3,7 @@
   import { Upload } from '@lucide/svelte';
   import { api } from '$lib/api/client';
 
-  export let accept = 'image/jpeg,image/png,image/webp';
+  export let accept = 'image/jpeg,image/png,image/webp,image/avif';
   export let folder = 'cms';
   export let helper = '';
   export let kind: 'image' | 'lottie' = 'image';

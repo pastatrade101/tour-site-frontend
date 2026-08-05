@@ -151,4 +151,4 @@
   </div>
 {/if}
 
-<input class="hidden" type="file" accept="image/png,image/jpeg,image/webp" bind:this={fileInput} on:change={onFileChange} />
+<input class="hidden" type="file" accept="image/png,image/jpeg,image/webp,image/avif" bind:this={fileInput} on:change={onFileChange} />
