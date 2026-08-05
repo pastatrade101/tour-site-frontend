@@ -7,6 +7,8 @@
   export let title = 'Top Tour Packages';
   export let subtitle =
     'Our most-loved safari, Kilimanjaro and Zanzibar itineraries — each fully tailorable to you.';
+  export let buttonText = '';
+  export let buttonUrl = '';
   export let tours: any[] = [];
 
   let active = 'All';
@@ -22,6 +24,11 @@
       <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">{eyebrow}</p>
       <h2 class="mt-3 text-3xl font-semibold leading-tight text-heading md:text-[38px]">{title}</h2>
       <p class="mt-4 leading-7 text-ink/70">{subtitle}</p>
+      {#if buttonText && buttonUrl}
+        <a class="mt-5 inline-flex h-10 items-center gap-1.5 rounded-[8px] border border-ink/10 bg-surface px-4 text-sm font-semibold text-forest shadow-sm transition hover:border-forest/25 hover:text-heading" href={buttonUrl}>
+          {buttonText} <ArrowRight size={16} />
+        </a>
+      {/if}
     </div>
 
     <!-- filter tabs -->

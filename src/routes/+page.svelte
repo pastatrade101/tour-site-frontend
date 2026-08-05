@@ -3,6 +3,7 @@
   import BlogCard from '$lib/components/public/BlogCard.svelte';
   import DestinationCard from '$lib/components/public/DestinationCard.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
+  import GalleryCard, { type GalleryCardItem } from '$lib/components/public/GalleryCard.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import { faqLd } from '$lib/seo';
   import HeroSection from '$lib/components/public/HeroSection.svelte';
@@ -49,6 +50,7 @@
   let reviewSummary: ReviewSummary | null = data.reviewSummary ?? null;
   let reviews: Review[] = data.reviews ?? [];
   let migrationEntries: MigrationEntry[] = data.migrationEntries ?? [];
+  let galleryItems: GalleryCardItem[] = (data.galleryItems ?? []) as GalleryCardItem[];
   let sections: Record<string, HomeSection> = Object.fromEntries(
     (data.homeSections as unknown as HomeSection[]).map((s) => [s.section_key, s])
   );
@@ -64,6 +66,7 @@
     const value = (sections[key]?.extra_data as Record<string, unknown> | undefined)?.[field];
     return typeof value === 'string' && value.trim() ? value : fallback;
   };
+  const isSectionActive = (key: string) => sections[key]?.is_active !== false;
 
   $: heroExtra = (sections.hero?.extra_data ?? {}) as Record<string, unknown>;
   $: heroImageResolved = cms('hero', 'image_url', '/images/surf-hero.jpg');
@@ -124,6 +127,7 @@
   $: seasonsExtra = (sections.seasons?.extra_data ?? {}) as Record<string, unknown>;
   $: impactExtra = (sections.impact?.extra_data ?? {}) as Record<string, unknown>;
   $: featuredToursExtra = (sections.featured_tours?.extra_data ?? {}) as Record<string, unknown>;
+  $: faqExtra = (sections.faq?.extra_data ?? {}) as Record<string, unknown>;
   $: introProps = clean({
     eyebrow: introExtra.eyebrow,
     title: sections.intro?.title,
@@ -146,7 +150,13 @@
     primaryCta: sections.impact?.button_text,
     primaryCtaUrl: sections.impact?.button_url
   });
-  $: tourProps = clean({ eyebrow: featuredToursExtra.eyebrow, title: sections.featured_tours?.title, subtitle: sections.featured_tours?.subtitle });
+  $: tourProps = clean({
+    eyebrow: featuredToursExtra.eyebrow,
+    title: sections.featured_tours?.title,
+    subtitle: sections.featured_tours?.subtitle,
+    buttonText: sections.featured_tours?.button_text,
+    buttonUrl: sections.featured_tours?.button_url
+  });
 
   // "Plan your dream" band bullets + Final-CTA trust chips — CMS-overridable via
   // extra_data.points / extra_data.trust_points, falling back to the current text.
@@ -157,31 +167,53 @@
   $: ctaTrustPoints = arr<string>(ctaExtra.trust_points).length
     ? arr<string>(ctaExtra.trust_points)
     : ['Local experts', 'No payment to plan', 'Honest, tailored advice'];
+  $: destinationCtaText = cms('featured_destinations', 'button_text', 'All destinations');
+  $: destinationCtaUrl = cms('featured_destinations', 'button_url', '/destinations');
+  $: processCtaText = cms('how_it_works', 'button_text', 'Start planning');
+  $: processCtaUrl = cms('how_it_works', 'button_url', '/plan-my-trip');
+  $: blogCtaText = cms('blog_preview', 'button_text', 'View all');
+  $: blogCtaUrl = cms('blog_preview', 'button_url', '/blog');
+  $: galleryCtaText = cms('gallery_preview', 'button_text', 'View gallery');
+  $: galleryCtaUrl = cms('gallery_preview', 'button_url', '/gallery');
+  $: ctaSecondaryText = cmsExtra('final_cta', 'secondary_cta_text', 'Talk to a Travel Advisor');
+  $: ctaSecondaryUrl = cmsExtra('final_cta', 'secondary_cta_url', '/contact');
+  $: homepageFaqRows = arr<Record<string, unknown>>(faqExtra.faqs)
+    .map((faq, index) => ({
+      id: typeof faq.id === 'string' && faq.id.trim() ? faq.id : `homepage-faq-${index}`,
+      question: typeof faq.question === 'string' ? faq.question.trim() : '',
+      answer: typeof faq.answer === 'string' ? faq.answer.trim() : ''
+    }))
+    .filter((faq) => faq.question && faq.answer);
+  $: homepageFaqs = homepageFaqRows.length ? homepageFaqRows : faqs;
 </script>
 
 <svelte:head>
   <link rel="preload" as="image" href={imgUrl(heroImageResolved, 1800, 72)} fetchpriority="high" />
 </svelte:head>
 
-<HeroSection
-  overlay={heroExtra.overlay_opacity === undefined || heroExtra.overlay_opacity === null || heroExtra.overlay_opacity === '' ? 44 : (Number(heroExtra.overlay_opacity) || 0) * 100}
-  eyebrow={typeof heroExtra.eyebrow === 'string' ? heroExtra.eyebrow : 'Tanzania & East Africa specialists'}
-  title={cms('hero', 'title', 'Tailor-Made East Africa Safaris')}
-  highlight={typeof heroExtra.title_highlight === 'string' ? heroExtra.title_highlight : 'Planned by Local Experts'}
-  description={cms('hero', 'subtitle', 'Great Migration river crossings, honest safari, Kilimanjaro and Zanzibar advice — planned around you by Tanzanian local experts.')}
-  imageUrl={heroImageResolved}
-  imageUrls={heroSlides}
-  primaryCta={cms('hero', 'button_text', 'Plan My Trip')}
-  primaryCtaUrl={cms('hero', 'button_url', '/plan-my-trip')}
-  secondaryCta={typeof heroExtra.secondary_cta_text === 'string' ? heroExtra.secondary_cta_text : 'Talk to a Travel Advisor'}
-  secondaryCtaUrl={typeof heroExtra.secondary_cta_url === 'string' ? heroExtra.secondary_cta_url : '/contact'}
-/>
+{#if isSectionActive('hero')}
+  <HeroSection
+    overlay={heroExtra.overlay_opacity === undefined || heroExtra.overlay_opacity === null || heroExtra.overlay_opacity === '' ? 44 : (Number(heroExtra.overlay_opacity) || 0) * 100}
+    eyebrow={typeof heroExtra.eyebrow === 'string' ? heroExtra.eyebrow : 'Tanzania & East Africa specialists'}
+    title={cms('hero', 'title', 'Tailor-Made East Africa Safaris')}
+    highlight={typeof heroExtra.title_highlight === 'string' ? heroExtra.title_highlight : 'Planned by Local Experts'}
+    description={cms('hero', 'subtitle', 'Great Migration river crossings, honest safari, Kilimanjaro and Zanzibar advice — planned around you by Tanzanian local experts.')}
+    imageUrl={heroImageResolved}
+    imageUrls={heroSlides}
+    primaryCta={cms('hero', 'button_text', 'Plan My Trip')}
+    primaryCtaUrl={cms('hero', 'button_url', '/plan-my-trip')}
+    secondaryCta={typeof heroExtra.secondary_cta_text === 'string' ? heroExtra.secondary_cta_text : 'Talk to a Travel Advisor'}
+    secondaryCtaUrl={typeof heroExtra.secondary_cta_url === 'string' ? heroExtra.secondary_cta_url : '/contact'}
+  />
+{/if}
 
 <!-- 2 · Intro + stats -->
-<IntroBand {...introProps} />
+{#if isSectionActive('intro')}
+  <IntroBand {...introProps} />
+{/if}
 
 <!-- 3 · Destinations — hidden when there are no destinations -->
-{#if destinations.length}
+{#if isSectionActive('featured_destinations') && destinations.length}
 <section class="relative overflow-hidden bg-surface py-14 md:py-20" use:sectionReveal>
   <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-goldfinch-gold/35 to-transparent" aria-hidden="true"></div>
   <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-canvas/70 to-transparent" aria-hidden="true"></div>
@@ -196,8 +228,8 @@
           {cms('featured_destinations', 'subtitle', 'Handpicked places across Tanzania, from the Serengeti to the coast.')}
         </p>
       </div>
-      <a class="hidden shrink-0 items-center gap-2 rounded-[8px] border border-goldfinch-gold/40 bg-surface px-5 py-2.5 text-sm font-bold text-clay shadow-sm transition hover:bg-goldfinch-gold hover:text-heading sm:inline-flex" href="/destinations">
-        All destinations <ArrowRight size={15} strokeWidth={2.4} />
+      <a class="hidden shrink-0 items-center gap-2 rounded-[8px] border border-goldfinch-gold/40 bg-surface px-5 py-2.5 text-sm font-bold text-clay shadow-sm transition hover:bg-goldfinch-gold hover:text-heading sm:inline-flex" href={destinationCtaUrl}>
+        {destinationCtaText} <ArrowRight size={15} strokeWidth={2.4} />
       </a>
     </div>
     <div class="relative mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3" use:staggeredCardReveal>
@@ -206,8 +238,8 @@
       {/each}
     </div>
     <div class="mt-10 flex justify-center sm:hidden">
-      <a class="inline-flex h-12 items-center gap-2 rounded-[8px] bg-deep-green px-7 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-sm transition hover:bg-forest" href="/destinations">
-        All destinations <ArrowRight size={16} />
+      <a class="inline-flex h-12 items-center gap-2 rounded-[8px] bg-deep-green px-7 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-sm transition hover:bg-forest" href={destinationCtaUrl}>
+        {destinationCtaText} <ArrowRight size={16} />
       </a>
     </div>
   </div>
@@ -215,10 +247,12 @@
 {/if}
 
 <!-- 4 · Your Safari, Your Way -->
-<WhyGoldfinch {...whyProps} />
+{#if isSectionActive('why_us')}
+  <WhyGoldfinch {...whyProps} />
+{/if}
 
 <!-- 5 · Top Tour Packages — hidden when there are no tours -->
-{#if tours.length}
+{#if isSectionActive('featured_tours') && tours.length}
   <TourPackages {tours} {...tourProps} />
 {/if}
 
@@ -237,7 +271,9 @@
 {/if}
 
 <!-- 7 · Best times to visit -->
-<SeasonsBand {...seasonsProps} />
+{#if isSectionActive('seasons')}
+  <SeasonsBand {...seasonsProps} />
+{/if}
 
 <!-- 7b · Serengeti Great Migration calendar (self-hiding until published entries exist) -->
 <MigrationCalendar
@@ -249,6 +285,7 @@
 />
 
 <!-- 8 · Plan your dream (dark form band) -->
+{#if isSectionActive('plan_dream')}
 <section class="relative overflow-hidden bg-deep-green py-14 text-white md:py-20" use:sectionReveal>
   <div class="pointer-events-none absolute inset-0 opacity-[0.06]" style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1.6px); background-size: 28px 28px;" aria-hidden="true"></div>
   <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-goldfinch-gold/35 to-transparent" aria-hidden="true"></div>
@@ -269,8 +306,10 @@
     <LeadCaptureForm title={cmsExtra('plan_dream', 'form_title', 'Safari details')} compact />
   </div>
 </section>
+{/if}
 
 <!-- 9 · Our Process -->
+{#if isSectionActive('how_it_works')}
 <section class="relative overflow-hidden bg-canvas py-14 md:py-20" use:sectionReveal>
   <div class="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-surface/70 to-transparent" aria-hidden="true"></div>
   <div class="container-shell">
@@ -279,22 +318,25 @@
       subtitle={cms('how_it_works', 'subtitle', 'A calm, transparent process — no pressure, and no payment to start.')}
     />
     <div class="mt-12 flex justify-center">
-      <a class="inline-flex h-12 items-center gap-2 rounded-[8px] bg-goldfinch-gold px-7 font-bold text-heading shadow-sm transition hover:brightness-105" href="/plan-my-trip">Start planning <ArrowRight size={18} /></a>
+      <a class="inline-flex h-12 items-center gap-2 rounded-[8px] bg-goldfinch-gold px-7 font-bold text-heading shadow-sm transition hover:brightness-105" href={processCtaUrl}>{processCtaText} <ArrowRight size={18} /></a>
     </div>
   </div>
 </section>
+{/if}
 
 <!-- 9b · Platform reviews trust widget + AggregateRating JSON-LD (self-hiding until approved reviews exist) -->
-<ReviewsWidget
-  summary={reviewSummary}
-  reviews={reviews}
-  eyebrow={cmsExtra('reviews_section', 'eyebrow', 'Loved by travellers')}
-  title={cms('reviews_section', 'title', 'Real reviews from real safaris')}
-  subtitle={cms('reviews_section', 'subtitle', 'Verified ratings from travellers across TripAdvisor, SafariBookings and Google.')}
-/>
+{#if isSectionActive('reviews_section')}
+  <ReviewsWidget
+    summary={reviewSummary}
+    reviews={reviews}
+    eyebrow={cmsExtra('reviews_section', 'eyebrow', 'Loved by travellers')}
+    title={cms('reviews_section', 'title', 'Real reviews from real safaris')}
+    subtitle={cms('reviews_section', 'subtitle', 'Verified ratings from travellers across TripAdvisor, SafariBookings and Google.')}
+  />
+{/if}
 
 <!-- 10 · Reviews — hidden when there are no testimonials -->
-{#if testimonials.length}
+{#if isSectionActive('testimonials') && testimonials.length}
 <section class="relative overflow-hidden bg-surface py-14 md:py-20" use:sectionReveal>
   <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-goldfinch-gold/25 to-transparent" aria-hidden="true"></div>
   <div class="container-shell">
@@ -320,14 +362,47 @@
   <PartnerStrip logos={partnerLogos} title={cms('partners', 'title', 'Trusted by leading travel partners')} />
 {/if}
 
+<!-- 10b · Gallery preview — hidden until published gallery images exist -->
+{#if isSectionActive('gallery_preview') && galleryItems.length}
+<section class="relative overflow-hidden bg-deep-green py-14 text-white md:py-20" use:sectionReveal>
+  <div class="pointer-events-none absolute inset-0 opacity-[0.07]" style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1.5px); background-size: 30px 30px;" aria-hidden="true"></div>
+  <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-goldfinch-gold/45 to-transparent" aria-hidden="true"></div>
+  <div class="container-shell relative">
+    <div class="grid gap-7 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+      <div class="max-w-xl" use:fadeUpOnScroll={{ y: 14 }}>
+        <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">{cmsExtra('gallery_preview', 'eyebrow', 'Field notes in frames')}</p>
+        <h2 class="mt-3 text-3xl font-semibold leading-tight text-white md:text-[42px]">
+          {cms('gallery_preview', 'title', 'See the journeys before you choose')}
+        </h2>
+        <p class="mt-4 text-[15px] leading-8 text-white/75 md:text-lg">
+          {cms('gallery_preview', 'subtitle', 'Real published gallery moments from safaris, climbs, coast stays and the places our team knows well.')}
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-3 lg:justify-end" use:fadeUpOnScroll={{ y: 14, delay: 0.08 }}>
+        <span class="inline-flex items-center gap-2 rounded-[8px] bg-white/15 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/25 backdrop-blur"><span class="h-1.5 w-1.5 rounded-full bg-goldfinch-gold"></span>{galleryItems.length} featured image{galleryItems.length === 1 ? '' : 's'}</span>
+        <a class="inline-flex h-11 items-center gap-2 rounded-[8px] bg-goldfinch-gold px-5 text-sm font-extrabold text-heading shadow-sm transition hover:brightness-105" href={galleryCtaUrl}>
+          {galleryCtaText} <ArrowRight size={16} strokeWidth={2.6} />
+        </a>
+      </div>
+    </div>
+
+    <div class="mt-9 grid auto-rows-[280px] gap-4 md:grid-cols-3" use:staggeredCardReveal={{ y: 18, stagger: 0.06 }}>
+      {#each galleryItems.slice(0, 7) as item, index (item.id ?? `${item.image_url}-${index}`)}
+        <GalleryCard {item} featured={index === 0} />
+      {/each}
+    </div>
+  </div>
+</section>
+{/if}
+
 <!-- 11 · Blog — hidden when there are no posts -->
-{#if posts.length}
+{#if isSectionActive('blog_preview') && posts.length}
 <section class="relative overflow-hidden bg-canvas py-14 md:py-20" use:sectionReveal>
   <div class="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-surface/70 to-transparent" aria-hidden="true"></div>
   <div class="container-shell">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <SectionHeader eyebrow={cmsExtra('blog_preview', 'eyebrow', 'Stories')} title={cms('blog_preview', 'title', 'Latest Stories & Guides')} description={cms('blog_preview', 'subtitle', 'Tips, guides and inspiration from our East Africa specialists.')} />
-      <a class="inline-flex h-10 items-center gap-1.5 rounded-[8px] border border-ink/10 bg-surface px-4 text-sm font-semibold text-forest shadow-sm transition hover:border-forest/25 hover:text-heading" href="/blog">View all <ArrowRight size={16} /></a>
+      <a class="inline-flex h-10 items-center gap-1.5 rounded-[8px] border border-ink/10 bg-surface px-4 text-sm font-semibold text-forest shadow-sm transition hover:border-forest/25 hover:text-heading" href={blogCtaUrl}>{blogCtaText} <ArrowRight size={16} /></a>
     </div>
     <div class="mt-8 grid gap-5 md:grid-cols-3" use:staggeredCardReveal>
       {#each posts as post}
@@ -339,11 +414,13 @@
 {/if}
 
 <!-- 12 · Impact -->
-<ImpactBand {...impactProps} />
+{#if isSectionActive('impact')}
+  <ImpactBand {...impactProps} />
+{/if}
 
 <!-- 13 · FAQ -->
-{#if faqs.length}
-  <JsonLd data={faqLd(faqs.map((f) => ({ q: f.question, a: f.answer })))} />
+{#if isSectionActive('faq') && homepageFaqs.length}
+  <JsonLd data={faqLd(homepageFaqs.map((f) => ({ q: f.question, a: f.answer })))} />
 <section class="relative overflow-hidden bg-surface py-14 md:py-20" use:sectionReveal>
   <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-forest/20 to-transparent" aria-hidden="true"></div>
   <div class="container-shell grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
@@ -351,12 +428,12 @@
       <SectionHeader eyebrow={cmsExtra('faq', 'eyebrow', 'Good to know')} title={cms('faq', 'title', 'Tanzania Safari FAQs')} description={cms('faq', 'subtitle', 'Honest answers to the questions travellers ask most.')} />
       <a class="mt-6 inline-flex h-12 items-center gap-2 rounded-[8px] bg-[#25D366] px-6 font-bold text-white shadow-sm transition hover:brightness-105" href={cms('faq', 'button_url', '/contact')}><MessageCircle size={18} /> {cms('faq', 'button_text', 'Ask us on WhatsApp')}</a>
     </div>
-    <FAQAccordion {faqs} />
+    <FAQAccordion faqs={homepageFaqs} />
   </div>
 </section>
 {/if}
 
-{#if sections.final_cta?.is_active !== false && (sections.final_cta?.title || sections.final_cta?.button_text)}
+{#if isSectionActive('final_cta') && (sections.final_cta?.title || sections.final_cta?.button_text)}
   <section class="relative w-full overflow-hidden text-white" use:sectionReveal>
     <!-- background media layer (admin-configurable: video > image > brand gradient) -->
     {#if ctaVideo}
@@ -396,10 +473,10 @@
           </a>
           <a
             class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] border border-white/25 bg-surface/5 px-7 text-sm font-bold text-white backdrop-blur transition hover:bg-surface/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 sm:w-auto md:h-[52px] md:text-base"
-            href="/contact"
+            href={ctaSecondaryUrl}
           >
             <MessageCircle size={17} strokeWidth={2.4} />
-            Talk to a Travel Advisor
+            {ctaSecondaryText}
           </a>
         </div>
 

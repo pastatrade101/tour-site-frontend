@@ -25,7 +25,8 @@ export const load: PageLoad = async ({ fetch }) => {
     reviewSummary,
     featuredReviews,
     allReviews,
-    migrationEntries
+    migrationEntries,
+    galleryItems
   ] = await Promise.allSettled([
     cachedJson<{ data?: { items?: Tour[] } }>(`${API_URL}/tours?status=published&limit=3`, fetch),
     cachedJson<{ data?: { items?: Destination[] } }>(`${API_URL}/destinations?status=published&limit=6`, fetch),
@@ -36,7 +37,8 @@ export const load: PageLoad = async ({ fetch }) => {
     cachedJson<{ data?: ReviewSummary }>(`${API_URL}/reviews/summary`, fetch),
     cachedJson<{ data?: { items?: Review[] } }>(`${API_URL}/reviews?status=approved&is_featured=true&limit=6`, fetch),
     cachedJson<{ data?: { items?: Review[] } }>(`${API_URL}/reviews?status=approved&limit=6`, fetch),
-    cachedJson<{ data?: { items?: MigrationEntry[] } }>(`${API_URL}/migration-calendar?is_published=true&limit=24`, fetch)
+    cachedJson<{ data?: { items?: MigrationEntry[] } }>(`${API_URL}/migration-calendar?is_published=true&limit=24`, fetch),
+    cachedJson<{ data?: { items?: Record<string, unknown>[] } }>(`${API_URL}/gallery?status=published&media_type=image&limit=7`, fetch)
   ]);
 
   const featuredReviewItems = items<Review>(featuredReviews);
@@ -51,6 +53,7 @@ export const load: PageLoad = async ({ fetch }) => {
     faqs: items<FAQ>(faqs),
     reviewSummary: dataValue<ReviewSummary>(reviewSummary),
     reviews: featuredReviewItems.length ? featuredReviewItems : fallbackReviewItems,
-    migrationEntries: items<MigrationEntry>(migrationEntries)
+    migrationEntries: items<MigrationEntry>(migrationEntries),
+    galleryItems: items<Record<string, unknown>>(galleryItems)
   };
 };

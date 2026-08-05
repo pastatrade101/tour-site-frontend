@@ -1,13 +1,11 @@
 <script lang="ts">
-  export let images: Record<string, unknown>[] = [];
+  import GalleryCard, { type GalleryCardItem } from './GalleryCard.svelte';
+
+  export let images: GalleryCardItem[] = [];
 </script>
 
-<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-  {#each images as image}
-    <figure class="aspect-[4/3] overflow-hidden rounded-lg bg-skywash">
-      {#if typeof image.image_url === 'string'}
-        <img class="h-full w-full object-cover" src={image.image_url} alt={String(image.alt_text ?? image.title ?? 'Gallery image')} />
-      {/if}
-    </figure>
+<div class="grid auto-rows-[300px] gap-4 md:grid-cols-3">
+  {#each images as image, index (image.id ?? `${image.image_url}-${index}`)}
+    <GalleryCard item={image} featured={index === 0} />
   {/each}
 </div>
