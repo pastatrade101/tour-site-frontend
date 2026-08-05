@@ -77,9 +77,8 @@
       : [...travel_interests, interest];
   };
 
-  const inputBase = 'w-full rounded-md border bg-surface px-3 py-3 text-sm text-ink outline-none transition focus:ring-2';
-  $: cls = (field: string) =>
-    `${inputBase} ${errors[field] ? 'border-red-300 focus:border-red-400 focus:ring-red-200' : 'border-ink/15 focus:border-forest focus:ring-forest/15'}`;
+  const inputBase = 'gf-input';
+  $: cls = (field: string) => `${inputBase}${errors[field] ? ' gf-input-error' : ''}`;
 
   // Validate only the fields on a given step.
   const validateStep = (index: number): boolean => {
@@ -408,24 +407,24 @@
         <fieldset class="grid gap-4">
           <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Contact details</legend>
           <div class="grid gap-4 md:grid-cols-2">
-            <label class="grid gap-1.5 text-sm font-medium text-ink">
-              <span>Full name</span>
+            <label class="grid gap-1.5">
+              <span class="gf-label">Full name</span>
               <input class={cls('full_name')} bind:value={full_name} on:input={() => clearErr('full_name')} placeholder="Your name" autocomplete="name" />
               {#if errors.full_name}<span class="text-xs text-red-600">{errors.full_name}</span>{/if}
             </label>
-            <label class="grid gap-1.5 text-sm font-medium text-ink">
-              <span>Email</span>
+            <label class="grid gap-1.5">
+              <span class="gf-label">Email</span>
               <input class={cls('email')} type="email" bind:value={email} on:input={() => clearErr('email')} placeholder="you@example.com" autocomplete="email" />
               {#if errors.email}<span class="text-xs text-red-600">{errors.email}</span>{/if}
             </label>
           </div>
           <div class="grid gap-4 md:grid-cols-2">
-            <label class="grid gap-1.5 text-sm font-medium text-ink">
-              <span>Phone / WhatsApp</span>
+            <label class="grid gap-1.5">
+              <span class="gf-label">Phone / WhatsApp</span>
               <input class={cls('phone')} type="tel" bind:value={phone} on:input={() => clearErr('phone')} placeholder="+255 ..." autocomplete="tel" />
               {#if errors.phone}<span class="text-xs text-red-600">{errors.phone}</span>{/if}
             </label>
-            <div class="grid gap-1.5 text-sm font-medium text-ink">
+            <div class="grid gap-1.5">
               <span>Country</span>
               <CountrySelect bind:value={country} invalid={Boolean(errors.country)} on:change={() => clearErr('country')} placeholder="Search your country..." />
               {#if errors.country}<span class="text-xs text-red-600">{errors.country}</span>{/if}
@@ -436,13 +435,13 @@
         <fieldset class="grid gap-4">
           <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Trip details</legend>
           <div class="grid gap-4 md:grid-cols-2">
-            <label class="grid gap-1.5 text-sm font-medium text-ink">
-              <span>Preferred travel date</span>
+            <label class="grid gap-1.5">
+              <span class="gf-label">Preferred travel date</span>
               <input class={cls('travel_date')} type="date" min={todayStr} bind:value={travel_date} on:input={() => clearErr('travel_date')} />
               {#if errors.travel_date}<span class="text-xs text-red-600">{errors.travel_date}</span>{/if}
             </label>
-            <label class="grid gap-1.5 text-sm font-medium text-ink">
-              <span>Are your dates flexible?</span>
+            <label class="grid gap-1.5">
+              <span class="gf-label">Are your dates flexible?</span>
               <select class={cls('date_flexibility')} bind:value={date_flexibility} on:change={() => clearErr('date_flexibility')}>
                 <option value="" disabled>Select…</option>
                 {#each FLEX_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
@@ -451,12 +450,12 @@
             </label>
           </div>
           <div class="grid gap-4 md:grid-cols-2">
-            <label class="grid gap-1.5 text-sm font-medium text-ink">
-              <span>Trip duration</span>
+            <label class="grid gap-1.5">
+              <span class="gf-label">Trip duration</span>
               <input class={cls('trip_duration')} bind:value={trip_duration} placeholder="e.g. 5 days / 4 nights" />
             </label>
-            <label class="grid gap-1.5 text-sm font-medium text-ink">
-              <span>Estimated budget per person</span>
+            <label class="grid gap-1.5">
+              <span class="gf-label">Estimated budget per person</span>
               <select class={cls('budget_range')} bind:value={budget_range} on:change={() => clearErr('budget_range')}>
                 <option value="" disabled>Select budget…</option>
                 {#each BUDGET_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
@@ -465,13 +464,13 @@
             </label>
           </div>
           <div class="grid gap-4 md:grid-cols-2">
-            <label class="grid gap-1.5 text-sm font-medium text-ink">
-              <span>Adults</span>
+            <label class="grid gap-1.5">
+              <span class="gf-label">Adults</span>
               <input class={cls('number_of_adults')} type="number" min="1" bind:value={number_of_adults} on:input={() => clearErr('number_of_adults')} />
               {#if errors.number_of_adults}<span class="text-xs text-red-600">{errors.number_of_adults}</span>{/if}
             </label>
-            <label class="grid gap-1.5 text-sm font-medium text-ink">
-              <span>Children</span>
+            <label class="grid gap-1.5">
+              <span class="gf-label">Children</span>
               <input class={cls('number_of_children')} type="number" min="0" bind:value={number_of_children} on:input={() => clearErr('number_of_children')} />
               {#if errors.number_of_children}<span class="text-xs text-red-600">{errors.number_of_children}</span>{/if}
             </label>
@@ -480,7 +479,7 @@
       {:else if step === 2}
         <fieldset class="grid gap-4">
           <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Preferences</legend>
-          <div class="grid gap-2 text-sm font-medium text-ink">
+          <div class="grid gap-2">
             <span>What are you interested in? <span class="font-normal text-ink/70">(select any)</span></span>
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {#each INTERESTS as interest}
@@ -493,19 +492,19 @@
               {/each}
             </div>
           </div>
-          <label class="grid gap-1.5 text-sm font-medium text-ink">
-            <span>Accommodation preference</span>
+          <label class="grid gap-1.5">
+            <span class="gf-label">Accommodation preference</span>
             <select class={cls('accommodation_preference')} bind:value={accommodation_preference}>
               <option value="">No preference</option>
               {#each ACCOMMODATION_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
             </select>
           </label>
-          <label class="grid gap-1.5 text-sm font-medium text-ink">
-            <span>Special requests</span>
+          <label class="grid gap-1.5">
+            <span class="gf-label">Special requests</span>
             <textarea class={inputBase + ' border-ink/15 focus:border-forest focus:ring-forest/15'} rows={2} bind:value={special_requests} placeholder="Dietary needs, accessibility, celebrations, room preferences..."></textarea>
           </label>
-          <label class="grid gap-1.5 text-sm font-medium text-ink">
-            <span>Anything else we should know?</span>
+          <label class="grid gap-1.5">
+            <span class="gf-label">Anything else we should know?</span>
             <textarea class={inputBase + ' border-ink/15 focus:border-forest focus:ring-forest/15'} rows={3} bind:value={message} placeholder="Must-see places, special occasions, group details..."></textarea>
           </label>
         </fieldset>

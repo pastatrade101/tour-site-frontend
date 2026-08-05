@@ -179,3 +179,66 @@ select {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Shared public form language ──────────────────────────────────────────
+   One vocabulary for every visitor-facing form (plan a trip, request a tour,
+   contact, lead capture) so they read as one product: micro uppercase labels,
+   44px controls, gold primary action, ghost secondary. */
+@layer components {
+  .gf-label {
+    @apply block text-[10px] font-bold uppercase tracking-[0.14em] text-ink/55;
+  }
+  .gf-req {
+    @apply text-goldfinch-gold;
+  }
+  .gf-hint {
+    @apply text-[11px] font-normal normal-case tracking-normal text-ink/45;
+  }
+  .gf-input {
+    @apply h-11 w-full rounded-[8px] border border-ink/25 bg-surface px-3 text-sm text-ink outline-none transition;
+  }
+  .gf-input:focus {
+    @apply border-goldfinch-gold ring-2 ring-goldfinch-gold/25;
+  }
+  .gf-input-error {
+    @apply border-red-300 focus:border-red-400 focus:ring-red-200;
+  }
+  .gf-textarea {
+    @apply w-full rounded-[8px] border border-ink/25 bg-surface px-3 py-2.5 text-sm text-ink outline-none transition;
+  }
+  .gf-textarea:focus {
+    @apply border-goldfinch-gold ring-2 ring-goldfinch-gold/25;
+  }
+  .gf-chip {
+    @apply inline-flex items-center justify-center gap-2 rounded-[8px] border border-ink/20 bg-surface px-4 py-2.5 text-sm font-semibold text-ink/75 transition hover:border-goldfinch-gold/50;
+  }
+  .gf-chip-active {
+    @apply border-goldfinch-gold bg-heading text-goldfinch-gold;
+  }
+  .gf-btn-primary {
+    @apply inline-flex h-[52px] items-center justify-center gap-1.5 rounded-[8px] bg-goldfinch-gold px-5 text-[15px] font-bold text-heading transition hover:brightness-105 disabled:opacity-70 sm:h-11 sm:text-sm;
+  }
+  .gf-btn-ghost {
+    @apply inline-flex h-[52px] items-center justify-center gap-1.5 rounded-[8px] border border-ink/20 bg-transparent px-4 text-[15px] font-semibold text-ink/75 transition hover:bg-sand/50 sm:h-11 sm:text-sm;
+  }
+  /* Dark form panel (solid brand green) — the light control styles stay, only
+     the surrounding text/labels flip so contrast holds. */
+  .gf-panel-dark {
+    @apply bg-deep-green text-white;
+  }
+  .gf-panel-dark .gf-label {
+    @apply text-white/60;
+  }
+  .gf-panel-dark .gf-hint {
+    @apply text-white/45;
+  }
+  .gf-panel-dark .gf-btn-ghost {
+    @apply border-white/30 text-white/85 hover:bg-white/10;
+  }
+  .gf-panel-dark .gf-step-count {
+    @apply text-white/45;
+  }
+  .gf-step-count {
+    @apply text-[10px] font-bold uppercase tracking-[0.14em] text-ink/45;
+  }
+}

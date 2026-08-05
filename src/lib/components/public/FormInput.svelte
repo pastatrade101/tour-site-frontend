@@ -5,9 +5,13 @@
   export let value = '';
   export let placeholder = '';
   export let required = false;
+  export let hint = '';
 </script>
 
-<label class="grid gap-2 text-sm font-medium text-ink">
-  <span>{label}</span>
-  <input class="rounded-md border border-ink/15 bg-surface px-3 py-3 outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" {name} {type} bind:value {placeholder} {required} />
+<label class="grid gap-1.5">
+  <span class="gf-label">
+    {label}{#if required}<span class="gf-req"> *</span>{/if}
+    {#if hint}<span class="gf-hint"> {hint}</span>{/if}
+  </span>
+  <input class="gf-input" {name} {type} bind:value {placeholder} {required} />
 </label>

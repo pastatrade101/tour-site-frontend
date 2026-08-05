@@ -3,11 +3,16 @@
   export let name: string;
   export let value = '';
   export let options: { label: string; value: string }[] = [];
+  export let required = false;
+  export let hint = '';
 </script>
 
-<label class="grid gap-2 text-sm font-medium text-ink">
-  <span>{label}</span>
-  <select class="rounded-md border border-ink/15 bg-surface px-3 py-3 outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" {name} bind:value>
+<label class="grid gap-1.5">
+  <span class="gf-label">
+    {label}{#if required}<span class="gf-req"> *</span>{/if}
+    {#if hint}<span class="gf-hint"> {hint}</span>{/if}
+  </span>
+  <select class="gf-input" {name} bind:value {required}>
     {#each options as option}
       <option value={option.value}>{option.label}</option>
     {/each}

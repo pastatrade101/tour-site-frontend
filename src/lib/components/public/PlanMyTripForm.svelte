@@ -11,6 +11,7 @@
   import { shortlist } from '$lib/shortlist';
   import Button from './Button.svelte';
   import CountrySelect from './CountrySelect.svelte';
+  import FormStepper from './FormStepper.svelte';
   import SpecialistCard from './SpecialistCard.svelte';
 
   $: bookCallUrl = settingText($publicSettings, 'booking_call_url');
@@ -45,7 +46,7 @@
   let country = '';
   let destination_interest = '';
   let experience_interests: string[] = [];
-  let travel_month = '';
+  let travel_month = '';  // derived from exact_start_date
   let exact_start_date = '';
   let exact_end_date = '';
   let date_flexibility = '';
@@ -71,12 +72,16 @@
   const todayStr = new Date().toISOString().slice(0, 10);
   const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
-  $: wantsExactDates = travel_month === 'I know exact dates';
+  // The traveller now picks an exact date; the month label is derived from it so
+  // the lead brief/CRM keeps the same field it always had.
+  $: travel_month = exact_start_date
+    ? new Date(`${exact_start_date}T00:00:00`).toLocaleString('en', { month: 'long' })
+    : '';
+  $: wantsExactDates = Boolean(exact_start_date);
   $: sent = submitted;
 
-  const inputBase = 'w-full rounded-md border bg-surface px-3 py-3 text-sm text-ink outline-none transition focus:ring-2';
-  $: cls = (field: string) =>
-    `${inputBase} ${errors[field] ? 'border-red-300 focus:border-red-400 focus:ring-red-200' : 'border-ink/15 focus:border-forest focus:ring-forest/15'}`;
+  const inputBase = 'gf-input';
+  $: cls = (field: string) => `${inputBase}${errors[field] ? ' gf-input-error' : ''}`;
 
   const clearErr = (key: string) => {
     if (errors[key]) {
@@ -195,22 +200,19 @@
 
   // ── Stepper ────────────────────────────────────────────────────────────────
   const STEPS = [
-    { key: 'contact', label: 'You' },
-    { key: 'trip', label: 'Trip' },
+    { key: 'trip', label: 'Trip details' },
     { key: 'prefs', label: 'Preferences' },
-    { key: 'notes', label: 'Notes' },
-    { key: 'review', label: 'Review' }
+    { key: 'contact', label: 'About you' }
   ];
+  const steps = STEPS;
   const LAST = STEPS.length - 1;
   let step = 0;
 
   // Which fields belong to which step, so we can validate one step at a time.
   const STEP_FIELDS: string[][] = [
-    ['full_name', 'email', 'phone', 'country'],
-    ['destination_interest', 'experience_interests', 'travel_month', 'exact_start_date', 'exact_end_date'],
+    ['experience_interests', 'exact_start_date', 'exact_end_date'],
     ['budget_per_person', 'traveller_type', 'number_of_adults', 'number_of_children'],
-    [],
-    []
+    ['full_name', 'email', 'phone', 'country']
   ];
 
   // ── Review summary + WhatsApp handoff ──────────────────────────────────────
@@ -285,15 +287,11 @@
     else if (!isEmail(email.trim())) e.email = 'Please enter a valid email address.';
     if (phone.trim().length < 6) e.phone = 'A phone or WhatsApp number is required.';
     if (!country.trim()) e.country = 'Please select your country.';
-    if (!destination_interest) e.destination_interest = 'Where would you like to go?';
     if (experience_interests.length === 0) e.experience_interests = 'Pick at least one experience.';
-    if (!travel_month) e.travel_month = 'When are you thinking of travelling?';
-    if (wantsExactDates) {
-      if (!exact_start_date) e.exact_start_date = 'Add a start date.';
-      else if (exact_start_date < todayStr) e.exact_start_date = "Start date can't be in the past.";
-      if (!exact_end_date) e.exact_end_date = 'Add an end date.';
-      else if (exact_start_date && exact_end_date <= exact_start_date) e.exact_end_date = 'End date must be after the start date.';
-    }
+    if (!exact_start_date) e.exact_start_date = 'Please pick your travel date.';
+    else if (exact_start_date < todayStr) e.exact_start_date = "Travel date can't be in the past.";
+    if (exact_end_date && exact_start_date && exact_end_date <= exact_start_date)
+      e.exact_end_date = 'End date must be after the start date.';
     if (!budget_per_person) e.budget_per_person = 'Choose a budget range.';
     if (!traveller_type) e.traveller_type = 'Who is travelling?';
     if (Number(number_of_adults) < 1) e.number_of_adults = 'At least one adult is required.';
@@ -452,14 +450,14 @@
     <p class="text-center text-xs text-ink/70">A confirmation email is on its way to the address you provided.</p>
   </div>
 {:else}
-  <form class="relative rounded-2xl border border-ink/10 bg-surface p-5 shadow-soft md:p-6" on:submit|preventDefault={submit} novalidate>
+  <form class="gf-panel-dark relative rounded-2xl border border-white/10 p-5 shadow-soft md:p-6" on:submit|preventDefault={submit} novalidate>
     <div>
       <p class="text-sm font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">Plan My Trip</p>
-      <h3 class="mt-1 text-2xl font-bold tracking-normal text-heading">Tell us about your dream trip</h3>
+      <h3 class="mt-1 font-serif text-2xl font-semibold tracking-normal text-white">Tell us about your dream trip</h3>
       {#if tripContext}
-        <p class="mt-1 text-sm leading-6 text-ink/65">We've carried your trip across — adjust anything below and a local specialist will tailor it to you.</p>
+        <p class="mt-1 text-sm leading-6 text-white/70">We've carried your trip across — adjust anything below and a local specialist will tailor it to you.</p>
       {:else}
-        <p class="mt-1 text-sm leading-6 text-ink/65">Don't know the exact tour yet? Perfect. Share the basics and a local specialist will shape a confident East Africa plan.</p>
+        <p class="mt-1 text-sm leading-6 text-white/70">Don't know the exact tour yet? Perfect. Share the basics and a local specialist will shape a confident East Africa plan.</p>
       {/if}
     </div>
 
@@ -477,51 +475,33 @@
       </div>
     {/if}
 
-    <!-- step indicator -->
-    <ol class="mt-5 flex items-center">
-      {#each STEPS as st, i}
-        <li class="flex items-center {i < STEPS.length - 1 ? 'flex-1' : ''}">
-          <button
-            type="button"
-            class={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-bold transition ${
-              i < step ? 'bg-forest text-white' : i === step ? 'bg-goldfinch-gold text-heading ring-4 ring-goldfinch-gold/20' : 'bg-sand text-ink/45'
-            } ${i < step ? 'cursor-pointer' : 'cursor-default'}`}
-            on:click={() => goStep(i)}
-            disabled={i >= step}
-            aria-current={i === step ? 'step' : undefined}
-            aria-label={`Step ${i + 1}: ${st.label}`}
-          >
-            {#if i < step}<Check size={13} strokeWidth={3} />{:else}{i + 1}{/if}
-          </button>
-          <span class={`ml-1.5 hidden text-[11px] font-semibold sm:block ${i === step ? 'text-heading' : 'text-ink/45'}`}>{st.label}</span>
-          {#if i < STEPS.length - 1}<span class={`mx-1.5 h-0.5 flex-1 rounded ${i < step ? 'bg-forest' : 'bg-sand'}`}></span>{/if}
-        </li>
-      {/each}
-    </ol>
+    <div class="mt-5">
+      <FormStepper {steps} current={step} tone="dark" onStep={goStep} />
+    </div>
 
     <div class="mt-5 grid gap-5" bind:this={bodyEl}>
       <!-- ── Contact details ───────────────────────────────────────────────── -->
-      <fieldset class="grid gap-4" class:hidden={step !== 0}>
+      <fieldset class="grid gap-4" class:hidden={step !== 2}>
         <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Contact details</legend>
         <div class="grid gap-4 md:grid-cols-2">
-          <label class="grid gap-1.5 text-sm font-medium text-ink">
-            <span>Full name</span>
+          <label class="grid gap-1.5">
+            <span class="gf-label">Full name</span>
             <input class={cls('full_name')} bind:value={full_name} on:input={() => clearErr('full_name')} placeholder="Your name" autocomplete="name" aria-invalid={Boolean(errors.full_name)} aria-describedby={errors.full_name ? 'pmt-full_name-err' : undefined} />
             {#if errors.full_name}<span id="pmt-full_name-err" data-error class="text-xs text-red-600">{errors.full_name}</span>{/if}
           </label>
-          <label class="grid gap-1.5 text-sm font-medium text-ink">
-            <span>Email</span>
+          <label class="grid gap-1.5">
+            <span class="gf-label">Email</span>
             <input class={cls('email')} type="email" bind:value={email} on:input={() => clearErr('email')} placeholder="you@example.com" autocomplete="email" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'pmt-email-err' : undefined} />
             {#if errors.email}<span id="pmt-email-err" data-error class="text-xs text-red-600">{errors.email}</span>{/if}
           </label>
         </div>
         <div class="grid gap-4 md:grid-cols-2">
-          <label class="grid gap-1.5 text-sm font-medium text-ink">
-            <span>Phone / WhatsApp</span>
+          <label class="grid gap-1.5">
+            <span class="gf-label">Phone / WhatsApp</span>
             <input class={cls('phone')} type="tel" bind:value={phone} on:input={() => clearErr('phone')} placeholder="+255 ..." autocomplete="tel" aria-invalid={Boolean(errors.phone)} aria-describedby={errors.phone ? 'pmt-phone-err' : undefined} />
             {#if errors.phone}<span id="pmt-phone-err" data-error class="text-xs text-red-600">{errors.phone}</span>{/if}
           </label>
-          <div class="grid gap-1.5 text-sm font-medium text-ink">
+          <div class="grid gap-1.5">
             <span>Country</span>
             <CountrySelect bind:value={country} invalid={Boolean(errors.country)} on:change={() => clearErr('country')} placeholder="Where are you travelling from?" />
             {#if errors.country}<span data-error class="text-xs text-red-600">{errors.country}</span>{/if}
@@ -530,26 +510,17 @@
       </fieldset>
 
       <!-- ── Trip idea ─────────────────────────────────────────────────────── -->
-      <fieldset class="grid gap-4" class:hidden={step !== 1}>
+      <fieldset class="grid gap-4" class:hidden={step !== 0}>
         <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Trip idea</legend>
-        <label class="grid gap-1.5 text-sm font-medium text-ink">
-          <span>Destination interest</span>
-          <select class={cls('destination_interest')} bind:value={destination_interest} on:change={() => clearErr('destination_interest')} aria-invalid={Boolean(errors.destination_interest)}>
-            <option value="" disabled>Select destination…</option>
-            {#each destinationOptions as opt}<option value={opt}>{opt}</option>{/each}
-          </select>
-          {#if errors.destination_interest}<span data-error class="text-xs text-red-600">{errors.destination_interest}</span>{/if}
-        </label>
-
-        <div class="grid gap-2 text-sm font-medium text-ink">
-          <span>What would you love to do? <span class="font-normal text-ink/70">(select any)</span></span>
+        <div class="grid gap-2">
+          <span class="gf-label">What would you love to do? <span class="gf-hint">(select any)</span></span>
           <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {#each experienceOptions as exp}
               <label
                 class={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${
                   experience_interests.includes(exp)
-                    ? 'border-forest bg-forest/[0.07] font-semibold text-heading'
-                    : 'border-ink/12 bg-surface text-ink/70 hover:border-forest/40'
+                    ? 'border-goldfinch-gold bg-goldfinch-gold/15 font-semibold text-white'
+                    : 'border-white/20 bg-white/[0.04] text-white/75 hover:border-goldfinch-gold/50'
                 }`}
               >
                 <input type="checkbox" class="h-4 w-4 accent-forest" checked={experience_interests.includes(exp)} on:change={() => toggleExperience(exp)} />
@@ -561,16 +532,20 @@
         </div>
 
         <div class="grid gap-4 md:grid-cols-2">
-          <label class="grid gap-1.5 text-sm font-medium text-ink">
-            <span>When do you want to travel?</span>
-            <select class={cls('travel_month')} bind:value={travel_month} on:change={() => clearErr('travel_month')} aria-invalid={Boolean(errors.travel_month)}>
-              <option value="" disabled>Select…</option>
-              {#each monthOptions as opt}<option value={opt}>{opt}</option>{/each}
-            </select>
-            {#if errors.travel_month}<span data-error class="text-xs text-red-600">{errors.travel_month}</span>{/if}
+          <label class="grid gap-1.5">
+            <span class="gf-label">Travel date <span class="gf-req">*</span></span>
+            <input
+              class={cls('exact_start_date')}
+              type="date"
+              min={todayStr}
+              bind:value={exact_start_date}
+              on:input={() => clearErr('exact_start_date')}
+              aria-invalid={Boolean(errors.exact_start_date)}
+            />
+            {#if errors.exact_start_date}<span data-error class="text-xs text-red-600">{errors.exact_start_date}</span>{/if}
           </label>
-          <label class="grid gap-1.5 text-sm font-medium text-ink">
-            <span>Trip duration</span>
+          <label class="grid gap-1.5">
+            <span class="gf-label">Trip duration</span>
             <select class={cls('trip_duration')} bind:value={trip_duration}>
               <option value="">Not sure yet</option>
               {#each durationOptions.filter((d) => d !== 'Not sure yet') as opt}<option value={opt}>{opt}</option>{/each}
@@ -580,13 +555,13 @@
 
         {#if wantsExactDates}
           <div class="grid gap-4 rounded-xl border border-forest/15 bg-forest/[0.03] p-3 md:grid-cols-2">
-            <label class="grid gap-1.5 text-sm font-medium text-ink">
-              <span>Start date</span>
+            <label class="grid gap-1.5">
+              <span class="gf-label">Start date</span>
               <input class={cls('exact_start_date')} type="date" min={todayStr} bind:value={exact_start_date} on:input={() => clearErr('exact_start_date')} aria-invalid={Boolean(errors.exact_start_date)} />
               {#if errors.exact_start_date}<span data-error class="text-xs text-red-600">{errors.exact_start_date}</span>{/if}
             </label>
-            <label class="grid gap-1.5 text-sm font-medium text-ink">
-              <span>End date</span>
+            <label class="grid gap-1.5">
+              <span class="gf-label">End date</span>
               <input class={cls('exact_end_date')} type="date" min={exact_start_date || todayStr} bind:value={exact_end_date} on:input={() => clearErr('exact_end_date')} aria-invalid={Boolean(errors.exact_end_date)} />
               {#if errors.exact_end_date}<span data-error class="text-xs text-red-600">{errors.exact_end_date}</span>{/if}
             </label>
@@ -595,18 +570,18 @@
       </fieldset>
 
       <!-- ── Travel preferences ────────────────────────────────────────────── -->
-      <fieldset class="grid gap-4" class:hidden={step !== 2}>
+      <fieldset class="grid gap-4" class:hidden={step !== 1}>
         <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Travel preferences</legend>
         <div class="grid gap-4 md:grid-cols-2">
-          <label class="grid gap-1.5 text-sm font-medium text-ink">
-            <span>Are your dates flexible?</span>
+          <label class="grid gap-1.5">
+            <span class="gf-label">Are your dates flexible?</span>
             <select class={cls('date_flexibility')} bind:value={date_flexibility}>
               <option value="">Select…</option>
               {#each flexibilityOptions as opt}<option value={opt}>{opt}</option>{/each}
             </select>
           </label>
-          <label class="grid gap-1.5 text-sm font-medium text-ink">
-            <span>Budget per person</span>
+          <label class="grid gap-1.5">
+            <span class="gf-label">Budget per person</span>
             <select class={cls('budget_per_person')} bind:value={budget_per_person} on:change={() => clearErr('budget_per_person')} aria-invalid={Boolean(errors.budget_per_person)}>
               <option value="" disabled>Select budget…</option>
               {#each budgetOptions as opt}<option value={opt}>{opt}</option>{/each}
@@ -615,16 +590,16 @@
           </label>
         </div>
         <div class="grid gap-4 md:grid-cols-2">
-          <label class="grid gap-1.5 text-sm font-medium text-ink">
-            <span>Who is travelling?</span>
+          <label class="grid gap-1.5">
+            <span class="gf-label">Who is travelling?</span>
             <select class={cls('traveller_type')} bind:value={traveller_type} on:change={() => clearErr('traveller_type')} aria-invalid={Boolean(errors.traveller_type)}>
               <option value="" disabled>Select traveller type…</option>
               {#each travellerOptions as opt}<option value={opt}>{opt}</option>{/each}
             </select>
             {#if errors.traveller_type}<span data-error class="text-xs text-red-600">{errors.traveller_type}</span>{/if}
           </label>
-          <label class="grid gap-1.5 text-sm font-medium text-ink">
-            <span>Accommodation preference</span>
+          <label class="grid gap-1.5">
+            <span class="gf-label">Accommodation preference</span>
             <select class={cls('accommodation_preference')} bind:value={accommodation_preference}>
               <option value="">No preference</option>
               {#each accommodationOptions.filter((a) => a !== 'Not sure yet') as opt}<option value={opt}>{opt}</option>{/each}
@@ -632,13 +607,13 @@
           </label>
         </div>
         <div class="grid gap-4 md:grid-cols-2">
-          <label class="grid gap-1.5 text-sm font-medium text-ink">
-            <span>Adults</span>
+          <label class="grid gap-1.5">
+            <span class="gf-label">Adults</span>
             <input class={cls('number_of_adults')} type="number" min="1" bind:value={number_of_adults} on:input={() => clearErr('number_of_adults')} aria-invalid={Boolean(errors.number_of_adults)} />
             {#if errors.number_of_adults}<span data-error class="text-xs text-red-600">{errors.number_of_adults}</span>{/if}
           </label>
-          <label class="grid gap-1.5 text-sm font-medium text-ink">
-            <span>Children</span>
+          <label class="grid gap-1.5">
+            <span class="gf-label">Children</span>
             <input class={cls('number_of_children')} type="number" min="0" bind:value={number_of_children} on:input={() => clearErr('number_of_children')} aria-invalid={Boolean(errors.number_of_children)} />
             {#if errors.number_of_children}<span data-error class="text-xs text-red-600">{errors.number_of_children}</span>{/if}
           </label>
@@ -646,10 +621,10 @@
       </fieldset>
 
       <!-- ── Notes ─────────────────────────────────────────────────────────── -->
-      <fieldset class="grid gap-4" class:hidden={step !== 3}>
+      <fieldset class="grid gap-4" class:hidden={step !== 1}>
         <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Notes</legend>
-        <label class="grid gap-1.5 text-sm font-medium text-ink">
-          <span>Trip notes</span>
+        <label class="grid gap-1.5">
+          <span class="gf-label">Trip notes</span>
           <textarea
             class={inputBase + ' border-ink/15 focus:border-forest focus:ring-forest/15'}
             rows={3}
@@ -659,32 +634,6 @@
         </label>
       </fieldset>
 
-      <!-- ── Review + WhatsApp handoff ─────────────────────────────────────── -->
-      {#if step === 4}
-        <div class="grid gap-4">
-          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Review your request</p>
-          <div class="overflow-hidden rounded-xl border border-ink/10">
-            <dl class="divide-y divide-ink/[0.08]">
-              {#each summaryRows as r}
-                <div class="grid grid-cols-[120px_1fr] gap-3 px-4 py-2.5 text-sm">
-                  <dt class="font-medium text-ink/55">{r.label}</dt>
-                  <dd class="font-semibold text-heading">{r.value}</dd>
-                </div>
-              {/each}
-            </dl>
-          </div>
-          <a
-            href={waHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            on:click={onWhatsApp}
-            class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 text-sm font-bold text-white shadow-sm transition hover:brightness-105"
-          >
-            <MessageCircle size={17} /> Continue on WhatsApp
-          </a>
-          <p class="text-center text-xs text-ink/55">Send these details straight to our team, or submit below and we'll email you back.</p>
-        </div>
-      {/if}
     </div>
 
     <!-- Honeypot: hidden from humans, tempting to bots. -->
@@ -701,6 +650,9 @@
 
     <div class="mt-5">
       <div class="flex items-center gap-3">
+        <span class="mr-auto hidden text-[11px] font-bold uppercase tracking-[0.14em] text-ink/45 sm:block">
+          Step {step + 1} of {STEPS.length}
+        </span>
         {#if step > 0}
           <button type="button" class="inline-flex h-12 shrink-0 items-center gap-1.5 rounded-md border border-ink/15 bg-surface px-5 text-sm font-bold text-ink/75 transition hover:bg-sand" on:click={back}>
             <ArrowLeft size={16} /> Back
@@ -714,7 +666,7 @@
           <Button type="submit" className="flex-1">{submitting ? 'Sending your request...' : 'Send My Trip Request'}</Button>
         {/if}
       </div>
-      <p class="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-ink/70">
+      <p class="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-white/60">
         <ShieldCheck size={13} class="text-forest" />
         Your details are kept private and used only to plan your trip.
       </p>

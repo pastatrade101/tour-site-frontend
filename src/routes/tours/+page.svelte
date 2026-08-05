@@ -582,7 +582,7 @@
             </div>
           </div>
         {:else}
-          <div class="grid gap-5 sm:grid-cols-2" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
+          <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
             {#each sorted as tour (tour.slug)}
               <TourCardRich {tour} />
             {/each}
