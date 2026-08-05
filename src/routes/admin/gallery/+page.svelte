@@ -62,7 +62,7 @@
     tours?: Relation;
   };
 
-  type MediaItem = { file_name: string; file_url: string; id: string; thumbnail_url?: string | null };
+  type MediaItem = { file_name: string; file_url: string; id: string; thumbnail_url?: string | null; alt_text?: string | null; caption?: string | null };
   type Option = { label: string; value: string };
   type Toast = { id: string; message: string; type: 'error' | 'success' };
   type ViewMode = 'grid' | 'list';
@@ -331,7 +331,7 @@
   };
 
   // ── bulk upload: add many images at once, one gallery item per image ────────
-  type BulkFile = { id: string; name: string; title: string; status: 'uploading' | 'done' | 'error'; url?: string; thumb?: string; error?: string };
+  type BulkFile = { id: string; name: string; title: string; caption: string; source: 'upload' | 'library'; status: 'uploading' | 'done' | 'error'; url?: string; thumb?: string; error?: string };
 
   let bulkOpen = false;
   let bulkFiles: BulkFile[] = [];
@@ -345,6 +345,37 @@
   $: failedBulkCount = bulkFiles.filter((file) => file.status === 'error').length;
 
   const prettyTitle = (name: string) => name.replace(/\.[^./\\]+$/, '').replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // A gallery title should never have to be retyped. Prefer whatever a human
+  // already wrote in the Media Library — its caption, then its alt text — and
+  // only fall back to prettifying the file name. A long caption is trimmed to
+  // its first sentence so the title stays a title.
+  const titleFromCaption = (text: string) => {
+    const first = text.trim().split(/(?<=[.!?])\s+/)[0]?.trim() ?? '';
+    const cut = (first || text.trim()).replace(/[.]+$/, '');
+    return cut.length > 80 ? `${cut.slice(0, 77).trimEnd()}…` : cut;
+  };
+  const smartTitle = (m: { caption?: string | null; alt_text?: string | null; file_name?: string }) =>
+    (m.caption?.trim() ? titleFromCaption(m.caption) : '') ||
+    (m.alt_text?.trim() ?? '') ||
+    prettyTitle(m.file_name ?? '');
+
+  // Picking an image in the single-item form fills in whatever the form is still
+  // missing, using the metadata already stored against that library asset. It
+  // never overwrites something the editor has typed.
+  const applyMediaMeta = (m: MediaItem) => {
+    const filled: string[] = [];
+    if (!form.title.trim()) {
+      const t = smartTitle(m);
+      if (t) { form.title = t; filled.push('title'); }
+    }
+    if (!form.caption.trim() && m.caption?.trim()) { form.caption = m.caption.trim(); filled.push('caption'); }
+    if (!form.alt_text.trim()) {
+      const alt = m.alt_text?.trim() || form.title.trim();
+      if (alt) { form.alt_text = alt; filled.push('alt text'); }
+    }
+    if (filled.length) showToast(`Filled ${filled.join(', ')} from the Media Library.`);
+  };
 
   const openBulk = () => {
     bulkFiles = [];
@@ -369,12 +400,64 @@
     const images = files.filter((f) => f.type.startsWith('image/'));
     if (!images.length) { showToast('Only image files can be added.', 'error'); return; }
     if (images.length !== files.length) showToast('Skipped non-image files.', 'error');
-    const entries = images.map((file) => ({ file, bf: { id: crypto.randomUUID(), name: file.name, title: prettyTitle(file.name), status: 'uploading' as const } as BulkFile }));
+    const entries = images.map((file) => ({
+      file,
+      bf: { id: crypto.randomUUID(), name: file.name, title: prettyTitle(file.name), caption: '', source: 'upload', status: 'uploading' } as BulkFile
+    }));
     bulkFiles = [...bulkFiles, ...entries.map((e) => e.bf)];
     // upload with a small concurrency pool so many files don't hammer the server
     const queue = [...entries];
     const worker = async () => { let n; while ((n = queue.shift())) await uploadOne(n.bf, n.file); };
     await Promise.all([worker(), worker(), worker()]);
+  };
+
+  // ── bulk: pick images that are already in the Media Library ────────────────
+  // The library is the source of truth for imagery, so a batch can be assembled
+  // from existing assets without re-uploading (and re-storing) the same file.
+  let libraryOpen = false;
+  let librarySearch = '';
+  let librarySelected = new Set<string>();
+
+  $: libraryResults = librarySearch.trim()
+    ? mediaItems.filter((m) =>
+        `${m.file_name} ${m.alt_text ?? ''} ${m.caption ?? ''}`.toLowerCase().includes(librarySearch.trim().toLowerCase())
+      )
+    : mediaItems;
+  // Anything already staged in this batch, so the same asset cannot be added twice.
+  $: stagedUrls = new Set(bulkFiles.map((f) => f.url).filter(Boolean) as string[]);
+
+  const openLibrary = async () => {
+    librarySearch = '';
+    librarySelected = new Set();
+    libraryOpen = true;
+    await loadMedia();
+  };
+  const toggleLibrary = (id: string) => {
+    const next = new Set(librarySelected);
+    next.has(id) ? next.delete(id) : next.add(id);
+    librarySelected = next;
+  };
+  const addFromLibrary = () => {
+    const picked = mediaItems.filter((m) => librarySelected.has(m.id) && !stagedUrls.has(m.file_url));
+    if (!picked.length) { libraryOpen = false; return; }
+    bulkFiles = [
+      ...bulkFiles,
+      ...picked.map(
+        (m) =>
+          ({
+            id: crypto.randomUUID(),
+            name: m.file_name,
+            title: smartTitle(m),
+            caption: m.caption?.trim() ?? '',
+            source: 'library',
+            status: 'done',
+            url: m.file_url,
+            thumb: m.thumbnail_url ?? m.file_url
+          }) as BulkFile
+      )
+    ];
+    libraryOpen = false;
+    showToast(`${picked.length} image${picked.length === 1 ? '' : 's'} added from the Media Library.`);
   };
 
   const onBulkFiles = async (event: Event) => {
@@ -398,14 +481,14 @@
       const bf = ready[i];
       try {
         await api.gallery.create({
-          alt_text: bf.title.trim() || null,
-          caption: null,
+          alt_text: bf.title.trim() || bf.caption.trim() || null,
+          caption: bf.caption.trim() || null,
           destination_id: bulkShared.destination_id || null,
           image_url: bf.url!.trim(),
           media_type: bulkShared.media_type,
           sort_order: base + i,
           status: bulkShared.status,
-          title: bf.title.trim() || null,
+          title: bf.title.trim() || (bf.caption.trim() ? titleFromCaption(bf.caption) : null),
           tour_id: bulkShared.tour_id || null
         });
         ok++;
@@ -684,7 +767,14 @@
                 </div>
                 {#if loadingMedia}<span class="text-xs font-semibold text-ink/45">Loading...</span>{/if}
               </div>
-              <MediaPicker label="Gallery image" media={mediaItems} uploadFolder="gallery" aspect="aspect-[4/3]" bind:value={form.image_url} />
+              <MediaPicker
+                label="Gallery image"
+                media={mediaItems}
+                uploadFolder="gallery"
+                aspect="aspect-[4/3]"
+                bind:value={form.image_url}
+                on:select={(e) => applyMediaMeta(e.detail)}
+              />
             </section>
 
             <section class="overflow-hidden rounded-[10px] border border-ink/10 bg-heading shadow-[0_18px_50px_rgba(57,61,50,0.16)]">
@@ -918,12 +1008,20 @@
             {/if}
           </button>
 
+          <button
+            type="button"
+            class="inline-flex items-center justify-center gap-2 rounded-[10px] border border-forest/30 bg-forest/5 px-4 py-3 text-sm font-bold text-forest transition hover:border-forest/60 hover:bg-forest/10"
+            on:click={openLibrary}
+          >
+            <ImageIcon size={16} /> Choose from Media Library
+          </button>
+
           {#if bulkFiles.length}
             <section class="rounded-[10px] border border-ink/10 bg-surface p-4 shadow-sm">
               <div class="flex flex-col gap-2 border-b border-ink/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p class="text-sm font-extrabold text-heading">Review image titles</p>
-                  <p class="mt-1 text-xs text-ink/50">Each title becomes the gallery title and alt text unless edited here.</p>
+                  <p class="mt-1 text-xs text-ink/50">Titles and captions come from the Media Library where available; edit them here before creating.</p>
                 </div>
                 <p class="text-xs font-bold text-ink/50">{bulkReady.length} ready{#if bulkUploading} · uploading{/if}</p>
               </div>
@@ -942,7 +1040,7 @@
                         </span>
                       {/if}
                       <span class={`absolute left-3 top-3 rounded-[8px] px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide ${f.status === 'done' ? 'bg-forest text-white' : f.status === 'error' ? 'bg-red-600 text-white' : 'bg-white/90 text-heading'}`}>
-                        {f.status === 'done' ? 'Ready' : f.status === 'error' ? 'Failed' : 'Uploading'}
+                        {f.status === 'done' ? (f.source === 'library' ? 'From library' : 'Ready') : f.status === 'error' ? 'Failed' : 'Uploading'}
                       </span>
                       <button type="button" class="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-[8px] bg-white/90 text-ink shadow-sm transition hover:bg-red-50 hover:text-red-700" aria-label="Remove" on:click={() => removeBulk(f.id)}>
                         <Trash2 size={14} />
@@ -958,6 +1056,17 @@
                           aria-label="Image title"
                           on:input={(e) => setBulk(f.id, { title: (e.currentTarget as HTMLInputElement).value })}
                         />
+                      </label>
+                      <label class="grid gap-1.5">
+                        <span class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/40">Caption <span class="font-medium normal-case tracking-normal text-ink/35">(optional)</span></span>
+                        <textarea
+                          class="w-full resize-none rounded-md border border-ink/12 bg-black/[0.02] px-3 py-2 text-sm font-medium text-ink outline-none focus:border-forest focus:bg-surface focus:ring-2 focus:ring-forest/15"
+                          rows="2"
+                          value={f.caption}
+                          placeholder="Short caption shown under the image"
+                          aria-label="Image caption"
+                          on:input={(e) => setBulk(f.id, { caption: (e.currentTarget as HTMLTextAreaElement).value })}
+                        ></textarea>
                       </label>
                       {#if f.status === 'error'}
                         <span class="truncate text-xs font-semibold text-red-600" title={f.error}>Upload failed: {f.error}</span>
@@ -996,6 +1105,56 @@
       </div>
     </div>
   </div>
+  {#if libraryOpen}
+    <div class="fixed inset-0 z-[75] grid place-items-center p-4" role="dialog" aria-modal="true">
+      <button class="absolute inset-0 cursor-default bg-ink/55 backdrop-blur-sm" type="button" aria-label="Close" on:click={() => (libraryOpen = false)}></button>
+      <div class="relative flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-ink/10 bg-surface shadow-2xl">
+        <div class="flex items-center gap-3 border-b border-ink/10 p-4">
+          <p class="hidden text-sm font-bold text-ink sm:block">Media Library</p>
+          <div class="flex flex-1 items-center gap-2 rounded-lg border border-ink/12 bg-sand/20 px-3">
+            <Search size={16} class="text-ink/40" />
+            <input class="h-9 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink/40" placeholder="Search by name, alt text or caption…" bind:value={librarySearch} />
+          </div>
+          <button type="button" class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-ink/10 text-ink transition hover:bg-sand" on:click={() => (libraryOpen = false)} aria-label="Close"><X size={18} /></button>
+        </div>
+        <div class="grid grid-cols-2 gap-3 overflow-y-auto p-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" data-lenis-prevent>
+          {#if loadingMedia}
+            <p class="col-span-full py-12 text-center text-sm text-ink/45">Loading media…</p>
+          {:else if !libraryResults.length}
+            <p class="col-span-full py-12 text-center text-sm text-ink/45">No images found.</p>
+          {:else}
+            {#each libraryResults as m (m.id)}
+              {@const staged = stagedUrls.has(m.file_url)}
+              {@const picked = librarySelected.has(m.id)}
+              <button
+                type="button"
+                class={`group relative overflow-hidden rounded-xl border text-left transition ${staged ? 'cursor-not-allowed opacity-40' : 'hover:-translate-y-0.5'} ${picked ? 'border-goldfinch-gold ring-2 ring-goldfinch-gold/40' : 'border-ink/10 hover:border-forest/40'}`}
+                disabled={staged}
+                on:click={() => toggleLibrary(m.id)}
+              >
+                <img class="aspect-square w-full bg-sand/30 object-cover" src={imgUrl(m.thumbnail_url || m.file_url, 300)} alt={m.alt_text || m.file_name} width="300" height="300" loading="lazy" decoding="async" />
+                {#if picked}
+                  <span class="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-goldfinch-gold text-white shadow-sm"><CheckCircle2 size={14} /></span>
+                {:else if staged}
+                  <span class="absolute right-2 top-2 rounded-[6px] bg-ink/70 px-1.5 py-0.5 text-[10px] font-bold text-white">In batch</span>
+                {/if}
+                <span class="block truncate px-2 py-1.5 text-[11px] text-ink/60">{smartTitle(m)}</span>
+              </button>
+            {/each}
+          {/if}
+        </div>
+        <div class="flex items-center justify-between gap-3 border-t border-ink/10 bg-surface p-4">
+          <p class="text-xs font-bold text-ink/50">{librarySelected.size} selected</p>
+          <div class="flex gap-3">
+            <AdminButton variant="secondary" type="button" on:click={() => (libraryOpen = false)}>Cancel</AdminButton>
+            <AdminButton type="button" disabled={librarySelected.size === 0} on:click={addFromLibrary}>
+              Add {librarySelected.size || ''} to batch
+            </AdminButton>
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
   <input class="hidden" type="file" accept="image/png,image/jpeg,image/webp,image/avif" multiple bind:this={bulkInput} on:change={onBulkFiles} />
 {/if}
 

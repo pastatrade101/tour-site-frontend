@@ -4,7 +4,17 @@
   import { imgUrl } from '$lib/img';
   import { api } from '$lib/api/client';
 
-  type MediaItem = { id: string; file_name: string; file_url: string; thumbnail_url?: string | null };
+  // alt_text / caption come back from /media (listRecords selects *), and let a
+  // consumer reuse whatever the librarian already wrote instead of asking for it
+  // a second time.
+  type MediaItem = {
+    id: string;
+    file_name: string;
+    file_url: string;
+    thumbnail_url?: string | null;
+    alt_text?: string | null;
+    caption?: string | null;
+  };
 
   export let value = '';
   export let label = 'Image';
@@ -13,7 +23,10 @@
   export let uploadFolder = 'uploads';
   export let fit = 'object-cover'; // use 'object-contain' for logos/favicons
 
-  const dispatch = createEventDispatcher<{ change: string }>();
+  // `change` stays a bare URL so the 18 existing call sites are untouched.
+  // `select` is additive: it carries the whole library record for consumers that
+  // want its metadata (the gallery seeds its title/caption from it).
+  const dispatch = createEventDispatcher<{ change: string; select: MediaItem }>();
 
   let open = false; // library modal
   let urlMode = false; // paste-url input
@@ -28,7 +41,12 @@
     ? allMedia.filter((m) => m.file_name.toLowerCase().includes(search.trim().toLowerCase()))
     : allMedia;
 
-  const select = (url: string) => { value = url; open = false; dispatch('change', url); };
+  const select = (url: string, item?: MediaItem) => {
+    value = url;
+    open = false;
+    dispatch('change', url);
+    if (item) dispatch('select', item);
+  };
   const clear = () => { value = ''; urlMode = false; dispatch('change', ''); };
 
   const onFileChange = async (event: Event) => {
@@ -46,7 +64,7 @@
         thumbnail_url: data.media?.thumbnail_url ?? null
       };
       uploaded = [item, ...uploaded];
-      select(data.url);
+      select(data.url, item);
     } catch (err) {
       uploadError = err instanceof Error ? err.message : 'Upload failed.';
     } finally {
@@ -130,7 +148,7 @@
             <button
               type="button"
               class={`group overflow-hidden rounded-xl border text-left transition hover:-translate-y-0.5 ${value === m.file_url ? 'border-goldfinch-gold ring-2 ring-goldfinch-gold/40' : 'border-ink/10 hover:border-forest/40'}`}
-              on:click={() => select(m.file_url)}
+              on:click={() => select(m.file_url, m)}
             >
               <img
                 class="aspect-square w-full bg-sand/30 object-cover opacity-0 transition-opacity duration-300"
