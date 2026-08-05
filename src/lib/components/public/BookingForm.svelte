@@ -1,63 +1,41 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import { AlertCircle, CheckCircle2, Copy, MapPin, ShieldCheck } from '@lucide/svelte';
+  import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, Copy, Download, MapPin, MessageCircle, ShieldCheck } from '@lucide/svelte';
   import { page } from '$app/stores';
   import { getAttribution, trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
+  import { brand } from '$lib/brand';
+  import { publicSettings, settingText } from '$lib/settings';
   import Button from './Button.svelte';
   import CountrySelect from './CountrySelect.svelte';
   import type { Tour } from '$lib/types';
 
   export let tour: Tour | null = null;
 
-  // This form mounts when the "Request this trip" modal opens.
   onMount(() => trackEvent('request_trip_opened', { tour_id: tour?.id, tour_title: tour?.title }));
 
   // ── Options ────────────────────────────────────────────────────────────────
   const BUDGET_OPTIONS = ['Budget', 'Mid-range', 'Luxury', 'Not sure yet'];
   const FLEX_OPTIONS = ['Yes', 'No', 'Not sure'];
-  const ACCOMMODATION_OPTIONS = [
-    'Budget lodge',
-    'Mid-range hotel/lodge',
-    'Luxury lodge/resort',
-    'Tented camp',
-    'Beach resort',
-    'Not sure yet'
-  ];
-  const INTERESTS = [
-    'Safari',
-    'Beach',
-    'Honeymoon',
-    'Family trip',
-    'Culture',
-    'Adventure',
-    'Luxury',
-    'Budget travel',
-    'Photography',
-    'Wildlife'
-  ];
+  const ACCOMMODATION_OPTIONS = ['Budget lodge', 'Mid-range hotel/lodge', 'Luxury lodge/resort', 'Tented camp', 'Beach resort', 'Not sure yet'];
+  const INTERESTS = ['Safari', 'Beach', 'Honeymoon', 'Family trip', 'Culture', 'Adventure', 'Luxury', 'Budget travel', 'Photography', 'Wildlife'];
 
   // ── Form state ───────────────────────────────────────────────────────────────
-  // Contact
   let full_name = '';
   let email = '';
   let phone = '';
   let country = '';
-  // Trip details
   let travel_date = '';
   let date_flexibility = '';
   let trip_duration = '';
   let number_of_adults = '2';
   let number_of_children = '0';
   let budget_range = '';
-  // Preferences
   let travel_interests: string[] = [];
   let accommodation_preference = '';
-  // Special requests
   let special_requests = '';
   let message = '';
-  // Honeypot — must stay empty
-  let hp_company = '';
+  let hp_company = ''; // honeypot — must stay empty
 
   let submitting = false;
   let errorMessage = '';
@@ -67,8 +45,24 @@
   let errors: Record<string, string> = {};
   let bodyEl: HTMLDivElement;
 
+  // ── Stepper ──────────────────────────────────────────────────────────────────
+  const STEPS = [
+    { key: 'contact', label: 'Contact' },
+    { key: 'trip', label: 'Trip' },
+    { key: 'prefs', label: 'Preferences' },
+    { key: 'review', label: 'Review' }
+  ];
+  const LAST = STEPS.length - 1;
+  let step = 0;
+
   const todayStr = new Date().toISOString().slice(0, 10);
   const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+  $: s = $publicSettings;
+  $: companyName = settingText(s, 'company_name') || brand.companyName;
+  $: contactEmail = settingText(s, 'contact_email');
+  $: contactPhone = settingText(s, 'contact_phone');
+  $: waDigits = (settingText(s, 'whatsapp_number') || contactPhone || '+255 700 000 000').replace(/[^0-9]/g, '');
 
   const clearErr = (key: string) => {
     if (errors[key]) {
@@ -83,47 +77,192 @@
       : [...travel_interests, interest];
   };
 
-  // Field classes: neutral by default, red when that field has an error.
-  const inputBase =
-    'w-full rounded-md border bg-surface px-3 py-3 text-sm text-ink outline-none transition focus:ring-2';
+  const inputBase = 'w-full rounded-md border bg-surface px-3 py-3 text-sm text-ink outline-none transition focus:ring-2';
   $: cls = (field: string) =>
     `${inputBase} ${errors[field] ? 'border-red-300 focus:border-red-400 focus:ring-red-200' : 'border-ink/15 focus:border-forest focus:ring-forest/15'}`;
 
-  const validate = (): boolean => {
-    const e: Record<string, string> = {};
-    if (full_name.trim().length < 2) e.full_name = 'Please enter your full name.';
-    if (!email.trim()) e.email = 'Email is required.';
-    else if (!isEmail(email.trim())) e.email = 'Please enter a valid email address.';
-    if (phone.trim().length < 6) e.phone = 'A phone or WhatsApp number is required.';
-    if (!country.trim()) e.country = 'Please tell us your country.';
-    if (travel_date && travel_date < todayStr) e.travel_date = "Travel date can't be in the past.";
-    if (Number(number_of_adults) < 1) e.number_of_adults = 'At least one adult is required.';
-    if (number_of_children === '' || Number(number_of_children) < 0) e.number_of_children = "Can't be negative.";
-    if (!budget_range) e.budget_range = 'Please choose a budget range.';
-    if (!date_flexibility) e.date_flexibility = 'Let us know if your dates are flexible.';
+  // Validate only the fields on a given step.
+  const validateStep = (index: number): boolean => {
+    const e: Record<string, string> = { ...errors };
+    const only = (keys: string[]) => keys.forEach((k) => delete e[k]);
+    if (index === 0) {
+      only(['full_name', 'email', 'phone', 'country']);
+      if (full_name.trim().length < 2) e.full_name = 'Please enter your full name.';
+      if (!email.trim()) e.email = 'Email is required.';
+      else if (!isEmail(email.trim())) e.email = 'Please enter a valid email address.';
+      if (phone.trim().length < 6) e.phone = 'A phone or WhatsApp number is required.';
+      if (!country.trim()) e.country = 'Please tell us your country.';
+    } else if (index === 1) {
+      only(['travel_date', 'date_flexibility', 'budget_range', 'number_of_adults', 'number_of_children']);
+      if (travel_date && travel_date < todayStr) e.travel_date = "Travel date can't be in the past.";
+      if (!date_flexibility) e.date_flexibility = 'Let us know if your dates are flexible.';
+      if (!budget_range) e.budget_range = 'Please choose a budget range.';
+      if (Number(number_of_adults) < 1) e.number_of_adults = 'At least one adult is required.';
+      if (number_of_children === '' || Number(number_of_children) < 0) e.number_of_children = "Can't be negative.";
+    }
     errors = e;
-    return Object.keys(e).length === 0;
+    const stepErrs = Object.keys(errors).filter((k) => {
+      if (index === 0) return ['full_name', 'email', 'phone', 'country'].includes(k);
+      if (index === 1) return ['travel_date', 'date_flexibility', 'budget_range', 'number_of_adults', 'number_of_children'].includes(k);
+      return false;
+    });
+    return stepErrs.length === 0;
   };
 
-  const submit = async () => {
-    if (submitting) return;
+  const next = async () => {
     errorMessage = '';
-
-    // Honeypot tripped → behave like a normal success without sending anything.
-    if (hp_company.trim()) {
-      submitted = true;
-      return;
-    }
-
-    if (!validate()) {
+    if (!validateStep(step)) {
       errorMessage = 'Please check the highlighted fields and try again.';
       await tick();
       (bodyEl?.querySelector('span.text-red-600') as HTMLElement | null)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
       return;
     }
+    if (step < LAST) {
+      step += 1;
+      await tick();
+      bodyEl?.scrollTo({ top: 0 });
+    }
+  };
+  const back = async () => {
+    errorMessage = '';
+    if (step > 0) step -= 1;
+    await tick();
+    bodyEl?.scrollTo({ top: 0 });
+  };
+  const goStep = (index: number) => {
+    if (index < step) {
+      step = index;
+      errorMessage = '';
+    }
+  };
 
-    // Structured trip brief — stored in lead_context (HubSpot/CRM-ready) and
-    // shown to the specialist. Empty values are omitted to keep it clean.
+  // ── Derived summary used by the review step, the PDF and WhatsApp ────────────
+  $: paxLabel = `${number_of_adults} adult${Number(number_of_adults) === 1 ? '' : 's'}${
+    Number(number_of_children) > 0 ? `, ${number_of_children} child${Number(number_of_children) === 1 ? '' : 'ren'}` : ''
+  }`;
+  const money = (n: number) => `${tour?.currency ?? 'USD'} ${Number(n).toLocaleString()}`;
+
+  type Row = { label: string; value: string };
+  $: summaryRows = (() => {
+    const rows: Row[] = [];
+    const add = (label: string, value: string | undefined | null) => {
+      if (value && String(value).trim()) rows.push({ label, value: String(value).trim() });
+    };
+    if (tour?.title) add('Trip', tour.title);
+    if (bookingCode) add('Reference', bookingCode);
+    add('Name', full_name);
+    add('Email', email);
+    add('Phone / WhatsApp', phone);
+    add('Country', country);
+    add('Preferred date', travel_date);
+    add('Dates flexible', date_flexibility);
+    add('Duration', trip_duration);
+    add('Travellers', paxLabel);
+    add('Budget per person', budget_range);
+    add('Interests', travel_interests.join(', '));
+    add('Accommodation', accommodation_preference);
+    add('Special requests', special_requests);
+    add('Notes', message);
+    return rows;
+  })();
+
+  // Indicative estimate — ONLY from the tour's real "from" price; clearly non-binding.
+  $: indicative = (() => {
+    if (!tour?.price_from) return null;
+    const adults = Math.max(1, Number(number_of_adults) || 1);
+    return { perPerson: money(tour.price_from), adults, total: money(tour.price_from * adults) };
+  })();
+
+  // ── WhatsApp handoff — prefilled with what they entered ──────────────────────
+  $: waText = (() => {
+    const lines: string[] = [`Hello ${brand.name}, I'd like to request this trip:`];
+    for (const r of summaryRows) lines.push(`• ${r.label}: ${r.value}`);
+    if (indicative) lines.push(`• Indicative (from): ${indicative.perPerson} pp × ${indicative.adults} ≈ ${indicative.total} (excl. int'l flights)`);
+    return lines.join('\n');
+  })();
+  $: waHref = `https://wa.me/${waDigits}?text=${encodeURIComponent(waText)}`;
+  const openWhatsApp = () => trackEvent('whatsapp_click', { tour_id: tour?.id, cta_location: 'booking_form' });
+
+  // ── PDF quotation — branded, printable (Save as PDF), no dependencies ────────
+  const esc = (v: string) =>
+    String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  const buildQuotationHtml = () => {
+    const rowsHtml = summaryRows.map((r) => `<tr><th>${esc(r.label)}</th><td>${esc(r.value)}</td></tr>`).join('');
+    const priceHtml = indicative
+      ? `<div class="price"><p class="pl">Indicative estimate</p><p class="pv">${esc(indicative.perPerson)} <span>per person</span></p>
+         <p class="pn">${esc(indicative.perPerson)} × ${indicative.adults} adult${indicative.adults === 1 ? '' : 's'} ≈ <b>${esc(indicative.total)}</b></p>
+         <p class="pd">Indicative only — excludes international flights, visas, insurance and optional extras. Your specialist confirms the final quote.</p></div>`
+      : `<div class="price"><p class="pl">Price</p><p class="pv">On request</p><p class="pd">Your specialist will prepare a tailored quote for this trip.</p></div>`;
+    const contactLine = [contactEmail, contactPhone].filter(Boolean).map(esc).join(' · ');
+    const title = `${brand.name} Quotation${bookingCode ? ' ' + bookingCode : ''}`;
+    return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title>
+    <style>
+      *{box-sizing:border-box} body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#2d3027;margin:0;padding:40px;background:#fff}
+      .wrap{max-width:720px;margin:0 auto}
+      .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #c79a3a;padding-bottom:16px}
+      .brand{font-size:22px;font-weight:800;color:#1f4d3a} .co{font-size:12px;color:#6b6f63;margin-top:2px}
+      .doc{text-align:right} .doc h1{font-size:16px;margin:0;color:#1f4d3a;text-transform:uppercase;letter-spacing:.06em} .doc p{margin:4px 0 0;font-size:12px;color:#6b6f63}
+      .trip{margin:20px 0;padding:12px 16px;background:#f6f1e6;border-radius:10px;font-size:15px} .trip b{color:#1f4d3a}
+      table{width:100%;border-collapse:collapse;margin-top:8px} th,td{text-align:left;padding:9px 10px;font-size:13px;border-bottom:1px solid #eee;vertical-align:top}
+      th{width:180px;color:#6b6f63;font-weight:600} td{color:#2d3027}
+      .price{margin-top:22px;padding:16px 18px;border:1px solid #e3dcc9;border-radius:12px;background:#faf7ef}
+      .pl{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#8a7a4a;font-weight:700}
+      .pv{margin:4px 0 0;font-size:22px;font-weight:800;color:#1f4d3a} .pv span{font-size:12px;font-weight:600;color:#6b6f63}
+      .pn{margin:6px 0 0;font-size:14px;color:#2d3027} .pd{margin:8px 0 0;font-size:11px;color:#8a8d82;line-height:1.5}
+      .foot{margin-top:26px;border-top:1px solid #eee;padding-top:14px;font-size:11px;color:#8a8d82;line-height:1.6}
+      @media print{body{padding:0} .wrap{max-width:none}}
+    </style></head><body><div class="wrap">
+      <div class="head">
+        <div><div class="brand">${esc(brand.name)}</div><div class="co">${esc(companyName)}</div></div>
+        <div class="doc"><h1>Trip Quotation Request</h1><p>${esc(todayStr)}</p>${bookingCode ? `<p>Ref: <b>${esc(bookingCode)}</b></p>` : ''}</div>
+      </div>
+      ${tour?.title ? `<div class="trip">Requested trip: <b>${esc(tour.title)}</b>${tour?.duration_days ? ` · ${tour.duration_days} day${tour.duration_days === 1 ? '' : 's'}` : ''}</div>` : ''}
+      <table>${rowsHtml}</table>
+      ${priceHtml}
+      <div class="foot">This is a trip planning request, not a booking or a binding quote — no payment is required. A local specialist will contact you to confirm availability and a final tailored quotation.${contactLine ? `<br>${contactLine}` : ''}</div>
+    </div></body></html>`;
+  };
+
+  const downloadQuotation = () => {
+    trackEvent('quotation_download', { tour_id: tour?.id, tour_title: tour?.title });
+    const html = buildQuotationHtml();
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('aria-hidden', 'true');
+    iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentWindow?.document;
+    if (!doc) { iframe.remove(); return; }
+    doc.open();
+    doc.write(html);
+    doc.close();
+    const run = () => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } finally {
+        setTimeout(() => iframe.remove(), 1500);
+      }
+    };
+    if (iframe.contentWindow?.document.readyState === 'complete') setTimeout(run, 60);
+    else iframe.onload = () => setTimeout(run, 60);
+  };
+
+  // ── Submit ────────────────────────────────────────────────────────────────────
+  const submit = async () => {
+    if (submitting) return;
+    // Enter key on an earlier step advances instead of submitting.
+    if (step < LAST) { await next(); return; }
+    errorMessage = '';
+
+    if (hp_company.trim()) { submitted = true; return; } // honeypot
+
+    if (!validateStep(0) || !validateStep(1)) {
+      errorMessage = 'Some required details are missing. Please review the earlier steps.';
+      step = validateStep(0) ? 1 : 0;
+      return;
+    }
+
     const lead_context: Record<string, unknown> = {
       budget_range,
       date_flexibility,
@@ -134,7 +273,7 @@
     if (trip_duration.trim()) lead_context.trip_duration = trip_duration.trim();
     if (travel_interests.length) lead_context.travel_interests = travel_interests.join(', ');
     if (accommodation_preference) lead_context.accommodation_preference = accommodation_preference;
-    lead_context.attribution = getAttribution(); // first-touch source/campaign + session id
+    lead_context.attribution = getAttribution();
 
     submitting = true;
     try {
@@ -151,7 +290,7 @@
         message: message.trim() || null,
         source: 'website_booking_form',
         lead_context,
-        hp_company // honeypot — backend inspects then drops it
+        hp_company
       });
       bookingCode = String((res.data as Record<string, unknown>)?.booking_code ?? '');
       submitted = true;
@@ -176,6 +315,7 @@
     bookingCode = '';
     errors = {};
     errorMessage = '';
+    step = 0;
   };
 
   const copyCode = async () => {
@@ -192,9 +332,7 @@
 {#if submitted}
   <div class="grid gap-5 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-surface p-6 shadow-soft md:p-8">
     <div class="flex items-center gap-3">
-      <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-600">
-        <CheckCircle2 size={26} />
-      </span>
+      <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-600"><CheckCircle2 size={26} /></span>
       <div>
         <h3 class="text-xl font-bold text-heading">Thank you! Your request has been received.</h3>
         <p class="mt-1 text-sm text-ink/70">A local travel specialist will contact you shortly.</p>
@@ -214,11 +352,20 @@
       </div>
     {/if}
 
+    <div class="grid gap-3 sm:grid-cols-2">
+      <button type="button" class="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-ink/15 bg-surface px-5 text-sm font-bold text-heading shadow-sm transition hover:border-goldfinch-gold/50 hover:bg-sand" on:click={downloadQuotation}>
+        <Download size={17} /> Download quotation (PDF)
+      </button>
+      <a href={waHref} target="_blank" rel="noopener noreferrer" on:click={openWhatsApp} class="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#25D366] px-5 text-sm font-bold text-white shadow-sm transition hover:brightness-105">
+        <MessageCircle size={17} /> Continue on WhatsApp
+      </a>
+    </div>
+
     <Button type="button" variant="secondary" on:click={resetForm}>Submit another request</Button>
   </div>
 {:else}
   <form class="relative flex max-h-[88vh] flex-col overflow-hidden rounded-2xl border border-ink/10 bg-surface shadow-soft" on:submit|preventDefault={submit} novalidate>
-    <!-- Header — stays visible while the body scrolls -->
+    <!-- Header + progress -->
     <div class="shrink-0 border-b border-ink/10 px-5 py-4 md:px-6">
       <p class="text-xs font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">Booking request</p>
       <h3 class="mt-0.5 text-xl font-bold tracking-normal text-heading">Request this trip with confidence</h3>
@@ -228,138 +375,183 @@
           <span class="text-[10px] font-bold uppercase tracking-[0.14em] text-forest/70">Trip</span>
           <span class="truncate text-sm font-bold text-heading">{tour.title}</span>
         </div>
+      {/if}
+
+      <!-- step indicator -->
+      <ol class="mt-4 flex items-center">
+        {#each STEPS as st, i}
+          <li class="flex items-center {i < STEPS.length - 1 ? 'flex-1' : ''}">
+            <button
+              type="button"
+              class={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold transition ${
+                i < step ? 'bg-forest text-white' : i === step ? 'bg-goldfinch-gold text-heading ring-4 ring-goldfinch-gold/20' : 'bg-sand text-ink/45'
+              } ${i < step ? 'cursor-pointer' : 'cursor-default'}`}
+              on:click={() => goStep(i)}
+              disabled={i >= step}
+              aria-current={i === step ? 'step' : undefined}
+              aria-label={`Step ${i + 1}: ${st.label}`}
+            >
+              {#if i < step}<Check size={14} strokeWidth={3} />{:else}{i + 1}{/if}
+            </button>
+            <span class={`ml-2 hidden text-xs font-semibold sm:block ${i === step ? 'text-heading' : 'text-ink/45'}`}>{st.label}</span>
+            {#if i < STEPS.length - 1}
+              <span class={`mx-2 h-0.5 flex-1 rounded ${i < step ? 'bg-forest' : 'bg-sand'}`}></span>
+            {/if}
+          </li>
+        {/each}
+      </ol>
+    </div>
+
+    <!-- Body (scrolls) -->
+    <div class="grid flex-1 gap-4 overflow-y-auto px-5 py-4 md:px-6" bind:this={bodyEl}>
+      {#if step === 0}
+        <fieldset class="grid gap-4">
+          <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Contact details</legend>
+          <div class="grid gap-4 md:grid-cols-2">
+            <label class="grid gap-1.5 text-sm font-medium text-ink">
+              <span>Full name</span>
+              <input class={cls('full_name')} bind:value={full_name} on:input={() => clearErr('full_name')} placeholder="Your name" autocomplete="name" />
+              {#if errors.full_name}<span class="text-xs text-red-600">{errors.full_name}</span>{/if}
+            </label>
+            <label class="grid gap-1.5 text-sm font-medium text-ink">
+              <span>Email</span>
+              <input class={cls('email')} type="email" bind:value={email} on:input={() => clearErr('email')} placeholder="you@example.com" autocomplete="email" />
+              {#if errors.email}<span class="text-xs text-red-600">{errors.email}</span>{/if}
+            </label>
+          </div>
+          <div class="grid gap-4 md:grid-cols-2">
+            <label class="grid gap-1.5 text-sm font-medium text-ink">
+              <span>Phone / WhatsApp</span>
+              <input class={cls('phone')} type="tel" bind:value={phone} on:input={() => clearErr('phone')} placeholder="+255 ..." autocomplete="tel" />
+              {#if errors.phone}<span class="text-xs text-red-600">{errors.phone}</span>{/if}
+            </label>
+            <div class="grid gap-1.5 text-sm font-medium text-ink">
+              <span>Country</span>
+              <CountrySelect bind:value={country} invalid={Boolean(errors.country)} on:change={() => clearErr('country')} placeholder="Search your country..." />
+              {#if errors.country}<span class="text-xs text-red-600">{errors.country}</span>{/if}
+            </div>
+          </div>
+        </fieldset>
+      {:else if step === 1}
+        <fieldset class="grid gap-4">
+          <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Trip details</legend>
+          <div class="grid gap-4 md:grid-cols-2">
+            <label class="grid gap-1.5 text-sm font-medium text-ink">
+              <span>Preferred travel date</span>
+              <input class={cls('travel_date')} type="date" min={todayStr} bind:value={travel_date} on:input={() => clearErr('travel_date')} />
+              {#if errors.travel_date}<span class="text-xs text-red-600">{errors.travel_date}</span>{/if}
+            </label>
+            <label class="grid gap-1.5 text-sm font-medium text-ink">
+              <span>Are your dates flexible?</span>
+              <select class={cls('date_flexibility')} bind:value={date_flexibility} on:change={() => clearErr('date_flexibility')}>
+                <option value="" disabled>Select…</option>
+                {#each FLEX_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
+              </select>
+              {#if errors.date_flexibility}<span class="text-xs text-red-600">{errors.date_flexibility}</span>{/if}
+            </label>
+          </div>
+          <div class="grid gap-4 md:grid-cols-2">
+            <label class="grid gap-1.5 text-sm font-medium text-ink">
+              <span>Trip duration</span>
+              <input class={cls('trip_duration')} bind:value={trip_duration} placeholder="e.g. 5 days / 4 nights" />
+            </label>
+            <label class="grid gap-1.5 text-sm font-medium text-ink">
+              <span>Estimated budget per person</span>
+              <select class={cls('budget_range')} bind:value={budget_range} on:change={() => clearErr('budget_range')}>
+                <option value="" disabled>Select budget…</option>
+                {#each BUDGET_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
+              </select>
+              {#if errors.budget_range}<span class="text-xs text-red-600">{errors.budget_range}</span>{/if}
+            </label>
+          </div>
+          <div class="grid gap-4 md:grid-cols-2">
+            <label class="grid gap-1.5 text-sm font-medium text-ink">
+              <span>Adults</span>
+              <input class={cls('number_of_adults')} type="number" min="1" bind:value={number_of_adults} on:input={() => clearErr('number_of_adults')} />
+              {#if errors.number_of_adults}<span class="text-xs text-red-600">{errors.number_of_adults}</span>{/if}
+            </label>
+            <label class="grid gap-1.5 text-sm font-medium text-ink">
+              <span>Children</span>
+              <input class={cls('number_of_children')} type="number" min="0" bind:value={number_of_children} on:input={() => clearErr('number_of_children')} />
+              {#if errors.number_of_children}<span class="text-xs text-red-600">{errors.number_of_children}</span>{/if}
+            </label>
+          </div>
+        </fieldset>
+      {:else if step === 2}
+        <fieldset class="grid gap-4">
+          <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Preferences</legend>
+          <div class="grid gap-2 text-sm font-medium text-ink">
+            <span>What are you interested in? <span class="font-normal text-ink/70">(select any)</span></span>
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {#each INTERESTS as interest}
+                <label class={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${
+                  travel_interests.includes(interest) ? 'border-forest bg-forest/[0.07] font-semibold text-heading' : 'border-ink/12 bg-surface text-ink/70 hover:border-forest/40'
+                }`}>
+                  <input type="checkbox" class="h-4 w-4 accent-forest" checked={travel_interests.includes(interest)} on:change={() => toggleInterest(interest)} />
+                  {interest}
+                </label>
+              {/each}
+            </div>
+          </div>
+          <label class="grid gap-1.5 text-sm font-medium text-ink">
+            <span>Accommodation preference</span>
+            <select class={cls('accommodation_preference')} bind:value={accommodation_preference}>
+              <option value="">No preference</option>
+              {#each ACCOMMODATION_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
+            </select>
+          </label>
+          <label class="grid gap-1.5 text-sm font-medium text-ink">
+            <span>Special requests</span>
+            <textarea class={inputBase + ' border-ink/15 focus:border-forest focus:ring-forest/15'} rows={2} bind:value={special_requests} placeholder="Dietary needs, accessibility, celebrations, room preferences..."></textarea>
+          </label>
+          <label class="grid gap-1.5 text-sm font-medium text-ink">
+            <span>Anything else we should know?</span>
+            <textarea class={inputBase + ' border-ink/15 focus:border-forest focus:ring-forest/15'} rows={3} bind:value={message} placeholder="Must-see places, special occasions, group details..."></textarea>
+          </label>
+        </fieldset>
       {:else}
-        <p class="mt-1 text-sm leading-6 text-ink/65">Share a few details and a local specialist will tailor your plan — no payment now.</p>
+        <!-- Review -->
+        <div class="grid gap-4">
+          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Review your request</p>
+          <div class="overflow-hidden rounded-xl border border-ink/10">
+            <dl class="divide-y divide-ink/8">
+              {#each summaryRows as r}
+                <div class="grid grid-cols-[130px_1fr] gap-3 px-4 py-2.5 text-sm">
+                  <dt class="font-medium text-ink/55">{r.label}</dt>
+                  <dd class="font-semibold text-heading">{r.value}</dd>
+                </div>
+              {/each}
+            </dl>
+          </div>
+
+          {#if indicative}
+            <div class="rounded-xl border border-goldfinch-gold/25 bg-sand/40 p-4">
+              <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-clay">Indicative estimate</p>
+              <p class="mt-1 text-lg font-extrabold text-heading">{indicative.perPerson} <span class="text-xs font-semibold text-ink/60">per person</span></p>
+              <p class="mt-0.5 text-sm text-ink/70">{indicative.perPerson} × {indicative.adults} adult{indicative.adults === 1 ? '' : 's'} ≈ <b>{indicative.total}</b></p>
+              <p class="mt-1.5 text-[11px] leading-5 text-ink/55">Indicative only — excludes international flights, visas and insurance. Your specialist confirms the final quote.</p>
+            </div>
+          {/if}
+
+          <div class="grid gap-3 sm:grid-cols-2">
+            <button type="button" class="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-ink/15 bg-surface px-4 text-sm font-bold text-heading shadow-sm transition hover:border-goldfinch-gold/50 hover:bg-sand" on:click={downloadQuotation}>
+              <Download size={16} /> Download quotation (PDF)
+            </button>
+            <a href={waHref} target="_blank" rel="noopener noreferrer" on:click={openWhatsApp} class="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#25D366] px-4 text-sm font-bold text-white shadow-sm transition hover:brightness-105">
+              <MessageCircle size={16} /> Send on WhatsApp
+            </a>
+          </div>
+          <p class="text-xs text-ink/55">Submit below to get a reference number, or send us your details straight away on WhatsApp.</p>
+        </div>
       {/if}
     </div>
 
-    <!-- Body — the only part that scrolls -->
-    <div class="grid flex-1 gap-4 overflow-y-auto px-5 py-4 md:px-6" bind:this={bodyEl}>
-    <!-- ── Contact details ─────────────────────────────────────────────────── -->
-    <fieldset class="grid gap-4">
-      <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Contact details</legend>
-      <div class="grid gap-4 md:grid-cols-2">
-        <label class="grid gap-1.5 text-sm font-medium text-ink">
-          <span>Full name</span>
-          <input class={cls('full_name')} bind:value={full_name} on:input={() => clearErr('full_name')} placeholder="Your name" autocomplete="name" />
-          {#if errors.full_name}<span class="text-xs text-red-600">{errors.full_name}</span>{/if}
-        </label>
-        <label class="grid gap-1.5 text-sm font-medium text-ink">
-          <span>Email</span>
-          <input class={cls('email')} type="email" bind:value={email} on:input={() => clearErr('email')} placeholder="you@example.com" autocomplete="email" />
-          {#if errors.email}<span class="text-xs text-red-600">{errors.email}</span>{/if}
-        </label>
-      </div>
-      <div class="grid gap-4 md:grid-cols-2">
-        <label class="grid gap-1.5 text-sm font-medium text-ink">
-          <span>Phone / WhatsApp</span>
-          <input class={cls('phone')} type="tel" bind:value={phone} on:input={() => clearErr('phone')} placeholder="+255 ..." autocomplete="tel" />
-          {#if errors.phone}<span class="text-xs text-red-600">{errors.phone}</span>{/if}
-        </label>
-        <div class="grid gap-1.5 text-sm font-medium text-ink">
-          <span>Country</span>
-          <CountrySelect bind:value={country} invalid={Boolean(errors.country)} on:change={() => clearErr('country')} placeholder="Search your country..." />
-          {#if errors.country}<span class="text-xs text-red-600">{errors.country}</span>{/if}
-        </div>
-      </div>
-    </fieldset>
-
-    <!-- ── Trip details ────────────────────────────────────────────────────── -->
-    <fieldset class="grid gap-4 border-t border-ink/10 pt-4">
-      <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Trip details</legend>
-      <div class="grid gap-4 md:grid-cols-2">
-        <label class="grid gap-1.5 text-sm font-medium text-ink">
-          <span>Preferred travel date</span>
-          <input class={cls('travel_date')} type="date" min={todayStr} bind:value={travel_date} on:input={() => clearErr('travel_date')} />
-          {#if errors.travel_date}<span class="text-xs text-red-600">{errors.travel_date}</span>{/if}
-        </label>
-        <label class="grid gap-1.5 text-sm font-medium text-ink">
-          <span>Are your dates flexible?</span>
-          <select class={cls('date_flexibility')} bind:value={date_flexibility} on:change={() => clearErr('date_flexibility')}>
-            <option value="" disabled>Select…</option>
-            {#each FLEX_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
-          </select>
-          {#if errors.date_flexibility}<span class="text-xs text-red-600">{errors.date_flexibility}</span>{/if}
-        </label>
-      </div>
-      <div class="grid gap-4 md:grid-cols-2">
-        <label class="grid gap-1.5 text-sm font-medium text-ink">
-          <span>Trip duration</span>
-          <input class={cls('trip_duration')} bind:value={trip_duration} placeholder="e.g. 5 days / 4 nights" />
-        </label>
-        <label class="grid gap-1.5 text-sm font-medium text-ink">
-          <span>Estimated budget per person</span>
-          <select class={cls('budget_range')} bind:value={budget_range} on:change={() => clearErr('budget_range')}>
-            <option value="" disabled>Select budget…</option>
-            {#each BUDGET_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
-          </select>
-          {#if errors.budget_range}<span class="text-xs text-red-600">{errors.budget_range}</span>{/if}
-        </label>
-      </div>
-      <div class="grid gap-4 md:grid-cols-2">
-        <label class="grid gap-1.5 text-sm font-medium text-ink">
-          <span>Adults</span>
-          <input class={cls('number_of_adults')} type="number" min="1" bind:value={number_of_adults} on:input={() => clearErr('number_of_adults')} />
-          {#if errors.number_of_adults}<span class="text-xs text-red-600">{errors.number_of_adults}</span>{/if}
-        </label>
-        <label class="grid gap-1.5 text-sm font-medium text-ink">
-          <span>Children</span>
-          <input class={cls('number_of_children')} type="number" min="0" bind:value={number_of_children} on:input={() => clearErr('number_of_children')} />
-          {#if errors.number_of_children}<span class="text-xs text-red-600">{errors.number_of_children}</span>{/if}
-        </label>
-      </div>
-    </fieldset>
-
-    <!-- ── Preferences ─────────────────────────────────────────────────────── -->
-    <fieldset class="grid gap-4 border-t border-ink/10 pt-4">
-      <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Preferences</legend>
-      <div class="grid gap-2 text-sm font-medium text-ink">
-        <span>What are you interested in? <span class="font-normal text-ink/70">(select any)</span></span>
-        <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {#each INTERESTS as interest}
-            <label
-              class={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${
-                travel_interests.includes(interest)
-                  ? 'border-forest bg-forest/[0.07] font-semibold text-heading'
-                  : 'border-ink/12 bg-surface text-ink/70 hover:border-forest/40'
-              }`}
-            >
-              <input type="checkbox" class="h-4 w-4 accent-forest" checked={travel_interests.includes(interest)} on:change={() => toggleInterest(interest)} />
-              {interest}
-            </label>
-          {/each}
-        </div>
-      </div>
-      <label class="grid gap-1.5 text-sm font-medium text-ink">
-        <span>Accommodation preference</span>
-        <select class={cls('accommodation_preference')} bind:value={accommodation_preference}>
-          <option value="">No preference</option>
-          {#each ACCOMMODATION_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
-        </select>
-      </label>
-    </fieldset>
-
-    <!-- ── Special requests ────────────────────────────────────────────────── -->
-    <fieldset class="grid gap-4 border-t border-ink/10 pt-4">
-      <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Special requests</legend>
-      <label class="grid gap-1.5 text-sm font-medium text-ink">
-        <span>Special requests</span>
-        <textarea class={inputBase + ' border-ink/15 focus:border-forest focus:ring-forest/15'} rows={2} bind:value={special_requests} placeholder="Dietary needs, accessibility, celebrations, room preferences..."></textarea>
-      </label>
-      <label class="grid gap-1.5 text-sm font-medium text-ink">
-        <span>Anything else we should know?</span>
-        <textarea class={inputBase + ' border-ink/15 focus:border-forest focus:ring-forest/15'} rows={3} bind:value={message} placeholder="Must-see places, special occasions, group details..."></textarea>
-      </label>
-    </fieldset>
-    </div>
-    <!-- /Body -->
-
-    <!-- Honeypot: hidden from humans, tempting to bots. -->
+    <!-- Honeypot -->
     <div class="absolute left-[-9999px] top-0 h-0 w-0 overflow-hidden" aria-hidden="true">
       <label>Company<input type="text" name="hp_company" tabindex="-1" autocomplete="off" bind:value={hp_company} /></label>
     </div>
 
-    <!-- Footer — submit button always visible above the fold -->
+    <!-- Footer nav -->
     <div class="shrink-0 space-y-2.5 border-t border-ink/10 bg-surface px-5 py-3.5 md:px-6">
       {#if errorMessage}
         <div class="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-700">
@@ -368,7 +560,20 @@
         </div>
       {/if}
 
-      <Button type="submit" className="w-full">{submitting ? 'Sending your request...' : 'Submit Booking Request'}</Button>
+      <div class="flex items-center gap-3">
+        {#if step > 0}
+          <button type="button" class="inline-flex h-12 shrink-0 items-center gap-1.5 rounded-full border border-ink/15 bg-surface px-5 text-sm font-bold text-ink/75 transition hover:bg-sand" on:click={back}>
+            <ArrowLeft size={16} /> Back
+          </button>
+        {/if}
+        {#if step < LAST}
+          <button type="button" class="inline-flex h-12 flex-1 items-center justify-center gap-1.5 rounded-md bg-forest px-5 text-sm font-semibold text-white transition hover:bg-black" on:click={next}>
+            Continue <ArrowRight size={16} />
+          </button>
+        {:else}
+          <Button type="submit" className="flex-1">{submitting ? 'Sending your request...' : 'Submit Booking Request'}</Button>
+        {/if}
+      </div>
 
       <p class="flex items-center justify-center gap-1.5 text-center text-xs text-ink/70">
         <ShieldCheck size={13} class="text-forest" />

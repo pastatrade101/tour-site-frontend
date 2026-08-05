@@ -35,6 +35,7 @@ export type AnalyticsEventName =
   | 'begin_journey_submitted'
   | 'request_trip_opened'
   | 'request_trip_submitted'
+  | 'quotation_download'
   | 'form_submit_error'
   | 'ai_advisor_opened'
   | 'ai_advisor_message_sent'
