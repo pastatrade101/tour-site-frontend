@@ -3,7 +3,9 @@
   import BlogCard from '$lib/components/public/BlogCard.svelte';
   import DestinationCard from '$lib/components/public/DestinationCard.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
-  import GalleryCard, { type GalleryCardItem } from '$lib/components/public/GalleryCard.svelte';
+  import type { GalleryCardItem } from '$lib/components/public/GalleryCard.svelte';
+  import GalleryViewer from '$lib/components/public/GalleryViewer.svelte';
+  import { SAMPLE_GALLERY } from '$lib/data/sampleGallery';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import { faqLd } from '$lib/seo';
   import HeroSection from '$lib/components/public/HeroSection.svelte';
@@ -175,6 +177,8 @@
   $: blogCtaUrl = cms('blog_preview', 'button_url', '/blog');
   $: galleryCtaText = cms('gallery_preview', 'button_text', 'View gallery');
   $: galleryCtaUrl = cms('gallery_preview', 'button_url', '/gallery');
+  // Real published gallery images, or a sample set so the section never sits empty.
+  $: galleryDisplay = galleryItems.length ? (galleryItems as Record<string, unknown>[]) : SAMPLE_GALLERY;
   $: ctaSecondaryText = cmsExtra('final_cta', 'secondary_cta_text', 'Talk to a Travel Advisor');
   $: ctaSecondaryUrl = cmsExtra('final_cta', 'secondary_cta_url', '/contact');
   $: homepageFaqRows = arr<Record<string, unknown>>(faqExtra.faqs)
@@ -362,8 +366,8 @@
   <PartnerStrip logos={partnerLogos} title={cms('partners', 'title', 'Trusted by leading travel partners')} />
 {/if}
 
-<!-- 10b · Gallery preview — hidden until published gallery images exist -->
-{#if isSectionActive('gallery_preview') && galleryItems.length}
+<!-- 10b · Gallery preview -->
+{#if isSectionActive('gallery_preview') && galleryDisplay.length}
 <section class="relative overflow-hidden bg-deep-green py-14 text-white md:py-20" use:sectionReveal>
   <div class="pointer-events-none absolute inset-0 opacity-[0.07]" style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1.5px); background-size: 30px 30px;" aria-hidden="true"></div>
   <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-goldfinch-gold/45 to-transparent" aria-hidden="true"></div>
@@ -379,17 +383,15 @@
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-3 lg:justify-end" use:fadeUpOnScroll={{ y: 14, delay: 0.08 }}>
-        <span class="inline-flex items-center gap-2 rounded-[8px] bg-white/15 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/25 backdrop-blur"><span class="h-1.5 w-1.5 rounded-full bg-goldfinch-gold"></span>{galleryItems.length} featured image{galleryItems.length === 1 ? '' : 's'}</span>
+        <span class="inline-flex items-center gap-2 rounded-[8px] bg-white/15 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/25 backdrop-blur"><span class="h-1.5 w-1.5 rounded-full bg-goldfinch-gold"></span>{galleryDisplay.length} featured image{galleryDisplay.length === 1 ? '' : 's'}</span>
         <a class="inline-flex h-11 items-center gap-2 rounded-[8px] bg-goldfinch-gold px-5 text-sm font-extrabold text-heading shadow-sm transition hover:brightness-105" href={galleryCtaUrl}>
           {galleryCtaText} <ArrowRight size={16} strokeWidth={2.6} />
         </a>
       </div>
     </div>
 
-    <div class="mt-9 grid auto-rows-[280px] gap-4 md:grid-cols-3" use:staggeredCardReveal={{ y: 18, stagger: 0.06 }}>
-      {#each galleryItems.slice(0, 7) as item, index (item.id ?? `${item.image_url}-${index}`)}
-        <GalleryCard {item} featured={index === 0} />
-      {/each}
+    <div class="mt-9">
+      <GalleryViewer images={galleryDisplay.slice(0, 8)} dark mosaic />
     </div>
   </div>
 </section>
