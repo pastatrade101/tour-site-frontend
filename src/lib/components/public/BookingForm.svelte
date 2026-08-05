@@ -7,7 +7,6 @@
   import { brand } from '$lib/brand';
   import { publicSettings, settingText } from '$lib/settings';
   import Button from './Button.svelte';
-  import CountrySelect from './CountrySelect.svelte';
   import CategoryPicker from './CategoryPicker.svelte';
   import type { Tour } from '$lib/types';
 
@@ -25,7 +24,7 @@
   let full_name = '';
   let email = '';
   let phone = '';
-  let country = '';
+  let country = ''; // no longer collected in the form; kept so the API payload shape is unchanged
   let travel_date = '';
   let date_flexibility = '';
   let trip_duration = '';
@@ -86,12 +85,11 @@
     const e: Record<string, string> = { ...errors };
     const only = (keys: string[]) => keys.forEach((k) => delete e[k]);
     if (index === 0) {
-      only(['full_name', 'email', 'phone', 'country']);
+      only(['full_name', 'email', 'phone']);
       if (full_name.trim().length < 2) e.full_name = 'Please enter your full name.';
       if (!email.trim()) e.email = 'Email is required.';
       else if (!isEmail(email.trim())) e.email = 'Please enter a valid email address.';
       if (phone.trim().length < 6) e.phone = 'A phone or WhatsApp number is required.';
-      if (!country.trim()) e.country = 'Please tell us your country.';
     } else if (index === 1) {
       only(['travel_date', 'date_flexibility', 'budget_range', 'number_of_adults', 'number_of_children']);
       if (travel_date && travel_date < todayStr) e.travel_date = "Travel date can't be in the past.";
@@ -102,7 +100,7 @@
     }
     errors = e;
     const stepErrs = Object.keys(errors).filter((k) => {
-      if (index === 0) return ['full_name', 'email', 'phone', 'country'].includes(k);
+      if (index === 0) return ['full_name', 'email', 'phone'].includes(k);
       if (index === 1) return ['travel_date', 'date_flexibility', 'budget_range', 'number_of_adults', 'number_of_children'].includes(k);
       return false;
     });
@@ -153,7 +151,6 @@
     add('Name', full_name);
     add('Email', email);
     add('Phone / WhatsApp', phone);
-    add('Country', country);
     add('Preferred date', travel_date);
     add('Dates flexible', date_flexibility);
     add('Duration', trip_duration);
@@ -425,11 +422,6 @@
               <input class={cls('phone')} type="tel" bind:value={phone} on:input={() => clearErr('phone')} placeholder="+255 ..." autocomplete="tel" />
               {#if errors.phone}<span class="text-xs text-red-600">{errors.phone}</span>{/if}
             </label>
-            <div class="grid gap-1.5">
-              <span>Country</span>
-              <CountrySelect bind:value={country} invalid={Boolean(errors.country)} on:change={() => clearErr('country')} placeholder="Search your country..." />
-              {#if errors.country}<span class="text-xs text-red-600">{errors.country}</span>{/if}
-            </div>
           </div>
         </fieldset>
       {:else if step === 1}
