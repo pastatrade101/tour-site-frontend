@@ -58,6 +58,7 @@
     { href: '/safari-styles', label: 'Safari Styles', dropdown: 'safariStyles' },
     { href: '/experiences', label: 'Experiences' },
     { href: '/expert-advice', label: 'Expert Advice' },
+    { href: '/about', label: 'About Us' },
     { href: '/contact', label: 'Contact' }
   ];
 
