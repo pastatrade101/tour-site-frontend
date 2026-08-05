@@ -12,6 +12,13 @@
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import RangeSlider from '$lib/components/public/RangeSlider.svelte';
   import TourCardRich from '$lib/components/public/TourCardRich.svelte';
+  import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
+  import LeadCaptureForm from '$lib/components/public/LeadCaptureForm.svelte';
+  import HomeDestinationsCarousel from '$lib/components/public/home/HomeDestinationsCarousel.svelte';
+  import HomeAdvisorNote from '$lib/components/public/home/HomeAdvisorNote.svelte';
+  import HomeHowPlanned from '$lib/components/public/home/HomeHowPlanned.svelte';
+  import HomeTravellerStories from '$lib/components/public/home/HomeTravellerStories.svelte';
+  import HomePlanningBand from '$lib/components/public/home/HomePlanningBand.svelte';
   import type { Tour } from '$lib/types';
   import type { PageData } from './$types';
 
@@ -32,6 +39,15 @@
 
   export let data: PageData;
   let allTours: Tour[] = data.tours ?? [];
+  // Supporting content rendered under the grid. Each block self-hides when its
+  // list is empty, so a missing endpoint just removes that section.
+  $: parkDestinations = data.destinations ?? [];
+  $: tourReviews = data.reviews ?? [];
+  $: tourReviewSummary = data.reviewSummary ?? null;
+  $: tourFaqs = data.faqs ?? [];
+  $: tourPhotos = (data.galleryItems ?? [])
+    .filter((g) => typeof g.image_url === 'string' && g.image_url)
+    .map((g) => ({ src: String(g.image_url), caption: String(g.title ?? g.alt_text ?? '') }));
   let loading = false;
   let error = '';
 
@@ -341,13 +357,13 @@
     </div>
   {/if}
 
-  <div class="mt-6 grid min-w-0 gap-6 lg:grid-cols-[310px_minmax(0,1fr)] lg:items-start">
+  <div class="mt-6 grid min-w-0 gap-6">
     {#if filtersOpen}
       <button class="fixed inset-0 z-50 bg-ink/45 backdrop-blur-sm lg:hidden" type="button" aria-label="Close filters" on:click={() => (filtersOpen = false)}></button>
     {/if}
 
-    <aside class={`${filtersOpen ? 'fixed inset-x-0 bottom-0 z-[60] block max-h-[90dvh]' : 'hidden'} lg:sticky lg:inset-auto lg:top-24 lg:z-auto lg:block lg:max-h-[calc(100vh-7rem)]`}>
-      <div class="flex max-h-[90dvh] flex-col overflow-hidden rounded-t-[8px] border border-ink/10 bg-surface shadow-soft lg:max-h-[calc(100vh-7rem)] lg:rounded-[8px]">
+    <aside class={`${filtersOpen ? 'fixed inset-x-0 bottom-0 z-[60] block max-h-[90dvh]' : 'hidden'} lg:static lg:z-auto lg:block lg:max-h-none`}>
+      <div class="flex max-h-[90dvh] flex-col overflow-hidden rounded-t-[8px] border border-ink/10 bg-surface shadow-soft lg:max-h-none lg:rounded-[8px]">
         <div class="border-b border-ink/10 px-4 py-4">
           <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-ink/15 lg:hidden"></div>
           <div class="flex items-center justify-between gap-3">
@@ -366,7 +382,7 @@
           </div>
         </div>
 
-        <div class="filter-scroll flex-1 overflow-y-auto overscroll-contain">
+        <div class="filter-scroll flex-1 overflow-y-auto overscroll-contain lg:overflow-visible lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-6 xl:grid-cols-4">
           <section class="filter-section">
             <div class="filter-heading">
               <span>1</span>
@@ -577,6 +593,67 @@
   </div>
 </section>
 
+<!-- ── Supporting content, below the filtered grid ─────────────────────────── -->
+
+{#if parkDestinations.length}
+  <HomeDestinationsCarousel
+    destinations={parkDestinations}
+    eyebrow="Best parks"
+    title="Where These Safaris Take You"
+    subtitle="Some parks are best for big cats, others for scenery, migration timing or a quieter feel. We help you combine them in the right order."
+  />
+{/if}
+
+<HomeAdvisorNote
+  eyebrow="Advisor's note"
+  title="What We Help You Get Right"
+  body="Most travel mistakes happen before arrival. The wrong route, too many one-night stops, poor lodge locations or badly timed transfers can make even a beautiful trip feel tiring."
+/>
+
+<HomeHowPlanned
+  eyebrow="How your trip is planned"
+  title="From First Note to Final Sundowner"
+  subtitle="You do not need to arrive with a finished itinerary. Share the basics, and we'll shape the route, pace and logistics around you."
+/>
+
+{#if tourReviews.length}
+  <HomeTravellerStories
+    reviews={tourReviews}
+    summary={tourReviewSummary}
+    photos={tourPhotos}
+    eyebrow="Traveller stories"
+    title="Travellers Who Planned Tanzania With Us"
+  />
+{/if}
+
+{#if tourFaqs.length}
+  <section class="bg-surface py-14 md:py-20">
+    <div class="tour-shell grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
+      <div>
+        <div class="inline-flex items-center gap-2">
+          <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
+          <span class="text-xs font-semibold uppercase tracking-[0.15em] text-clay">Good to know</span>
+        </div>
+        <h2 class="font-serif mt-3 text-3xl leading-[1.1] tracking-tight text-heading sm:text-4xl md:text-[40px]">
+          Questions About These Safaris
+        </h2>
+        <p class="mt-4 max-w-md text-base leading-relaxed text-ink/70">
+          Honest answers to what travellers ask most before choosing a route.
+        </p>
+      </div>
+      <FAQAccordion faqs={tourFaqs} />
+    </div>
+  </section>
+{/if}
+
+<HomePlanningBand
+  eyebrow="Start planning"
+  title="Request Your Tanzania Safari Plan"
+  subtitle="Tell us your dates, group and the experiences you are considering. A local specialist will shape the route, timing and logistics around you."
+>
+  <LeadCaptureForm compact title="Start your trip plan" />
+</HomePlanningBand>
+
 <style>
   :global(body) {
     overflow-x: hidden;
@@ -660,6 +737,13 @@
   :global(.filter-section) {
     border-bottom: 1px solid rgba(57, 61, 50, 0.1);
     padding: 1rem;
+  }
+  /* Filters sit ABOVE the grid on desktop and flow in columns, so the stacked
+     dividers of the old sidebar would read as stray lines. */
+  @media (min-width: 1024px) {
+    :global(.filter-section) {
+      border-bottom: 0;
+    }
   }
   :global(.filter-heading) {
     display: flex;
