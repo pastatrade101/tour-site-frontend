@@ -29,7 +29,7 @@ export const load: PageLoad = async ({ fetch }) => {
     galleryItems
   ] = await Promise.allSettled([
     cachedJson<{ data?: { items?: Tour[] } }>(`${API_URL}/tours?status=published&limit=3`, fetch),
-    cachedJson<{ data?: { items?: Destination[] } }>(`${API_URL}/destinations?status=published&limit=6`, fetch),
+    cachedJson<{ data?: { items?: Destination[] } }>(`${API_URL}/destinations?status=published&limit=8`, fetch),
     cachedJson<{ data?: Record<string, unknown>[] }>(`${API_URL}/homepage`, fetch),
     cachedJson<{ data?: { items?: BlogPost[] } }>(`${API_URL}/blog?limit=3`, fetch),
     cachedJson<{ data?: { items?: Testimonial[] } }>(`${API_URL}/testimonials?limit=6`, fetch),

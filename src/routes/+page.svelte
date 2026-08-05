@@ -10,6 +10,7 @@
   import { faqLd } from '$lib/seo';
   import HeroSection from '$lib/components/public/HeroSection.svelte';
   import IntroBand from '$lib/components/public/IntroBand.svelte';
+  import TopDestinations from '$lib/components/public/TopDestinations.svelte';
   import WhyGoldfinch from '$lib/components/public/WhyGoldfinch.svelte';
   import SeasonsBand from '$lib/components/public/SeasonsBand.svelte';
   import ImpactBand from '$lib/components/public/ImpactBand.svelte';
@@ -216,6 +217,16 @@
   <IntroBand {...introProps} />
 {/if}
 
+<!-- 2b · Top destinations mosaic — real destinations, hidden when empty -->
+{#if isSectionActive('top_destinations') && destinations.length}
+  <TopDestinations
+    {destinations}
+    eyebrow={cmsExtra('top_destinations', 'eyebrow', 'Where travellers go')}
+    title={cms('top_destinations', 'title', 'Top Destinations')}
+    subtitle={cms('top_destinations', 'subtitle', 'The parks, peaks and coastlines our guests ask for most — each one a trip we can shape around you.')}
+  />
+{/if}
+
 <!-- 3 · Destinations — hidden when there are no destinations -->
 {#if isSectionActive('featured_destinations') && destinations.length}
 <section class="relative overflow-hidden bg-surface py-14 md:py-20" use:sectionReveal>
@@ -237,7 +248,7 @@
       </a>
     </div>
     <div class="relative mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3" use:staggeredCardReveal>
-      {#each destinations as destination}
+      {#each destinations.slice(0, 6) as destination}
         <DestinationCard {destination} />
       {/each}
     </div>

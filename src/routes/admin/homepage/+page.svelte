@@ -113,6 +113,18 @@
       }
     },
     {
+      key: 'top_destinations',
+      label: 'Top destinations mosaic',
+      surface: 'public',
+      description: 'Edge-to-edge photo mosaic of published destinations after the intro band. Hovering a tile reveals "Request this trip". Tiles come from published destination records with images.',
+      fields: ['title', 'subtitle', 'extra: eyebrow'],
+      preset: {
+        title: 'Top Destinations',
+        subtitle: 'The parks, peaks and coastlines our guests ask for most — each one a trip we can shape around you.',
+        extra_data: { eyebrow: 'Where travellers go' }
+      }
+    },
+    {
       key: 'featured_destinations',
       label: 'Featured destinations',
       surface: 'public',
