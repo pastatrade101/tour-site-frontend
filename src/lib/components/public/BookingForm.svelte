@@ -364,16 +364,16 @@
     <Button type="button" variant="secondary" on:click={resetForm}>Submit another request</Button>
   </div>
 {:else}
-  <form class="relative flex max-h-[88vh] flex-col overflow-hidden rounded-2xl border border-ink/10 bg-surface shadow-soft" on:submit|preventDefault={submit} novalidate>
+  <form class="gf-panel-dark relative flex max-h-[88vh] flex-col overflow-hidden rounded-2xl border border-white/10 shadow-soft" on:submit|preventDefault={submit} novalidate>
     <!-- Header + progress -->
-    <div class="shrink-0 border-b border-ink/10 px-5 py-4 md:px-6">
+    <div class="shrink-0 border-b border-white/10 px-5 py-4 md:px-6">
       <p class="text-xs font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">Booking request</p>
-      <h3 class="mt-0.5 text-xl font-bold tracking-normal text-heading">Request this trip with confidence</h3>
+      <h3 class="mt-0.5 font-serif text-xl font-semibold tracking-normal text-white">Request this trip with confidence</h3>
       {#if tour}
-        <div class="mt-3 flex items-center gap-2.5 rounded-xl border border-forest/20 bg-forest/[0.05] px-3 py-2">
+        <div class="mt-3 flex items-center gap-2.5 rounded-xl border border-goldfinch-gold/30 bg-white/[0.06] px-3 py-2">
           <MapPin size={15} class="shrink-0 text-forest" />
           <span class="text-[10px] font-bold uppercase tracking-[0.14em] text-forest/70">Trip</span>
-          <span class="truncate text-sm font-bold text-heading">{tour.title}</span>
+          <span class="truncate text-sm font-bold text-white">{tour.title}</span>
         </div>
       {/if}
 
@@ -485,7 +485,7 @@
             <CategoryPicker
               selected={travel_interests}
               fallbackOptions={INTERESTS}
-              tone="light"
+              tone="dark"
               onToggle={toggleInterest}
             />
           </div>
@@ -548,7 +548,7 @@
     </div>
 
     <!-- Footer nav -->
-    <div class="shrink-0 space-y-2.5 border-t border-ink/10 bg-surface px-5 py-3.5 md:px-6">
+    <div class="shrink-0 space-y-2.5 border-t border-white/10 px-5 py-3.5 md:px-6">
       {#if errorMessage}
         <div class="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-700">
           <AlertCircle size={15} class="mt-0.5 shrink-0" />
@@ -573,7 +573,7 @@
         {/if}
       </div>
 
-      <p class="flex items-center justify-center gap-1.5 text-center text-xs text-ink/70">
+      <p class="flex items-center justify-center gap-1.5 text-center text-xs text-white/60">
         <ShieldCheck size={13} class="text-forest" />
         Your details are kept private and used only to plan your trip.
       </p>
