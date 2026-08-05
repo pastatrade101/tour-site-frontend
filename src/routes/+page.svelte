@@ -279,10 +279,10 @@
     eyebrow={cmsExtra('advisor_note', 'eyebrow', "An Advisor's Note")}
     title={cms('advisor_note', 'title', 'The Trip Is Won or Lost in the Planning Details')}
     body={cms('advisor_note', 'subtitle', 'Most travel mistakes happen before arrival. The wrong route, too many one-night stops, poor lodge locations or badly timed transfers can make even a beautiful trip feel tiring.')}
-    {...clean({ points: arr(advisorExtra.points) })}
-    imageUrl={cms('advisor_note', 'image_url', heroImageResolved)}
-    ctaLabel={cms('advisor_note', 'button_text', 'Talk to a Travel Advisor')}
-    ctaHref={cms('advisor_note', 'button_url', '/contact')}
+    {...clean({
+      columns: arr<{ title: string; items: string[] }>(advisorExtra.columns),
+      footnote: typeof advisorExtra.footnote === 'string' ? advisorExtra.footnote : ''
+    })}
   />
 {/if}
 

@@ -128,14 +128,35 @@
       key: 'advisor_note',
       label: "Advisor's note",
       surface: 'public',
-      description: 'Editorial band about why planning details matter. Extra JSON `points` is a list of {title, text} bullets.',
-      fields: ['title', 'subtitle', 'image', 'button', 'extra: eyebrow, points'],
+      description: 'Editorial card with two bulleted columns. Extra JSON: `columns` is a list of {title, items: [...]} (two columns look best) and `footnote` is the closing italic line.',
+      fields: ['title', 'subtitle', 'extra: eyebrow, columns, footnote'],
       preset: {
         title: 'The Trip Is Won or Lost in the Planning Details',
         subtitle: 'Most travel mistakes happen before arrival. The wrong route, too many one-night stops, poor lodge locations or badly timed transfers can make even a beautiful trip feel tiring.',
-        button_text: 'Talk to a Travel Advisor',
-        button_url: '/contact',
-        extra_data: { eyebrow: "An Advisor's Note" }
+        extra_data: {
+          eyebrow: "Advisor's Note",
+          footnote: 'That is why we start with your dates, travel style and priorities — not with a fixed package.',
+          columns: [
+            {
+              title: 'The big choices',
+              items: [
+                'When to travel — migration timing, dry season, shoulder-season value, beach conditions and Kilimanjaro weather.',
+                'Which places to include — and which to leave out so the trip has enough space.',
+                'How to combine safari, Zanzibar, Kilimanjaro or culture without wasting days in transit.',
+                'Accommodation style — mobile camp, tented camp, lodge, boutique hotel, beach resort or mountain hotel.'
+              ]
+            },
+            {
+              title: 'The quiet details',
+              items: [
+                'Vehicle style, road time and where open-side game-drive vehicles make sense.',
+                'Which Zanzibar coast fits your month, swimming preference and travel style.',
+                'Family logistics, gentler safari days, connecting rooms and realistic drive times.',
+                'Photography, birding, walking, culture or trekking interests matched to the right guide and pace.'
+              ]
+            }
+          ]
+        }
       }
     },
     {
