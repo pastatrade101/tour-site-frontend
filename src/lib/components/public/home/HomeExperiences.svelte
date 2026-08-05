@@ -83,7 +83,8 @@
                     {opt.name}
                   </span>
                   {#if opt.short || opt.description}
-                    <span class="mt-1 block text-[14px] leading-snug text-ink/70 break-words">
+                    <!-- no `block` here: line-clamp needs display:-webkit-box, which `block` would override -->
+                    <span class="mt-1 line-clamp-3 text-[14px] leading-snug text-ink/70 break-words">
                       {opt.short || opt.description}
                     </span>
                   {/if}
