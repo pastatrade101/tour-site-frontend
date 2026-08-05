@@ -367,10 +367,10 @@
       <p class="text-xs font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">Booking request</p>
       <h3 class="mt-0.5 font-serif text-xl font-semibold tracking-normal text-white">Request this trip with confidence</h3>
       {#if tour}
-        <div class="mt-3 flex items-center gap-2.5 rounded-xl border border-goldfinch-gold/30 bg-white/[0.06] px-3 py-2">
-          <MapPin size={15} class="shrink-0 text-forest" />
-          <span class="text-[10px] font-bold uppercase tracking-[0.14em] text-forest/70">Trip</span>
-          <span class="truncate text-sm font-bold text-white">{tour.title}</span>
+        <div class="gf-trip-chip mt-3">
+          <MapPin size={16} class="shrink-0 text-goldfinch-gold" />
+          <span class="shrink-0 text-[10px] font-bold uppercase tracking-[0.14em] text-goldfinch-gold/80">Trip</span>
+          <span class="truncate text-sm font-bold text-goldfinch-gold">{tour.title}</span>
         </div>
       {/if}
 

@@ -460,9 +460,10 @@
     </div>
 
     {#if tripContext}
-      <div class="mt-4 flex items-center gap-2 rounded-xl border border-forest/20 bg-forest/[0.06] px-3.5 py-2.5 text-sm font-semibold text-forest">
-        <MapPin size={16} class="shrink-0" />
-        Planning: {tripContext}
+      <div class="gf-trip-chip mt-4">
+        <MapPin size={16} class="shrink-0 text-goldfinch-gold" />
+        <span class="shrink-0 text-[10px] font-bold uppercase tracking-[0.14em] text-goldfinch-gold/80">Planning</span>
+        <span class="truncate text-sm font-bold text-goldfinch-gold">{tripContext}</span>
       </div>
     {/if}
 

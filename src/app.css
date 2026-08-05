@@ -247,6 +247,30 @@ select {
   .gf-panel-dark .gf-input option {
     @apply bg-deep-green text-white;
   }
+  /* The trip the traveller is enquiring about — the one piece of context in the
+     stepper they must be able to confirm at a glance. Gold on the dark panel,
+     with a slow glow that draws the eye three times and then settles. A
+     permanent blink would fail WCAG 2.2.2 and get annoying fast. */
+  .gf-trip-chip {
+    @apply flex items-center gap-2.5 rounded-xl border border-goldfinch-gold/60 px-3 py-2.5;
+    background: linear-gradient(90deg, rgb(212 175 55 / 0.18), rgb(212 175 55 / 0.06));
+    animation: gf-trip-glow 1.9s ease-in-out 3;
+  }
+  @keyframes gf-trip-glow {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgb(212 175 55 / 0);
+    }
+    50% {
+      box-shadow: 0 0 0 4px rgb(212 175 55 / 0.22);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .gf-trip-chip {
+      animation: none;
+      box-shadow: 0 0 0 2px rgb(212 175 55 / 0.22);
+    }
+  }
   .gf-panel-dark .gf-hint {
     @apply text-white/45;
   }
