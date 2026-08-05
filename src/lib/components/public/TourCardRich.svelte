@@ -20,10 +20,11 @@
 
   $: comfort = tour.budget_tier ? (tierLabels[tour.budget_tier] ?? tour.budget_tier) : '';
   $: durationLabel = tour.duration_days ? `${tour.duration_days} day${tour.duration_days === 1 ? '' : 's'}` : '';
-  // "N parks" only when the itinerary genuinely lists that many places; otherwise
-  // fall back to the destination name. Nothing here is invented.
-  $: parkCount = (tour.highlights ?? []).length;
-  $: parksLabel = parkCount > 1 ? `${parkCount} parks` : tour.destinations?.name || '';
+  // "N places" only when the itinerary genuinely lists that many stops; otherwise
+  // fall back to the destination name. Nothing here is invented. ("places" rather
+  // than "parks" because a route can also list forests, beaches or towns.)
+  $: placeCount = (tour.highlights ?? []).length;
+  $: parksLabel = placeCount > 1 ? `${placeCount} places` : tour.destinations?.name || '';
   $: meta = [durationLabel, parksLabel, comfort].filter(Boolean);
 
   // Badge comes from a real flag only.

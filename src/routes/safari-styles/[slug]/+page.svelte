@@ -84,7 +84,7 @@
             {#if category.who_its_for}
               <div class="flex gap-3 rounded-[8px] bg-white/10 p-3">
                 <Users size={18} class="mt-0.5 shrink-0 text-goldfinch-gold" />
-                <p class="text-sm leading-6 text-white/78">{category.who_its_for}</p>
+                <p class="whitespace-pre-line text-sm leading-6 text-white/78">{category.who_its_for}</p>
               </div>
             {/if}
             {#if category.fitness}
