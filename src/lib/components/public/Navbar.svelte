@@ -385,23 +385,20 @@
         </a>
       </nav>
 
-      <!-- WhatsApp block -->
-      <a
-        class="flex min-h-[54px] items-center gap-3 border-l border-ink/10 px-5 transition hover:bg-ink/5 lg:w-[300px] lg:px-6"
-        href={waHref}
-        target="_blank"
-        rel="noopener noreferrer"
-        on:click={() => trackEvent('whatsapp_click')}
-        aria-label={`${waButtonText} ${waNumber}`}
-      >
-        <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#25D366] text-white ring-4 ring-[#25D366]/15">
-          <MessageCircle size={18} strokeWidth={2.8} />
-        </span>
-        <span class="grid leading-tight">
-          <span class="text-xs font-medium text-ink/70">{waButtonText}</span>
-          <span class="whitespace-nowrap text-base font-bold text-ink">{waNumber}</span>
-        </span>
-      </a>
+      <!-- WhatsApp icon only -->
+      <div class="flex min-h-[54px] items-center border-l border-ink/10 px-5 lg:px-6">
+        <a
+          class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#25D366] text-white shadow-sm ring-4 ring-[#25D366]/15 transition hover:brightness-105"
+          href={waHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          on:click={() => trackEvent('whatsapp_click')}
+          aria-label={`${waButtonText} ${waNumber}`}
+          title={`${waButtonText} — ${waNumber}`}
+        >
+          <MessageCircle size={20} strokeWidth={2.6} />
+        </a>
+      </div>
     </div>
   </div>
 
