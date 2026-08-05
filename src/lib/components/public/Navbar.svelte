@@ -201,7 +201,7 @@
     </button>
 
     <a href="/" class="flex shrink-0 items-center gap-2" aria-label="Goldfinch Adventures home">
-      <TicketsPlane class="text-goldfinch-gold" size={30} strokeWidth={2} />
+      <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-10 w-10 shrink-0 object-contain" />
       <div class="leading-none">
         <p class="text-xl font-extrabold tracking-normal text-heading">Goldfinch</p>
         <p class="mt-1 text-xs font-semibold text-ink/70">Adventures</p>
@@ -217,7 +217,7 @@
   <div class={`hidden overflow-hidden transition-[max-height,opacity] duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] lg:block ${scrolled ? 'max-h-0 opacity-0' : 'max-h-[96px] opacity-100'}`}>
     <div class="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-7 px-4 lg:h-[80px]">
       <a href="/" class="flex min-w-[150px] items-center gap-2.5" aria-label="Goldfinch Adventures home">
-        <TicketsPlane class="text-goldfinch-gold" size={34} strokeWidth={2.1} />
+        <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-12 w-12 shrink-0 object-contain" />
         <div class="leading-none">
           <p class="text-2xl font-extrabold tracking-normal text-heading">Goldfinch</p>
           <p class="mt-1.5 text-sm font-semibold text-ink/70">Adventures</p>
@@ -263,7 +263,7 @@
       <nav class="flex items-center gap-1" aria-label="Primary">
         {#if scrolled}
           <a href="/" class="mr-1 flex shrink-0 items-center gap-2" aria-label="Goldfinch Adventures home" transition:fly={{ x: -14, duration: 320 }}>
-            <TicketsPlane class="text-goldfinch-gold" size={26} strokeWidth={2.2} />
+            <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-9 w-9 shrink-0 object-contain" />
             <span class="text-lg font-extrabold tracking-normal text-heading">Goldfinch</span>
           </a>
           <form class="mr-2 hidden h-9 items-center rounded-full bg-[#f1f1f1] pl-1 pr-2 transition focus-within:ring-2 focus-within:ring-goldfinch-gold/30 xl:flex" on:submit|preventDefault={submitSearch} role="search" transition:fly={{ x: -14, duration: 320 }}>
@@ -279,7 +279,7 @@
             <div class="nav-dropdown relative" on:mouseenter={(e) => openDropdownAt(item.dropdown, e.currentTarget)} on:mouseleave={() => (openDropdown = '')}>
               <div class="flex items-center">
                 <a
-                  class={`relative inline-flex items-center gap-1 rounded px-2.5 py-4 text-sm font-semibold transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40 ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink/80'}`}
+                  class={`relative inline-flex items-center gap-1 rounded px-3 py-[22px] text-[15px] font-semibold transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40 ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink/80'}`}
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
                 >
@@ -380,7 +380,7 @@
             </div>
           {:else}
             <a
-              class={`relative inline-flex items-center rounded px-2.5 py-4 text-sm font-semibold transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40 ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink/80'}`}
+              class={`relative inline-flex items-center rounded px-3 py-[22px] text-[15px] font-semibold transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40 ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink/80'}`}
               href={item.href}
               aria-current={active ? 'page' : undefined}
             >
@@ -425,7 +425,7 @@
       <aside class="absolute right-0 top-0 flex min-h-dvh w-[86vw] min-w-[300px] max-w-[380px] flex-col overflow-y-auto border-l border-ink/10 bg-surface px-5 py-5 shadow-[-20px_0_55px_rgba(0,0,0,0.12)]" transition:fly={{ x: 60, duration: 200 }}>
         <div class="flex items-center justify-between gap-4">
           <a href="/" class="flex shrink-0 items-center gap-2.5" on:click={() => (menuOpen = false)}>
-            <TicketsPlane class="text-goldfinch-gold" size={32} strokeWidth={2.1} />
+            <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-10 w-10 shrink-0 object-contain" />
             <div class="leading-none">
               <p class="text-xl font-extrabold tracking-normal text-heading">Goldfinch</p>
               <p class="mt-1 text-xs font-semibold text-ink/70">Adventures</p>
