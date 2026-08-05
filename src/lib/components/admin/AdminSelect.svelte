@@ -5,10 +5,12 @@
   export let options: { label: string; value: string }[] = [];
 </script>
 
-<label class="grid gap-1.5">
+<!-- min-w-0 + w-full so the select can shrink inside tight grid/flex tracks
+     (grid items default to min-width:auto, which made narrow filter bars overflow). -->
+<label class="grid min-w-0 gap-1.5">
   <span class="text-[13px] font-semibold text-ink/65">{label}</span>
   <select
-    class="h-11 rounded-md border border-ink/15 bg-black/[0.02] px-3.5 text-sm text-ink outline-none transition hover:border-ink/25 focus:border-forest focus:bg-surface focus:ring-2 focus:ring-forest/20"
+    class="h-11 w-full min-w-0 rounded-md border border-ink/15 bg-black/[0.02] px-3.5 text-sm text-ink outline-none transition hover:border-ink/25 focus:border-forest focus:bg-surface focus:ring-2 focus:ring-forest/20"
     {name}
     bind:value
     on:change

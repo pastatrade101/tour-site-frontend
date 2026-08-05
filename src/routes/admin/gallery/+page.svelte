@@ -476,8 +476,8 @@
   {/if}
 
   <AdminToolbar className="grid gap-4">
-    <div class="grid gap-3 xl:grid-cols-[minmax(240px,1.35fr)_repeat(4,minmax(130px,0.8fr))_auto_auto] xl:items-end">
-      <label class="grid gap-2 text-sm font-medium text-ink">
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-[minmax(160px,1.3fr)_repeat(4,minmax(0,1fr))_auto] xl:items-end">
+      <label class="grid min-w-0 gap-2 text-sm font-medium text-ink sm:col-span-2 lg:col-span-4 xl:col-span-1">
         <span>Search</span>
         <span class="flex h-11 items-center gap-2 rounded-[8px] border border-ink/10 bg-surface px-3 shadow-sm transition focus-within:border-forest/45 focus-within:ring-2 focus-within:ring-forest/10">
           <Search size={16} class="text-ink/45" />
@@ -488,10 +488,12 @@
       <AdminSelect label="Type" name="media_type_filter" bind:value={mediaTypeFilter} options={[{ label: 'All types', value: 'all' }, ...mediaTypeOptions]} />
       <AdminSelect label="Destination" name="destination_filter" bind:value={destinationFilter} options={destinationFilterOptions} />
       <AdminSelect label="Tour" name="tour_filter" bind:value={tourFilter} options={tourFilterOptions} />
-      <AdminButton variant="secondary" on:click={load}>
-        <SlidersHorizontal size={15} /> Apply
-      </AdminButton>
-      <AdminButton variant="ghost" disabled={!hasActiveFilters} on:click={clearFilters}>Clear</AdminButton>
+      <div class="flex items-end gap-2 sm:col-span-2 lg:col-span-4 lg:justify-end xl:col-span-1">
+        <AdminButton variant="secondary" on:click={load}>
+          <SlidersHorizontal size={15} /> Apply
+        </AdminButton>
+        <AdminButton variant="ghost" disabled={!hasActiveFilters} on:click={clearFilters}>Clear</AdminButton>
+      </div>
     </div>
 
     {#if hasActiveFilters}
@@ -648,7 +650,7 @@
 </div>
 
 {#if modalOpen}
-  <div class="fixed inset-0 z-50 grid place-items-center bg-black/45 p-3 backdrop-blur-sm sm:p-4" transition:fade={{ duration: 140 }}>
+  <div class="fixed inset-0 z-50 grid place-items-center bg-black/45 p-3 backdrop-blur-sm sm:p-4 lg:left-[var(--admin-aside,0px)]" transition:fade={{ duration: 140 }}>
     <form
       class="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-[0_28px_90px_rgba(57,61,50,0.2)]"
       transition:scale={{ duration: 160, start: 0.98 }}
@@ -841,7 +843,7 @@
 {/if}
 
 {#if bulkOpen}
-  <div class="fixed inset-0 z-50 grid place-items-center bg-black/45 p-3 backdrop-blur-sm sm:p-4" transition:fade={{ duration: 140 }}>
+  <div class="fixed inset-0 z-50 grid place-items-center bg-black/45 p-3 backdrop-blur-sm sm:p-4 lg:left-[var(--admin-aside,0px)]" transition:fade={{ duration: 140 }}>
     <div class="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-[0_28px_90px_rgba(57,61,50,0.2)]" transition:scale={{ duration: 160, start: 0.98 }}>
       <div class="flex items-start justify-between gap-4 border-b border-ink/10 bg-gradient-to-r from-sand/70 via-surface to-surface p-5 sm:p-6">
         <div class="flex min-w-0 gap-3">

@@ -39,7 +39,9 @@
   onMount(loadUser);
 </script>
 
-<div class="admin-shell h-screen overflow-hidden bg-[#eef0f4] font-admin text-ink dark:bg-canvas">
+<!-- --admin-aside: current sidebar width, so fixed overlays (modals) can offset
+     themselves and center within the CONTENT area instead of the full viewport. -->
+<div class="admin-shell h-screen overflow-hidden bg-[#eef0f4] font-admin text-ink dark:bg-canvas" style={`--admin-aside:${sidebarCollapsed ? '78px' : '280px'}`}>
   <div class="flex h-full min-w-0">
     <AdminSidebar
       collapsed={sidebarCollapsed}
