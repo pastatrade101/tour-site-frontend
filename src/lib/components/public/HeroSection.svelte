@@ -101,9 +101,9 @@
         <Star size={13} fill="currentColor" /> {eyebrow}
       </span>
 
-      <h1 class="mt-5 max-w-full break-words text-[36px] font-extrabold leading-[1.04] tracking-normal text-white drop-shadow-sm sm:text-6xl sm:leading-[1.02] lg:text-7xl">
+      <h1 class="mt-5 max-w-full break-words font-serif text-[38px] font-semibold leading-[1.07] tracking-tight text-white drop-shadow-sm sm:text-6xl sm:leading-[1.04] lg:text-7xl">
         {title}<br />
-        <span class="italic text-goldfinch-gold">{highlight}</span>
+        <span class="font-normal italic text-goldfinch-gold">{highlight}</span>
       </h1>
 
       <p class="mt-5 max-w-full text-base font-medium leading-7 text-white/86 sm:max-w-2xl sm:text-lg">
