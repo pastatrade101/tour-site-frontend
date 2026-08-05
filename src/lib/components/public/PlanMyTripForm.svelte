@@ -135,6 +135,17 @@
       const d = matchOption(destinationOptions, destination);
       if (d) destination_interest = d;
     }
+    // `place` is a specific destination (a park, peak or island) rather than a
+    // country — e.g. from the homepage "Request this trip" tiles. Carry it into
+    // the trip context/message, and use it for the country selector when it is
+    // itself an option (Zanzibar).
+    const place = p.get('place');
+    if (place) {
+      tripContext = place;
+      const asOption = matchOption(destinationOptions, place);
+      if (asOption) destination_interest = asOption;
+      if (!message.trim()) message = `I'm interested in: ${place}.`;
+    }
     if (monthParam) {
       let m = monthParam;
       if (/^\d{4}-\d{2}/.test(monthParam)) {
@@ -163,7 +174,9 @@
         tripContext = tourSlug.replace(/-/g, ' ');
       }
       if (tripContext && !message.trim()) message = `I'm interested in: ${tripContext}.`;
-    } else {
+    } else if (!tripContext) {
+      // Only fall back to the saved shortlist when nothing more specific (e.g. a
+      // `place` from a destination tile) has already set the trip context.
       const saved = get(shortlist);
       if (saved.length) {
         tripContext = saved.length === 1 ? saved[0].title : `${saved.length} saved trips`;
