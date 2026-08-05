@@ -10,7 +10,6 @@
   import { publicSettings, settingText } from '$lib/settings';
   import { shortlist } from '$lib/shortlist';
   import Button from './Button.svelte';
-  import CountrySelect from './CountrySelect.svelte';
   import FormStepper from './FormStepper.svelte';
   import CategoryPicker from './CategoryPicker.svelte';
   import SpecialistCard from './SpecialistCard.svelte';
@@ -44,7 +43,7 @@
   let full_name = '';
   let email = '';
   let phone = '';
-  let country = '';
+  let country = ''; // no longer collected in the form; kept so the API payload shape is unchanged
   let destination_interest = '';
   let experience_interests: string[] = [];
   let travel_month = '';  // derived from exact_start_date
@@ -213,7 +212,7 @@
   const STEP_FIELDS: string[][] = [
     ['experience_interests', 'exact_start_date', 'exact_end_date'],
     ['budget_per_person', 'traveller_type', 'number_of_adults', 'number_of_children'],
-    ['full_name', 'email', 'phone', 'country']
+    ['full_name', 'email', 'phone']
   ];
 
   // ── Review summary + WhatsApp handoff ──────────────────────────────────────
@@ -229,7 +228,6 @@
     add('Name', full_name);
     add('Email', email);
     add('Phone / WhatsApp', phone);
-    add('Country', country);
     add('Destination', destination_interest);
     add('Experiences', experience_interests.join(', '));
     add('When', wantsExactDates && exact_start_date ? `${exact_start_date}${exact_end_date ? ` → ${exact_end_date}` : ''}` : travel_month);
@@ -287,7 +285,6 @@
     if (!email.trim()) e.email = 'Email is required.';
     else if (!isEmail(email.trim())) e.email = 'Please enter a valid email address.';
     if (phone.trim().length < 6) e.phone = 'A phone or WhatsApp number is required.';
-    if (!country.trim()) e.country = 'Please select your country.';
     if (experience_interests.length === 0) e.experience_interests = 'Pick at least one experience.';
     if (!exact_start_date) e.exact_start_date = 'Please pick your travel date.';
     else if (exact_start_date < todayStr) e.exact_start_date = "Travel date can't be in the past.";
@@ -502,11 +499,6 @@
             <input class={cls('phone')} type="tel" bind:value={phone} on:input={() => clearErr('phone')} placeholder="+255 ..." autocomplete="tel" aria-invalid={Boolean(errors.phone)} aria-describedby={errors.phone ? 'pmt-phone-err' : undefined} />
             {#if errors.phone}<span id="pmt-phone-err" data-error class="text-xs text-red-600">{errors.phone}</span>{/if}
           </label>
-          <div class="grid gap-1.5">
-            <span>Country</span>
-            <CountrySelect bind:value={country} invalid={Boolean(errors.country)} on:change={() => clearErr('country')} placeholder="Where are you travelling from?" />
-            {#if errors.country}<span data-error class="text-xs text-red-600">{errors.country}</span>{/if}
-          </div>
         </div>
       </fieldset>
 

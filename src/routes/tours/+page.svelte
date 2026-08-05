@@ -12,6 +12,7 @@
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import RangeSlider from '$lib/components/public/RangeSlider.svelte';
   import TourCardRich from '$lib/components/public/TourCardRich.svelte';
+  import TourFilterBar from '$lib/components/public/TourFilterBar.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import LeadCaptureForm from '$lib/components/public/LeadCaptureForm.svelte';
   import HomeDestinationsCarousel from '$lib/components/public/home/HomeDestinationsCarousel.svelte';
@@ -346,171 +347,45 @@
 </section>
 
 <section class="tour-shell min-w-0 pb-12">
-  <div class="relative z-10 -mt-5 grid min-w-0 gap-3 sm:grid-cols-3">
-    <div class="metric">
-      <p>Matches</p>
-      <strong>{sorted.length} tour{sorted.length === 1 ? '' : 's'}</strong>
-    </div>
-    <div class="metric">
-      <p>Starting from</p>
-      <strong>{cheapestVisible ? money(cheapestVisible) : 'On request'}</strong>
-    </div>
-    <div class="metric">
-      <p>Fastest option</p>
-      <strong>{shortestVisible ? days(shortestVisible) : 'Custom'}</strong>
-    </div>
+  <div class="relative z-10 -mt-5">
+    <TourFilterBar
+      {destinationOptions}
+      {categoryOptions}
+      tiers={TIERS}
+      personas={PERSONA_ORDER.map((k) => ({ key: k, label: PERSONAS[k].label }))}
+      {destSlug}
+      selectedCategories={[...urlCategories]}
+      {selectedTiers}
+      {persona}
+      {popularOnly}
+      {lenMin}
+      {lenMax}
+      bind:lengthLo
+      bind:lengthHi
+      {priceMin}
+      {priceMax}
+      bind:priceLo
+      bind:priceHi
+      {rangesReady}
+      resultCount={sorted.length}
+      {activeCount}
+      {catCount}
+      {tierCount}
+      {days}
+      {money}
+      on:destination={(e) => setDestination(e.detail)}
+      on:category={(e) => toggleCategory(e.detail)}
+      on:tier={(e) => toggleTier(e.detail)}
+      on:persona={(e) => writeUrl({ persona: persona === e.detail ? null : e.detail })}
+      on:popular={(e) => (popularOnly = e.detail)}
+      on:length={(e) => { lengthLo = e.detail.lo; lengthHi = e.detail.hi; }}
+      on:price={(e) => { priceLo = e.detail.lo; priceHi = e.detail.hi; }}
+      on:clear={clearAll}
+      on:apply={() => document.querySelector('[data-results-top]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+    />
   </div>
 
-  {#if popularCategories.length}
-    <div class="mt-5 flex max-w-full gap-2 overflow-x-auto pb-1">
-      <span class="shrink-0 self-center text-sm font-bold text-ink/65">Popular filters</span>
-      {#each popularCategories as c}
-        <button class={`category-pill ${urlCategories.has(c.slug) ? 'category-pill-active' : ''}`} type="button" on:click={() => toggleCategory(c.slug)}>
-          {c.name}
-          <span>{catCount(c.slug)}</span>
-        </button>
-      {/each}
-    </div>
-  {/if}
-
   <div class="mt-6 grid min-w-0 gap-6">
-    {#if filtersOpen}
-      <button class="fixed inset-0 z-50 bg-ink/45 backdrop-blur-sm lg:hidden" type="button" aria-label="Close filters" on:click={() => (filtersOpen = false)}></button>
-    {/if}
-
-    <aside class={`${filtersOpen ? 'fixed inset-x-0 bottom-0 z-[60] block max-h-[90dvh]' : 'hidden'} lg:static lg:z-auto lg:block lg:max-h-none`}>
-      <div class="flex max-h-[90dvh] flex-col overflow-hidden rounded-t-[8px] border border-ink/10 bg-surface shadow-soft lg:max-h-none lg:rounded-[8px]">
-        <div class="border-b border-ink/10 px-4 py-4">
-          <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-ink/15 lg:hidden"></div>
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <p class="text-sm font-extrabold text-heading">Trip filters</p>
-              <p class="text-xs text-ink/60">{sorted.length} match{sorted.length === 1 ? '' : 'es'} for {selectedDestinationLabel}</p>
-            </div>
-            <div class="flex items-center gap-2">
-              {#if activeCount}
-                <button class="text-xs font-bold text-forest underline-offset-2 hover:underline" type="button" on:click={clearAll}>Clear</button>
-              {/if}
-              <button class="grid h-9 w-9 place-items-center rounded-full border border-ink/10 text-ink/70 lg:hidden" type="button" aria-label="Close filters" on:click={() => (filtersOpen = false)}>
-                <X size={17} />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="filter-scroll flex-1 overflow-y-auto overscroll-contain lg:overflow-visible lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-6 xl:grid-cols-4">
-          <section class="filter-section">
-            <div class="filter-heading">
-              <span>1</span>
-              <p>Best shortcut</p>
-            </div>
-            <div class="mt-3 grid grid-cols-2 gap-2">
-              <button class={`quick-btn ${popularOnly ? 'quick-btn-active' : ''}`} type="button" on:click={() => (popularOnly = !popularOnly)}>
-                <Star size={14} />
-                Best sellers
-              </button>
-              {#if rangesReady}
-                <button class={`quick-btn ${shortTripsActive ? 'quick-btn-active' : ''}`} type="button" on:click={setShortTrips}>
-                  <Clock size={14} />
-                  {days(shortTripsHi)} or less
-                </button>
-                <button class={`quick-btn ${classicTripsActive ? 'quick-btn-active' : ''}`} type="button" on:click={setClassicTrips}>
-                  <Compass size={14} />
-                  {classicTripsLo}-{classicTripsHi} days
-                </button>
-                <button class={`quick-btn ${valueTripsActive ? 'quick-btn-active' : ''}`} type="button" on:click={setValueTrips}>
-                  <Search size={14} />
-                  Under {money(valueTripsHi)}
-                </button>
-              {/if}
-            </div>
-          </section>
-
-          {#if rangesReady}
-            <section class="filter-section">
-              <div class="flex items-center justify-between gap-3">
-                <div class="filter-heading">
-                  <span>2</span>
-                  <p>Length & budget</p>
-                </div>
-              </div>
-              <div class="mt-4 grid gap-6">
-                <div>
-                  <div class="flex items-center justify-between">
-                    <p class="text-sm font-bold text-ink">Tour length</p>
-                    {#if lengthActive}
-                      <button class="text-xs font-bold text-forest" type="button" on:click={() => { lengthLo = lenMin; lengthHi = lenMax; }}>Reset</button>
-                    {/if}
-                  </div>
-                  <div class="mt-3">
-                    <RangeSlider min={lenMin} max={lenMax} bind:lo={lengthLo} bind:hi={lengthHi} format={days} />
-                  </div>
-                </div>
-
-                <div>
-                  <div class="flex items-start justify-between gap-3">
-                    <div>
-                      <p class="text-sm font-bold text-ink">Rates in USD</p>
-                      <p class="mt-0.5 text-xs text-ink/60">Per person, excluding international flights</p>
-                    </div>
-                    {#if priceActive}
-                      <button class="text-xs font-bold text-forest" type="button" on:click={() => { priceLo = priceMin; priceHi = priceMax; }}>Reset</button>
-                    {/if}
-                  </div>
-                  <div class="mt-3">
-                    <RangeSlider min={priceMin} max={priceMax} step={50} bind:lo={priceLo} bind:hi={priceHi} format={money} />
-                  </div>
-                </div>
-              </div>
-            </section>
-          {/if}
-
-          <section class="filter-section">
-            <div class="filter-heading">
-              <span>3</span>
-              <p>Comfort</p>
-            </div>
-            <div class="mt-3 grid gap-2">
-              {#each TIERS as t}
-                <label class={`filter-option ${selectedTiers.includes(t.key) ? 'filter-option-active' : ''}`}>
-                  <span class="flex min-w-0 items-center gap-2.5">
-                    <input type="checkbox" class="h-4 w-4 accent-forest" checked={selectedTiers.includes(t.key)} on:change={() => toggleTier(t.key)} />
-                    <span class="truncate">{t.label}</span>
-                  </span>
-                  <span class="text-xs font-semibold text-ink/45">{tierCount(t.key)}</span>
-                </label>
-              {/each}
-            </div>
-          </section>
-
-          {#if categoryOptions.length}
-            <section class="filter-section">
-              <div class="filter-heading">
-                <span>4</span>
-                <p>Safari type</p>
-              </div>
-              <div class="mt-3 grid gap-2">
-                {#each categoryOptions as c}
-                  <label class={`filter-option ${urlCategories.has(c.slug) ? 'filter-option-active' : ''}`}>
-                    <span class="flex min-w-0 items-center gap-2.5">
-                      <input type="checkbox" class="h-4 w-4 accent-forest" checked={urlCategories.has(c.slug)} on:change={() => toggleCategory(c.slug)} />
-                      <span class="truncate">{c.name}</span>
-                    </span>
-                    <span class="text-xs font-semibold text-ink/45">{catCount(c.slug)}</span>
-                  </label>
-                {/each}
-              </div>
-            </section>
-          {/if}
-        </div>
-
-        <div class="border-t border-ink/10 p-3 lg:hidden">
-          <button type="button" class="h-12 w-full rounded-[8px] bg-deep-green text-sm font-bold text-white" on:click={() => (filtersOpen = false)}>
-            Show {sorted.length} tour{sorted.length === 1 ? '' : 's'}
-          </button>
-        </div>
-      </div>
-    </aside>
 
     <div class="min-w-0">
       <div class="sticky top-[70px] z-20 -mx-3 border-y border-ink/10 bg-canvas/95 px-3 py-3 backdrop-blur lg:static lg:mx-0 lg:rounded-[8px] lg:border lg:bg-surface lg:p-4">

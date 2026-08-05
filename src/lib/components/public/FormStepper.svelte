@@ -18,7 +18,10 @@
   $: lineIdle = tone === 'dark' ? 'bg-white/20' : 'bg-ink/15';
 </script>
 
-<ol class="mx-auto flex w-fit max-w-full items-start justify-center gap-1 overflow-x-auto sm:gap-2">
+<!-- flex wrapper centres the rail reliably; `mx-auto` on the <ol> alone did not,
+     because the labels overflow their items and skew the computed width. -->
+<div class="flex w-full justify-center overflow-x-auto">
+  <ol class="flex items-start gap-1 sm:gap-2">
   {#each steps as st, i (st.key)}
     {@const done = i < current}
     {@const active = i === current}
@@ -54,4 +57,5 @@
       {/if}
     </li>
   {/each}
-</ol>
+  </ol>
+</div>
