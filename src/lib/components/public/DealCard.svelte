@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ArrowRight, Clock } from '@lucide/svelte';
   import { tilt } from '$lib/animations';
+  import { imgUrl } from '$lib/img';
   import ShortlistButton from './ShortlistButton.svelte';
   import type { Tour } from '$lib/types';
 
@@ -27,10 +28,10 @@
   };
 </script>
 
-<article class="group relative flex h-full flex-col overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_14px_40px_rgba(57,61,50,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(57,61,50,0.16)]" use:tilt={{ max: 5 }}>
+<article class="group relative flex h-full flex-col overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-card transition duration-300 hover:-translate-y-0.5 hover:border-forest/25 hover:shadow-card-hover" use:tilt={{ max: 3 }}>
   <a href={`/tours/${tour.slug}`} class="relative block aspect-[4/3] overflow-hidden bg-skywash">
     {#if image}
-      <img class="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-110" src={image} alt={tour.title} loading="lazy" />
+      <img class="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-105" src={imgUrl(image, 760)} alt={tour.title} loading="lazy" decoding="async" />
     {/if}
     <span class="pointer-events-none absolute inset-0 bg-gradient-to-t from-deep-green/55 via-transparent to-transparent"></span>
 
@@ -64,8 +65,12 @@
     <div class="mt-auto flex items-center justify-between gap-3 border-t border-ink/[0.08] pt-4">
       <p class="leading-tight">
         <span class="block text-[11px] font-medium uppercase tracking-wide text-ink/65">From</span>
-        <span class="text-lg font-extrabold text-heading">{tour.currency ?? 'USD'} {(tour.price_from ?? 0).toLocaleString()}</span>
-        <span class="text-xs font-semibold text-ink/65"> pp</span>
+        {#if tour.price_from}
+          <span class="text-lg font-extrabold text-heading">{tour.currency ?? 'USD'} {tour.price_from.toLocaleString()}</span>
+          <span class="text-xs font-semibold text-ink/65"> pp</span>
+        {:else}
+          <span class="text-lg font-extrabold text-heading">On request</span>
+        {/if}
       </p>
       <a
         href={`/tours/${tour.slug}`}

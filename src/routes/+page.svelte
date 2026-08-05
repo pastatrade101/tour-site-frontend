@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { ArrowRight, Check, MessageCircle } from '@lucide/svelte';
-  import { api } from '$lib/api/client';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
   import DestinationCard from '$lib/components/public/DestinationCard.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
@@ -22,7 +20,8 @@
   import PriceRangeBlock from '$lib/components/public/PriceRangeBlock.svelte';
   import TourPackages from '$lib/components/public/TourPackages.svelte';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
-  import type { BlogPost, Destination, FAQ, Testimonial, Tour } from '$lib/types';
+  import { imgUrl } from '$lib/img';
+  import type { BlogPost, Destination, FAQ, MigrationEntry, Review, ReviewSummary, Testimonial, Tour } from '$lib/types';
   import type { PageData } from './$types';
 
   export let data: PageData;
@@ -41,12 +40,15 @@
 
   // Real CMS content only — no fabricated placeholder fallbacks. Above-the-fold
   // (tours, destinations, hero config) is SSR-loaded in +page.ts; below-the-fold
-  // lists are filled in onMount. Any section with an empty list hides itself.
+  // lists are also SSR-loaded independently. Any empty list hides its section.
   let tours: Tour[] = data.tours ?? [];
   let destinations: Destination[] = data.destinations ?? [];
-  let posts: BlogPost[] = [];
-  let testimonials: Testimonial[] = [];
-  let faqs: FAQ[] = [];
+  let posts: BlogPost[] = data.posts ?? [];
+  let testimonials: Testimonial[] = data.testimonials ?? [];
+  let faqs: FAQ[] = data.faqs ?? [];
+  let reviewSummary: ReviewSummary | null = data.reviewSummary ?? null;
+  let reviews: Review[] = data.reviews ?? [];
+  let migrationEntries: MigrationEntry[] = data.migrationEntries ?? [];
   let sections: Record<string, HomeSection> = Object.fromEntries(
     (data.homeSections as unknown as HomeSection[]).map((s) => [s.section_key, s])
   );
@@ -64,6 +66,11 @@
   };
 
   $: heroExtra = (sections.hero?.extra_data ?? {}) as Record<string, unknown>;
+  $: heroImageResolved = cms('hero', 'image_url', '/images/surf-hero.jpg');
+  $: heroSlides = destinations
+    .map((d) => d.banner_image_url || d.main_image_url || d.image_url || '')
+    .filter(Boolean)
+    .slice(0, 5);
 
   const hexToRgba = (hex: string, alpha: number) => {
     const match = /^#?([0-9a-fA-F]{6})$/.exec(hex);
@@ -77,12 +84,7 @@
   $: ctaImage = typeof sections.final_cta?.image_url === 'string' ? sections.final_cta.image_url : '';
   $: ctaVideo = typeof ctaExtra.background_video === 'string' ? ctaExtra.background_video : '';
   $: ctaPosition = typeof ctaExtra.media_position === 'string' ? ctaExtra.media_position : 'center';
-  // Fallback background image for the final CTA when no admin media is set, so
-  // the band is a photo with an overlay rather than a flat colour. Admin image
-  // (sections.final_cta.image_url) still overrides this.
-  const DEFAULT_CTA_IMAGE =
-    'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1600&q=70';
-  $: ctaImageResolved = ctaImage || DEFAULT_CTA_IMAGE;
+  $: ctaImageResolved = ctaImage || heroImageResolved;
   $: ctaOverlayColor = typeof ctaExtra.overlay_color === 'string' ? ctaExtra.overlay_color : '#393D32';
   $: ctaOverlayOpacity = typeof ctaExtra.overlay_opacity === 'number' ? ctaExtra.overlay_opacity : 0.7;
   $: ctaOverlayStyle =
@@ -155,34 +157,20 @@
   $: ctaTrustPoints = arr<string>(ctaExtra.trust_points).length
     ? arr<string>(ctaExtra.trust_points)
     : ['Local experts', 'No payment to plan', 'Honest, tailored advice'];
-
-  // Below-the-fold lists only — above-the-fold (tours, destinations, sections) is
-  // already in `data` from the SSR load, so we don't refetch it here.
-  onMount(async () => {
-    try {
-      const [postResponse, testimonialResponse, faqResponse] = await Promise.all([
-        api.blog.list({ limit: 3 }),
-        api.testimonials.list({ limit: 6 }),
-        api.faqs.list({ limit: 5 })
-      ]);
-      posts = postResponse.data.items ?? [];
-      testimonials = testimonialResponse.data.items ?? [];
-      faqs = faqResponse.data.items ?? [];
-    } catch {
-      posts = [];
-      testimonials = [];
-      faqs = [];
-    }
-  });
 </script>
 
+<svelte:head>
+  <link rel="preload" as="image" href={imgUrl(heroImageResolved, 1800, 72)} fetchpriority="high" />
+</svelte:head>
+
 <HeroSection
-  overlay={heroExtra.overlay_opacity === undefined || heroExtra.overlay_opacity === null || heroExtra.overlay_opacity === '' ? 0 : (Number(heroExtra.overlay_opacity) || 0) * 100}
+  overlay={heroExtra.overlay_opacity === undefined || heroExtra.overlay_opacity === null || heroExtra.overlay_opacity === '' ? 44 : (Number(heroExtra.overlay_opacity) || 0) * 100}
   eyebrow={typeof heroExtra.eyebrow === 'string' ? heroExtra.eyebrow : 'Tanzania & East Africa specialists'}
   title={cms('hero', 'title', 'Tailor-Made East Africa Safaris')}
   highlight={typeof heroExtra.title_highlight === 'string' ? heroExtra.title_highlight : 'Planned by Local Experts'}
   description={cms('hero', 'subtitle', 'Great Migration river crossings, honest safari, Kilimanjaro and Zanzibar advice — planned around you by Tanzanian local experts.')}
-  imageUrl={cms('hero', 'image_url', '/images/surf-hero.jpg')}
+  imageUrl={heroImageResolved}
+  imageUrls={heroSlides}
   primaryCta={cms('hero', 'button_text', 'Plan My Trip')}
   primaryCtaUrl={cms('hero', 'button_url', '/plan-my-trip')}
   secondaryCta={typeof heroExtra.secondary_cta_text === 'string' ? heroExtra.secondary_cta_text : 'Talk to a Travel Advisor'}
@@ -194,9 +182,11 @@
 
 <!-- 3 · Destinations — hidden when there are no destinations -->
 {#if destinations.length}
-<section class="bg-surface py-16 md:py-24" use:sectionReveal>
+<section class="relative overflow-hidden bg-surface py-14 md:py-20" use:sectionReveal>
+  <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-goldfinch-gold/35 to-transparent" aria-hidden="true"></div>
+  <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-canvas/70 to-transparent" aria-hidden="true"></div>
   <div class="container-shell">
-    <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between" use:fadeUpOnScroll={{ y: 14 }}>
+    <div class="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between" use:fadeUpOnScroll={{ y: 14 }}>
       <div class="max-w-2xl">
         <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">{cmsExtra('featured_destinations', 'eyebrow', 'Keep exploring')}</p>
         <h2 class="mt-3 text-3xl font-semibold tracking-tight text-heading md:text-[38px]">
@@ -206,17 +196,17 @@
           {cms('featured_destinations', 'subtitle', 'Handpicked places across Tanzania, from the Serengeti to the coast.')}
         </p>
       </div>
-      <a class="hidden shrink-0 items-center gap-2 rounded-full border border-goldfinch-gold/40 px-5 py-2.5 text-sm font-bold text-clay transition hover:bg-goldfinch-gold hover:text-heading sm:inline-flex" href="/destinations">
+      <a class="hidden shrink-0 items-center gap-2 rounded-[8px] border border-goldfinch-gold/40 bg-surface px-5 py-2.5 text-sm font-bold text-clay shadow-sm transition hover:bg-goldfinch-gold hover:text-heading sm:inline-flex" href="/destinations">
         All destinations <ArrowRight size={15} strokeWidth={2.4} />
       </a>
     </div>
-    <div class="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal>
+    <div class="relative mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3" use:staggeredCardReveal>
       {#each destinations as destination}
         <DestinationCard {destination} />
       {/each}
     </div>
     <div class="mt-10 flex justify-center sm:hidden">
-      <a class="inline-flex h-12 items-center gap-2 rounded-full bg-deep-green px-7 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-sm transition hover:bg-forest" href="/destinations">
+      <a class="inline-flex h-12 items-center gap-2 rounded-[8px] bg-deep-green px-7 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-sm transition hover:bg-forest" href="/destinations">
         All destinations <ArrowRight size={16} />
       </a>
     </div>
@@ -234,7 +224,8 @@
 
 <!-- 6 · Typical cost — hidden when there are no CMS price ranges -->
 {#if sections.cost_ranges?.is_active !== false && costRanges.length}
-<section class="bg-sand/40 py-16 md:py-24" use:sectionReveal>
+<section class="relative overflow-hidden bg-sand/40 py-14 md:py-20" use:sectionReveal>
+  <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-goldfinch-gold/25 to-transparent" aria-hidden="true"></div>
   <div class="container-shell">
     <PriceRangeBlock
       title={cms('cost_ranges', 'title', 'What trips typically cost')}
@@ -251,22 +242,25 @@
 <!-- 7b · Serengeti Great Migration calendar (self-hiding until published entries exist) -->
 <MigrationCalendar
   active={sections.migration_section?.is_active !== false}
+  entries={migrationEntries}
   eyebrow={cmsExtra('migration_section', 'eyebrow', 'Great Migration')}
   title={cms('migration_section', 'title', 'Follow the herds, month by month')}
   subtitle={cms('migration_section', 'subtitle', 'Where the wildebeest and zebra roam across the Serengeti through the year — so you can plan your safari around the action.')}
 />
 
 <!-- 8 · Plan your dream (dark form band) -->
-<section class="bg-deep-green py-16 text-white md:py-24" use:sectionReveal>
-  <div class="container-shell grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
-    <div>
+<section class="relative overflow-hidden bg-deep-green py-14 text-white md:py-20" use:sectionReveal>
+  <div class="pointer-events-none absolute inset-0 opacity-[0.06]" style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1.6px); background-size: 28px 28px;" aria-hidden="true"></div>
+  <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-goldfinch-gold/35 to-transparent" aria-hidden="true"></div>
+  <div class="container-shell relative grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+    <div class="max-w-xl">
       <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">{cmsExtra('plan_dream', 'eyebrow', 'Plan your dream trip')}</p>
-      <h2 class="mt-3 text-3xl font-semibold text-white md:text-[38px]">{cms('plan_dream', 'title', 'Plan Your Dream Tanzania Safari')}</h2>
+      <h2 class="mt-3 text-3xl font-semibold leading-tight text-white md:text-[38px]">{cms('plan_dream', 'title', 'Plan Your Dream Tanzania Safari')}</h2>
       <p class="mt-4 leading-8 text-white/80">{cms('plan_dream', 'subtitle', 'Tell us a few details and a local specialist will craft a confident, tailor-made plan — with no pressure and no payment to start.')}</p>
-      <div class="mt-7 space-y-3">
+      <div class="mt-7 grid gap-3">
         {#each planDreamPoints as point}
           <div class="flex items-center gap-3 text-white/85">
-            <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-goldfinch-gold/25 text-goldfinch-gold"><Check size={13} strokeWidth={3} /></span>
+            <span class="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] bg-goldfinch-gold/25 text-goldfinch-gold"><Check size={13} strokeWidth={3} /></span>
             {point}
           </div>
         {/each}
@@ -277,20 +271,23 @@
 </section>
 
 <!-- 9 · Our Process -->
-<section class="bg-canvas py-16 md:py-24" use:sectionReveal>
+<section class="relative overflow-hidden bg-canvas py-14 md:py-20" use:sectionReveal>
+  <div class="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-surface/70 to-transparent" aria-hidden="true"></div>
   <div class="container-shell">
     <PlanningProcess
       title={cms('how_it_works', 'title', 'Our Process')}
       subtitle={cms('how_it_works', 'subtitle', 'A calm, transparent process — no pressure, and no payment to start.')}
     />
     <div class="mt-12 flex justify-center">
-      <a class="inline-flex h-12 items-center gap-2 rounded-full bg-goldfinch-gold px-7 font-bold text-heading shadow-sm transition hover:brightness-105" href="/plan-my-trip">Start planning <ArrowRight size={18} /></a>
+      <a class="inline-flex h-12 items-center gap-2 rounded-[8px] bg-goldfinch-gold px-7 font-bold text-heading shadow-sm transition hover:brightness-105" href="/plan-my-trip">Start planning <ArrowRight size={18} /></a>
     </div>
   </div>
 </section>
 
 <!-- 9b · Platform reviews trust widget + AggregateRating JSON-LD (self-hiding until approved reviews exist) -->
 <ReviewsWidget
+  summary={reviewSummary}
+  reviews={reviews}
   eyebrow={cmsExtra('reviews_section', 'eyebrow', 'Loved by travellers')}
   title={cms('reviews_section', 'title', 'Real reviews from real safaris')}
   subtitle={cms('reviews_section', 'subtitle', 'Verified ratings from travellers across TripAdvisor, SafariBookings and Google.')}
@@ -298,7 +295,8 @@
 
 <!-- 10 · Reviews — hidden when there are no testimonials -->
 {#if testimonials.length}
-<section class="bg-surface py-16 md:py-24" use:sectionReveal>
+<section class="relative overflow-hidden bg-surface py-14 md:py-20" use:sectionReveal>
+  <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-goldfinch-gold/25 to-transparent" aria-hidden="true"></div>
   <div class="container-shell">
     <div class="mx-auto max-w-2xl text-center" use:fadeUpOnScroll={{ y: 14 }}>
       <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">{cmsExtra('testimonials', 'eyebrow', 'Loved by travellers')}</p>
@@ -309,7 +307,7 @@
         {cms('testimonials', 'subtitle', 'Real stories from travellers who planned their trip with confidence.')}
       </p>
     </div>
-    <div class="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 18, stagger: 0.07 }}>
+    <div class="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 18, stagger: 0.07 }}>
       {#each testimonials as testimonial}
         <TestimonialCard {testimonial} />
       {/each}
@@ -324,13 +322,14 @@
 
 <!-- 11 · Blog — hidden when there are no posts -->
 {#if posts.length}
-<section class="bg-canvas py-16 md:py-24" use:sectionReveal>
+<section class="relative overflow-hidden bg-canvas py-14 md:py-20" use:sectionReveal>
+  <div class="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-surface/70 to-transparent" aria-hidden="true"></div>
   <div class="container-shell">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <SectionHeader eyebrow={cmsExtra('blog_preview', 'eyebrow', 'Stories')} title={cms('blog_preview', 'title', 'Latest Stories & Guides')} description={cms('blog_preview', 'subtitle', 'Tips, guides and inspiration from our East Africa specialists.')} />
-      <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href="/blog">View all <ArrowRight size={16} /></a>
+      <a class="inline-flex h-10 items-center gap-1.5 rounded-[8px] border border-ink/10 bg-surface px-4 text-sm font-semibold text-forest shadow-sm transition hover:border-forest/25 hover:text-heading" href="/blog">View all <ArrowRight size={16} /></a>
     </div>
-    <div class="mt-8 grid gap-6 md:grid-cols-3" use:staggeredCardReveal>
+    <div class="mt-8 grid gap-5 md:grid-cols-3" use:staggeredCardReveal>
       {#each posts as post}
         <BlogCard {post} />
       {/each}
@@ -345,11 +344,12 @@
 <!-- 13 · FAQ -->
 {#if faqs.length}
   <JsonLd data={faqLd(faqs.map((f) => ({ q: f.question, a: f.answer })))} />
-<section class="bg-surface py-16 md:py-24" use:sectionReveal>
+<section class="relative overflow-hidden bg-surface py-14 md:py-20" use:sectionReveal>
+  <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-forest/20 to-transparent" aria-hidden="true"></div>
   <div class="container-shell grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
     <div>
       <SectionHeader eyebrow={cmsExtra('faq', 'eyebrow', 'Good to know')} title={cms('faq', 'title', 'Tanzania Safari FAQs')} description={cms('faq', 'subtitle', 'Honest answers to the questions travellers ask most.')} />
-      <a class="mt-6 inline-flex h-12 items-center gap-2 rounded-full bg-[#25D366] px-6 font-bold text-white shadow-sm transition hover:brightness-105" href={cms('faq', 'button_url', '/contact')}><MessageCircle size={18} /> {cms('faq', 'button_text', 'Ask us on WhatsApp')}</a>
+      <a class="mt-6 inline-flex h-12 items-center gap-2 rounded-[8px] bg-[#25D366] px-6 font-bold text-white shadow-sm transition hover:brightness-105" href={cms('faq', 'button_url', '/contact')}><MessageCircle size={18} /> {cms('faq', 'button_text', 'Ask us on WhatsApp')}</a>
     </div>
     <FAQAccordion {faqs} />
   </div>
@@ -361,23 +361,20 @@
     <!-- background media layer (admin-configurable: video > image > brand gradient) -->
     {#if ctaVideo}
       <!-- svelte-ignore a11y-media-has-caption -->
-      <video class="absolute inset-0 h-full w-full object-cover" style={`object-position:${ctaPosition}`} src={ctaVideo} poster={ctaImageResolved} autoplay muted loop playsinline></video>
+      <video class="absolute inset-0 h-full w-full object-cover" style={`object-position:${ctaPosition}`} src={ctaVideo} poster={imgUrl(ctaImageResolved, 1800)} autoplay muted loop playsinline></video>
     {:else}
-      <img class="absolute inset-0 h-full w-full object-cover" style={`object-position:${ctaPosition}`} src={ctaImageResolved} alt="" loading="lazy" decoding="async" />
+      <img class="absolute inset-0 h-full w-full object-cover" style={`object-position:${ctaPosition}`} src={imgUrl(ctaImageResolved, 1800)} alt="" loading="lazy" decoding="async" />
     {/if}
 
     <!-- green overlay so the photo shows through but the text stays crisp -->
     <div class="absolute inset-0" style={ctaOverlayStyle}></div>
 
-    <!-- decorative depth -->
-    <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-goldfinch-gold/20 blur-3xl"></div>
-    <div class="pointer-events-none absolute -bottom-28 -left-20 h-72 w-72 rounded-full bg-savanna/15 blur-3xl"></div>
     <div
       class="pointer-events-none absolute inset-0 opacity-[0.06]"
       style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1.6px); background-size: 26px 26px;"
     ></div>
 
-    <div class="container-shell relative py-16 text-center md:py-24" use:fadeUpOnScroll={{ y: 18 }}>
+    <div class="container-shell relative py-14 text-center md:py-20" use:fadeUpOnScroll={{ y: 18 }}>
       <div class="mx-auto max-w-3xl">
         <p class="font-serif text-xl italic text-savanna">{cmsExtra('final_cta', 'eyebrow', 'Start Your Journey')}</p>
 
@@ -391,14 +388,14 @@
 
         <div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <a
-            class="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-goldfinch-gold px-7 text-sm font-bold text-heading shadow-lg shadow-goldfinch-gold/20 transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/60 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green sm:w-auto md:h-[52px] md:text-base"
+            class="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-7 text-sm font-bold text-heading shadow-lg shadow-goldfinch-gold/20 transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/60 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green sm:w-auto md:h-[52px] md:text-base"
             href={cms('final_cta', 'button_url', '/plan-my-trip')}
           >
             {cms('final_cta', 'button_text', 'Plan My Trip')}
             <ArrowRight size={18} strokeWidth={2.6} class="transition-transform group-hover:translate-x-0.5" />
           </a>
           <a
-            class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/25 bg-surface/5 px-7 text-sm font-bold text-white backdrop-blur transition hover:bg-surface/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 sm:w-auto md:h-[52px] md:text-base"
+            class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] border border-white/25 bg-surface/5 px-7 text-sm font-bold text-white backdrop-blur transition hover:bg-surface/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 sm:w-auto md:h-[52px] md:text-base"
             href="/contact"
           >
             <MessageCircle size={17} strokeWidth={2.4} />
@@ -409,7 +406,7 @@
         <div class="mt-10 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-sm font-medium text-white/70">
           {#each ctaTrustPoints as point}
             <span class="inline-flex items-center gap-2">
-              <span class="grid h-5 w-5 place-items-center rounded-full bg-goldfinch-gold/20 text-goldfinch-gold">
+              <span class="grid h-5 w-5 place-items-center rounded-[5px] bg-goldfinch-gold/20 text-goldfinch-gold">
                 <Check size={12} strokeWidth={3} />
               </span>
               {point}

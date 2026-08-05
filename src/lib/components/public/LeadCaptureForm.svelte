@@ -18,7 +18,8 @@
   }));
 </script>
 
-<form class={`grid gap-4 rounded-lg border border-ink/10 bg-surface p-5 shadow-soft ${compact ? '' : 'md:p-6'}`}>
+<form class={`relative grid gap-4 overflow-hidden rounded-[8px] border border-white/10 bg-surface p-5 shadow-card ${compact ? '' : 'md:p-6'}`}>
+  <div class="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-goldfinch-gold via-forest/45 to-transparent"></div>
   <div>
     <p class="text-sm font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">Tell us about your trip</p>
     <h3 class="mt-2 text-2xl font-bold tracking-normal text-heading">{title}</h3>
@@ -34,8 +35,8 @@
 
   <TextArea label="Trip notes" name="message" placeholder="Dates, travelers, countries, must-see places..." />
 
-  <div class="flex flex-wrap gap-3">
-    <Button href="/plan-my-trip">Plan My Trip</Button>
-    <Button href="/contact" variant="secondary">Talk to a Travel Advisor</Button>
+  <div class="grid gap-3 sm:flex sm:flex-wrap">
+    <Button href="/plan-my-trip" className="w-full rounded-[8px] sm:w-auto">Plan My Trip</Button>
+    <Button href="/contact" variant="secondary" className="w-full rounded-[8px] sm:w-auto">Talk to a Travel Advisor</Button>
   </div>
 </form>

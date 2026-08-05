@@ -1,13 +1,9 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { fly } from 'svelte/transition';
   import { ArrowRight, Check, ChevronDown, Star } from '@lucide/svelte';
-  import { api } from '$lib/api/client';
-  import { revealHeading } from '$lib/animations';
   import { brand } from '$lib/brand';
   import { imgUrl } from '$lib/img';
   import { trackEvent } from '$lib/analytics';
-  import type { Destination } from '$lib/types';
 
   export let eyebrow = 'Rated 4.9/5 by travellers';
   export let title = 'Witness the Greatest';
@@ -18,6 +14,7 @@
   export let primaryCtaUrl = '/plan-my-trip';
   export let secondaryCta = 'Explore Tours';
   export let secondaryCtaUrl = '/tours';
+  export let imageUrls: string[] = [];
   export let trustPoints: string[] = ['Local experts', 'Tailor-made itineraries', 'No payment to start planning'];
   // Dark-overlay strength over the hero image, 0–100. 0 = no overlay at all (full
   // image clarity). Driven per-homepage from the CMS hero section's overlay
@@ -26,14 +23,19 @@
   $: overlayOpacity = Math.max(0, Math.min(100, Number(overlay) || 0)) / 100;
 
   // Background image(s): the CMS hero image, or the bundled brand default. The
-  // slider only rotates through REAL published-destination photos (added in
-  // onMount) — no fabricated stock images. With no CMS content it's one clean
+  // slider only rotates through REAL published-destination photos passed from
+  // the SSR page load — no fabricated stock images. With no CMS content it's one clean
   // brand image, no rotation.
   const BRAND_FALLBACK = '/images/surf-hero.jpg';
-  let images: string[] = [imageUrl || BRAND_FALLBACK];
   let index = 0;
   let timer: ReturnType<typeof setInterval> | undefined;
   let loaded = new Set<number>([0]);
+  let mounted = false;
+
+  $: images = [imageUrl || BRAND_FALLBACK, ...imageUrls]
+    .filter((u): u is string => typeof u === 'string' && Boolean(u.trim()))
+    .filter((u, i, a) => a.indexOf(u) === i)
+    .slice(0, 6);
 
   // Fill exactly the viewport height *below* the (solid) nav so the hero is one
   // clean screen — measured at runtime, robust to whatever the nav height is.
@@ -61,31 +63,25 @@
   const goSlide = (i: number) => { index = i; startAuto(); };
   onDestroy(() => { stop(); if (typeof window !== 'undefined') window.removeEventListener('resize', setHeight); });
 
-  onMount(async () => {
+  onMount(() => {
+    mounted = true;
     setHeight();
     window.addEventListener('resize', setHeight, { passive: true });
-    const first = images[0];
-    try {
-      const dest = await api.destinations.list({ status: 'published', limit: 12 });
-      const urls = (dest.data.items as Destination[])
-        .map((d) => d.banner_image_url || d.main_image_url || d.image_url || '')
-        .filter(Boolean)
-        .filter((u, i, a) => a.indexOf(u) === i)
-        .slice(0, 5);
-      images = [first, ...urls.filter((u) => u !== first)];
-    } catch {
-      images = [first];
-    }
     startAuto();
   });
+
+  $: if (mounted && index >= images.length) {
+    index = 0;
+    startAuto();
+  }
 </script>
 
-<section bind:this={sectionEl} class="relative flex min-h-[560px] items-end overflow-hidden bg-deep-green dark:bg-[#0b100e]" style={`min-height:${heroMinH}`}>
+<section bind:this={sectionEl} class="relative flex min-h-[620px] items-end overflow-hidden bg-deep-green dark:bg-[#0b100e]" style={`min-height:${heroMinH}`}>
   <!-- rotating background images -->
   {#each images as src, i (src)}
     <div class={`absolute inset-0 transition-opacity duration-[1200ms] ease-out ${i === index ? 'opacity-100' : 'opacity-0'}`} aria-hidden={i === index ? undefined : 'true'}>
       {#if loaded.has(i)}
-        <img class="h-full w-full object-cover" src={imgUrl(src, 1600)} alt="" loading={i === 0 ? 'eager' : 'lazy'} decoding="async" fetchpriority={i === 0 ? 'high' : 'auto'} />
+        <img class="h-full w-full object-cover" src={imgUrl(src, i === 0 ? 1800 : 1400, 72)} alt="" loading={i === 0 ? 'eager' : 'lazy'} decoding="async" fetchpriority={i === 0 ? 'high' : 'auto'} sizes="100vw" />
       {/if}
     </div>
   {/each}
@@ -99,26 +95,26 @@
   {/if}
 
   <!-- content (bottom-left, like the reference) -->
-  <div class="relative z-10 mx-auto w-full max-w-[1500px] px-5 pb-20 pt-24 md:px-8 md:pb-24">
-    <div class="max-w-2xl text-white">
-      <span class="inline-flex items-center gap-2 rounded-full bg-white/12 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-savanna backdrop-blur" in:fly={{ y: 12, duration: 450 }}>
+  <div class="relative z-10 mx-auto w-full max-w-[1500px] px-4 pb-32 pt-24 sm:px-5 sm:pb-20 md:px-8 md:pb-24">
+    <div class="w-full max-w-[22rem] text-white sm:max-w-3xl">
+      <span class="inline-flex max-w-full items-center gap-2 rounded-full border border-white/15 bg-white/12 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-savanna backdrop-blur sm:px-3.5 sm:text-[11px] sm:tracking-[0.14em]">
         <Star size={13} fill="currentColor" /> {eyebrow}
       </span>
 
-      <h1 class="mt-5 font-semibold leading-[1.04] tracking-tight drop-shadow-sm text-[40px] sm:text-6xl lg:text-7xl" use:revealHeading={{ stagger: 0.02 }}>
+      <h1 class="mt-5 max-w-full break-words text-[36px] font-extrabold leading-[1.04] tracking-normal text-white drop-shadow-sm sm:text-6xl sm:leading-[1.02] lg:text-7xl">
         {title}<br />
         <span class="italic text-goldfinch-gold">{highlight}</span>
       </h1>
 
-      <p class="mt-5 max-w-xl text-base font-medium leading-7 text-white/85 sm:text-lg" in:fly={{ y: 14, duration: 500, delay: 120 }}>
+      <p class="mt-5 max-w-full text-base font-medium leading-7 text-white/86 sm:max-w-2xl sm:text-lg">
         {description}
       </p>
 
       <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <a class="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full bg-goldfinch-gold px-8 font-bold text-heading shadow-lg transition hover:brightness-105 sm:w-auto" href={primaryCtaUrl} on:click={() => trackEvent('cta_click', { cta_name: primaryCta, cta_location: 'hero', cta_type: 'primary' })}>
+        <a class="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-8 font-bold text-heading shadow-lg shadow-black/10 transition hover:brightness-105 sm:w-auto" href={primaryCtaUrl} on:click={() => trackEvent('cta_click', { cta_name: primaryCta, cta_location: 'hero', cta_type: 'primary' })}>
           {primaryCta} <ArrowRight size={18} strokeWidth={2.6} />
         </a>
-        <a class="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full border border-white/45 bg-white/5 px-8 font-semibold text-white backdrop-blur transition hover:bg-white/15 sm:w-auto" href={secondaryCtaUrl} on:click={() => trackEvent('cta_click', { cta_name: secondaryCta, cta_location: 'hero', cta_type: 'secondary' })}>
+        <a class="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-[8px] border border-white/45 bg-white/8 px-8 font-semibold text-white backdrop-blur transition hover:bg-white/15 sm:w-auto" href={secondaryCtaUrl} on:click={() => trackEvent('cta_click', { cta_name: secondaryCta, cta_location: 'hero', cta_type: 'secondary' })}>
           {secondaryCta}
         </a>
       </div>

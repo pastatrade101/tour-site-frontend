@@ -59,7 +59,7 @@
   };
 </script>
 
-<section class="bg-canvas py-16 md:py-24" use:fadeUpOnScroll>
+<section class="bg-canvas py-14 md:py-20" use:fadeUpOnScroll>
   <div class="container-shell">
     <div class="mx-auto max-w-2xl text-center">
       <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">{eyebrow}</p>
@@ -67,13 +67,13 @@
       <p class="mt-4 text-ink/70">{subtitle}</p>
     </div>
 
-    <div class="mt-12 grid gap-6 md:grid-cols-3">
+    <div class="mt-10 grid gap-5 md:grid-cols-3">
       {#each seasons as season}
         {@const Icon = ICONS[season.tone]}
-        <div class="overflow-hidden rounded-2xl border border-ink/10 bg-surface shadow-soft">
+        <div class="overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-card">
           <div class={bandClasses[season.tone]}>
             <div class="flex items-center gap-3 p-5">
-              <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/20">
+              <span class="grid h-9 w-9 shrink-0 place-items-center rounded-[8px] bg-white/20">
                 <Icon size={18} />
               </span>
               <div>

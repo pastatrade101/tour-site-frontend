@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { API_URL } from '$lib/config/env';
-import type { Activity, AdvisorDonePayload, AdvisorMeta, AdvisorPageContext, AdvisorRecommendation, AiChatResponse, ApiResponse, BlogPost, Comparison, Destination, FAQ, Lodge, MigrationEntry, PageSeo, Paginated, Review, ReviewSummary, SafetyTopic, Testimonial, Tour, TravelStyle, TripPoint } from '$lib/types';
+import type { Activity, AdvisorDonePayload, AdvisorMeta, AdvisorPageContext, AdvisorRecommendation, AiChatResponse, ApiResponse, BlogPost, Comparison, Destination, FAQ, Lodge, MigrationEntry, PageSeo, Paginated, Review, ReviewSummary, SafetyTopic, Testimonial, Tour, TourCategory, TravelStyle, TripPoint } from '$lib/types';
 
 type QueryValue = string | number | boolean | undefined | null;
 type RequestOptions = Omit<RequestInit, 'body'> & {
@@ -330,8 +330,8 @@ export const api = {
     remove: (id: string) => apiRequest(`/comparisons/${id}`, { method: 'DELETE' })
   },
   categories: {
-    list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Record<string, unknown>>>(`/categories${queryString(params)}`),
-    get: (slug: string) => apiRequest<Record<string, unknown>>(`/categories/${slug}`),
+    list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<TourCategory>>(`/categories${queryString(params)}`),
+    get: (slug: string) => apiRequest<TourCategory>(`/categories/${slug}`),
     create: (body: Record<string, unknown>) => apiRequest('/categories', { method: 'POST', body }),
     update: (id: string, body: Record<string, unknown>) => apiRequest(`/categories/${id}`, { method: 'PUT', body }),
     remove: (id: string) => apiRequest(`/categories/${id}`, { method: 'DELETE' })

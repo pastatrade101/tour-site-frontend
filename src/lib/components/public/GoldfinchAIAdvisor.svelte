@@ -27,7 +27,7 @@
     if (/^\/tours\/[^/]+/.test(path)) return "Hi! Want help deciding if this trip fits — or planning something similar? Tell me your dates, group size and budget.";
     if (path.startsWith('/tours')) return "Looking for the right safari? Tell me your destination, dates, group and budget and I'll suggest options.";
     if (path.startsWith('/destinations') || path.startsWith('/countries')) return "Hi! Planning a trip to this region? Tell me when you'd travel, your group and budget and I'll help shape it.";
-    if (path.startsWith('/experiences') || path.startsWith('/travel-styles')) return "Hi! Tell me the experience you're after, plus your dates, group and budget, and I'll match real Goldfinch trips.";
+    if (path.startsWith('/experiences') || path.startsWith('/travel-styles') || path.startsWith('/safari-styles')) return "Hi! Tell me the experience you're after, plus your dates, group and budget, and I'll match real Goldfinch trips.";
     if (path.startsWith('/plan-my-trip')) return "Hi! I can help you plan before you submit — tell me what you have in mind (destination, dates, group, budget).";
     return WELCOME;
   };

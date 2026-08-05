@@ -37,10 +37,10 @@
   <div class="text-center">
     {#if title}<h2 class="text-3xl font-semibold tracking-normal text-heading md:text-[38px]">{title}</h2>{/if}
     {#if subtitle}<p class="mx-auto mt-3 max-w-2xl text-base leading-8 text-ink/65">{subtitle}</p>{/if}
-    <ol class="mt-12 grid gap-5 text-left sm:grid-cols-2 lg:grid-cols-3">
+    <ol class="mt-10 grid gap-4 text-left sm:grid-cols-2 lg:grid-cols-3">
       {#each steps as step, i}
-        <li class="relative overflow-hidden rounded-2xl border border-ink/10 bg-surface p-6 shadow-soft">
-          <span class="text-4xl font-semibold text-goldfinch-gold">{(i + 1).toString().padStart(2, '0')}</span>
+        <li class="relative overflow-hidden rounded-[8px] border border-ink/10 bg-surface p-6 shadow-card transition hover:border-goldfinch-gold/35">
+          <span class="font-sans text-4xl font-extrabold text-goldfinch-gold">{(i + 1).toString().padStart(2, '0')}</span>
           <h3 class="mt-3 text-lg font-semibold text-heading">{step.title}</h3>
           <p class="mt-2 text-sm leading-7 text-ink/65">{step.text}</p>
         </li>

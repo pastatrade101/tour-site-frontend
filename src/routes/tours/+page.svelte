@@ -1,11 +1,11 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { onMount } from 'svelte';
-  import { Check, MapPin, Search, SlidersHorizontal, Star, X } from '@lucide/svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
+  import { onDestroy, onMount } from 'svelte';
+  import { Check, Clock, Compass, MapPin, Search, SlidersHorizontal, Sparkles, Star, X } from '@lucide/svelte';
   import { trackEvent } from '$lib/analytics';
-  import { revealHeading, staggeredCardReveal } from '$lib/animations';
+  import { staggeredCardReveal } from '$lib/animations';
   import { EXPERIENCE_TO_CATEGORY, PERSONA_ORDER, PERSONAS } from '$lib/data/personas';
   import EmptyState from '$lib/components/public/EmptyState.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
@@ -15,13 +15,13 @@
   import type { Tour } from '$lib/types';
   import type { PageData } from './$types';
 
-  // ---- canonical comfort tiers ----
   const TIERS = [
     { key: 'luxury_plus', label: 'Luxury+' },
     { key: 'luxury', label: 'Luxury' },
     { key: 'mid_range', label: 'Mid-range' },
     { key: 'budget', label: 'Budget' }
   ];
+
   const normTier = (t?: string | null) => {
     if (!t) return '';
     const v = t.toLowerCase().replace(/[\s-]+/g, '_');
@@ -30,22 +30,25 @@
     return v;
   };
 
-  // ---- data (allTours is SSR-loaded in +page.ts; filtering is client-side) ----
   export let data: PageData;
   let allTours: Tour[] = data.tours ?? [];
   let loading = false;
   let error = '';
 
-  // ---- local (non-URL) filter state ----
   let selectedTiers: string[] = [];
   let popularOnly = false;
-  let lenMin = 1, lenMax = 21, lengthLo = 1, lengthHi = 21;
-  let priceMin = 0, priceMax = 10000, priceLo = 0, priceHi = 10000;
+  let lenMin = 1;
+  let lenMax = 21;
+  let lengthLo = 1;
+  let lengthHi = 21;
+  let priceMin = 0;
+  let priceMax = 10000;
+  let priceLo = 0;
+  let priceHi = 10000;
   let rangesReady = false;
   let sort = 'recommended';
-  let filtersOpen = false; // mobile drawer
+  let filtersOpen = false;
 
-  // ---- URL-driven filters (so nav links + sharing work) ----
   $: params = $page.url.searchParams;
   $: searchTerm = params.get('search')?.trim() ?? '';
   $: destSlug = params.get('destination')?.trim() ?? '';
@@ -68,37 +71,52 @@
     lenMin = durs.length ? Math.min(...durs) : 1;
     lenMax = durs.length ? Math.max(...durs) : 21;
     if (lenMax <= lenMin) lenMax = lenMin + 1;
-    priceLo = priceMin; priceHi = priceMax;
-    lengthLo = lenMin; lengthHi = lenMax;
+    priceLo = priceMin;
+    priceHi = priceMax;
+    lengthLo = lenMin;
+    lengthHi = lenMax;
     rangesReady = true;
   };
 
   onMount(initRanges);
+  onDestroy(() => {
+    if (browser) document.documentElement.classList.remove('tour-filters-open');
+  });
 
-  // ---- facet option lists (derived from the loaded tours) ----
+  $: if (browser) {
+    document.documentElement.classList.toggle('tour-filters-open', filtersOpen);
+  }
+
   const distinctBy = <T,>(arr: T[], key: (x: T) => string | undefined) => {
     const seen = new Map<string, T>();
-    for (const x of arr) { const k = key(x); if (k && !seen.has(k)) seen.set(k, x); }
+    for (const x of arr) {
+      const k = key(x);
+      if (k && !seen.has(k)) seen.set(k, x);
+    }
     return [...seen.values()];
   };
+
   $: destinationOptions = distinctBy(allTours, (t) => t.destinations?.slug)
     .map((t) => ({ slug: t.destinations!.slug as string, name: t.destinations!.name as string }))
     .sort((a, b) => a.name.localeCompare(b.name));
   $: categoryOptions = distinctBy(allTours, (t) => t.tour_categories?.slug)
     .map((t) => ({ slug: t.tour_categories!.slug as string, name: t.tour_categories!.name as string }))
     .sort((a, b) => a.name.localeCompare(b.name));
+  $: popularCategories = categoryOptions.slice(0, 6);
 
   const matchSearch = (t: Tour, q: string) => {
     const hay = `${t.title} ${t.short_description ?? ''} ${t.destinations?.name ?? ''}`.toLowerCase();
     return hay.includes(q.toLowerCase());
   };
 
-  // base = search + destination only (used for facet counts)
-  $: base = allTours.filter((t) => (!searchTerm || matchSearch(t, searchTerm)) && (!destSlug || t.destinations?.slug === destSlug));
+  $: base = allTours.filter(
+    (t) =>
+      (!searchTerm || matchSearch(t, searchTerm)) &&
+      (!destSlug || t.destinations?.slug === destSlug)
+  );
   const catCount = (slug: string) => base.filter((t) => t.tour_categories?.slug === slug).length;
   const tierCount = (key: string) => base.filter((t) => normTier(t.budget_tier) === key).length;
 
-  // full result
   $: result = base.filter(
     (t) =>
       (urlCategories.size === 0 || (t.tour_categories?.slug ? urlCategories.has(t.tour_categories.slug) : false)) &&
@@ -115,7 +133,6 @@
     if (sort === 'price_desc') return r.sort((a, b) => (b.price_from ?? 0) - (a.price_from ?? 0));
     if (sort === 'duration_asc') return r.sort((a, b) => (a.duration_days ?? 0) - (b.duration_days ?? 0));
     if (sort === 'duration_desc') return r.sort((a, b) => (b.duration_days ?? 0) - (a.duration_days ?? 0));
-    // recommended: persona match → featured → popular
     return r.sort((a, b) => {
       const p = persona ? Number(personaTags(b).includes(persona)) - Number(personaTags(a).includes(persona)) : 0;
       if (p) return p;
@@ -125,12 +142,12 @@
     });
   })();
 
-  // ---- URL writers ----
   const withParams = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams($page.url.searchParams);
     for (const [k, v] of Object.entries(changes)) v ? next.set(k, v) : next.delete(k);
     return `/tours${next.toString() ? `?${next}` : ''}`;
   };
+
   const writeUrl = (changes: Record<string, string | null>) => {
     trackEvent('tour_filter_used', { metadata: { filters: Object.keys(changes) } });
     void goto(withParams(changes), { replaceState: true, noScroll: true, keepFocus: true });
@@ -144,7 +161,7 @@
   const setDestination = (slug: string) => writeUrl({ destination: slug || null });
   const submitSearch = (e: Event) => {
     e.preventDefault();
-    const v = (new FormData(e.target as HTMLFormElement).get('q') as string)?.trim();
+    const v = (new FormData(e.currentTarget as HTMLFormElement).get('q') as string)?.trim();
     writeUrl({ search: v || null });
   };
   const toggleTier = (key: string) => {
@@ -154,230 +171,402 @@
   $: lengthActive = lengthLo > lenMin || lengthHi < lenMax;
   $: priceActive = priceLo > priceMin || priceHi < priceMax;
   $: activeCount =
-    urlCategories.size + selectedTiers.length + (destSlug ? 1 : 0) + (searchTerm ? 1 : 0) +
-    (popularOnly ? 1 : 0) + (lengthActive ? 1 : 0) + (priceActive ? 1 : 0);
+    urlCategories.size +
+    selectedTiers.length +
+    (destSlug ? 1 : 0) +
+    (searchTerm ? 1 : 0) +
+    (popularOnly ? 1 : 0) +
+    (lengthActive ? 1 : 0) +
+    (priceActive ? 1 : 0);
 
   const clearAll = () => {
     selectedTiers = [];
     popularOnly = false;
-    lengthLo = lenMin; lengthHi = lenMax;
-    priceLo = priceMin; priceHi = priceMax;
+    lengthLo = lenMin;
+    lengthHi = lenMax;
+    priceLo = priceMin;
+    priceHi = priceMax;
     sort = 'recommended';
+    filtersOpen = false;
     void goto('/tours', { replaceState: true, noScroll: true });
+  };
+
+  const setShortTrips = () => {
+    if (!rangesReady) return;
+    lengthLo = lenMin;
+    lengthHi = Math.min(lenMax, Math.max(lenMin, 5));
+  };
+  const setClassicTrips = () => {
+    if (!rangesReady) return;
+    lengthLo = Math.min(Math.max(lenMin, 6), lenMax);
+    lengthHi = Math.max(lengthLo, Math.min(lenMax, 10));
+  };
+  const setValueTrips = () => {
+    if (!rangesReady) return;
+    priceLo = priceMin;
+    priceHi = Math.min(priceMax, Math.max(priceMin, 3000));
   };
 
   const money = (n: number) => `$${n.toLocaleString()}`;
   const days = (n: number) => `${n} day${n === 1 ? '' : 's'}`;
   $: catName = (slug: string) => categoryOptions.find((c) => c.slug === slug)?.name ?? slug;
   $: destName = destinationOptions.find((d) => d.slug === destSlug)?.name ?? destSlug;
+  $: selectedDestinationLabel = destSlug ? destName : 'All destinations';
+  $: cheapestVisible = sorted.map((t) => t.price_from ?? 0).filter((n) => n > 0).sort((a, b) => a - b)[0] ?? 0;
+  $: shortestVisible = sorted.map((t) => t.duration_days ?? 0).filter((n) => n > 0).sort((a, b) => a - b)[0] ?? 0;
+  $: featuredVisible = sorted.filter((t) => t.is_featured || t.is_popular).length;
+  $: shortTripsHi = rangesReady ? Math.min(lenMax, Math.max(lenMin, 5)) : 5;
+  $: classicTripsLo = rangesReady ? Math.min(Math.max(lenMin, 6), lenMax) : 6;
+  $: classicTripsHi = rangesReady ? Math.max(classicTripsLo, Math.min(lenMax, 10)) : 10;
+  $: valueTripsHi = rangesReady ? Math.min(priceMax, Math.max(priceMin, 3000)) : 3000;
+  $: shortTripsActive = rangesReady && lengthLo === lenMin && lengthHi === shortTripsHi && lengthActive;
+  $: classicTripsActive = rangesReady && lengthLo === classicTripsLo && lengthHi === classicTripsHi && lengthActive;
+  $: valueTripsActive = rangesReady && priceLo === priceMin && priceHi === valueTripsHi && priceActive;
 </script>
 
 <svelte:head>
   <title>Safari &amp; Tour Packages | Goldfinch Adventures</title>
-  <meta name="description" content="Browse and filter East Africa safari and tour packages — by destination, experience, length, price and comfort level." />
+  <meta name="description" content="Browse and filter East Africa safari and tour packages by destination, experience, length, price and comfort level." />
 </svelte:head>
 
-<section class="container-shell py-10 md:py-14">
-  {#if personaCfg}
-    <div class="overflow-hidden rounded-[10px] border border-goldfinch-gold/20 bg-gradient-to-br from-sand via-sand to-savanna/40 p-7 md:p-9">
-      <p class="font-serif text-xl italic text-clay">For {personaCfg.label}</p>
-      {#key personaCfg.headline}
-        <h1 class="mt-2 max-w-2xl text-3xl font-extrabold tracking-tight text-heading md:text-4xl" use:revealHeading>{personaCfg.headline}</h1>
+<section class="overflow-hidden bg-deep-green text-savanna">
+  <div class="tour-shell grid min-w-0 gap-6 py-8 md:py-10 lg:grid-cols-[minmax(0,1fr)_430px] lg:items-end">
+    <div class="min-w-0">
+      <p class="font-serif text-xl italic text-goldfinch-gold">{personaCfg ? `For ${personaCfg.label}` : 'Safari & Tours'}</p>
+      {#key personaCfg?.headline ?? 'default'}
+        <h1 class="mt-2 max-w-4xl break-words text-[2rem] font-extrabold leading-[1.08] tracking-normal text-white sm:text-5xl lg:text-[56px]">
+          {personaCfg?.headline ?? 'Find the safari that fits your travel style'}
+        </h1>
       {/key}
-      <p class="mt-3 max-w-2xl text-base leading-7 text-ink/70">{personaCfg.sub}</p>
-      <div class="mt-5 flex flex-wrap gap-2.5">
-        {#each personaCfg.concerns as concern}
-          <span class="inline-flex items-center gap-1.5 rounded-full border border-forest/15 bg-surface/70 px-3 py-1.5 text-sm font-medium text-ink/70">
-            <span class="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-forest/10 text-forest"><Check size={11} strokeWidth={3} /></span>
-            {concern}
-          </span>
+      <p class="mt-4 max-w-3xl break-words text-base leading-7 text-savanna/82 md:text-lg">
+        {personaCfg?.sub ?? 'Choose a destination, set your budget and trip length, then compare the best East Africa itineraries without hunting through every page.'}
+      </p>
+
+      {#if personaCfg}
+        <div class="mt-5 flex flex-wrap gap-2">
+          {#each personaCfg.concerns as concern}
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-savanna/15 bg-white/8 px-3 py-1.5 text-sm font-semibold text-savanna">
+              <span class="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-goldfinch-gold text-heading"><Check size={11} strokeWidth={3} /></span>
+              {concern}
+            </span>
+          {/each}
+        </div>
+      {/if}
+
+      <div class="mt-6 flex max-w-full gap-2 overflow-x-auto pb-1">
+        <span class="shrink-0 self-center text-sm font-semibold text-savanna/75">Travel type</span>
+        {#each PERSONA_ORDER as key}
+          <a
+            class={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-bold transition ${persona === key ? 'border-goldfinch-gold bg-goldfinch-gold text-heading' : 'border-savanna/20 bg-white/6 text-savanna hover:bg-white/10'}`}
+            href={withParams({ persona: persona === key ? null : key })}
+          >
+            {PERSONAS[key].label}
+          </a>
         {/each}
       </div>
     </div>
-  {:else}
-    <p class="font-serif text-xl italic text-clay">Safari &amp; Tours</p>
-    <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-heading md:text-[40px]" use:revealHeading>African Safari Tours &amp; Holidays</h1>
-    <p class="mt-3 max-w-3xl text-base leading-7 text-ink/70">
-      Explore our trusted East Africa tours — safaris, Kilimanjaro climbs, gorilla trekking and beach escapes.
-      Use the filters to find the trip that fits your dates, budget and style.
-    </p>
-  {/if}
 
-  <!-- persona switcher -->
-  <div class="mt-6 flex flex-wrap items-center gap-2">
-    <span class="text-sm font-medium text-ink/70">Who's travelling?</span>
-    {#each PERSONA_ORDER as key}
-      <a
-        class={`rounded-full border px-3.5 py-1.5 text-sm font-semibold transition ${persona === key ? 'border-forest bg-forest text-white' : 'border-ink/15 bg-surface text-ink/65 hover:border-forest/40'}`}
-        href={withParams({ persona: persona === key ? null : key })}
-      >
-        {PERSONAS[key].label}
-      </a>
-    {/each}
+    <form class="finder-panel grid w-full min-w-0 max-w-full gap-3 rounded-[8px] bg-surface p-4 text-ink shadow-[0_24px_70px_rgba(0,0,0,0.22)] lg:justify-self-end" on:submit={submitSearch} role="search">
+      <div>
+        <p class="text-sm font-extrabold text-heading">Start your search</p>
+        <p class="mt-1 text-xs font-medium text-ink/60">Three fields are enough to narrow the list.</p>
+      </div>
+
+      <label class="grid gap-1.5 text-sm font-bold text-ink/75">
+        <span class="inline-flex items-center gap-1.5"><MapPin size={15} /> Destination</span>
+        <select
+          class="h-12 min-w-0 rounded-[8px] border border-ink/15 bg-surface px-3 text-sm font-semibold text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
+          value={destSlug}
+          on:change={(e) => setDestination(e.currentTarget.value)}
+        >
+          <option value="">All destinations</option>
+          {#each destinationOptions as d}
+            <option value={d.slug}>{d.name}</option>
+          {/each}
+        </select>
+      </label>
+
+      <label class="grid gap-1.5 text-sm font-bold text-ink/75">
+        <span class="inline-flex items-center gap-1.5"><Search size={15} /> Keyword</span>
+        <span class="flex h-12 min-w-0 items-center gap-2 rounded-[8px] border border-ink/15 bg-surface px-3 transition focus-within:border-forest focus-within:ring-2 focus-within:ring-forest/15">
+          <input name="q" value={searchTerm} placeholder="Migration, gorilla, Kilimanjaro..." class="min-w-0 flex-1 bg-transparent text-sm font-semibold text-ink outline-none placeholder:text-ink/35" />
+        </span>
+      </label>
+
+      <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
+        <button type="submit" class="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-[8px] bg-deep-green px-3 text-sm font-bold text-white transition hover:bg-forest">
+          <Search size={16} />
+          <span class="truncate">Search</span>
+        </button>
+        <button
+          type="button"
+          class="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-[8px] border border-ink/15 bg-surface px-3 text-sm font-bold text-ink transition hover:border-forest/35 hover:bg-sand/50 lg:hidden"
+          aria-expanded={filtersOpen}
+          on:click={() => (filtersOpen = true)}
+        >
+          <SlidersHorizontal size={16} />
+          <span class="truncate">Filters</span>
+          {#if activeCount}<span class="rounded-full bg-forest px-2 py-0.5 text-xs text-white">{activeCount}</span>{/if}
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<section class="tour-shell min-w-0 pb-12">
+  <div class="relative z-10 -mt-5 grid min-w-0 gap-3 sm:grid-cols-3">
+    <div class="metric">
+      <p>Matches</p>
+      <strong>{sorted.length} tour{sorted.length === 1 ? '' : 's'}</strong>
+    </div>
+    <div class="metric">
+      <p>Starting from</p>
+      <strong>{cheapestVisible ? money(cheapestVisible) : 'On request'}</strong>
+    </div>
+    <div class="metric">
+      <p>Fastest option</p>
+      <strong>{shortestVisible ? days(shortestVisible) : 'Custom'}</strong>
+    </div>
   </div>
 
-  <div class="mt-8 grid gap-8 lg:grid-cols-[300px_1fr]">
-    <!-- ============ FILTER SIDEBAR ============ -->
-    <aside class={`${filtersOpen ? 'block' : 'hidden'} lg:block`}>
-      <div class="filter-scroll grid gap-5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pb-2">
-        <!-- search card -->
-        <div class="rounded-2xl border border-goldfinch-gold/30 bg-sand/40 p-5">
-          <p class="font-serif text-lg font-bold text-heading">Your Safari</p>
-          <form class="mt-4 grid gap-3" on:submit={submitSearch}>
-            <label class="grid gap-1.5 text-xs font-semibold uppercase tracking-wide text-ink/70">
-              Where to
-              <select
-                class="h-11 rounded-xl border border-ink/15 bg-surface px-3 text-sm font-medium text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
-                value={destSlug}
-                on:change={(e) => setDestination(e.currentTarget.value)}
-              >
-                <option value="">All destinations</option>
-                {#each destinationOptions as d}
-                  <option value={d.slug}>{d.name}</option>
-                {/each}
-              </select>
-            </label>
-            <label class="grid gap-1.5 text-xs font-semibold uppercase tracking-wide text-ink/70">
-              Keyword
-              <span class="flex h-11 items-center gap-2 rounded-xl border border-ink/15 bg-surface px-3 transition focus-within:border-forest focus-within:ring-2 focus-within:ring-forest/15">
-                <Search size={16} class="text-ink/40" />
-                <input name="q" value={searchTerm} placeholder="e.g. migration, gorilla" class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink/35" />
-              </span>
-            </label>
-            <button type="submit" class="h-11 rounded-xl bg-deep-green text-sm font-bold text-white transition hover:bg-forest">Search</button>
-          </form>
-        </div>
+  {#if popularCategories.length}
+    <div class="mt-5 flex max-w-full gap-2 overflow-x-auto pb-1">
+      <span class="shrink-0 self-center text-sm font-bold text-ink/65">Popular filters</span>
+      {#each popularCategories as c}
+        <button class={`category-pill ${urlCategories.has(c.slug) ? 'category-pill-active' : ''}`} type="button" on:click={() => toggleCategory(c.slug)}>
+          {c.name}
+          <span>{catCount(c.slug)}</span>
+        </button>
+      {/each}
+    </div>
+  {/if}
 
-        <!-- tour length -->
-        {#if rangesReady}
-          <div class="rounded-2xl border border-ink/10 bg-surface p-5">
-            <p class="text-sm font-bold text-ink">Tour Length</p>
-            <div class="mt-4">
-              <RangeSlider min={lenMin} max={lenMax} bind:lo={lengthLo} bind:hi={lengthHi} format={days} />
+  <div class="mt-6 grid min-w-0 gap-6 lg:grid-cols-[310px_minmax(0,1fr)] lg:items-start">
+    {#if filtersOpen}
+      <button class="fixed inset-0 z-50 bg-ink/45 backdrop-blur-sm lg:hidden" type="button" aria-label="Close filters" on:click={() => (filtersOpen = false)}></button>
+    {/if}
+
+    <aside class={`${filtersOpen ? 'fixed inset-x-0 bottom-0 z-[60] block max-h-[90dvh]' : 'hidden'} lg:sticky lg:inset-auto lg:top-24 lg:z-auto lg:block lg:max-h-[calc(100vh-7rem)]`}>
+      <div class="flex max-h-[90dvh] flex-col overflow-hidden rounded-t-[8px] border border-ink/10 bg-surface shadow-soft lg:max-h-[calc(100vh-7rem)] lg:rounded-[8px]">
+        <div class="border-b border-ink/10 px-4 py-4">
+          <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-ink/15 lg:hidden"></div>
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-sm font-extrabold text-heading">Trip filters</p>
+              <p class="text-xs text-ink/60">{sorted.length} match{sorted.length === 1 ? '' : 'es'} for {selectedDestinationLabel}</p>
             </div>
-          </div>
-
-          <!-- price -->
-          <div class="rounded-2xl border border-ink/10 bg-surface p-5">
-            <p class="text-sm font-bold text-ink">Rates in USD</p>
-            <p class="mt-0.5 text-xs text-ink/70">Per person, excl. international flights</p>
-            <div class="mt-4">
-              <RangeSlider min={priceMin} max={priceMax} step={50} bind:lo={priceLo} bind:hi={priceHi} format={money} />
+            <div class="flex items-center gap-2">
+              {#if activeCount}
+                <button class="text-xs font-bold text-forest underline-offset-2 hover:underline" type="button" on:click={clearAll}>Clear</button>
+              {/if}
+              <button class="grid h-9 w-9 place-items-center rounded-full border border-ink/10 text-ink/70 lg:hidden" type="button" aria-label="Close filters" on:click={() => (filtersOpen = false)}>
+                <X size={17} />
+              </button>
             </div>
-          </div>
-        {/if}
-
-        <!-- comfort level -->
-        <div class="rounded-2xl border border-ink/10 bg-surface p-5">
-          <p class="text-sm font-bold text-ink">Comfort Level</p>
-          <div class="mt-3 grid gap-2.5">
-            {#each TIERS as t}
-              <label class="flex cursor-pointer items-center justify-between text-sm">
-                <span class="flex items-center gap-2.5 text-ink/75">
-                  <input type="checkbox" class="h-4 w-4 accent-forest" checked={selectedTiers.includes(t.key)} on:change={() => toggleTier(t.key)} />
-                  {t.label}
-                </span>
-                <span class="text-xs text-ink/40">({tierCount(t.key)})</span>
-              </label>
-            {/each}
           </div>
         </div>
 
-        <!-- safari type / experience (category) -->
-        {#if categoryOptions.length}
-          <div class="rounded-2xl border border-ink/10 bg-surface p-5">
-            <p class="text-sm font-bold text-ink">Safari Type</p>
-            <div class="mt-3 grid gap-2.5">
-              {#each categoryOptions as c}
-                <label class="flex cursor-pointer items-center justify-between text-sm">
-                  <span class="flex items-center gap-2.5 text-ink/75">
-                    <input type="checkbox" class="h-4 w-4 accent-forest" checked={urlCategories.has(c.slug)} on:change={() => toggleCategory(c.slug)} />
-                    {c.name}
+        <div class="filter-scroll flex-1 overflow-y-auto overscroll-contain">
+          <section class="filter-section">
+            <div class="filter-heading">
+              <span>1</span>
+              <p>Best shortcut</p>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-2">
+              <button class={`quick-btn ${popularOnly ? 'quick-btn-active' : ''}`} type="button" on:click={() => (popularOnly = !popularOnly)}>
+                <Star size={14} />
+                Best sellers
+              </button>
+              {#if rangesReady}
+                <button class={`quick-btn ${shortTripsActive ? 'quick-btn-active' : ''}`} type="button" on:click={setShortTrips}>
+                  <Clock size={14} />
+                  {days(shortTripsHi)} or less
+                </button>
+                <button class={`quick-btn ${classicTripsActive ? 'quick-btn-active' : ''}`} type="button" on:click={setClassicTrips}>
+                  <Compass size={14} />
+                  {classicTripsLo}-{classicTripsHi} days
+                </button>
+                <button class={`quick-btn ${valueTripsActive ? 'quick-btn-active' : ''}`} type="button" on:click={setValueTrips}>
+                  <Search size={14} />
+                  Under {money(valueTripsHi)}
+                </button>
+              {/if}
+            </div>
+          </section>
+
+          {#if rangesReady}
+            <section class="filter-section">
+              <div class="flex items-center justify-between gap-3">
+                <div class="filter-heading">
+                  <span>2</span>
+                  <p>Length & budget</p>
+                </div>
+              </div>
+              <div class="mt-4 grid gap-6">
+                <div>
+                  <div class="flex items-center justify-between">
+                    <p class="text-sm font-bold text-ink">Tour length</p>
+                    {#if lengthActive}
+                      <button class="text-xs font-bold text-forest" type="button" on:click={() => { lengthLo = lenMin; lengthHi = lenMax; }}>Reset</button>
+                    {/if}
+                  </div>
+                  <div class="mt-3">
+                    <RangeSlider min={lenMin} max={lenMax} bind:lo={lengthLo} bind:hi={lengthHi} format={days} />
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <p class="text-sm font-bold text-ink">Rates in USD</p>
+                      <p class="mt-0.5 text-xs text-ink/60">Per person, excluding international flights</p>
+                    </div>
+                    {#if priceActive}
+                      <button class="text-xs font-bold text-forest" type="button" on:click={() => { priceLo = priceMin; priceHi = priceMax; }}>Reset</button>
+                    {/if}
+                  </div>
+                  <div class="mt-3">
+                    <RangeSlider min={priceMin} max={priceMax} step={50} bind:lo={priceLo} bind:hi={priceHi} format={money} />
+                  </div>
+                </div>
+              </div>
+            </section>
+          {/if}
+
+          <section class="filter-section">
+            <div class="filter-heading">
+              <span>3</span>
+              <p>Comfort</p>
+            </div>
+            <div class="mt-3 grid gap-2">
+              {#each TIERS as t}
+                <label class={`filter-option ${selectedTiers.includes(t.key) ? 'filter-option-active' : ''}`}>
+                  <span class="flex min-w-0 items-center gap-2.5">
+                    <input type="checkbox" class="h-4 w-4 accent-forest" checked={selectedTiers.includes(t.key)} on:change={() => toggleTier(t.key)} />
+                    <span class="truncate">{t.label}</span>
                   </span>
-                  <span class="text-xs text-ink/40">({catCount(c.slug)})</span>
+                  <span class="text-xs font-semibold text-ink/45">{tierCount(t.key)}</span>
                 </label>
               {/each}
             </div>
-          </div>
-        {/if}
+          </section>
 
-        <!-- quick toggle -->
-        <div class="rounded-2xl border border-ink/10 bg-surface p-5">
-          <p class="text-sm font-bold text-ink">Other</p>
-          <label class="mt-3 flex cursor-pointer items-center gap-2.5 text-sm text-ink/75">
-            <input type="checkbox" class="h-4 w-4 accent-forest" bind:checked={popularOnly} />
-            Best sellers only
-          </label>
+          {#if categoryOptions.length}
+            <section class="filter-section">
+              <div class="filter-heading">
+                <span>4</span>
+                <p>Safari type</p>
+              </div>
+              <div class="mt-3 grid gap-2">
+                {#each categoryOptions as c}
+                  <label class={`filter-option ${urlCategories.has(c.slug) ? 'filter-option-active' : ''}`}>
+                    <span class="flex min-w-0 items-center gap-2.5">
+                      <input type="checkbox" class="h-4 w-4 accent-forest" checked={urlCategories.has(c.slug)} on:change={() => toggleCategory(c.slug)} />
+                      <span class="truncate">{c.name}</span>
+                    </span>
+                    <span class="text-xs font-semibold text-ink/45">{catCount(c.slug)}</span>
+                  </label>
+                {/each}
+              </div>
+            </section>
+          {/if}
+        </div>
+
+        <div class="border-t border-ink/10 p-3 lg:hidden">
+          <button type="button" class="h-12 w-full rounded-[8px] bg-deep-green text-sm font-bold text-white" on:click={() => (filtersOpen = false)}>
+            Show {sorted.length} tour{sorted.length === 1 ? '' : 's'}
+          </button>
         </div>
       </div>
     </aside>
 
-    <!-- ============ RESULTS ============ -->
-    <div>
-      <!-- result bar -->
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-ink/10 pb-4">
-        <div class="flex items-center gap-3">
-          <button
-            type="button"
-            class="inline-flex items-center gap-2 rounded-xl border border-ink/15 bg-surface px-3.5 py-2 text-sm font-semibold text-ink lg:hidden"
-            on:click={() => (filtersOpen = !filtersOpen)}
-          >
-            <SlidersHorizontal size={15} /> Filters{#if activeCount}<span class="rounded-full bg-forest px-1.5 text-xs text-white">{activeCount}</span>{/if}
-          </button>
-          <p class="text-sm text-ink/70">{#if !loading}<span class="font-bold text-ink">{sorted.length}</span> tour{sorted.length === 1 ? '' : 's'}{/if}</p>
+    <div class="min-w-0">
+      <div class="sticky top-[70px] z-20 -mx-3 border-y border-ink/10 bg-canvas/95 px-3 py-3 backdrop-blur lg:static lg:mx-0 lg:rounded-[8px] lg:border lg:bg-surface lg:p-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-base font-extrabold text-heading">
+              {#if searchTerm}
+                Results for "{searchTerm}"
+              {:else if destSlug}
+                {destName} tours
+              {:else}
+                Best matching tours
+              {/if}
+            </p>
+            <p class="mt-1 text-xs text-ink/60">
+              {sorted.length} of {allTours.length} packages shown{#if featuredVisible} · {featuredVisible} recommended picks{/if}
+            </p>
+          </div>
+
+          <div class="flex w-full items-center gap-2 sm:w-auto">
+            <button
+              type="button"
+              class="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-[8px] border border-ink/15 bg-surface px-3 text-sm font-bold text-ink lg:hidden"
+              on:click={() => (filtersOpen = true)}
+            >
+              <SlidersHorizontal size={15} />
+              Filters
+              {#if activeCount}<span class="rounded-full bg-forest px-1.5 text-xs text-white">{activeCount}</span>{/if}
+            </button>
+            <label class="flex h-10 flex-1 items-center gap-2 rounded-[8px] border border-ink/15 bg-surface px-3 text-sm text-ink/70 sm:flex-none">
+              Sort
+              <select class="min-w-0 flex-1 bg-transparent text-sm font-semibold text-ink outline-none" bind:value={sort} aria-label="Sort tours">
+                <option value="recommended">Recommended</option>
+                <option value="price_asc">Price: low to high</option>
+                <option value="price_desc">Price: high to low</option>
+                <option value="duration_asc">Duration: short to long</option>
+                <option value="duration_desc">Duration: long to short</option>
+              </select>
+            </label>
+          </div>
         </div>
-        <label class="flex items-center gap-2 text-sm text-ink/70">
-          Sort
-          <select class="h-9 rounded-lg border border-ink/15 bg-surface px-2 text-sm font-medium text-ink outline-none focus:border-forest" bind:value={sort}>
-            <option value="recommended">Recommended</option>
-            <option value="price_asc">Price: low to high</option>
-            <option value="price_desc">Price: high to low</option>
-            <option value="duration_asc">Duration: short to long</option>
-            <option value="duration_desc">Duration: long to short</option>
-          </select>
-        </label>
+
+        {#if activeCount}
+          <div class="mt-3 flex flex-wrap items-center gap-2">
+            {#if destSlug}
+              <button class="chip" type="button" on:click={() => setDestination('')}>{destName} <X size={13} /></button>
+            {/if}
+            {#each [...urlCategories] as slug}
+              <button class="chip" type="button" on:click={() => toggleCategory(slug)}>{catName(slug)} <X size={13} /></button>
+            {/each}
+            {#each selectedTiers as key}
+              <button class="chip" type="button" on:click={() => toggleTier(key)}>{TIERS.find((t) => t.key === key)?.label} <X size={13} /></button>
+            {/each}
+            {#if searchTerm}
+              <button class="chip" type="button" on:click={() => writeUrl({ search: null })}>"{searchTerm}" <X size={13} /></button>
+            {/if}
+            {#if lengthActive}
+              <button class="chip" type="button" on:click={() => { lengthLo = lenMin; lengthHi = lenMax; }}>{days(lengthLo)}-{days(lengthHi)} <X size={13} /></button>
+            {/if}
+            {#if priceActive}
+              <button class="chip" type="button" on:click={() => { priceLo = priceMin; priceHi = priceMax; }}>{money(priceLo)}-{money(priceHi)} <X size={13} /></button>
+            {/if}
+            {#if popularOnly}
+              <button class="chip" type="button" on:click={() => (popularOnly = false)}>Best sellers <X size={13} /></button>
+            {/if}
+            <button class="text-sm font-bold text-forest underline-offset-2 hover:underline" type="button" on:click={clearAll}>Clear all</button>
+          </div>
+        {/if}
       </div>
 
-      <!-- active filter chips -->
-      {#if activeCount}
-        <div class="mt-4 flex flex-wrap items-center gap-2">
-          {#if destSlug}
-            <button class="chip" type="button" on:click={() => setDestination('')}>{destName} <X size={13} /></button>
-          {/if}
-          {#each [...urlCategories] as slug}
-            <button class="chip" type="button" on:click={() => toggleCategory(slug)}>{catName(slug)} <X size={13} /></button>
-          {/each}
-          {#each selectedTiers as key}
-            <button class="chip" type="button" on:click={() => toggleTier(key)}>{TIERS.find((t) => t.key === key)?.label} <X size={13} /></button>
-          {/each}
-          {#if searchTerm}
-            <button class="chip" type="button" on:click={() => writeUrl({ search: null })}>“{searchTerm}” <X size={13} /></button>
-          {/if}
-          {#if lengthActive}
-            <button class="chip" type="button" on:click={() => { lengthLo = lenMin; lengthHi = lenMax; }}>{days(lengthLo)}–{days(lengthHi)} <X size={13} /></button>
-          {/if}
-          {#if priceActive}
-            <button class="chip" type="button" on:click={() => { priceLo = priceMin; priceHi = priceMax; }}>{money(priceLo)}–{money(priceHi)} <X size={13} /></button>
-          {/if}
-          {#if popularOnly}
-            <button class="chip" type="button" on:click={() => (popularOnly = false)}>Best sellers <X size={13} /></button>
-          {/if}
-          <button class="text-sm font-semibold text-forest underline-offset-2 hover:underline" type="button" on:click={clearAll}>Clear all</button>
-        </div>
-      {/if}
-
-      <div class="mt-6">
+      <div class="mt-5">
         {#if loading}
           <LoadingState message="Loading tours..." />
         {:else if error && allTours.length === 0}
           <ErrorState message={error} />
         {:else if sorted.length === 0}
-          <EmptyState
-            title="No tours match your filters"
-            message="Try widening your dates, budget or destination — or plan a custom trip and we'll tailor it to you."
-          />
+          <div class="grid gap-4">
+            <EmptyState
+              title="No tours match your filters"
+              message="Try a wider budget, a different duration, or remove one filter. A custom trip can still be planned around your exact dates."
+            />
+            <div class="flex flex-wrap justify-center gap-3">
+              <button type="button" class="h-11 rounded-[8px] border border-ink/15 bg-surface px-4 text-sm font-bold text-ink" on:click={clearAll}>Clear filters</button>
+              <a class="inline-flex h-11 items-center rounded-[8px] bg-deep-green px-4 text-sm font-bold text-white" href="/plan-my-trip">Plan a custom trip</a>
+            </div>
+          </div>
         {:else}
-          <div class="grid gap-6 sm:grid-cols-2" use:staggeredCardReveal={{ y: 16, stagger: 0.05 }}>
+          <div class="grid gap-5 sm:grid-cols-2" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
             {#each sorted as tour (tour.slug)}
               <TourCardRich {tour} />
             {/each}
@@ -389,25 +578,152 @@
 </section>
 
 <style>
+  :global(body) {
+    overflow-x: hidden;
+  }
+  .tour-shell {
+    width: min(1320px, calc(100% - 32px));
+    margin-inline: auto;
+  }
+  @media (min-width: 768px) {
+    .tour-shell {
+      width: min(1320px, calc(100% - 48px));
+    }
+  }
   :global(.chip) {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
+    max-width: 100%;
     border-radius: 999px;
     border: 1px solid rgba(31, 77, 58, 0.2);
     background: rgba(31, 77, 58, 0.06);
-    padding: 0.25rem 0.75rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #2D3027;
-    transition: background 0.15s;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: rgb(var(--c-ink));
+    transition: background 0.15s, border-color 0.15s;
   }
   :global(.chip:hover) {
+    border-color: rgba(31, 77, 58, 0.34);
     background: rgba(31, 77, 58, 0.12);
   }
-
-  /* self-scrolling filter rail: scroll by gesture (wheel/trackpad/touch),
-     no visible scrollbar handle */
+  :global(.metric) {
+    min-width: 0;
+    border-radius: 8px;
+    border: 1px solid rgba(57, 61, 50, 0.1);
+    background: rgb(var(--c-surface));
+    padding: 1rem;
+    box-shadow: 0 14px 40px rgba(57, 61, 50, 0.08);
+  }
+  :global(.metric p) {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: rgb(var(--c-ink) / 0.55);
+  }
+  :global(.metric strong) {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 1.25rem;
+    color: rgb(var(--c-heading));
+  }
+  :global(.category-pill) {
+    display: inline-flex;
+    min-height: 2.5rem;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba(57, 61, 50, 0.14);
+    background: rgb(var(--c-surface));
+    padding: 0.45rem 0.85rem;
+    font-size: 0.875rem;
+    font-weight: 750;
+    color: rgb(var(--c-ink) / 0.78);
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+  }
+  :global(.category-pill span) {
+    display: grid;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    place-items: center;
+    border-radius: 999px;
+    background: rgb(var(--c-sand) / 0.8);
+    font-size: 0.75rem;
+  }
+  :global(.category-pill:hover),
+  :global(.category-pill-active) {
+    border-color: rgba(228, 169, 46, 0.65);
+    background: rgb(var(--c-goldfinch-gold) / 0.14);
+    color: rgb(var(--c-heading));
+  }
+  :global(.filter-section) {
+    border-bottom: 1px solid rgba(57, 61, 50, 0.1);
+    padding: 1rem;
+  }
+  :global(.filter-heading) {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+  }
+  :global(.filter-heading span) {
+    display: grid;
+    height: 1.5rem;
+    width: 1.5rem;
+    place-items: center;
+    border-radius: 999px;
+    background: rgb(var(--c-deep-green));
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+  :global(.filter-heading p) {
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: rgb(var(--c-ink));
+  }
+  :global(.quick-btn) {
+    display: inline-flex;
+    min-height: 2.55rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    border-radius: 8px;
+    border: 1px solid rgba(57, 61, 50, 0.12);
+    background: rgba(241, 227, 200, 0.35);
+    padding: 0.5rem 0.625rem;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    color: rgb(var(--c-ink));
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+  }
+  :global(.quick-btn:hover),
+  :global(.quick-btn-active) {
+    border-color: rgba(45, 48, 39, 0.35);
+    background: rgba(45, 48, 39, 0.08);
+    color: rgb(var(--c-heading));
+  }
+  :global(.filter-option) {
+    display: flex;
+    min-height: 2.75rem;
+    cursor: pointer;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(57, 61, 50, 0.1);
+    background: transparent;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: rgb(var(--c-ink) / 0.78);
+    transition: border-color 0.15s, background 0.15s;
+  }
+  :global(.filter-option:hover),
+  :global(.filter-option-active) {
+    border-color: rgba(45, 48, 39, 0.26);
+    background: rgba(45, 48, 39, 0.06);
+  }
   .filter-scroll {
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -415,5 +731,10 @@
   }
   .filter-scroll::-webkit-scrollbar {
     display: none;
+  }
+  @media (max-width: 1023px) {
+    :global(html.tour-filters-open) {
+      overflow: hidden;
+    }
   }
 </style>

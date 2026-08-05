@@ -52,6 +52,25 @@ export type Tour = {
   is_popular?: boolean;
 };
 
+export type TourCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  who_its_for?: string | null;
+  fitness?: string | null;
+  highlights?: string[] | null;
+  icon_url?: string | null;
+  image_url?: string | null;
+  lottie_url?: string | null;
+  status?: 'draft' | 'published' | 'archived';
+  sort_order?: number | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
 export type ItineraryDay = {
   day_number: number;
   title: string;

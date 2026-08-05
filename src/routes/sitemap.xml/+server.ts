@@ -7,6 +7,7 @@ const routes = [
   '/',
   '/tours',
   '/experiences',
+  '/safari-styles',
   '/trip-finder',
   '/destinations',
   '/destination-scores',

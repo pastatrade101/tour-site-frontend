@@ -35,23 +35,23 @@
   ];
 </script>
 
-<section class="bg-surface py-16 md:py-24" use:fadeUpOnScroll>
+<section class="bg-surface py-14 md:py-20" use:fadeUpOnScroll>
   <div class="container-shell">
     <div class="text-center">
       <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">{eyebrow}</p>
-      <h2 class="mt-3 text-3xl md:text-[38px] font-semibold text-heading">{title}</h2>
-      <p class="mx-auto mt-4 max-w-2xl text-ink/65 leading-8">{subtitle}</p>
+      <h2 class="mt-3 text-3xl font-semibold leading-tight text-heading md:text-[38px]">{title}</h2>
+      <p class="mx-auto mt-4 max-w-2xl leading-8 text-ink/65">{subtitle}</p>
     </div>
 
-    <div class="mt-12 grid gap-6 md:grid-cols-3">
+    <div class="mt-10 grid gap-4 md:grid-cols-3">
       {#each features as f}
         {@const Icon = ICONS[f.icon] ?? Compass}
-        <div class="rounded-2xl border border-ink/10 bg-canvas p-7 shadow-soft">
-          <span class="grid h-12 w-12 place-items-center rounded-full bg-goldfinch-gold/15 text-goldfinch-gold">
+        <div class="group rounded-[8px] border border-ink/10 bg-canvas p-6 shadow-card transition hover:border-goldfinch-gold/35 hover:bg-surface">
+          <span class="grid h-12 w-12 place-items-center rounded-[8px] bg-goldfinch-gold/15 text-goldfinch-gold">
             <Icon size={22} />
           </span>
           <h3 class="mt-5 text-lg font-semibold text-heading">{f.title}</h3>
-          <p class="mt-2 text-ink/65 leading-7">{f.body}</p>
+          <p class="mt-2 leading-7 text-ink/65">{f.body}</p>
         </div>
       {/each}
     </div>

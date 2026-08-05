@@ -15,21 +15,21 @@
   $: shown = active === 'All' ? tours : tours.filter((t) => t.experience_type === active);
 </script>
 
-<section class="bg-canvas py-16 md:py-24" use:fadeUpOnScroll>
+<section class="bg-canvas py-14 md:py-20" use:fadeUpOnScroll>
   <div class="container-shell">
     <!-- header -->
     <div class="mx-auto max-w-2xl text-center">
       <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">{eyebrow}</p>
-      <h2 class="mt-3 font-semibold text-heading">{title}</h2>
-      <p class="mt-4 text-ink/70">{subtitle}</p>
+      <h2 class="mt-3 text-3xl font-semibold leading-tight text-heading md:text-[38px]">{title}</h2>
+      <p class="mt-4 leading-7 text-ink/70">{subtitle}</p>
     </div>
 
     <!-- filter tabs -->
-    <div class="mt-8 flex flex-wrap justify-center gap-2">
+    <div class="mt-8 flex max-w-full gap-2 overflow-x-auto pb-1 md:flex-wrap md:justify-center">
       {#each cats as cat}
         <button
           type="button"
-          class={`rounded-full px-4 h-9 text-sm font-semibold transition ${
+          class={`h-9 shrink-0 rounded-full px-4 text-sm font-semibold transition ${
             active === cat
               ? 'bg-deep-green text-white'
               : 'border border-ink/15 text-ink hover:bg-sand'
@@ -42,7 +42,7 @@
     </div>
 
     <!-- grid -->
-    <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="mt-9 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {#each shown as t, i (t.id ?? i)}
         <DealCard tour={t} index={i} />
       {/each}
@@ -50,7 +50,7 @@
 
     <!-- can't find band -->
     <div
-      class="mt-12 flex flex-col items-center justify-between gap-4 rounded-2xl border border-ink/10 bg-sand/50 p-6 text-center sm:flex-row sm:text-left"
+      class="mt-10 flex flex-col items-center justify-between gap-4 rounded-[8px] border border-ink/10 bg-sand/50 p-5 text-center sm:flex-row sm:text-left md:p-6"
     >
       <div>
         <p class="font-semibold text-heading">Can't find your perfect trip?</p>

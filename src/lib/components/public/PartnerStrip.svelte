@@ -10,13 +10,14 @@
 </script>
 
 {#if valid.length}
-  <section class="border-t border-ink/[0.06] bg-surface py-12 md:py-16">
+  <section class="relative overflow-hidden border-y border-ink/[0.06] bg-canvas py-10 md:py-14">
+    <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-goldfinch-gold/25 to-transparent" aria-hidden="true"></div>
     <div class="container-shell">
       {#if title}
-        <p class="text-center text-xs font-bold uppercase tracking-[0.2em] text-ink/40 md:text-[13px]">{title}</p>
+        <p class="text-center text-xs font-bold uppercase tracking-[0.18em] text-ink/45 md:text-[13px]">{title}</p>
       {/if}
 
-      <div class={`marquee ${title ? 'mt-9' : ''}`}>
+      <div class={`marquee ${title ? 'mt-8' : ''}`}>
         <div class="marquee-track">
           {#each loop as logo, index (index)}
             <div class="marquee-item" aria-hidden={index >= valid.length ? 'true' : undefined}>
@@ -46,8 +47,8 @@
     display: flex;
     width: max-content;
     align-items: center;
-    gap: 56px;
-    animation: marquee-scroll 34s linear infinite;
+    gap: 48px;
+    animation: marquee-scroll 36s linear infinite;
   }
 
   .marquee:hover .marquee-track {
@@ -61,7 +62,7 @@
   }
 
   .marquee-logo {
-    height: 38px;
+    height: 36px;
     width: auto;
     max-width: 160px;
     object-fit: contain;

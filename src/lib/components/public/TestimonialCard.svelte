@@ -16,13 +16,14 @@
       .join('') || '?';
 </script>
 
-<article class="flex h-full flex-col gap-4 rounded-[8px] border border-ink/10 bg-surface p-5 shadow-[0_14px_44px_rgba(57,61,50,0.06)] transition hover:border-forest/25 hover:shadow-[0_20px_50px_rgba(57,61,50,0.10)]">
+<article class="relative flex h-full flex-col gap-4 overflow-hidden rounded-[8px] border border-ink/10 bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:border-forest/25 hover:shadow-card-hover">
+  <div class="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-goldfinch-gold via-forest/40 to-transparent"></div>
   <!-- header -->
   <div class="flex items-start gap-3">
     {#if testimonial.client_image_url}
-      <img class="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-ink/10" src={testimonial.client_image_url} alt={testimonial.client_name} loading="lazy" />
+      <img class="h-12 w-12 shrink-0 rounded-[8px] object-cover ring-1 ring-ink/10" src={testimonial.client_image_url} alt={testimonial.client_name} loading="lazy" decoding="async" />
     {:else}
-      <div class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-forest/10 text-sm font-bold text-forest ring-1 ring-forest/15">
+      <div class="grid h-12 w-12 shrink-0 place-items-center rounded-[8px] bg-forest/10 text-sm font-bold text-forest ring-1 ring-forest/15">
         {initials}
       </div>
     {/if}
@@ -33,7 +34,7 @@
       {/if}
     </div>
     {#if featured}
-      <span class="flex shrink-0 items-center gap-1 rounded-full bg-goldfinch-gold px-2 py-0.5 text-[11px] font-bold text-heading">
+      <span class="flex shrink-0 items-center gap-1 rounded-[6px] bg-goldfinch-gold px-2 py-0.5 text-[11px] font-bold text-heading">
         <Star size={10} fill="currentColor" />Featured
       </span>
     {/if}
@@ -48,12 +49,12 @@
   </div>
 
   <!-- quote -->
-  <blockquote class="flex-1 text-sm leading-6 text-ink/70">"{testimonial.message}"</blockquote>
+  <blockquote class="relative flex-1 border-l-2 border-goldfinch-gold/45 pl-4 text-sm leading-6 text-ink/70">"{testimonial.message}"</blockquote>
 
   <!-- linked trip -->
   {#if tourTitle}
     <div class="flex flex-wrap items-center gap-2">
-      <span class="inline-flex items-center gap-1 rounded-full bg-forest/10 px-2 py-0.5 text-[11px] font-semibold text-forest">
+      <span class="inline-flex items-center gap-1 rounded-[6px] bg-forest/10 px-2 py-0.5 text-[11px] font-semibold text-forest">
         <MapPin size={10} />{tourTitle}
       </span>
     </div>

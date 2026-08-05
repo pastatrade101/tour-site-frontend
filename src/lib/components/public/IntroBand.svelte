@@ -22,7 +22,7 @@
 	};
 </script>
 
-<section class="bg-canvas py-16 md:py-24" use:fadeUpOnScroll>
+<section class="bg-canvas py-14 md:py-20" use:fadeUpOnScroll>
 	<div class="container-shell">
 		<!-- TOP -->
 		<p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">
@@ -36,22 +36,22 @@
 		</p>
 
 		<!-- BELOW -->
-		<div class="mt-12 grid items-stretch gap-8 lg:grid-cols-[1.4fr_1fr]">
+		<div class="mt-10 grid items-stretch gap-6 lg:grid-cols-[1.35fr_1fr]">
 			<!-- LEFT: stats row -->
-			<div class="grid grid-cols-3 gap-4">
+			<div class="grid gap-3 sm:grid-cols-3">
 				{#each stats as stat}
-					<div class="rounded-2xl border border-ink/10 bg-surface p-5 text-center shadow-soft">
-						<h3 class="text-3xl font-semibold text-goldfinch-gold md:text-4xl">{stat.value}</h3>
-						<p class="mt-1 text-xs font-medium text-ink/60">{stat.label}</p>
+					<div class="rounded-[8px] border border-ink/10 bg-surface p-5 shadow-card">
+						<h3 class="font-sans text-3xl font-extrabold text-goldfinch-gold md:text-4xl">{stat.value}</h3>
+						<p class="mt-1 text-sm font-semibold leading-5 text-ink/60">{stat.label}</p>
 					</div>
 				{/each}
 			</div>
 
 			<!-- RIGHT: credential card -->
-			<div class="rounded-2xl border border-ink/10 bg-surface p-6 shadow-soft">
+			<div class="rounded-[8px] border border-ink/10 bg-surface p-6 shadow-card">
 				<div class="flex items-center gap-2.5">
 					<span
-						class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-goldfinch-gold/15"
+						class="inline-flex h-9 w-9 items-center justify-center rounded-[8px] bg-goldfinch-gold/15"
 					>
 						<Leaf size={16} class="text-goldfinch-gold" />
 					</span>

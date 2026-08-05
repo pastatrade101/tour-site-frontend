@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ArrowRight, Newspaper } from '@lucide/svelte';
   import { tilt } from '$lib/animations';
   import { imgUrl, thumbUrl } from '$lib/img';
   import type { BlogPost } from '$lib/types';
@@ -6,17 +7,27 @@
   export let post: BlogPost;
 </script>
 
-<article class="group flex h-full flex-col overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_14px_40px_rgba(57,61,50,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(57,61,50,0.16)]" use:tilt={{ max: 5 }}>
+<article class="group flex h-full flex-col overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-card transition duration-300 hover:-translate-y-0.5 hover:border-forest/25 hover:shadow-card-hover" use:tilt={{ max: 3 }}>
   <a href={`/blog/${post.slug}`} class="flex h-full flex-col">
-    <div class="aspect-[16/10] overflow-hidden bg-skywash">
+    <div class="relative aspect-[16/10] overflow-hidden bg-skywash">
       {#if post.featured_image_url}
-        <img class="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-110" src={imgUrl(thumbUrl(post, 'featured_image_url'), 700)} alt={post.title} loading="lazy" decoding="async" />
+        <img class="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-105" src={imgUrl(thumbUrl(post, 'featured_image_url'), 760)} alt={post.title} loading="lazy" decoding="async" />
+      {:else}
+        <div class="grid h-full w-full place-items-center bg-gradient-to-br from-sand to-savanna/50 text-forest/35"><Newspaper size={30} /></div>
       {/if}
+      <div class="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/30 to-transparent"></div>
     </div>
     <div class="flex flex-1 flex-col p-5">
-      <p class="text-sm font-semibold text-clay">{post.author_name ?? 'Tour Team'}</p>
+      {#if post.author_name}
+        <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-clay">{post.author_name}</p>
+      {/if}
       <h3 class="mt-2 text-xl font-bold tracking-normal text-ink">{post.title}</h3>
-      <p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/70">{post.excerpt}</p>
+      {#if post.excerpt}
+        <p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/70">{post.excerpt}</p>
+      {/if}
+      <span class="mt-auto inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[8px] bg-canvas px-4 text-sm font-bold text-forest transition group-hover:bg-deep-green group-hover:text-white">
+        Read guide <ArrowRight size={14} strokeWidth={2.6} class="transition-transform group-hover:translate-x-0.5" />
+      </span>
     </div>
   </a>
 </article>

@@ -7,14 +7,23 @@ import { browser } from '$app/environment';
 export type Consent = 'granted' | 'denied' | null;
 
 const KEY = 'gf_consent';
+const MAX_AGE = 60 * 60 * 24 * 180; // 180 days
+
+const valid = (value: string | null | undefined): Consent =>
+  value === 'granted' || value === 'denied' ? value : null;
+
+const readCookie = (): Consent => {
+  if (!browser) return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${KEY}=([^;]*)`));
+  return valid(match ? decodeURIComponent(match[1]) : null);
+};
 
 const read = (): Consent => {
   if (!browser) return null;
   try {
-    const v = localStorage.getItem(KEY);
-    return v === 'granted' || v === 'denied' ? v : null;
+    return valid(localStorage.getItem(KEY)) ?? readCookie();
   } catch {
-    return null;
+    return readCookie();
   }
 };
 
@@ -29,6 +38,7 @@ export const setConsent = (value: 'granted' | 'denied') => {
     } catch {
       /* storage unavailable — still applies in-session */
     }
+    document.cookie = `${KEY}=${encodeURIComponent(value)}; Max-Age=${MAX_AGE}; Path=/; SameSite=Lax`;
   }
   consent.set(value);
 };

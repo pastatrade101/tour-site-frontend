@@ -9,16 +9,17 @@
   import { trackEvent } from '$lib/analytics';
   import { navbarEntrance } from '$lib/animations';
   import { brand } from '$lib/brand';
+  import { imgUrl } from '$lib/img';
   import { aiAdvisorEnabled, publicSettings, settingText } from '$lib/settings';
   import ThemeToggle from './ThemeToggle.svelte';
   import { canInstall, promptInstall } from '$lib/pwa';
 
   type NavLink = { href: string; label: string; image?: string; description?: string };
-  type NavItem = { dropdown?: 'destinations' | 'tours'; href: string; label: string };
+  type DropdownKey = 'destinations' | 'tours' | 'safariStyles';
+  type NavItem = { dropdown?: DropdownKey; href: string; label: string };
 
   // Featured image panel + copy for each mega menu.
-  const FALLBACK_FEATURE_IMG = 'https://images.unsplash.com/photo-1516426122078-c23e76319801';
-  const FEATURE: Record<'destinations' | 'tours', { eyebrow: string; title: string; blurb: string; cta: string; href: string }> = {
+  const FEATURE: Record<DropdownKey, { eyebrow: string; title: string; blurb: string; cta: string; href: string }> = {
     destinations: {
       eyebrow: 'Where to go',
       title: 'Explore East Africa',
@@ -27,28 +28,35 @@
       href: '/destinations'
     },
     tours: {
-      eyebrow: 'Ready to plan?',
-      title: 'Find your perfect trip',
-      blurb: 'Browse by experience or design a tailor-made journey with a local expert.',
+      eyebrow: 'Featured trips',
+      title: 'Find your safari',
+      blurb: 'Compare published itineraries, signature routes, and guest-ready tour ideas from the Goldfinch collection.',
       cta: 'Explore all tours',
       href: '/tours'
+    },
+    safariStyles: {
+      eyebrow: 'How to travel',
+      title: 'Choose your safari style',
+      blurb: 'Browse the live Goldfinch trip categories and start from the travel style that fits you.',
+      cta: 'Explore safari styles',
+      href: '/safari-styles'
     }
   };
 
   // Left-panel header (icon + title + subtitle) and the "view all" pill label.
-  const MENU_META: Record<'destinations' | 'tours', { icon: typeof Globe; title: string; subtitle: string; viewAll: string }> = {
+  const MENU_META: Record<DropdownKey, { icon: typeof Globe; title: string; subtitle: string; viewAll: string }> = {
     destinations: { icon: Globe, title: 'All Destinations', subtitle: 'Discover the best of East Africa', viewAll: 'View all destinations' },
-    tours: { icon: Compass, title: 'All Tours', subtitle: 'Find your perfect safari', viewAll: 'View all tours' }
+    tours: { icon: TicketsPlane, title: 'Tour Packages', subtitle: 'Published safari itineraries', viewAll: 'View all tours' },
+    safariStyles: { icon: Compass, title: 'Safari Styles', subtitle: 'Browse by travel category', viewAll: 'View all styles' }
   };
-  const featureImage = (key: 'destinations' | 'tours') =>
-    dropdownLinks(key).find((l) => l.image)?.image || FALLBACK_FEATURE_IMG;
+  const featureImage = (key: DropdownKey) => dropdownLinks(key).find((l) => l.image)?.image || '';
 
   const NAV: NavItem[] = [
     { href: '/', label: 'Home' },
     { href: '/destinations', label: 'Destinations', dropdown: 'destinations' },
     { href: '/tours', label: 'Tours', dropdown: 'tours' },
+    { href: '/safari-styles', label: 'Safari Styles', dropdown: 'safariStyles' },
     { href: '/experiences', label: 'Experiences' },
-    { href: '/departures', label: 'Departures' },
     { href: '/expert-advice', label: 'Expert Advice' },
     { href: '/contact', label: 'Contact' }
   ];
@@ -56,11 +64,12 @@
   // Real CMS content only — no fabricated fallbacks. When a list is empty the
   // nav item renders as a plain link (its mega-menu dropdown is not shown).
   let destinations: NavLink[] = [];
+  let tours: NavLink[] = [];
   let categories: NavLink[] = [];
 
   let menuOpen = false;
-  let openDropdown: '' | 'destinations' | 'tours' = '';
-  let mobileAccordion: '' | 'destinations' | 'tours' = '';
+  let openDropdown: '' | DropdownKey = '';
+  let mobileAccordion: '' | DropdownKey = '';
   let searchQuery = '';
   let scrolled = false;
 
@@ -98,9 +107,9 @@
   $: supportEmail = settingText(s, 'contact_email') || 'hello@goldfinch.local';
   $: supportPhone = settingText(s, 'contact_phone') || waNumber;
 
-  const dropdownLinks = (key: 'destinations' | 'tours') => (key === 'destinations' ? destinations : categories);
+  const dropdownLinks = (key: DropdownKey) => (key === 'destinations' ? destinations : key === 'tours' ? tours : categories);
 
-  const toggleDropdown = (key: 'destinations' | 'tours') => {
+  const toggleDropdown = (key: DropdownKey) => {
     openDropdown = openDropdown === key ? '' : key;
   };
 
@@ -115,16 +124,23 @@
   onMount(() => {
     const loadNav = async () => {
       try {
-        const res = await api.destinations.list({ status: 'published', limit: 8 });
+        const res = await api.destinations.list({ status: 'published', limit: 9 });
         const items = res.data.items ?? [];
         if (items.length) destinations = items.map((d) => ({ label: String(d.name ?? d.slug), href: `/destinations/${d.slug}`, image: d.main_image_url || d.image_url || d.banner_image_url || undefined, description: (d.short_description as string) || (d.description as string) || undefined }));
       } catch {
         // keep fallback
       }
       try {
-        const res = await api.categories.list({ status: 'published', limit: 8 });
+        const res = await api.tours.list({ status: 'published', limit: 9 });
         const items = res.data.items ?? [];
-        if (items.length) categories = items.map((c) => ({ label: String(c.name ?? c.slug), href: `/tours?category=${c.slug}`, image: (c.image_url as string) || undefined, description: (c.description as string) || (c.who_its_for as string) || undefined }));
+        if (items.length) tours = items.map((t) => ({ label: String(t.title ?? t.slug), href: `/tours/${t.slug}`, image: t.main_image_url || t.banner_image_url || undefined, description: t.short_description || t.full_description || undefined }));
+      } catch {
+        // keep fallback
+      }
+      try {
+        const res = await api.categories.list({ status: 'published', limit: 9 });
+        const items = res.data.items ?? [];
+        if (items.length) categories = items.map((c) => ({ label: String(c.name ?? c.slug), href: `/safari-styles/${c.slug}`, image: c.image_url || c.icon_url || undefined, description: c.description || c.who_its_for || undefined }));
       } catch {
         // keep fallback
       }
@@ -242,7 +258,7 @@
         {/if}
         {#each NAV as item}
           {@const active = isActive(path, item.href)}
-          {@const links = item.dropdown === 'destinations' ? destinations : item.dropdown === 'tours' ? categories : []}
+          {@const links = item.dropdown === 'destinations' ? destinations : item.dropdown === 'tours' ? tours : item.dropdown === 'safariStyles' ? categories : []}
           {#if item.dropdown && links.length}
             <!-- svelte-ignore a11y-no-static-element-interactions -->
             <div class="nav-dropdown relative" on:mouseenter={() => (openDropdown = item.dropdown ?? '')} on:mouseleave={() => (openDropdown = '')}>
@@ -271,62 +287,74 @@
               {#if openDropdown === item.dropdown}
                 {@const feat = FEATURE[item.dropdown]}
                 {@const meta = MENU_META[item.dropdown]}
+                {@const featureImg = featureImage(item.dropdown)}
+                {@const previewLinks = links.slice(0, 6)}
                 <div
                   id={`dd-${item.dropdown}`}
-                  class="absolute left-0 top-full z-50 grid w-[860px] max-w-[calc(100vw-2rem)] grid-cols-[1fr_336px] overflow-hidden rounded-2xl border border-ink/10 bg-surface shadow-[0_24px_60px_rgba(57,61,50,0.18)]"
+                  class={`fixed left-1/2 ${scrolled ? 'top-[54px]' : 'top-[134px]'} z-50 grid w-[1080px] max-w-[calc(100vw-2rem)] -translate-x-1/2 grid-cols-[minmax(0,1fr)_360px] overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-[0_26px_76px_rgba(57,61,50,0.22)]`}
                   role="menu"
                   transition:fly={{ y: 6, duration: 140 }}
                 >
-                  <!-- left: header + thumbnail card grid + view-all pill -->
-                  <div class="p-5">
-                    <div class="flex items-center justify-between gap-3 border-b border-black/5 pb-4">
+                  <!-- left: header + thumbnail card grid + view-all action -->
+                  <div class="min-w-0 p-5">
+                    <div class="flex items-center justify-between gap-4 border-b border-ink/[0.08] pb-4">
                       <div class="flex items-center gap-3">
-                        <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-goldfinch-gold/12 text-goldfinch-gold ring-1 ring-goldfinch-gold/25">
-                          <svelte:component this={meta.icon} size={20} strokeWidth={2} />
+                        <span class="grid h-12 w-12 shrink-0 place-items-center rounded-[8px] bg-goldfinch-gold/12 text-goldfinch-gold ring-1 ring-goldfinch-gold/25">
+                          <svelte:component this={meta.icon} size={21} strokeWidth={2.2} />
                         </span>
                         <div class="min-w-0">
-                          <p class="text-sm font-extrabold uppercase tracking-[0.08em] text-heading">{meta.title}</p>
-                          <p class="truncate text-xs text-ink/55">{meta.subtitle}</p>
+                          <p class="text-[13px] font-extrabold uppercase tracking-[0.12em] text-goldfinch-gold">{meta.title}</p>
+                          <p class="mt-1 text-sm font-medium text-ink/60">{meta.subtitle}</p>
                         </div>
                       </div>
-                      <a href={item.href} class="grid h-9 w-9 shrink-0 place-items-center rounded-full text-goldfinch-gold ring-1 ring-goldfinch-gold/30 transition hover:bg-goldfinch-gold hover:text-white" role="menuitem" aria-label={meta.viewAll}>
-                        <ArrowRight size={16} strokeWidth={2.4} />
+                      <a href={item.href} class="inline-flex h-10 shrink-0 items-center gap-2 rounded-[8px] border border-goldfinch-gold/35 px-4 text-sm font-bold text-clay transition hover:bg-goldfinch-gold hover:text-heading" role="menuitem" aria-label={meta.viewAll}>
+                        {meta.viewAll}
+                        <ArrowRight size={15} strokeWidth={2.5} />
                       </a>
                     </div>
 
-                    <div class="mt-3 grid grid-cols-2 gap-1">
-                      {#each links as link (link.href)}
-                        <a class="group/li flex items-center gap-3 rounded-xl p-2 transition hover:bg-sand/60" href={link.href} role="menuitem">
-                          <span class={`grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg ${link.image ? 'bg-deep-green' : 'bg-gradient-to-br from-sand to-savanna/45 ring-1 ring-goldfinch-gold/20'}`}>
+                    <div class="mt-4 grid grid-cols-2 gap-2.5">
+                      {#each previewLinks as link (link.href)}
+                        <a class="group/li flex min-h-[88px] items-start gap-3 rounded-[8px] border border-transparent p-3 transition hover:border-goldfinch-gold/25 hover:bg-canvas" href={link.href} role="menuitem">
+                          <span class={`grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-[6px] ${link.image ? 'bg-deep-green' : 'bg-sand ring-1 ring-goldfinch-gold/20'}`}>
                             {#if link.image}
-                              <img class="h-full w-full object-cover transition duration-500 group-hover/li:scale-105" src={link.image} alt={link.label} loading="lazy" />
+                              <img class="h-full w-full object-cover transition duration-500 group-hover/li:scale-105" src={imgUrl(link.image, 160)} alt={link.label} loading="lazy" decoding="async" />
                             {:else}
-                              <svelte:component this={item.dropdown === 'destinations' ? MapPin : Compass} size={18} strokeWidth={2} class="text-forest/55 transition group-hover/li:text-forest" />
+                              <svelte:component this={item.dropdown === 'destinations' ? MapPin : item.dropdown === 'tours' ? TicketsPlane : Compass} size={18} strokeWidth={2} class="text-forest/55 transition group-hover/li:text-forest" />
                             {/if}
                           </span>
                           <span class="min-w-0 flex-1">
-                            <span class="block truncate text-sm font-bold text-heading transition group-hover/li:text-forest">{link.label}</span>
-                            {#if link.description}<span class="mt-0.5 line-clamp-2 text-[11.5px] leading-tight text-ink/55">{link.description}</span>{/if}
+                            <span class="block text-[14px] font-extrabold leading-5 text-heading transition group-hover/li:text-forest">{link.label}</span>
+                            {#if link.description}<span class="mega-menu-subtitle mt-1 block text-[12px] font-medium leading-[18px] text-ink/58" title={link.description}>{link.description}</span>{/if}
                           </span>
-                          <ChevronRight size={16} strokeWidth={2.4} class="shrink-0 text-ink/25 transition group-hover/li:translate-x-0.5 group-hover/li:text-goldfinch-gold" />
                         </a>
                       {/each}
                     </div>
 
-                    <a href={item.href} class="mt-3 flex items-center justify-center gap-2 rounded-xl bg-sand/70 py-2.5 text-sm font-bold text-heading transition hover:bg-sand" role="menuitem">
-                      <MapPin size={15} strokeWidth={2.4} /> {meta.viewAll}
+                    <a href={item.href} class="mt-4 flex h-11 items-center justify-between gap-4 rounded-[8px] border border-ink/10 bg-sand/55 px-4 text-sm font-bold text-heading transition hover:border-goldfinch-gold/30 hover:bg-sand" role="menuitem">
+                      <span class="inline-flex items-center gap-2">
+                        <svelte:component this={meta.icon} size={16} strokeWidth={2.4} />
+                        {meta.viewAll}
+                      </span>
+                      <span class="text-xs font-semibold text-ink/50">{links.length} option{links.length === 1 ? '' : 's'}</span>
                     </a>
                   </div>
 
                   <!-- right: featured image panel with gold CTA -->
-                  <a href={feat.href} class="group/feat relative m-3 block overflow-hidden rounded-2xl bg-deep-green" role="menuitem" aria-label={feat.cta}>
-                    <img class="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover/feat:scale-105" src={featureImage(item.dropdown)} alt={feat.title} loading="lazy" />
-                    <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-deep-green/45 to-deep-green/5"></div>
-                    <div class="relative flex min-h-[360px] flex-col justify-end p-5 text-white">
-                      <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-goldfinch-gold">{feat.eyebrow}</p>
-                      <p class="mt-1.5 text-2xl font-extrabold leading-tight">{feat.title}</p>
-                      <p class="mt-2 text-xs leading-5 text-white/80">{feat.blurb}</p>
-                      <span class="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-goldfinch-gold px-4 py-3 text-sm font-bold text-heading transition group-hover/feat:brightness-105">
+                  <a href={feat.href} class="group/feat relative m-3.5 block min-h-[370px] overflow-hidden rounded-[8px] bg-deep-green" role="menuitem" aria-label={feat.cta}>
+                    {#if featureImg}
+                      <img class="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover/feat:scale-105" src={imgUrl(featureImg, 720)} alt={feat.title} loading="lazy" decoding="async" />
+                    {:else}
+                      <div class="absolute inset-0 grid place-items-center bg-deep-green text-goldfinch-gold/45">
+                        <svelte:component this={meta.icon} size={56} strokeWidth={1.7} />
+                      </div>
+                    {/if}
+                    <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-deep-green/58 to-deep-green/10"></div>
+                    <div class="absolute inset-x-0 bottom-0 p-6 text-white">
+                      <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-goldfinch-gold">{feat.eyebrow}</p>
+                      <p class="mt-2 text-2xl font-extrabold leading-tight">{feat.title}</p>
+                      <p class="mt-2.5 text-sm leading-6 text-white/82">{feat.blurb}</p>
+                      <span class="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-4 text-sm font-bold text-heading transition group-hover/feat:brightness-105">
                         {feat.cta} <ArrowRight size={15} strokeWidth={2.6} class="transition-transform group-hover/feat:translate-x-0.5" />
                       </span>
                     </div>
@@ -413,20 +441,41 @@
         <nav class="mt-5 grid gap-1" aria-label="Mobile">
           {#each NAV as item}
             {@const active = isActive(path, item.href)}
-            {@const links = item.dropdown === 'destinations' ? destinations : item.dropdown === 'tours' ? categories : []}
+            {@const links = item.dropdown === 'destinations' ? destinations : item.dropdown === 'tours' ? tours : item.dropdown === 'safariStyles' ? categories : []}
             {#if item.dropdown && links.length}
-              <div class="rounded-xl">
+              <div class="rounded-[8px]">
                 <div class="flex items-center">
-                  <a class={`flex-1 rounded-xl px-3 py-3 text-[17px] font-semibold transition ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink'}`} href={item.href} on:click={() => (menuOpen = false)}>{item.label}</a>
-                  <button class="grid h-11 w-11 place-items-center rounded-xl text-ink/70 transition hover:bg-sand/50" type="button" aria-expanded={mobileAccordion === item.dropdown} aria-label={`Toggle ${item.label}`} on:click={() => (mobileAccordion = mobileAccordion === item.dropdown ? '' : (item.dropdown ?? ''))}>
+                  <a class={`flex-1 rounded-[8px] px-3 py-3 text-[17px] font-semibold transition ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink'}`} href={item.href} on:click={() => (menuOpen = false)}>{item.label}</a>
+                  <button class="grid h-11 w-11 place-items-center rounded-[8px] text-ink/70 transition hover:bg-sand/50" type="button" aria-expanded={mobileAccordion === item.dropdown} aria-label={`Toggle ${item.label}`} on:click={() => (mobileAccordion = mobileAccordion === item.dropdown ? '' : (item.dropdown ?? ''))}>
                     <ChevronDown size={18} strokeWidth={2.6} class={`transition-transform ${mobileAccordion === item.dropdown ? 'rotate-180' : ''}`} />
                   </button>
                 </div>
                 {#if mobileAccordion === item.dropdown}
-                  <div class="grid gap-0.5 pb-2 pl-3" transition:fly={{ y: -4, duration: 150 }}>
+                  {@const meta = MENU_META[item.dropdown]}
+                  <div class="mb-2 grid gap-2 rounded-[8px] border border-ink/10 bg-canvas p-2" transition:fly={{ y: -4, duration: 150 }}>
                     {#each links as link (link.href)}
-                      <a class="rounded-lg px-3 py-2 text-[15px] font-medium text-ink/65 transition hover:bg-sand/50 hover:text-forest" href={link.href} on:click={() => (menuOpen = false)}>{link.label}</a>
+                      <a class="group/mobile-link flex min-h-[70px] items-center gap-3 rounded-[6px] px-2 py-2 transition hover:bg-sand/60" href={link.href} on:click={() => (menuOpen = false)}>
+                        <span class={`grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-[6px] ${link.image ? 'bg-deep-green' : 'bg-sand ring-1 ring-goldfinch-gold/20'}`}>
+                          {#if link.image}
+                            <img class="h-full w-full object-cover" src={imgUrl(link.image, 120)} alt={link.label} loading="lazy" decoding="async" />
+                          {:else}
+                            <svelte:component this={item.dropdown === 'destinations' ? MapPin : item.dropdown === 'tours' ? TicketsPlane : Compass} size={17} strokeWidth={2} class="text-forest/60" />
+                          {/if}
+                        </span>
+                        <span class="min-w-0 flex-1">
+                          <span class="block text-[15px] font-bold leading-5 text-heading transition group-hover/mobile-link:text-forest">{link.label}</span>
+                          {#if link.description}<span class="mega-menu-subtitle mt-0.5 text-[12px] leading-4 text-ink/55" title={link.description}>{link.description}</span>{/if}
+                        </span>
+                        <ChevronRight size={16} strokeWidth={2.5} class="shrink-0 text-ink/25" />
+                      </a>
                     {/each}
+                    <a href={item.href} class="flex h-10 items-center justify-between rounded-[6px] bg-sand/70 px-3 text-sm font-bold text-heading transition hover:bg-sand" on:click={() => (menuOpen = false)}>
+                      <span class="inline-flex items-center gap-2">
+                        <svelte:component this={meta.icon} size={15} strokeWidth={2.4} />
+                        {meta.viewAll}
+                      </span>
+                      <ArrowRight size={15} strokeWidth={2.5} />
+                    </a>
                   </div>
                 {/if}
               </div>
@@ -460,3 +509,13 @@
     </div>
   {/if}
 </header>
+
+<style>
+  .mega-menu-subtitle {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+</style>
