@@ -1,10 +1,11 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { get } from 'svelte/store';
-  import { AlertCircle, CheckCircle2, Copy, MapPin, Scale, ShieldCheck } from '@lucide/svelte';
+  import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, Copy, MapPin, MessageCircle, Scale, ShieldCheck } from '@lucide/svelte';
   import { page } from '$app/stores';
   import { getAttribution, trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
+  import { brand } from '$lib/brand';
   import { defaultSpecialist } from '$lib/data/specialists';
   import { publicSettings, settingText } from '$lib/settings';
   import { shortlist } from '$lib/shortlist';
@@ -192,6 +193,91 @@
     }
   });
 
+  // ── Stepper ────────────────────────────────────────────────────────────────
+  const STEPS = [
+    { key: 'contact', label: 'You' },
+    { key: 'trip', label: 'Trip' },
+    { key: 'prefs', label: 'Preferences' },
+    { key: 'notes', label: 'Notes' },
+    { key: 'review', label: 'Review' }
+  ];
+  const LAST = STEPS.length - 1;
+  let step = 0;
+
+  // Which fields belong to which step, so we can validate one step at a time.
+  const STEP_FIELDS: string[][] = [
+    ['full_name', 'email', 'phone', 'country'],
+    ['destination_interest', 'experience_interests', 'travel_month', 'exact_start_date', 'exact_end_date'],
+    ['budget_per_person', 'traveller_type', 'number_of_adults', 'number_of_children'],
+    [],
+    []
+  ];
+
+  // ── Review summary + WhatsApp handoff ──────────────────────────────────────
+  $: paxLabel = `${number_of_adults} adult${Number(number_of_adults) === 1 ? '' : 's'}${
+    Number(number_of_children) > 0 ? `, ${number_of_children} child${Number(number_of_children) === 1 ? '' : 'ren'}` : ''
+  }`;
+  $: summaryRows = (() => {
+    const rows: { label: string; value: string }[] = [];
+    const add = (label: string, value: string) => {
+      if (value && value.trim()) rows.push({ label, value: value.trim() });
+    };
+    if (tripContext) add('Trip', tripContext);
+    add('Name', full_name);
+    add('Email', email);
+    add('Phone / WhatsApp', phone);
+    add('Country', country);
+    add('Destination', destination_interest);
+    add('Experiences', experience_interests.join(', '));
+    add('When', wantsExactDates && exact_start_date ? `${exact_start_date}${exact_end_date ? ` → ${exact_end_date}` : ''}` : travel_month);
+    add('Dates flexible', date_flexibility);
+    add('Duration', trip_duration);
+    add('Travellers', `${paxLabel}${traveller_type ? ` · ${traveller_type}` : ''}`);
+    add('Budget per person', budget_per_person);
+    add('Accommodation', accommodation_preference);
+    add('Notes', message);
+    return rows;
+  })();
+
+  $: waDigits = (settingText($publicSettings, 'whatsapp_number') || '+255 700 000 000').replace(/[^0-9]/g, '');
+  $: waText = [`Hello ${brand.name}, I'd like to plan a trip:`, ...summaryRows.map((r) => `• ${r.label}: ${r.value}`)].join('\n');
+  $: waHref = `https://wa.me/${waDigits}?text=${encodeURIComponent(waText)}`;
+  const onWhatsApp = () => trackEvent('whatsapp_click', { cta_location: 'plan_my_trip_review' });
+
+  const validateStep = async (index: number): Promise<boolean> => {
+    validate(); // fills `errors` for the whole form
+    const own = STEP_FIELDS[index].filter((f) => errors[f]);
+    // Keep only this step's errors visible so later steps don't light up early.
+    errors = Object.fromEntries(Object.entries(errors).filter(([k]) => STEP_FIELDS[index].includes(k)));
+    if (own.length) {
+      errorMessage = 'Please check the highlighted fields and try again.';
+      await tick();
+      (bodyEl?.querySelector('[data-error]') as HTMLElement | null)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      return false;
+    }
+    errorMessage = '';
+    return true;
+  };
+
+  const next = async () => {
+    if (!(await validateStep(step))) return;
+    if (step < LAST) step += 1;
+    await tick();
+    bodyEl?.scrollTo?.({ top: 0 });
+  };
+  const back = () => {
+    errorMessage = '';
+    errors = {};
+    if (step > 0) step -= 1;
+  };
+  const goStep = (i: number) => {
+    if (i < step) {
+      step = i;
+      errorMessage = '';
+      errors = {};
+    }
+  };
+
   const validate = (): boolean => {
     const e: Record<string, string> = {};
     if (full_name.trim().length < 2) e.full_name = 'Please enter your full name.';
@@ -218,6 +304,11 @@
 
   const submit = async () => {
     if (submitting) return;
+    // Enter on an earlier step advances instead of submitting early.
+    if (step < LAST) {
+      await next();
+      return;
+    }
     errorMessage = '';
 
     // Honeypot tripped → behave like a normal success without sending anything.
@@ -228,6 +319,9 @@
 
     if (!validate()) {
       errorMessage = 'Please check the highlighted fields and try again.';
+      // Jump back to the first step that still has a problem.
+      const bad = STEP_FIELDS.findIndex((fields) => fields.some((f) => errors[f]));
+      if (bad >= 0) step = bad;
       await tick();
       (bodyEl?.querySelector('[data-error]') as HTMLElement | null)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
       return;
@@ -293,6 +387,7 @@
     bookingCode = '';
     errors = {};
     errorMessage = '';
+    step = 0;
   };
 
   const copyCode = async () => {
@@ -382,9 +477,31 @@
       </div>
     {/if}
 
+    <!-- step indicator -->
+    <ol class="mt-5 flex items-center">
+      {#each STEPS as st, i}
+        <li class="flex items-center {i < STEPS.length - 1 ? 'flex-1' : ''}">
+          <button
+            type="button"
+            class={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-bold transition ${
+              i < step ? 'bg-forest text-white' : i === step ? 'bg-goldfinch-gold text-heading ring-4 ring-goldfinch-gold/20' : 'bg-sand text-ink/45'
+            } ${i < step ? 'cursor-pointer' : 'cursor-default'}`}
+            on:click={() => goStep(i)}
+            disabled={i >= step}
+            aria-current={i === step ? 'step' : undefined}
+            aria-label={`Step ${i + 1}: ${st.label}`}
+          >
+            {#if i < step}<Check size={13} strokeWidth={3} />{:else}{i + 1}{/if}
+          </button>
+          <span class={`ml-1.5 hidden text-[11px] font-semibold sm:block ${i === step ? 'text-heading' : 'text-ink/45'}`}>{st.label}</span>
+          {#if i < STEPS.length - 1}<span class={`mx-1.5 h-0.5 flex-1 rounded ${i < step ? 'bg-forest' : 'bg-sand'}`}></span>{/if}
+        </li>
+      {/each}
+    </ol>
+
     <div class="mt-5 grid gap-5" bind:this={bodyEl}>
       <!-- ── Contact details ───────────────────────────────────────────────── -->
-      <fieldset class="grid gap-4">
+      <fieldset class="grid gap-4" class:hidden={step !== 0}>
         <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Contact details</legend>
         <div class="grid gap-4 md:grid-cols-2">
           <label class="grid gap-1.5 text-sm font-medium text-ink">
@@ -413,7 +530,7 @@
       </fieldset>
 
       <!-- ── Trip idea ─────────────────────────────────────────────────────── -->
-      <fieldset class="grid gap-4 border-t border-ink/10 pt-4">
+      <fieldset class="grid gap-4" class:hidden={step !== 1}>
         <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Trip idea</legend>
         <label class="grid gap-1.5 text-sm font-medium text-ink">
           <span>Destination interest</span>
@@ -478,7 +595,7 @@
       </fieldset>
 
       <!-- ── Travel preferences ────────────────────────────────────────────── -->
-      <fieldset class="grid gap-4 border-t border-ink/10 pt-4">
+      <fieldset class="grid gap-4" class:hidden={step !== 2}>
         <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Travel preferences</legend>
         <div class="grid gap-4 md:grid-cols-2">
           <label class="grid gap-1.5 text-sm font-medium text-ink">
@@ -529,7 +646,7 @@
       </fieldset>
 
       <!-- ── Notes ─────────────────────────────────────────────────────────── -->
-      <fieldset class="grid gap-4 border-t border-ink/10 pt-4">
+      <fieldset class="grid gap-4" class:hidden={step !== 3}>
         <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Notes</legend>
         <label class="grid gap-1.5 text-sm font-medium text-ink">
           <span>Trip notes</span>
@@ -541,6 +658,33 @@
           ></textarea>
         </label>
       </fieldset>
+
+      <!-- ── Review + WhatsApp handoff ─────────────────────────────────────── -->
+      {#if step === 4}
+        <div class="grid gap-4">
+          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Review your request</p>
+          <div class="overflow-hidden rounded-xl border border-ink/10">
+            <dl class="divide-y divide-ink/[0.08]">
+              {#each summaryRows as r}
+                <div class="grid grid-cols-[120px_1fr] gap-3 px-4 py-2.5 text-sm">
+                  <dt class="font-medium text-ink/55">{r.label}</dt>
+                  <dd class="font-semibold text-heading">{r.value}</dd>
+                </div>
+              {/each}
+            </dl>
+          </div>
+          <a
+            href={waHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            on:click={onWhatsApp}
+            class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 text-sm font-bold text-white shadow-sm transition hover:brightness-105"
+          >
+            <MessageCircle size={17} /> Continue on WhatsApp
+          </a>
+          <p class="text-center text-xs text-ink/55">Send these details straight to our team, or submit below and we'll email you back.</p>
+        </div>
+      {/if}
     </div>
 
     <!-- Honeypot: hidden from humans, tempting to bots. -->
@@ -556,7 +700,20 @@
     {/if}
 
     <div class="mt-5">
-      <Button type="submit" className="w-full">{submitting ? 'Sending your request...' : 'Send My Trip Request'}</Button>
+      <div class="flex items-center gap-3">
+        {#if step > 0}
+          <button type="button" class="inline-flex h-12 shrink-0 items-center gap-1.5 rounded-md border border-ink/15 bg-surface px-5 text-sm font-bold text-ink/75 transition hover:bg-sand" on:click={back}>
+            <ArrowLeft size={16} /> Back
+          </button>
+        {/if}
+        {#if step < LAST}
+          <button type="button" class="inline-flex h-12 flex-1 items-center justify-center gap-1.5 rounded-md bg-forest px-5 text-sm font-semibold text-white transition hover:bg-black" on:click={next}>
+            Continue <ArrowRight size={16} />
+          </button>
+        {:else}
+          <Button type="submit" className="flex-1">{submitting ? 'Sending your request...' : 'Send My Trip Request'}</Button>
+        {/if}
+      </div>
       <p class="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-ink/70">
         <ShieldCheck size={13} class="text-forest" />
         Your details are kept private and used only to plan your trip.
