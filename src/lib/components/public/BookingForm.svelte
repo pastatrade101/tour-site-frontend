@@ -8,6 +8,7 @@
   import { publicSettings, settingText } from '$lib/settings';
   import Button from './Button.svelte';
   import CountrySelect from './CountrySelect.svelte';
+  import CategoryPicker from './CategoryPicker.svelte';
   import type { Tour } from '$lib/types';
 
   export let tour: Tour | null = null;
@@ -480,17 +481,13 @@
         <fieldset class="grid gap-4">
           <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Preferences</legend>
           <div class="grid gap-2">
-            <span>What are you interested in? <span class="font-normal text-ink/70">(select any)</span></span>
-            <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {#each INTERESTS as interest}
-                <label class={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${
-                  travel_interests.includes(interest) ? 'border-forest bg-forest/[0.07] font-semibold text-heading' : 'border-ink/12 bg-surface text-ink/70 hover:border-forest/40'
-                }`}>
-                  <input type="checkbox" class="h-4 w-4 accent-forest" checked={travel_interests.includes(interest)} on:change={() => toggleInterest(interest)} />
-                  {interest}
-                </label>
-              {/each}
-            </div>
+            <span class="gf-label">What are you interested in? <span class="gf-hint">(select any)</span></span>
+            <CategoryPicker
+              selected={travel_interests}
+              fallbackOptions={INTERESTS}
+              tone="light"
+              onToggle={toggleInterest}
+            />
           </div>
           <label class="grid gap-1.5">
             <span class="gf-label">Accommodation preference</span>

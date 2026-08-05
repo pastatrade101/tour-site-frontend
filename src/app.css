@@ -229,6 +229,24 @@ select {
   .gf-panel-dark .gf-label {
     @apply text-white/60;
   }
+  /* Controls blend into the brand panel with a thin gold hairline instead of
+     sitting on white blocks. color-scheme keeps native date/select pickers dark. */
+  .gf-panel-dark .gf-input,
+  .gf-panel-dark .gf-textarea {
+    @apply border-goldfinch-gold/35 bg-white/[0.05] text-white;
+    color-scheme: dark;
+  }
+  .gf-panel-dark .gf-input::placeholder,
+  .gf-panel-dark .gf-textarea::placeholder {
+    @apply text-white/40;
+  }
+  .gf-panel-dark .gf-input:focus,
+  .gf-panel-dark .gf-textarea:focus {
+    @apply border-goldfinch-gold bg-white/[0.08] ring-2 ring-goldfinch-gold/25;
+  }
+  .gf-panel-dark .gf-input option {
+    @apply bg-deep-green text-white;
+  }
   .gf-panel-dark .gf-hint {
     @apply text-white/45;
   }

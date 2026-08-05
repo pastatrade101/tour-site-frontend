@@ -12,6 +12,7 @@
   import Button from './Button.svelte';
   import CountrySelect from './CountrySelect.svelte';
   import FormStepper from './FormStepper.svelte';
+  import CategoryPicker from './CategoryPicker.svelte';
   import SpecialistCard from './SpecialistCard.svelte';
 
   $: bookCallUrl = settingText($publicSettings, 'booking_call_url');
@@ -514,20 +515,12 @@
         <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Trip idea</legend>
         <div class="grid gap-2">
           <span class="gf-label">What would you love to do? <span class="gf-hint">(select any)</span></span>
-          <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {#each experienceOptions as exp}
-              <label
-                class={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${
-                  experience_interests.includes(exp)
-                    ? 'border-goldfinch-gold bg-goldfinch-gold/15 font-semibold text-white'
-                    : 'border-white/20 bg-white/[0.04] text-white/75 hover:border-goldfinch-gold/50'
-                }`}
-              >
-                <input type="checkbox" class="h-4 w-4 accent-forest" checked={experience_interests.includes(exp)} on:change={() => toggleExperience(exp)} />
-                {exp}
-              </label>
-            {/each}
-          </div>
+          <CategoryPicker
+            selected={experience_interests}
+            fallbackOptions={experienceOptions}
+            tone="dark"
+            onToggle={toggleExperience}
+          />
           {#if errors.experience_interests}<span data-error class="text-xs text-red-600">{errors.experience_interests}</span>{/if}
         </div>
 
