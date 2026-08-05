@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { imgUrl } from '$lib/img';
+  import { trackEvent } from '$lib/analytics';
 
   type Cta = { label: string; href: string };
   type QuickLink = { label: string; href: string };
@@ -13,11 +15,36 @@
   export let imageUrl = '';
   export let trustPoints: string[] = [];
   export let quickLinks: QuickLink[] = [];
+  // Quick planner. `experiences` are REAL published tour categories, so the
+  // Experience select filters the tours page by an actual category slug.
+  export let experiences: { label: string; slug: string }[] = [];
+  export let originOptions: string[] = ['Kilimanjaro', 'Dar es Salaam', 'Zanzibar', 'Arusha', 'International'];
+  export let durationOptions: string[] = ['3–4 days', '5–7 days', '8–10 days', '11+ days'];
+
+  let origin = '';
+  let focus = '';
+  let duration = '';
+
+  // Every control feeds the destination URL: the chosen experience filters the
+  // tours list, and the starting point / length are carried into the planner
+  // brief so nothing the traveller picks is thrown away.
+  const findOptions = () => {
+    trackEvent('cta_click', { cta_name: 'Find my best options', cta_location: 'hero_quick_planner' });
+    const context = [origin ? `starting from ${origin}` : '', duration].filter(Boolean).join(', ');
+    if (focus && !context) {
+      void goto(`/tours?category=${encodeURIComponent(focus)}`);
+      return;
+    }
+    const params = new URLSearchParams();
+    if (focus) params.set('experience', focus);
+    if (context) params.set('topic', `Safari ${context}`);
+    void goto(params.toString() ? `/plan-my-trip?${params}` : '/tours');
+  };
   export let note = "No commitment. We'll simply help you understand what fits best.";
 
   $: hasPrimary = Boolean(primaryCta?.label && primaryCta?.href);
   $: hasSecondary = Boolean(secondaryCta?.label && secondaryCta?.href);
-  $: showPanel = quickLinks.length > 0 || hasPrimary;
+  $: showPanel = quickLinks.length > 0 || hasPrimary || experiences.length > 0;
 </script>
 
 <section data-hero class="relative isolate overflow-hidden">
@@ -87,28 +114,48 @@
           class="rounded-[14px] p-4 md:p-3"
           style="background: rgba(20,25,20,0.45); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15)"
         >
-          <div class="flex flex-wrap gap-3 md:flex-nowrap md:items-center md:justify-between md:gap-3">
-            {#if quickLinks.length}
-              <div class="flex flex-wrap items-center gap-2 md:gap-3">
-                {#each quickLinks as link}
-                  <a
-                    href={link.href}
-                    class="inline-flex h-11 items-center rounded-[8px] border border-white/20 bg-surface/95 px-3 text-[14px] text-heading transition-colors hover:bg-surface focus:outline-none focus:ring-2 focus:ring-goldfinch-gold"
-                  >
-                    {link.label}
-                  </a>
-                {/each}
-              </div>
-            {/if}
-            {#if hasPrimary}
-              <a
-                href={primaryCta.href}
-                data-cta="hero-quick-planner"
-                class="inline-flex h-11 w-full items-center justify-center rounded-[8px] bg-goldfinch-gold px-5 text-[14px] font-bold text-heading transition-colors hover:bg-goldfinch-gold/90 md:w-auto md:whitespace-nowrap"
+          <div class="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end md:gap-3">
+            <label class="block">
+              <span class="mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">Starting From</span>
+              <select
+                bind:value={origin}
+                class="h-11 w-full rounded-[8px] border border-white/20 bg-surface/95 px-3 text-[14px] text-heading focus:outline-none focus:ring-2 focus:ring-goldfinch-gold"
               >
-                {primaryCta.label}
-              </a>
-            {/if}
+                <option value="">Add a city</option>
+                {#each originOptions as city}<option value={city}>{city}</option>{/each}
+              </select>
+            </label>
+
+            <label class="block">
+              <span class="mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">Experience</span>
+              <select
+                bind:value={focus}
+                class="h-11 w-full rounded-[8px] border border-white/20 bg-surface/95 px-3 text-[14px] text-heading focus:outline-none focus:ring-2 focus:ring-goldfinch-gold"
+              >
+                <option value="">Pick a focus</option>
+                {#each experiences as e}<option value={e.slug}>{e.label}</option>{/each}
+              </select>
+            </label>
+
+            <label class="block">
+              <span class="mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">Days</span>
+              <select
+                bind:value={duration}
+                class="h-11 w-full rounded-[8px] border border-white/20 bg-surface/95 px-3 text-[14px] text-heading focus:outline-none focus:ring-2 focus:ring-goldfinch-gold"
+              >
+                <option value="">How many?</option>
+                {#each durationOptions as d}<option value={d}>{d}</option>{/each}
+              </select>
+            </label>
+
+            <button
+              type="button"
+              data-cta="hero-quick-planner"
+              on:click={findOptions}
+              class="h-11 w-full rounded-[8px] bg-goldfinch-gold px-5 text-[14px] font-bold text-heading transition hover:brightness-105 md:w-auto md:whitespace-nowrap"
+            >
+              {primaryCta.label}
+            </button>
           </div>
         </div>
       {/if}

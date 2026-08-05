@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ArrowLeft, ArrowRight, Star } from '@lucide/svelte';
+  import { ArrowLeft, ArrowRight, Camera, Star } from '@lucide/svelte';
+  import { imgUrl } from '$lib/img';
 
   // Traveller stories / verified reviews carousel. Renders ONLY from props:
   // if there are no usable reviews the whole section disappears. Star rows and
@@ -20,6 +21,11 @@
   export let title = 'Verified Reviews from Tanzania Travellers';
   export let sourcesLabel = 'TripAdvisor · SafariBookings · Google';
   export let reviews: StoryReview[] = [];
+  // "Moments from our travellers" marquee — real published gallery images only.
+  export let photosLabel = 'Moments from our travellers';
+  export let photos: { src: string; caption: string }[] = [];
+  $: marquee = photos.filter((p) => p?.src);
+
   export let summary: { average?: number | null; total?: number | null } | null = null;
   export let moreLabel = 'Read More Reviews';
   export let moreHref = '#reviews';
@@ -227,10 +233,55 @@
         </div>
       {/if}
     </div>
+
+    {#if marquee.length}
+      <div class="traveller-marquee relative left-1/2 right-1/2 mt-12 w-screen -translate-x-1/2 md:mt-14">
+        <div class="container-shell">
+          <div class="flex items-center gap-2">
+            <Camera size={16} class="text-clay" aria-hidden="true" />
+            <span class="text-[11px] font-semibold uppercase tracking-[0.16em] text-clay">{photosLabel}</span>
+          </div>
+        </div>
+
+        <div class="relative mt-5 w-screen overflow-hidden">
+          <ul class="traveller-marquee__track flex w-max gap-5 md:gap-6">
+            {#each [...marquee, ...marquee] as p, i (i)}
+              <li class="relative h-[240px] w-[190px] shrink-0 overflow-hidden rounded-[12px] shadow-[0_12px_28px_rgba(57,61,50,0.10)] md:h-[300px] md:w-[240px]">
+                <img class="h-full w-full object-cover" src={imgUrl(p.src, 480)} alt={p.caption} loading="lazy" decoding="async" />
+                <div class="pointer-events-none absolute inset-0" aria-hidden="true" style="background: linear-gradient(180deg, rgba(20,24,18,0) 45%, rgba(20,24,18,0.72) 100%)"></div>
+                {#if p.caption}
+                  <div class="absolute inset-x-0 bottom-0 p-3">
+                    <div class="text-[13px] font-bold text-white md:text-[14.5px]">{p.caption}</div>
+                  </div>
+                {/if}
+              </li>
+            {/each}
+          </ul>
+        </div>
+      </div>
+    {/if}
   </section>
 {/if}
 
 <style>
+  @keyframes traveller-marquee-scroll {
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-50%, 0, 0); }
+  }
+  .traveller-marquee__track {
+    animation: traveller-marquee-scroll 60s linear infinite;
+    will-change: transform;
+  }
+  @media (max-width: 767px) {
+    .traveller-marquee__track { animation-duration: 70s; }
+  }
+  .traveller-marquee:hover .traveller-marquee__track {
+    animation-play-state: paused;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .traveller-marquee__track { animation: none; overflow-x: auto; }
+  }
+
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;

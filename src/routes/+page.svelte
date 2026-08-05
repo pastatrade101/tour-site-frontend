@@ -227,6 +227,7 @@
       href: typeof heroExtra.secondary_cta_url === 'string' ? heroExtra.secondary_cta_url : '/contact'
     }}
     trustPoints={arr(heroExtra.trust_points)}
+    experiences={experienceItems.map((e) => ({ label: e.name, slug: e.slug }))}
   />
 {/if}
 
@@ -300,8 +301,12 @@
   <HomeTravellerStories
     {reviews}
     summary={reviewSummary}
-    eyebrow={cmsExtra('reviews_section', 'eyebrow', 'What Travellers Say')}
-    title={cms('reviews_section', 'title', 'Reviews from Tanzania Travellers')}
+    eyebrow={cmsExtra('reviews_section', 'eyebrow', 'Traveller Stories')}
+    title={cms('reviews_section', 'title', 'Travellers Who Planned Tanzania With Us')}
+    photos={galleryDisplay
+      .filter((g) => typeof g.image_url === 'string' && g.image_url)
+      .slice(0, 10)
+      .map((g) => ({ src: String(g.image_url), caption: String(g.title ?? g.alt_text ?? '') }))}
   />
 {/if}
 
