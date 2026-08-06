@@ -30,10 +30,11 @@
   };
 </script>
 
-<div class="rounded-[12px] bg-surface p-3 shadow-[0_24px_60px_rgba(57,61,50,0.16)] md:p-4">
-  <div class="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,0.75fr))_auto] lg:items-stretch">
+<!-- Shell matches TourFilterBar so the two filter surfaces read as one system. -->
+<div class="rounded-[14px] border border-ink/10 bg-surface p-2 shadow-[0_10px_30px_rgba(57,61,50,0.08)]">
+  <div class="grid gap-1 lg:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,0.7fr))_auto] lg:items-stretch">
     <!-- free-text -->
-    <div class="flex h-14 items-center gap-3 rounded-[10px] bg-sand/40 px-4 transition focus-within:bg-sand/60 focus-within:ring-2 focus-within:ring-goldfinch-gold/40">
+    <div class="flex h-14 items-center gap-3 rounded-[10px] px-4 transition hover:bg-sand/50 focus-within:bg-sand/50 focus-within:ring-2 focus-within:ring-goldfinch-gold/40">
       <Search size={18} class="shrink-0 text-ink/40" aria-hidden="true" />
       <input
         class="h-full min-w-0 flex-1 bg-transparent text-[15px] font-medium text-heading outline-none placeholder:text-ink/40"
@@ -56,10 +57,10 @@
 
     <!-- one select per facet group -->
     {#each groups.slice(0, 3) as group (group.key)}
-      <label class="flex h-14 flex-col justify-center rounded-[10px] bg-sand/40 px-4 transition focus-within:bg-sand/60 focus-within:ring-2 focus-within:ring-goldfinch-gold/40">
-        <span class="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/45">{group.label}</span>
+      <label class="flex h-14 min-w-0 flex-col justify-center gap-0.5 rounded-[10px] border-l border-ink/8 px-4 transition hover:bg-sand/50 focus-within:bg-sand/50 focus-within:ring-2 focus-within:ring-goldfinch-gold/40">
+        <span class="gf-label">{group.label}</span>
         <select
-          class="-ml-0.5 mt-0.5 w-full cursor-pointer appearance-none bg-transparent text-sm font-bold text-heading outline-none"
+          class="-ml-0.5 w-full cursor-pointer appearance-none truncate bg-transparent text-sm font-bold text-heading outline-none"
           value={valueFor(group)}
           on:change={(event) => onSelect(group, event)}
         >
@@ -73,7 +74,7 @@
 
     <button
       type="button"
-      class="inline-flex h-14 items-center justify-center gap-2 rounded-[10px] bg-heading px-7 text-sm font-bold text-white transition hover:bg-deep-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold lg:px-9"
+      class="inline-flex h-14 items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-7 text-sm font-extrabold text-heading transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold lg:px-8"
       on:click={() => document.getElementById('all-destinations')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
     >
       <Search size={17} aria-hidden="true" />
@@ -81,7 +82,7 @@
     </button>
   </div>
 
-  <div class="mt-3 flex flex-wrap items-center gap-2 px-1 pb-1">
+  <div class="mt-1 flex flex-wrap items-center gap-2 border-t border-ink/8 px-3 pb-1 pt-3">
     <span class="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/40">Popular</span>
     {#each popular as item (item.href)}
       <a

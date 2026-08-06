@@ -2,7 +2,7 @@
   import { ArrowRight, Check, Compass, Gauge, Search, Sparkles, Users } from '@lucide/svelte';
   import EmptyState from '$lib/components/public/EmptyState.svelte';
   import { fadeUpOnScroll, revealHeading, staggeredCardReveal, tilt } from '$lib/animations';
-  import { imgUrl, thumbUrl } from '$lib/img';
+  import { imgUrl, sourceFor, thumbUrl } from '$lib/img';
   import type { TourCategory } from '$lib/types';
   import type { PageData } from './$types';
 
@@ -10,7 +10,8 @@
 
   let query = '';
   $: categories = (data.categories ?? []) as TourCategory[];
-  $: heroImage = thumbUrl(categories.find((category) => category.image_url), 'image_url');
+  // full-bleed hero: the 600px thumbnail would be upscaled
+  $: heroImage = sourceFor(categories.find((category) => category.image_url), 1800, 'image_url');
   $: filtered = categories.filter((category) => {
     const needle = query.trim().toLowerCase();
     if (!needle) return true;

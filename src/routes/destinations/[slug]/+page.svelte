@@ -28,7 +28,7 @@
   import LodgeCard from '$lib/components/public/LodgeCard.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { currency, formatUsd } from '$lib/currency';
-  import { imgUrl, thumbUrl } from '$lib/img';
+  import { imgUrl, thumbUrl, sourceFor } from '$lib/img';
   import { breadcrumbLd } from '$lib/seo';
   import type { Activity, Destination, FAQ, Lodge, Review, Tour, TourCategory, TripPoint } from '$lib/types';
   import type { DestinationGalleryImage } from './+page.server';
@@ -158,9 +158,9 @@
       );
     }
 
-    add(thumbUrl(destination, 'main_image_url'), destination.name, locationLabel);
-    add(thumbUrl(destination, 'image_url'), destination.name, locationLabel);
-    add(thumbUrl(destination, 'banner_image_url'), destination.name, locationLabel);
+    add(sourceFor(destination, 2000, 'main_image_url'), destination.name, locationLabel);
+    add(sourceFor(destination, 2000, 'image_url'), destination.name, locationLabel);
+    add(sourceFor(destination, 2000, 'banner_image_url'), destination.name, locationLabel);
 
     return images;
   };
@@ -241,7 +241,7 @@
       .map(({ category, name, slug, id, tours }) => {
         const prices = tours.map((tour) => positiveNumber(tour.price_from)).filter((price): price is number => price !== null);
         const days = tours.map((tour) => positiveNumber(tour.duration_days)).filter((day): day is number => day !== null);
-        const firstTourWithImage = tours.find((tour) => thumbUrl(tour, 'main_image_url', 'banner_image_url'));
+        const firstTourWithImage = tours.find((tour) => sourceFor(tour, 2000, 'main_image_url', 'banner_image_url'));
 
         return {
           id,
@@ -250,7 +250,7 @@
           description: text(category?.description) || text(category?.who_its_for),
           imageUrl:
             thumbUrl(category as Record<string, unknown> | undefined, 'image_url', 'icon_url') ||
-            thumbUrl(firstTourWithImage, 'main_image_url', 'banner_image_url'),
+            sourceFor(firstTourWithImage, 2000, 'main_image_url', 'banner_image_url'),
           tourCount: tours.length,
           minPrice: prices.length ? Math.min(...prices) : null,
           minDays: days.length ? Math.min(...days) : null,
@@ -342,8 +342,8 @@
   $: reviews = (data.reviews ?? []) as Review[];
   $: origin = data.origin ?? '';
 
-  $: heroImage = destination ? thumbUrl(destination, 'banner_image_url', 'main_image_url', 'image_url') : '';
-  $: mainImage = destination ? thumbUrl(destination, 'main_image_url', 'image_url', 'banner_image_url') : '';
+  $: heroImage = destination ? sourceFor(destination, 2000, 'banner_image_url', 'main_image_url', 'image_url') : '';
+  $: mainImage = destination ? sourceFor(destination, 2000, 'main_image_url', 'image_url', 'banner_image_url') : '';
   $: locationLabel = destination
     ? [destination.region, destination.country].filter(Boolean).join(', ') || destination.location || ''
     : '';

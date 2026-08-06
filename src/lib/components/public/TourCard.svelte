@@ -1,6 +1,6 @@
 <script lang="ts">
   import { trackEvent } from '$lib/analytics';
-  import { imgUrl, thumbUrl } from '$lib/img';
+  import { imgUrl, thumbUrl, sourceFor } from '$lib/img';
   import { tilt } from '$lib/animations';
   import { currency, formatUsd } from '$lib/currency';
   import { Image as ImageIcon } from '@lucide/svelte';
@@ -9,7 +9,7 @@
 
   export let tour: Tour;
 
-  $: tourImage = thumbUrl(tour, 'main_image_url', 'banner_image_url');
+  $: tourImage = sourceFor(tour, 700, 'main_image_url', 'banner_image_url');
   $: item = {
     slug: tour.slug,
     title: tour.title,

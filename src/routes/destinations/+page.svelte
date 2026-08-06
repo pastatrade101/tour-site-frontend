@@ -160,7 +160,7 @@
 <DestinationsHero {heroImage} total={destinations.length} {regions} />
 
 <!-- Search card straddles the hero seam -->
-<section class="relative z-10 -mt-12 md:-mt-16">
+<section class="relative z-10 -mt-10 md:-mt-14">
   <div class="container-shell">
     <DestinationSearchBar
       bind:value={search}
@@ -174,7 +174,7 @@
   </div>
 </section>
 
-<section class="bg-canvas pt-10 md:pt-14">
+<section class="bg-canvas pt-8 md:pt-10">
   <div class="container-shell">
     <ExperienceTiles
       facets={experienceFacets}
@@ -186,7 +186,7 @@
 </section>
 
 {#if featured.length && !isFiltering}
-  <section class="bg-canvas pt-12 md:pt-16">
+  <section class="bg-canvas pt-8 md:pt-12">
     <div class="container-shell">
       <FeaturedRail destinations={featured} />
     </div>
@@ -195,7 +195,7 @@
 
 {#if !isFiltering}
   {#each collections as collection (collection.key)}
-    <section class="border-t border-ink/8 bg-canvas py-14 md:py-20">
+    <section class="bg-canvas pt-10 md:pt-14">
       <div class="container-shell">
         <DiscoveryRail title={collection.title} blurb={collection.blurb} destinations={collection.items} />
       </div>
@@ -203,7 +203,7 @@
   {/each}
 {/if}
 
-<section id="all-destinations" class="scroll-mt-28 bg-sand/35 py-16 md:py-24">
+<section id="all-destinations" class="scroll-mt-28 bg-sand/35 py-14 md:py-18 mt-12 md:mt-16">
   <div class="container-shell">
     <div class="flex flex-wrap items-end justify-between gap-4" use:fadeUpOnScroll={{ y: 14 }}>
       <div class="max-w-2xl">

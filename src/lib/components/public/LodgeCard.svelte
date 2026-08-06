@@ -2,7 +2,7 @@
   import { Sparkles, Star } from '@lucide/svelte';
   import { tilt } from '$lib/animations';
   import { currency, formatUsd } from '$lib/currency';
-  import { imgUrl, thumbUrl } from '$lib/img';
+  import { imgUrl, thumbUrl, sourceFor } from '$lib/img';
   import type { Lodge } from '$lib/types';
 
   export let lodge: Lodge;
@@ -21,7 +21,7 @@
     treehouse: 'Treehouse'
   };
 
-  $: imageUrl = thumbUrl(lodge, 'image_url', 'hero_image_url');
+  $: imageUrl = sourceFor(lodge, 700, 'image_url', 'hero_image_url');
   $: priceLabel =
     lodge.price_per_night_from != null
       ? formatUsd(lodge.price_per_night_from, $currency)
