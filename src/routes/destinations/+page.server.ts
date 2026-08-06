@@ -13,7 +13,7 @@ const apiBase = (origin: string) => {
 export const load: PageServerLoad = async ({ url }) => {
   try {
     const base = apiBase(url.origin);
-    const res = await globalThis.fetch(`${base}/destinations?status=published&limit=100`);
+    const res = await globalThis.fetch(`${base}/destinations?status=published&limit=100&include=guide`);
     if (!res.ok) throw new Error(`Request failed (${res.status})`);
     const body = (await res.json()) as PaginatedBody<Destination>;
     return { destinations: body.data?.items ?? [] };
