@@ -14,7 +14,7 @@
    */
   import { ArrowRight } from '@lucide/svelte';
   import { bestFor, pairsWith, recommendedStay, travelStyle } from '$lib/destinationFacets';
-  import { imgUrl, thumbUrl } from '$lib/img';
+  import { imgUrl, sourceFor } from '$lib/img';
   import type { Destination } from '$lib/types';
 
   export let destination: Destination;
@@ -27,7 +27,8 @@
   let imageFailed = false;
 
   $: flipped = index % 2 === 1;
-  $: imageUrl = thumbUrl(destination, 'main_image_url', 'image_url', 'banner_image_url');
+  // large editorial split — always the original
+  $: imageUrl = sourceFor(destination, 1400, 'main_image_url', 'image_url', 'banner_image_url');
   $: imageUrl, (imageFailed = false);
   $: showImage = Boolean(imageUrl) && !imageFailed;
   $: summary = destination.short_description || destination.description || '';

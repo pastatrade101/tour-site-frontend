@@ -8,7 +8,7 @@
    * badge is the real `is_featured` flag rather than an invented popularity rank.
    */
   import { ArrowRight, ChevronLeft, ChevronRight, Clock } from '@lucide/svelte';
-  import { imgUrl, thumbUrl } from '$lib/img';
+  import { imgUrl, sourceFor } from '$lib/img';
   import { recommendedStay, regionOf, wildlifeOf, experiencesOf } from '$lib/destinationFacets';
   import type { Destination } from '$lib/types';
 
@@ -21,7 +21,9 @@
   let atEnd = false;
 
   const imageOf = (destination: Destination) =>
-    thumbUrl(destination, 'main_image_url', 'image_url', 'banner_image_url');
+    // 300px card at 2x DPR = 600px, exactly the thumbnail width, so the small
+    // file is used here rather than pulling a multi-megabyte original.
+    sourceFor(destination, 600, 'main_image_url', 'image_url', 'banner_image_url');
 
   const chipsOf = (destination: Destination) => {
     const chips: { icon: string; label: string }[] = [];

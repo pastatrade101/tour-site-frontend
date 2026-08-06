@@ -12,7 +12,7 @@
   import DestinationsCTA from '$lib/components/public/destinations/DestinationsCTA.svelte';
   import { brand } from '$lib/brand';
   import { publicSettings, settingText } from '$lib/settings';
-  import { thumbUrl } from '$lib/img';
+  import { sourceFor, thumbUrl } from '$lib/img';
   import { breadcrumbLd } from '$lib/seo';
   import {
     buildFacetGroups,
@@ -110,8 +110,10 @@
   $: featured = destinations.filter((destination) => destination.is_featured);
   $: collections = collectionsOf(destinations);
   $: regions = [...new Set(destinations.map(regionOf).filter(Boolean))].sort();
-  $: heroImage = thumbUrl(
+  // full-bleed hero: never the 600px thumbnail, which would be upscaled
+  $: heroImage = sourceFor(
     destinations.find((destination) => thumbUrl(destination, 'banner_image_url', 'main_image_url', 'image_url')),
+    1920,
     'banner_image_url',
     'main_image_url',
     'image_url'

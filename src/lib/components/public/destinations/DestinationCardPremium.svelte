@@ -27,7 +27,7 @@
     travelStyle,
     wildlifeOf
   } from '$lib/destinationFacets';
-  import { imgUrl, thumbUrl } from '$lib/img';
+  import { imgUrl, sourceFor } from '$lib/img';
   import type { Destination } from '$lib/types';
 
   export let destination: Destination;
@@ -38,7 +38,8 @@
   $: facts = quickFacts(destination);
   $: hasGlance = Object.keys(facts).length > 0;
 
-  $: imageUrl = thumbUrl(destination, 'main_image_url', 'image_url', 'banner_image_url');
+  // grid card renders ~420px CSS, so retina needs more than the 600px thumbnail
+  $: imageUrl = sourceFor(destination, 900, 'main_image_url', 'image_url', 'banner_image_url');
   $: region = regionOf(destination);
   $: stay = recommendedStay(destination);
   $: style = travelStyle(destination);

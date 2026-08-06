@@ -32,6 +32,11 @@ export const imgUrl = (url: string | null | undefined, width = 800, quality = 70
   }
 };
 
+// Width of the webp the backend generates alongside each upload
+// (upload.service.ts THUMBNAIL_WIDTH). Anything asking for more than this from
+// the thumbnail is upscaling it.
+export const THUMBNAIL_WIDTH = 600;
+
 // Pick the best source URL for a record's image: prefer the server-attached
 // `<field>_thumbnail` (a small webp from media_library) over the full-size
 // original, walking a fallback chain of fields. Pass the result to imgUrl().
@@ -43,6 +48,30 @@ export const thumbUrl = (record: Record<string, any> | null | undefined, ...fiel
       const thumbnail = record[`${field}_thumbnail`];
       return typeof thumbnail === 'string' && thumbnail ? thumbnail : value;
     }
+  }
+  return '';
+};
+
+
+// Width-aware source selection. `thumbUrl` always prefers the 600px thumbnail,
+// which is right for a small tile and wrong for a hero or a large card: with
+// Supabase transforms disabled (the default, since they are a paid feature)
+// imgUrl cannot resize, so a 600px file gets stretched into a 1600px slot and
+// looks soft. Above THUMBNAIL_WIDTH — including retina, so pass the CSS width
+// times the DPR you design for — this returns the full-size original and lets
+// the browser downscale instead.
+export const sourceFor = (
+  record: Record<string, any> | null | undefined,
+  renderWidth: number,
+  ...fields: string[]
+): string => {
+  if (!record) return '';
+  for (const field of fields) {
+    const original = record[field];
+    if (typeof original !== 'string' || !original) continue;
+    const thumbnail = record[`${field}_thumbnail`];
+    const useThumbnail = renderWidth <= THUMBNAIL_WIDTH && typeof thumbnail === 'string' && thumbnail;
+    return useThumbnail ? thumbnail : original;
   }
   return '';
 };
