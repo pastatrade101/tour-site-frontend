@@ -507,7 +507,7 @@
               {(guideFactsBlock && blockTitle(guideFactsBlock)) || 'At a glance'}
             </p>
             {#each guideFacts as fact}
-              <div class="flex items-baseline justify-between gap-4 border-b border-ink/8 px-4 py-3 last:border-b-0">
+              <div class="flex items-baseline justify-between gap-4 border-b border-ink/10 px-4 py-3 last:border-b-0">
                 <dt class="shrink-0 text-[13px] font-semibold text-ink/55">{fact.title.replace(/:$/, '')}</dt>
                 <dd class="text-right text-[13px] font-bold text-heading">{fact.body || '—'}</dd>
               </div>

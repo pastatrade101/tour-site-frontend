@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+    "dev": "NODE_OPTIONS=--disable-warning=ExperimentalWarning vite",
+    "build": "NODE_OPTIONS=--disable-warning=ExperimentalWarning vite build",
+    "preview": "NODE_OPTIONS=--disable-warning=ExperimentalWarning vite preview",
+    "check": "NODE_OPTIONS=--disable-warning=ExperimentalWarning svelte-kit sync && NODE_OPTIONS=--disable-warning=ExperimentalWarning svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
     "@lottiefiles/dotlottie-web": "^0.74.0",
