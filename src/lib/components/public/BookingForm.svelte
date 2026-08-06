@@ -5,6 +5,7 @@
   import { getAttribution, trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
   import { brand } from '$lib/brand';
+  import { currency, formatUsd } from '$lib/currency';
   import { publicSettings, settingText } from '$lib/settings';
   import Button from './Button.svelte';
   import CategoryPicker from './CategoryPicker.svelte';
@@ -143,7 +144,7 @@
   $: paxLabel = `${number_of_adults} adult${Number(number_of_adults) === 1 ? '' : 's'}${
     Number(number_of_children) > 0 ? `, ${number_of_children} child${Number(number_of_children) === 1 ? '' : 'ren'}` : ''
   }`;
-  const money = (n: number) => `${tour?.currency ?? 'USD'} ${Number(n).toLocaleString()}`;
+  const money = (n: number) => formatUsd(n, $currency);
 
   type Row = { label: string; value: string };
   $: summaryRows = (() => {
@@ -272,6 +273,7 @@
       source_page_url: $page.url.href,
       submitted_at: new Date().toISOString()
     };
+    lead_context.selected_currency = $currency.selectedCurrency;
     if (tour?.title) lead_context.selected_trip = tour.title;
     if (trip_duration.trim()) lead_context.trip_duration = trip_duration.trim();
     if (travel_interests.length) lead_context.travel_interests = travel_interests.join(', ');
@@ -292,6 +294,7 @@
         special_requests: special_requests.trim() || null,
         message: message.trim() || null,
         source: 'website_booking_form',
+        selected_currency: $currency.selectedCurrency,
         lead_context,
         hp_company
       });

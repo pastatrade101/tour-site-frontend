@@ -4,6 +4,7 @@
   import { CalendarClock, MapPin, Users } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import { revealHeading } from '$lib/animations';
+  import { currency, formatUsd } from '$lib/currency';
   import BookingForm from '$lib/components/public/BookingForm.svelte';
   import type { Tour } from '$lib/types';
 
@@ -19,6 +20,7 @@
   $: destination = tour ? rel((tour as Record<string, unknown>).destinations, 'name') : '';
   $: heroImage = tour ? tour.main_image_url || tour.banner_image_url || '' : '';
   $: durationLabel = tour?.duration_days ? `${tour.duration_days} days${tour.duration_nights ? ` / ${tour.duration_nights} nights` : ''}` : '';
+  $: priceLabel = tour?.price_from ? formatUsd(tour.price_from, $currency) : '';
 
   onMount(async () => {
     const slug = $page.params.slug ?? '';
@@ -68,7 +70,7 @@
         {#if tour.price_from}
           <div class="mt-1 flex items-end justify-between border-t border-ink/10 pt-4">
             <span class="text-sm font-medium text-ink/70">From</span>
-            <span class="text-2xl font-extrabold text-heading">{tour.currency || 'USD'} {Number(tour.price_from).toLocaleString()}</span>
+            <span class="text-2xl font-extrabold text-heading">{priceLabel}</span>
           </div>
         {/if}
       </div>

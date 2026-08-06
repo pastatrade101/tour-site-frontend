@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ArrowRight, BedDouble, Clock, MapPin } from '@lucide/svelte';
   import { trackEvent } from '$lib/analytics';
+  import { currency, formatUsd } from '$lib/currency';
   import { imgUrl, thumbUrl } from '$lib/img';
   import ShortlistButton from './ShortlistButton.svelte';
   import type { Tour } from '$lib/types';
@@ -32,7 +33,7 @@
   $: badgeTone = tour.is_popular ? 'bg-clay text-white' : 'bg-goldfinch-gold text-heading';
 
   $: hasPrice = typeof tour.price_from === 'number' && tour.price_from > 0;
-  $: priceLabel = hasPrice ? `${tour.currency ?? 'USD'} ${Number(tour.price_from).toLocaleString()}` : '';
+  $: priceLabel = hasPrice ? formatUsd(tour.price_from, $currency) : '';
 
   $: item = {
     slug: tour.slug,

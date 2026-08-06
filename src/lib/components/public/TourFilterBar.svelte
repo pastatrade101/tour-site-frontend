@@ -36,6 +36,7 @@
   export let tierCount: (key: string) => number = () => 0;
   export let days: (n: number) => string = (n) => `${n}`;
   export let money: (n: number) => string = (n) => `$${n}`;
+  export let currencyKey = 'USD';
 
   const dispatch = createEventDispatcher<{
     destination: string;
@@ -61,7 +62,7 @@
   $: lengthActive = lengthLo > lenMin || lengthHi < lenMax;
   $: priceActive = priceLo > priceMin || priceHi < priceMax;
   $: lenLabel = lengthActive ? `${lengthLo}–${lengthHi} days` : 'Any length';
-  $: priceLabel = priceActive ? `${money(priceLo)} — ${money(priceHi)}` : 'Any budget';
+  $: priceLabel = currencyKey && priceActive ? `${money(priceLo)} — ${money(priceHi)}` : 'Any budget';
   $: comfortLabel = selectedTiers.length ? `${selectedTiers.length} selected` : 'Any comfort';
   $: typeLabel = selectedCategories.length ? `${selectedCategories.length} selected` : 'All types';
   $: moreCount = (persona ? 1 : 0) + (popularOnly ? 1 : 0);

@@ -12,6 +12,7 @@
     '/admin/itineraries': 'Itineraries',
     '/admin/available-dates': 'Available Dates',
     '/admin/pricing-options': 'Pricing Options',
+    '/admin/exchange-rates': 'Exchange Rates',
     '/admin/categories': 'Tour Categories',
     '/admin/destinations': 'Destinations',
     '/admin/bookings': 'Bookings',

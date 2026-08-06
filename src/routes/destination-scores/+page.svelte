@@ -3,6 +3,7 @@
   import { ArrowRight } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import { revealHeading, staggeredCardReveal } from '$lib/animations';
+  import { currency, formatUsd } from '$lib/currency';
   import { DESTINATION_SCORES, getDestinationScores, topDimension, type DestinationScores } from '$lib/data/destination-scores';
   import ScoreBars from '$lib/components/public/ScoreBars.svelte';
   import type { Destination } from '$lib/types';
@@ -71,7 +72,9 @@
           </div>
           <div>
             <h2 class="text-lg font-extrabold text-heading">{row.name}</h2>
-            <p class="text-sm font-semibold text-clay">Best for {topDimension(row.scores)}{row.scores.budgetFromUsd ? ` · from $${row.scores.budgetFromUsd.toLocaleString()}pp` : ''}</p>
+            <p class="text-sm font-semibold text-clay">
+              Best for {topDimension(row.scores)}{#if row.scores.budgetFromUsd} · from {formatUsd(row.scores.budgetFromUsd, $currency)} pp{/if}
+            </p>
           </div>
         </div>
         <div class="p-5">

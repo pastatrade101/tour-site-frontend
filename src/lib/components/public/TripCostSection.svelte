@@ -1,15 +1,16 @@
 <script lang="ts">
   import { Check, ShieldCheck } from '@lucide/svelte';
+  import { currency as currencyStore, formatUsd } from '$lib/currency';
 
   // Cost confidence for a single trip (spec §4.4 G / §6).
   export let priceFrom: number | undefined = undefined;
-  export let currency = 'USD';
   export let tourSlug = '';
 
-  const fmt = (n: number) => n.toLocaleString();
   $: low = priceFrom ?? 0;
   // A realistic upper guide for "trips like this" — clearly framed as typical.
   $: high = priceFrom ? Math.round((priceFrom * 1.75) / 100) * 100 : 0;
+  $: lowLabel = priceFrom ? formatUsd(low, $currencyStore) : '';
+  $: highLabel = priceFrom ? formatUsd(high, $currencyStore) : '';
 
   const drivers = [
     { label: 'Season', note: 'Peak vs. green-season dates' },
@@ -25,13 +26,13 @@
 
   {#if priceFrom}
     <div class="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-      <span class="text-3xl font-extrabold text-heading">{currency} {fmt(low)}</span>
+      <span class="text-3xl font-extrabold text-heading">{lowLabel}</span>
       <span class="text-sm font-medium text-ink/70">per person, from</span>
     </div>
     <p class="mt-2 text-sm leading-6 text-ink/65">
       Most travellers on a trip like this spend between
-      <span class="font-semibold text-ink">{currency} {fmt(low)}</span> and roughly
-      <span class="font-semibold text-ink">{currency} {fmt(high)}</span> per person — your exact price depends on the choices below.
+      <span class="font-semibold text-ink">{lowLabel}</span> and roughly
+      <span class="font-semibold text-ink">{highLabel}</span> per person — your exact price depends on the choices below.
     </p>
   {:else}
     <p class="mt-3 text-sm leading-6 text-ink/65">

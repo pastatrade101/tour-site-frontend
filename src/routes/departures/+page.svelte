@@ -5,6 +5,7 @@
   import { CalendarDays, Clock, Compass, MapPin, Search, Tag, Users } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import { revealHeading, staggeredCardReveal, tilt } from '$lib/animations';
+  import { currency, formatUsd } from '$lib/currency';
   import Button from '$lib/components/public/Button.svelte';
   import SelectInput from '$lib/components/public/SelectInput.svelte';
   import EmptyState from '$lib/components/public/EmptyState.svelte';
@@ -71,8 +72,8 @@
 
   const fmtDate = (value: string | null) =>
     value ? new Intl.DateTimeFormat('en', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value)) : '';
-  const fmtMoney = (amount: number | null, currency: string) =>
-    amount == null ? 'On request' : `${currency} ${Number(amount).toLocaleString()}`;
+  const fmtMoney = (amount: number | null) =>
+    amount == null ? 'On request' : formatUsd(amount, $currency);
 
   // Group departures by tour so the same tour shows once with a list of dates.
   let expanded = new Set<string>();
@@ -239,7 +240,7 @@
 
                 <div class="mt-3 flex items-baseline gap-1.5">
                   <span class="text-[11px] font-semibold uppercase tracking-wide text-ink/70">From</span>
-                  <span class="text-xl font-extrabold text-heading">{fmtMoney(g.minPrice, g.currency)}</span>
+                  <span class="text-xl font-extrabold text-heading">{fmtMoney(g.minPrice)}</span>
                 </div>
 
                 <p class="mt-4 text-[11px] font-bold uppercase tracking-[0.14em] text-forest/70">Upcoming departures</p>

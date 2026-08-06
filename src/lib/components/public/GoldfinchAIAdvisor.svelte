@@ -9,6 +9,7 @@
   import { streamAdvisorChat } from '$lib/api/client';
   import { aiAdvisorOpen, aiAdvisorSeed } from '$lib/aiAdvisor';
   import { brand } from '$lib/brand';
+  import { currency, formatUsd } from '$lib/currency';
   import LottieChatIcon from './LottieChatIcon.svelte';
   import type { AdvisorAction, AdvisorPageContext, AdvisorRecommendation } from '$lib/types';
 
@@ -217,7 +218,7 @@
       .replace(/(^|\n)#{1,6}\s+/g, '$1');
 
   const money = (rec: AdvisorRecommendation) =>
-    rec.price_from != null ? `${rec.currency} ${rec.price_from.toLocaleString()}` : '';
+    rec.price_from != null ? formatUsd(rec.price_from, $currency) : '';
 
   const labelTone = (label: string) =>
     label.startsWith('Excellent')

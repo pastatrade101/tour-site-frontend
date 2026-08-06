@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { API_URL } from '$lib/config/env';
-import type { Activity, AdvisorDonePayload, AdvisorMeta, AdvisorPageContext, AdvisorRecommendation, AiChatResponse, ApiResponse, BlogPost, Comparison, Destination, FAQ, Lodge, MigrationEntry, PageSeo, Paginated, Review, ReviewSummary, SafetyTopic, Testimonial, Tour, TourCategory, TravelStyle, TripPoint } from '$lib/types';
+import type { Activity, AdvisorDonePayload, AdvisorMeta, AdvisorPageContext, AdvisorRecommendation, AiChatResponse, ApiResponse, BlogPost, Comparison, CurrencyApiState, Destination, FAQ, Lodge, MigrationEntry, PageSeo, Paginated, Review, ReviewSummary, SafetyTopic, Testimonial, Tour, TourCategory, TravelStyle, TripPoint } from '$lib/types';
 
 type QueryValue = string | number | boolean | undefined | null;
 type RequestOptions = Omit<RequestInit, 'body'> & {
@@ -34,7 +34,7 @@ const GET_TTL = 5 * 60 * 1000; // 5 minutes
 export const apiRequest = async <T>(path: string, options: RequestOptions = {}) => {
   const token = authToken();
   const method = (options.method ?? 'GET').toUpperCase();
-  const cacheable = browser && !token && method === 'GET';
+  const cacheable = browser && !token && method === 'GET' && path !== '/currencies';
 
   if (cacheable) {
     const hit = getCache.get(path);
@@ -164,6 +164,9 @@ export const streamAdvisorChat = async (body: AdvisorStreamBody, handlers: Advis
 
 export const api = {
   health: () => apiRequest('/health'),
+  currencies: {
+    get: () => apiRequest<CurrencyApiState>('/currencies')
+  },
   auth: {
     login: (body: { email: string; password: string }) =>
       apiRequest<{ token: string; user: { name: string; email: string; role: string }; expiresIn: string }>('/auth/login', {
@@ -522,6 +525,10 @@ export const api = {
     update: (key: string, body: Record<string, unknown>) => apiRequest(`/settings/${key}`, { method: 'PUT', body }),
     remove: (key: string) => apiRequest(`/settings/${key}`, { method: 'DELETE' }),
     public: () => apiRequest<Record<string, unknown>>('/public/settings')
+  },
+  exchangeRates: {
+    status: () => apiRequest<CurrencyApiState & Record<string, unknown>>('/internal/exchange-rates'),
+    refresh: () => apiRequest<CurrencyApiState & Record<string, unknown>>('/internal/exchange-rates/refresh', { method: 'POST' })
   },
   branding: {
     get: () => apiRequest<Record<string, unknown>>('/branding'),

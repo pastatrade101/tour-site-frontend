@@ -6,6 +6,7 @@
   import { ArrowLeft, ArrowRight, Check, ChevronDown, Clock, Compass, MapPin, Search, SlidersHorizontal, Sparkles, Star, X } from '@lucide/svelte';
   import { trackEvent } from '$lib/analytics';
   import { staggeredCardReveal } from '$lib/animations';
+  import { currency, formatUsd } from '$lib/currency';
   import { EXPERIENCE_TO_CATEGORY, PERSONA_ORDER, PERSONAS } from '$lib/data/personas';
   import EmptyState from '$lib/components/public/EmptyState.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
@@ -240,7 +241,7 @@
     priceHi = Math.min(priceMax, Math.max(priceMin, 3000));
   };
 
-  const money = (n: number) => `$${n.toLocaleString()}`;
+  $: moneyFormatter = (n: number) => formatUsd(n, $currency);
   const days = (n: number) => `${n} day${n === 1 ? '' : 's'}`;
   $: catName = (slug: string) => categoryOptions.find((c) => c.slug === slug)?.name ?? slug;
   $: destName = destinationOptions.find((d) => d.slug === destSlug)?.name ?? destSlug;
@@ -372,7 +373,8 @@
       {catCount}
       {tierCount}
       {days}
-      {money}
+      money={moneyFormatter}
+      currencyKey={$currency.selectedCurrency}
       on:destination={(e) => setDestination(e.detail)}
       on:category={(e) => toggleCategory(e.detail)}
       on:tier={(e) => toggleTier(e.detail)}
@@ -446,7 +448,7 @@
               <button class="chip" type="button" on:click={() => { lengthLo = lenMin; lengthHi = lenMax; }}>{days(lengthLo)}-{days(lengthHi)} <X size={13} /></button>
             {/if}
             {#if priceActive}
-              <button class="chip" type="button" on:click={() => { priceLo = priceMin; priceHi = priceMax; }}>{money(priceLo)}-{money(priceHi)} <X size={13} /></button>
+              <button class="chip" type="button" on:click={() => { priceLo = priceMin; priceHi = priceMax; }}>{moneyFormatter(priceLo)}-{moneyFormatter(priceHi)} <X size={13} /></button>
             {/if}
             {#if popularOnly}
               <button class="chip" type="button" on:click={() => (popularOnly = false)}>Best sellers <X size={13} /></button>

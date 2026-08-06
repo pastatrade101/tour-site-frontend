@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ArrowRight, MapPin } from '@lucide/svelte';
+  import { currency, formatUsd } from '$lib/currency';
   import { imgUrl, thumbUrl } from '$lib/img';
   import type { Destination } from '$lib/types';
 
@@ -9,6 +10,7 @@
   $: imageUrl = thumbUrl(destination, 'main_image_url', 'image_url', 'banner_image_url');
   $: summary = destination.short_description || destination.description || '';
   $: locationLabel = [destination.region, destination.country].filter(Boolean).join(', ') || destination.location || '';
+  $: budgetLabel = destination.score_budget_from ? formatUsd(destination.score_budget_from, $currency) : '';
 </script>
 
 <article class="group flex h-full flex-col overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-card transition duration-300 hover:-translate-y-0.5 hover:border-forest/25 hover:shadow-card-hover">
@@ -45,7 +47,7 @@
 
       <div class="mt-auto pt-5">
         {#if destination.score_budget_from}
-          <p class="mb-3 text-sm text-ink/60">Starting budget <span class="font-bold text-clay">USD {destination.score_budget_from.toLocaleString()}</span></p>
+          <p class="mb-3 text-sm text-ink/60">Starting budget <span class="font-bold text-clay">{budgetLabel}</span></p>
         {/if}
         <span class="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[8px] bg-deep-green px-4 text-xs font-bold text-white transition group-hover:bg-forest">
           View destination <ArrowRight size={14} strokeWidth={2.6} class="transition-transform group-hover:translate-x-0.5" />

@@ -2,6 +2,7 @@
   import { trackEvent } from '$lib/analytics';
   import { imgUrl, thumbUrl } from '$lib/img';
   import { tilt } from '$lib/animations';
+  import { currency, formatUsd } from '$lib/currency';
   import ShortlistButton from './ShortlistButton.svelte';
   import type { Tour } from '$lib/types';
 
@@ -16,6 +17,7 @@
     currency: tour.currency,
     destination: (tour as unknown as { destinations?: { name?: string } }).destinations?.name
   };
+  $: priceLabel = tour.price_from ? formatUsd(tour.price_from, $currency) : '';
 </script>
 
 <article class="group relative flex h-full flex-col overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_14px_40px_rgba(57,61,50,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(57,61,50,0.16)]" use:tilt={{ max: 5 }}>
@@ -33,7 +35,7 @@
       <h3 class="mt-2 text-xl font-bold tracking-normal text-ink">{tour.title}</h3>
       {#if tour.short_description}<p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/70">{tour.short_description}</p>{/if}
       <div class="mt-auto flex items-center justify-between pt-5 text-sm">
-        <span class="font-semibold text-forest">{#if tour.price_from}From {tour.currency ?? 'USD'} {tour.price_from.toLocaleString()}{:else}Price on request{/if}</span>
+        <span class="font-semibold text-forest">{#if priceLabel}From {priceLabel}{:else}Price on request{/if}</span>
         <span class="font-semibold text-ink">View</span>
       </div>
     </div>

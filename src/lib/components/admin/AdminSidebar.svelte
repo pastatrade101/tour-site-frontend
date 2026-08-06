@@ -34,6 +34,7 @@
     Plane,
     Route,
     ScrollText,
+    Search,
     Settings,
     ShieldCheck,
     Signpost,
@@ -42,7 +43,8 @@
     TriangleAlert,
     Upload,
     Users,
-    Waypoints
+    Waypoints,
+    X
   } from '@lucide/svelte';
   import { brand } from '$lib/brand';
 
@@ -79,6 +81,7 @@
         { href: '/admin/itineraries', label: 'Itineraries', icon: Route },
         { href: '/admin/available-dates', label: 'Available Dates', icon: CalendarDays },
         { href: '/admin/pricing-options', label: 'Pricing Options', icon: CircleDollarSign },
+        { href: '/admin/exchange-rates', label: 'Exchange Rates', icon: CircleDollarSign },
         { href: '/admin/tour-details', label: 'Tour Details', icon: ListCheck },
         { href: '/admin/import', label: 'Import Content (CSV)', icon: Upload }
       ]
@@ -162,9 +165,14 @@
   const STORAGE_KEY = 'admin_sidebar_groups';
   let expanded: Record<string, boolean> = {};
   let ready = false;
+  let menuSearch = '';
 
   const groupHasActive = (currentActiveHref: string, group: NavGroup) =>
     group.links.some((link) => isActive(currentActiveHref, link.href, link.inactivePlaceholder));
+
+  const includesSearch = (value: string, search: string) => value.toLowerCase().includes(search);
+  const linkMatchesSearch = (group: NavGroup, link: NavLink, search: string) =>
+    includesSearch(link.label, search) || includesSearch(link.href.replace('/admin/', '').replace('/admin', 'dashboard'), search) || includesSearch(group.label, search);
 
   const persist = () => {
     try {
@@ -215,6 +223,20 @@
   const handleNavigate = () => {
     onCloseMobile();
   };
+
+  $: normalizedSearch = menuSearch.trim().toLowerCase();
+  $: searching = normalizedSearch.length > 0;
+  $: visibleGroups = searching
+    ? groups
+        .map((group) => {
+          const groupMatch = includesSearch(group.label, normalizedSearch);
+          return {
+            ...group,
+            links: groupMatch ? group.links : group.links.filter((link) => linkMatchesSearch(group, link, normalizedSearch))
+          };
+        })
+        .filter((group) => group.links.length > 0)
+    : groups;
 </script>
 
 {#if mobileOpen}
@@ -239,12 +261,37 @@
     </button>
   </div>
 
+  <div class={`border-b border-white/10 px-3 py-3 ${collapsed ? 'lg:hidden' : ''}`}>
+    <label class="group/search relative block">
+      <span class="sr-only">Search CMS menu</span>
+      <Search class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-savanna/45 transition group-focus-within/search:text-goldfinch-gold" size={16} strokeWidth={2.4} />
+      <input
+        class="h-10 w-full rounded-[8px] border border-white/10 bg-white/[0.08] pl-9 pr-9 text-sm font-medium text-white outline-none transition placeholder:text-savanna/40 focus:border-goldfinch-gold/60 focus:bg-white/[0.12] focus:ring-2 focus:ring-goldfinch-gold/20"
+        type="search"
+        autocomplete="off"
+        placeholder="Search CMS menu..."
+        bind:value={menuSearch}
+      />
+      {#if menuSearch}
+        <button class="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-md text-savanna/55 transition hover:bg-white/10 hover:text-white" type="button" aria-label="Clear menu search" on:click={() => (menuSearch = '')}>
+          <X size={14} strokeWidth={2.6} />
+        </button>
+      {/if}
+    </label>
+  </div>
+
   <nav class="min-h-0 flex-1 overflow-y-auto px-3 py-4 [scrollbar-width:thin] [scrollbar-color:rgba(233,216,166,0.35)_transparent]">
     <div class="grid gap-1">
-      {#each groups as group}
+      {#if visibleGroups.length === 0}
+        <div class="rounded-[8px] border border-white/10 bg-white/[0.06] px-3 py-4 text-center text-sm text-savanna/65">
+          No CMS menu matches “{menuSearch.trim()}”.
+        </div>
+      {/if}
+
+      {#each visibleGroups as group}
         {@const single = group.links.length <= 1}
         {@const groupActive = groupHasActive(activeHref, group)}
-        {@const open = collapsed || single || (ready ? Boolean(expanded[group.label]) : groupActive)}
+        {@const open = searching || collapsed || single || (ready ? Boolean(expanded[group.label]) : groupActive)}
         <section>
           {#if single}
             <!-- top-level single link: no category header -->

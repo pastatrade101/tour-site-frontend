@@ -17,6 +17,30 @@ export type Paginated<T> = {
   pagination: Pagination;
 };
 
+export type CurrencyConfig = {
+  code: string;
+  name: string;
+  symbol: string;
+  locale: string;
+  decimalDigits: number;
+  enabled: boolean;
+  available?: boolean;
+};
+
+export type CurrencyApiState = {
+  provider: string;
+  baseCurrency: string;
+  supportedCurrencies: CurrencyConfig[];
+  rates: Record<string, string>;
+  lastUpdated: string | null;
+  providerTimestamp: string | null;
+  expiresAt: string | null;
+  nextRefresh: string | null;
+  isStale: boolean;
+  status: 'success' | 'stale' | 'missing';
+  markupPercent: number;
+};
+
 export type Tour = {
   id: string;
   title: string;

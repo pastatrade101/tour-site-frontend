@@ -6,15 +6,18 @@
     BarChart3,
     Bot,
     ClipboardList,
+    Coins,
     Image as ImageIcon,
     Info,
     MapPin,
     Palette,
+    Plus,
     Save,
     Scale,
     Search,
     Share2,
     RotateCcw,
+    Trash2,
     Plug,
     MessageCircle,
     X
@@ -29,10 +32,22 @@
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
 
-  type FieldType = 'boolean' | 'color' | 'email' | 'image' | 'json' | 'number' | 'phone' | 'select' | 'text' | 'textarea' | 'url';
+  type FieldType = 'boolean' | 'color' | 'currency-list' | 'email' | 'image' | 'json' | 'number' | 'phone' | 'select' | 'text' | 'textarea' | 'url';
   type Field = { default?: unknown; helper?: string; key: string; label: string; options?: string[]; public: boolean; type: FieldType };
   type Group = { fields: Field[]; icon: Component; key: string; label: string; note?: string };
   type Toast = { id: string; message: string; type: 'error' | 'success' };
+  type CurrencySetting = { code: string; name: string; symbol: string; locale: string; decimalDigits: number; enabled: boolean };
+
+  const DEFAULT_CURRENCIES: CurrencySetting[] = [
+    { code: 'USD', name: 'US Dollar', symbol: '$', locale: 'en-US', decimalDigits: 2, enabled: true },
+    { code: 'EUR', name: 'Euro', symbol: '€', locale: 'de-DE', decimalDigits: 2, enabled: true },
+    { code: 'GBP', name: 'British Pound', symbol: '£', locale: 'en-GB', decimalDigits: 2, enabled: true },
+    { code: 'TZS', name: 'Tanzanian Shilling', symbol: 'TSh', locale: 'sw-TZ', decimalDigits: 0, enabled: true },
+    { code: 'KES', name: 'Kenyan Shilling', symbol: 'KSh', locale: 'en-KE', decimalDigits: 0, enabled: true },
+    { code: 'ZAR', name: 'South African Rand', symbol: 'R', locale: 'en-ZA', decimalDigits: 2, enabled: true },
+    { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', locale: 'en-AU', decimalDigits: 2, enabled: true },
+    { code: 'CAD', name: 'Canadian Dollar', symbol: 'CA$', locale: 'en-CA', decimalDigits: 2, enabled: true }
+  ];
 
   const GROUPS: Group[] = [
     { key: 'brand', label: 'Brand', icon: Palette, fields: [
@@ -74,10 +89,13 @@
     { key: 'booking', label: 'Booking', icon: ClipboardList, fields: [
       { key: 'booking_enabled', label: 'Booking enabled', type: 'boolean', public: true, default: true },
       { key: 'booking_success_message', label: 'Booking success message', type: 'textarea', public: true },
-      { key: 'default_currency', label: 'Default currency', type: 'select', public: true, options: ['USD', 'EUR', 'GBP', 'TZS', 'KES'], default: 'USD' },
       { key: 'default_response_time_message', label: 'Response time message', type: 'text', public: true },
       { key: 'require_phone_number', label: 'Require phone number', type: 'boolean', public: true },
       { key: 'allow_general_plan_my_trip', label: 'Allow general Plan My Trip', type: 'boolean', public: true, default: true }
+    ] },
+    { key: 'currencies', label: 'Currencies', icon: Coins, note: 'All package prices stay stored in USD. Enabled currencies are fetched from Open Exchange Rates during the scheduled backend refresh.', fields: [
+      { key: 'default_currency', label: 'Default currency', type: 'select', public: true, default: 'USD', helper: 'Used only when a visitor has not chosen a currency yet.' },
+      { key: 'supported_currencies', label: 'Supported currencies', type: 'currency-list', public: false, default: DEFAULT_CURRENCIES, helper: 'Add valid 3-letter ISO currency codes supported by Open Exchange Rates. USD must stay enabled.' }
     ] },
     { key: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, fields: [
       { key: 'whatsapp_enabled', label: 'WhatsApp CTA enabled', type: 'boolean', public: true, default: true },
@@ -132,6 +150,10 @@
   $: group = GROUPS.find((g) => g.key === activeGroup) ?? GROUPS[0];
   $: dirtyKeys = ALL_FIELDS.filter((f) => JSON.stringify(values[f.key]) !== originalSerialized[f.key]).map((f) => f.key);
   $: hasChanges = dirtyKeys.length > 0;
+  $: currencyRows = normalizeCurrencyRows(values.supported_currencies);
+  $: enabledCurrencyOptions = currencyRows
+    .filter((currency) => currency.enabled)
+    .map((currency) => ({ label: `${currency.code} — ${currency.name}`, value: currency.code }));
 
   const showToast = (message: string, type: Toast['type'] = 'success') => {
     const id = crypto.randomUUID();
@@ -140,7 +162,60 @@
   };
   const dismissToast = (e: CustomEvent<string>) => { toasts = toasts.filter((t) => t.id !== e.detail); };
 
-  const initialValue = (field: Field) => field.default ?? (field.type === 'boolean' ? false : '');
+  const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
+  const initialValue = (field: Field) => field.default !== undefined ? clone(field.default) : (field.type === 'boolean' ? false : '');
+
+  const normalizeCurrencyRows = (value: unknown): CurrencySetting[] => {
+    const rows = Array.isArray(value) ? value : DEFAULT_CURRENCIES;
+    return rows.map((row) => {
+      const currency = row as Partial<CurrencySetting>;
+      return {
+        code: String(currency.code ?? '').trim().toUpperCase(),
+        name: String(currency.name ?? '').trim(),
+        symbol: String(currency.symbol ?? '').trim(),
+        locale: String(currency.locale ?? '').trim() || 'en-US',
+        decimalDigits: Number.isFinite(Number(currency.decimalDigits)) ? Number(currency.decimalDigits) : 2,
+        enabled: typeof currency.enabled === 'boolean' ? currency.enabled : true
+      };
+    });
+  };
+
+  const setCurrencyRows = (rows: CurrencySetting[]) => {
+    values.supported_currencies = rows.map((row) => ({ ...row, code: row.code.trim().toUpperCase() }));
+    values = { ...values };
+  };
+
+  const updateCurrencyRow = (index: number, patch: Partial<CurrencySetting>) => {
+    const rows = normalizeCurrencyRows(values.supported_currencies);
+    const current = rows[index];
+    if (!current) return;
+    rows[index] = {
+      ...current,
+      ...patch,
+      code: patch.code !== undefined ? patch.code.trim().toUpperCase() : current.code
+    };
+    if (rows[index].code === 'USD') {
+      rows[index].enabled = true;
+      rows[index].decimalDigits = 2;
+    }
+    setCurrencyRows(rows);
+  };
+
+  const addCurrency = () => {
+    const rows = normalizeCurrencyRows(values.supported_currencies);
+    rows.push({ code: '', name: '', symbol: '', locale: 'en-US', decimalDigits: 2, enabled: true });
+    setCurrencyRows(rows);
+  };
+
+  const removeCurrency = (index: number) => {
+    const rows = normalizeCurrencyRows(values.supported_currencies);
+    if (rows[index]?.code === 'USD') {
+      showToast('USD cannot be removed because package prices are stored in USD.', 'error');
+      return;
+    }
+    rows.splice(index, 1);
+    setCurrencyRows(rows);
+  };
 
   const load = async () => {
     loading = true;
@@ -152,6 +227,7 @@
       for (const field of ALL_FIELDS) {
         let raw = map.has(field.key) ? map.get(field.key) : initialValue(field);
         if (field.type === 'json') raw = JSON.stringify(raw ?? [], null, 2);
+        if (field.type === 'currency-list') raw = normalizeCurrencyRows(raw);
         next[field.key] = raw;
       }
       values = next;
@@ -178,6 +254,27 @@
     if (field.type === 'url' && (typeof value !== 'string' || !/^https?:\/\/.+/.test(value))) return `${field.label} must be a valid URL (https://...).`;
     if (field.type === 'email' && (typeof value !== 'string' || !EMAIL.test(value))) return `${field.label} must be a valid email.`;
     if (field.type === 'color' && (typeof value !== 'string' || !HEX.test(value))) return `${field.label} must be a valid hex color.`;
+    if (field.type === 'currency-list') {
+      const rows = normalizeCurrencyRows(value);
+      const seen = new Set<string>();
+      for (const [index, row] of rows.entries()) {
+        if (!/^[A-Z]{3}$/.test(row.code)) return `Currency row ${index + 1} needs a valid 3-letter code.`;
+        if (seen.has(row.code)) return `${row.code} is duplicated.`;
+        if (!row.name) return `${row.code} needs a currency name.`;
+        if (!row.symbol) return `${row.code} needs a display symbol.`;
+        if (!row.locale) return `${row.code} needs a locale.`;
+        if (!Number.isInteger(Number(row.decimalDigits)) || Number(row.decimalDigits) < 0 || Number(row.decimalDigits) > 4) return `${row.code} decimals must be 0 to 4.`;
+        seen.add(row.code);
+      }
+      const usd = rows.find((row) => row.code === 'USD');
+      if (!usd) return 'USD must stay in supported currencies.';
+      if (!usd.enabled) return 'USD must stay enabled.';
+      if (usd.decimalDigits !== 2) return 'USD must use 2 decimal digits.';
+    }
+    if (field.key === 'default_currency') {
+      const selected = String(value ?? '').toUpperCase();
+      if (!enabledCurrencyOptions.some((option) => option.value === selected)) return 'Default currency must be one of the enabled currencies.';
+    }
     return null;
   };
 
@@ -198,11 +295,12 @@
           return;
         }
       }
+      if (field.type === 'currency-list') value = normalizeCurrencyRows(value);
       const err = validate(field, value);
       if (err) { showToast(err, 'error'); return; }
       payloads.push({
         key,
-        body: { setting_value: value, setting_group: groupOfField.get(key) ?? 'general', setting_type: field.type, is_public: field.public }
+        body: { setting_value: value, setting_group: groupOfField.get(key) ?? 'general', setting_type: field.type === 'currency-list' ? 'json' : field.type, is_public: field.public }
       });
     }
 
@@ -291,7 +389,7 @@
 
         <div class="grid gap-4 sm:grid-cols-2">
           {#each group.fields as field (field.key)}
-            <div class={field.type === 'textarea' || field.type === 'json' || field.type === 'image' ? 'sm:col-span-2' : ''}>
+            <div class={field.type === 'textarea' || field.type === 'json' || field.type === 'currency-list' || field.type === 'image' ? 'sm:col-span-2' : ''}>
               {#if field.type === 'boolean'}
                 <label class="flex h-full cursor-pointer items-center justify-between gap-3 rounded-2xl border border-ink/10 bg-surface p-4 transition hover:bg-sand/30">
                   <span>
@@ -309,8 +407,65 @@
                   <textarea class="min-h-[100px] rounded-2xl border border-ink/10 bg-surface px-3 py-2 font-mono text-xs shadow-sm outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" bind:value={values[field.key]} spellcheck="false"></textarea>
                   {#if field.helper}<span class="text-xs font-normal text-ink/50">{field.helper}</span>{/if}
                 </label>
+              {:else if field.type === 'currency-list'}
+                <div class="grid gap-3">
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p class="text-sm font-semibold text-ink">{field.label}</p>
+                      {#if field.helper}<p class="mt-1 text-xs leading-5 text-ink/50">{field.helper}</p>{/if}
+                    </div>
+                    <button class="inline-flex h-10 items-center gap-2 rounded-[8px] border border-ink/10 bg-surface px-3 text-sm font-bold text-ink shadow-sm transition hover:bg-sand/60" type="button" on:click={addCurrency}>
+                      <Plus size={15} /> Add currency
+                    </button>
+                  </div>
+
+                  <div class="overflow-hidden rounded-[8px] border border-ink/10">
+                    <div class="hidden grid-cols-[90px_minmax(170px,1fr)_100px_140px_96px_86px_48px] gap-2 border-b border-ink/10 bg-sand/35 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.1em] text-ink/50 xl:grid">
+                      <span>Code</span>
+                      <span>Name</span>
+                      <span>Symbol</span>
+                      <span>Locale</span>
+                      <span>Decimals</span>
+                      <span>Enabled</span>
+                      <span></span>
+                    </div>
+                    <div class="divide-y divide-ink/10">
+                      {#each currencyRows as row, index}
+                        <div class="grid gap-2 px-3 py-3 xl:grid-cols-[90px_minmax(170px,1fr)_100px_140px_96px_86px_48px] xl:items-center">
+                          <label class="grid gap-1 text-xs font-bold uppercase tracking-[0.08em] text-ink/45 xl:block">
+                            <span class="xl:hidden">Code</span>
+                            <input class="h-10 w-full rounded-[8px] border border-ink/10 bg-surface px-3 text-sm font-extrabold uppercase tracking-normal text-heading outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" value={row.code} maxlength="3" disabled={row.code === 'USD'} on:input={(event) => updateCurrencyRow(index, { code: (event.currentTarget as HTMLInputElement).value })} />
+                          </label>
+                          <label class="grid gap-1 text-xs font-bold uppercase tracking-[0.08em] text-ink/45 xl:block">
+                            <span class="xl:hidden">Name</span>
+                            <input class="h-10 w-full rounded-[8px] border border-ink/10 bg-surface px-3 text-sm font-medium tracking-normal text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" value={row.name} on:input={(event) => updateCurrencyRow(index, { name: (event.currentTarget as HTMLInputElement).value })} />
+                          </label>
+                          <label class="grid gap-1 text-xs font-bold uppercase tracking-[0.08em] text-ink/45 xl:block">
+                            <span class="xl:hidden">Symbol</span>
+                            <input class="h-10 w-full rounded-[8px] border border-ink/10 bg-surface px-3 text-sm font-medium tracking-normal text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" value={row.symbol} on:input={(event) => updateCurrencyRow(index, { symbol: (event.currentTarget as HTMLInputElement).value })} />
+                          </label>
+                          <label class="grid gap-1 text-xs font-bold uppercase tracking-[0.08em] text-ink/45 xl:block">
+                            <span class="xl:hidden">Locale</span>
+                            <input class="h-10 w-full rounded-[8px] border border-ink/10 bg-surface px-3 text-sm font-medium tracking-normal text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" value={row.locale} placeholder="en-US" on:input={(event) => updateCurrencyRow(index, { locale: (event.currentTarget as HTMLInputElement).value })} />
+                          </label>
+                          <label class="grid gap-1 text-xs font-bold uppercase tracking-[0.08em] text-ink/45 xl:block">
+                            <span class="xl:hidden">Decimals</span>
+                            <input class="h-10 w-full rounded-[8px] border border-ink/10 bg-surface px-3 text-sm font-medium tracking-normal text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" type="number" min="0" max="4" value={row.decimalDigits} disabled={row.code === 'USD'} on:input={(event) => updateCurrencyRow(index, { decimalDigits: Number((event.currentTarget as HTMLInputElement).value) })} />
+                          </label>
+                          <label class="flex h-10 items-center justify-between gap-3 rounded-[8px] border border-ink/10 bg-surface px-3 text-xs font-bold uppercase tracking-[0.08em] text-ink/45 xl:justify-center xl:border-0 xl:bg-transparent xl:px-0">
+                            <span class="xl:hidden">Enabled</span>
+                            <input class="h-5 w-5 accent-forest" type="checkbox" checked={row.enabled} disabled={row.code === 'USD'} on:change={(event) => updateCurrencyRow(index, { enabled: (event.currentTarget as HTMLInputElement).checked })} />
+                          </label>
+                          <button class="grid h-10 w-full place-items-center rounded-[8px] border border-ink/10 bg-surface text-ink/55 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 xl:w-10" type="button" aria-label={`Remove ${row.code || 'currency'}`} disabled={row.code === 'USD'} on:click={() => removeCurrency(index)}>
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      {/each}
+                    </div>
+                  </div>
+                </div>
               {:else if field.type === 'select'}
-                <AdminSelect label={field.label} name={field.key} bind:value={values[field.key]} options={(field.options ?? []).map((o) => ({ label: o, value: o }))} />
+                <AdminSelect label={field.label} name={field.key} bind:value={values[field.key]} options={field.key === 'default_currency' ? enabledCurrencyOptions : (field.options ?? []).map((o) => ({ label: o, value: o }))} />
               {:else if field.type === 'color'}
                 <label class="grid gap-2 text-sm font-medium text-ink">
                   <span>{field.label}</span>

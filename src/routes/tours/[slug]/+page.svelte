@@ -6,6 +6,7 @@
   import { trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
   import { staggeredCardReveal } from '$lib/animations/motion';
+  import { currency, formatUsd } from '$lib/currency';
   import { publicSettings, settingText } from '$lib/settings';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
   import BookingForm from '$lib/components/public/BookingForm.svelte';
@@ -87,6 +88,7 @@
         ? `Up to ${tour.group_size_max} people`
         : tour.group_size ?? ''
     : '';
+  $: priceLabel = tour?.price_from ? formatUsd(tour.price_from, $currency) : '';
 
   // Relevant content for onward navigation (loaded best-effort after the tour).
   let relatedTours: Tour[] = [];
@@ -169,7 +171,7 @@
           {#if tour.price_from}
             <p class="text-sm text-ink/70">
               from
-              <span class="text-lg font-extrabold text-heading">{tour.currency ?? 'USD'} {tour.price_from.toLocaleString()}</span>
+              <span class="text-lg font-extrabold text-heading">{priceLabel}</span>
               <span class="text-ink/70">/ person</span>
             </p>
           {/if}
@@ -332,7 +334,7 @@
 
         <!-- cost confidence (spec §4.4 G) -->
         <div class="mt-10">
-          <TripCostSection priceFrom={tour.price_from} currency={tour.currency ?? 'USD'} tourSlug={tour.slug} />
+          <TripCostSection priceFrom={tour.price_from} tourSlug={tour.slug} />
         </div>
 
         <!-- low-commitment capture (spec §7) -->
@@ -347,7 +349,7 @@
             <div class="bg-gradient-to-br from-deep-green to-forest p-5 text-white">
               <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-savanna">From</p>
               <p class="mt-0.5 text-3xl font-extrabold leading-none">
-                {tour.currency ?? 'USD'} {(tour.price_from ?? 0).toLocaleString()}
+                {priceLabel || 'On request'}
                 <span class="text-sm font-semibold text-white/70">/ person</span>
               </p>
               <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-white/85">

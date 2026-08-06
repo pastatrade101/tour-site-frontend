@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ArrowRight, Clock } from '@lucide/svelte';
   import { tilt } from '$lib/animations';
+  import { currency, formatUsd } from '$lib/currency';
   import { imgUrl } from '$lib/img';
   import ShortlistButton from './ShortlistButton.svelte';
   import type { Tour } from '$lib/types';
@@ -26,6 +27,7 @@
     currency: tour.currency,
     destination: tour.destinations?.name
   };
+  $: priceLabel = tour.price_from ? formatUsd(tour.price_from, $currency) : '';
 </script>
 
 <article class="group relative flex h-full flex-col overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-card transition duration-300 hover:-translate-y-0.5 hover:border-forest/25 hover:shadow-card-hover" use:tilt={{ max: 3 }}>
@@ -65,8 +67,8 @@
     <div class="mt-auto flex items-center justify-between gap-3 border-t border-ink/[0.08] pt-4">
       <p class="leading-tight">
         <span class="block text-[11px] font-medium uppercase tracking-wide text-ink/65">From</span>
-        {#if tour.price_from}
-          <span class="text-lg font-extrabold text-heading">{tour.currency ?? 'USD'} {tour.price_from.toLocaleString()}</span>
+        {#if priceLabel}
+          <span class="text-lg font-extrabold text-heading">{priceLabel}</span>
           <span class="text-xs font-semibold text-ink/65"> pp</span>
         {:else}
           <span class="text-lg font-extrabold text-heading">On request</span>

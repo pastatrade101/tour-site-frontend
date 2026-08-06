@@ -20,6 +20,7 @@
   import { applyBranding, branding } from '$lib/branding';
   import { SITE_URL } from '$lib/config/env';
   import { loadPublicSettings } from '$lib/settings';
+  import { initCurrency } from '$lib/currency';
 
   $: isAdmin = $page.url.pathname.startsWith('/admin');
 
@@ -145,6 +146,7 @@
     void setupGsap();
     void loadBranding();
     void loadPublicSettings();
+    void initCurrency();
     setupPwaInstall();
     if (!isAdmin) trackSession(); // fire-and-forget attribution beacon (public only)
     return () => {

@@ -11,6 +11,7 @@
   import { imgUrl } from '$lib/img';
   import { publicSettings, settingText } from '$lib/settings';
   import { canInstall, promptInstall } from '$lib/pwa';
+  import CurrencySelector from './CurrencySelector.svelte';
 
   type NavLink = { href: string; label: string; image?: string; description?: string };
   type DropdownKey = 'destinations' | 'tours' | 'safariStyles';
@@ -208,22 +209,22 @@
 
 <header class={`sticky top-0 z-40 border-b bg-surface transition-[box-shadow,border-color] duration-[400ms] ease-out ${scrolled ? 'border-transparent shadow-[0_8px_28px_rgba(57,61,50,0.10)]' : 'border-ink/10'}`} use:navbarEntrance>
   <!-- ── mobile top bar ─────────────────────────────────────────────────── -->
-  <div class="flex h-[70px] items-center justify-between gap-3 px-4 sm:px-5 lg:hidden">
+  <div class="grid h-[70px] grid-cols-[44px_minmax(0,1fr)_112px] items-center gap-3 px-4 sm:px-5 lg:hidden">
     <button class="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 bg-surface text-ink" type="button" aria-label="Toggle menu" aria-expanded={menuOpen} on:click={() => (menuOpen = !menuOpen)}>
       <Menu size={24} strokeWidth={2.4} />
     </button>
 
-    <a href="/" class="flex shrink-0 items-center gap-2" aria-label="Goldfinch Adventures home">
+    <a href="/" class="flex min-w-0 items-center justify-center gap-2" aria-label="Goldfinch Adventures home">
       <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-10 w-10 shrink-0 object-contain" />
-      <div class="leading-none">
-        <p class="text-xl font-extrabold tracking-normal text-heading">Goldfinch</p>
-        <p class="mt-1 text-xs font-semibold text-ink/70">Adventures</p>
+      <div class="min-w-0 leading-none">
+        <p class="truncate text-xl font-extrabold tracking-normal text-heading">Goldfinch</p>
+        <p class="mt-1 truncate text-xs font-semibold text-ink/70">Adventures</p>
       </div>
     </a>
 
-    <a class="grid h-11 w-11 place-items-center rounded-full bg-[#25D366] text-white shadow-sm" href={waHref} target="_blank" rel="noopener noreferrer" aria-label={waButtonText} on:click={() => trackEvent('whatsapp_click')}>
-      <MessageCircle size={20} strokeWidth={2.6} />
-    </a>
+    <div class="justify-self-end">
+      <CurrencySelector compact />
+    </div>
   </div>
 
   <!-- ── desktop top row (collapses smoothly on scroll) ──────────────────── -->
@@ -245,6 +246,7 @@
       </form>
 
       <div class="flex items-center gap-4 text-[13px] font-semibold">
+        <CurrencySelector compact />
         <a class="inline-flex items-center gap-1 text-forest transition hover:text-heading" href="/contact">
           <CircleHelp size={15} strokeWidth={2.6} />
           Need help?

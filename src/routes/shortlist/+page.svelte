@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ArrowRight, Heart, Trash2 } from '@lucide/svelte';
   import { revealHeading } from '$lib/animations';
+  import { currency, formatUsd } from '$lib/currency';
   import { clearShortlist, removeShortlist, shortlist } from '$lib/shortlist';
 
   $: items = $shortlist;
@@ -33,7 +34,7 @@
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold">
               {#if item.destination}<span class="text-clay">{item.destination}</span>{/if}
               {#if item.duration_days}<span class="text-ink/70">{item.duration_days} days</span>{/if}
-              {#if item.price_from}<span class="text-ink/70">from <span class="text-heading">{item.currency ?? 'USD'} {item.price_from.toLocaleString()}</span></span>{/if}
+              {#if item.price_from}<span class="text-ink/70">from <span class="text-heading">{formatUsd(item.price_from, $currency)}</span></span>{/if}
             </div>
             <a href={`/tours/${item.slug}`} class="mt-1 text-lg font-extrabold text-heading hover:underline">{item.title}</a>
             <div class="mt-auto flex flex-wrap items-center gap-2.5 pt-4">

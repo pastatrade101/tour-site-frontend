@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ArrowRight } from '@lucide/svelte';
+  import { currency, formatUsd } from '$lib/currency';
   import { imgUrl } from '$lib/img';
 
   export let eyebrow = 'Featured Itineraries';
@@ -26,7 +27,7 @@
   const priceLabel = (t: any): string => {
     const p = Number(t?.price_from);
     if (!Number.isFinite(p) || p <= 0) return 'Price on request';
-    return `From ${t?.currency ?? 'USD'} ${p.toLocaleString()}`;
+    return `From ${formatUsd(p, $currency)}`;
   };
 
   const hasPrice = (t: any): boolean => {

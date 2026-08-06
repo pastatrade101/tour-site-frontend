@@ -3,6 +3,7 @@
   import { ArrowLeft, ArrowRight, Check, MessageCircle, Sparkles } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import { revealHeading } from '$lib/animations';
+  import { currency, formatUsd } from '$lib/currency';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import type { Tour } from '$lib/types';
 
@@ -190,7 +191,15 @@
   const planHref = (slug: string) =>
     `/plan-my-trip?tour=${slug}${answers.persona ? `&persona=${answers.persona}` : ''}`;
   const fmtPrice = (t: Tour) =>
-    t.price_from ? `${t.currency ?? 'USD'} ${t.price_from.toLocaleString()}` : 'On request';
+    t.price_from ? formatUsd(t.price_from, $currency) : 'On request';
+  const optionLabel = (key: string, opt: Opt) => {
+    if (key !== 'budget') return opt.label;
+    if (opt.value === '1500') return `Under ${formatUsd(1500, $currency)}`;
+    if (opt.value === '3000') return `${formatUsd(1500, $currency)} - ${formatUsd(3000, $currency)}`;
+    if (opt.value === '5000') return `${formatUsd(3000, $currency)} - ${formatUsd(5000, $currency)}`;
+    if (opt.value === '99999') return `${formatUsd(5000, $currency)}+`;
+    return opt.label;
+  };
 </script>
 
 <section class="overflow-x-hidden bg-sand/40">
@@ -245,7 +254,7 @@
                 on:click={() => select(current.key, opt.value)}
               >
                 <span class="min-w-0">
-                  <span class={`block break-words font-semibold leading-snug ${selected ? 'text-heading' : 'text-white'}`}>{opt.label}</span>
+                  <span class={`block break-words font-semibold leading-snug ${selected ? 'text-heading' : 'text-white'}`}>{optionLabel(current.key, opt)}</span>
                   {#if opt.hint}<span class={`block text-xs ${selected ? 'text-heading/70' : 'text-white/55'}`}>{opt.hint}</span>{/if}
                 </span>
                 <ArrowRight size={16} class={`hidden shrink-0 transition sm:block ${selected ? 'text-heading/50' : 'text-white/30 group-hover:text-goldfinch-gold'}`} />
