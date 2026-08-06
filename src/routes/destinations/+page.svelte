@@ -159,8 +159,8 @@
 
 <DestinationsHero {heroImage} total={destinations.length} {regions} />
 
-<!-- Search card straddles the hero seam -->
-<section class="relative z-10 -mt-10 md:-mt-14">
+<!-- Sits below the hero on its own ground rather than straddling the seam. -->
+<section class="bg-canvas pt-8 md:pt-10">
   <div class="container-shell">
     <DestinationSearchBar
       bind:value={search}
