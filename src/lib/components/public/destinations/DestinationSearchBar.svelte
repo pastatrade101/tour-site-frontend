@@ -1,13 +1,13 @@
 <script lang="ts">
   /**
-   * The raised search card that straddles the hero seam: free-text search plus
-   * one dropdown per facet group, then a row of popular shortcuts.
+   * One inline filter row: search, a dropdown per facet group, then the CTA.
    *
-   * The dropdowns are built from the same facet groups that drive the rest of
-   * the page, so an option only exists when real destinations match it.
+   * On mobile the same controls stay inline — the selects become a compact
+   * horizontally-scrolling row rather than opening a filter sheet — so nothing
+   * is hidden behind a popup and the bar stays one tap deep.
    */
   import { createEventDispatcher } from 'svelte';
-  import { Search, X } from '@lucide/svelte';
+  import { ChevronDown, Search, X } from '@lucide/svelte';
   import type { FacetGroup } from '$lib/destinationFacets';
 
   export let value = '';
@@ -20,21 +20,43 @@
 
   const dispatch = createEventDispatcher<{ facet: { group: string; facet: string }; clear: void }>();
 
-  // One dropdown per group; the selected option is only kept on the group that
-  // is currently driving the filter, so the controls can never disagree.
-  const valueFor = (group: FacetGroup) => (activeGroup === group.key ? activeFacet : '');
-
-  const onSelect = (group: FacetGroup, event: Event) => {
-    const facet = (event.currentTarget as HTMLSelectElement).value;
-    dispatch('facet', { group: group.key, facet });
+  // "All experience" reads wrong, and naive pluralisation gives "All wildlifes".
+  // Group labels are a known, small set, so they are spelled out.
+  const ALL_LABELS: Record<string, string> = {
+    experience: 'All experiences',
+    region: 'All regions',
+    wildlife: 'All wildlife',
+    'length of stay': 'Any length'
   };
+  const allLabel = (group: FacetGroup) =>
+    ALL_LABELS[group.label.toLowerCase()] ?? `All ${group.label.toLowerCase()}`;
+
+  const onSelect = (group: FacetGroup, event: Event) =>
+    dispatch('facet', { group: group.key, facet: (event.currentTarget as HTMLSelectElement).value });
+
+  const jumpToResults = () =>
+    document.getElementById('all-destinations')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Derived reactively rather than via a helper called from the template: Svelte
+  // tracks the variables an expression *names*, so a labelFor(group) helper would
+  // only re-run when `group` changed, leaving the trigger stuck on "All regions"
+  // after a selection.
+  $: shown = groups.slice(0, 3).map((group) => {
+    const current = activeGroup === group.key ? activeFacet : '';
+    return {
+      group,
+      current,
+      label: group.facets.find((facet) => facet.key === current)?.label ?? allLabel(group)
+    };
+  });
+  $: hasFilter = Boolean(activeFacet || value.trim());
 </script>
 
-<!-- Shell matches TourFilterBar so the two filter surfaces read as one system. -->
 <div class="rounded-[14px] border border-ink/10 bg-surface p-2 shadow-[0_10px_30px_rgba(57,61,50,0.08)]">
-  <div class="grid gap-1 lg:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,0.7fr))_auto] lg:items-stretch">
-    <!-- free-text -->
-    <div class="flex h-14 items-center gap-3 rounded-[10px] px-4 transition hover:bg-sand/50 focus-within:bg-sand/50 focus-within:ring-2 focus-within:ring-goldfinch-gold/40">
+  <!-- single row from md up; on mobile the selects drop to their own scroll row -->
+  <div class="flex flex-col gap-2 md:flex-row md:items-center md:gap-1">
+    <!-- search -->
+    <div class="flex h-12 items-center gap-2.5 rounded-[10px] border border-ink/12 px-3.5 transition focus-within:border-goldfinch-gold focus-within:ring-2 focus-within:ring-goldfinch-gold/25 md:h-14 md:min-w-0 md:flex-[1.6]">
       <Search size={18} class="shrink-0 text-ink/40" aria-hidden="true" />
       <input
         class="h-full min-w-0 flex-1 bg-transparent text-[15px] font-medium text-heading outline-none placeholder:text-ink/40"
@@ -55,45 +77,67 @@
       {/if}
     </div>
 
-    <!-- one select per facet group -->
-    {#each groups.slice(0, 3) as group (group.key)}
-      <label class="flex h-14 min-w-0 flex-col justify-center gap-0.5 rounded-[10px] border-l border-ink/8 px-4 transition hover:bg-sand/50 focus-within:bg-sand/50 focus-within:ring-2 focus-within:ring-goldfinch-gold/40">
-        <span class="gf-label">{group.label}</span>
-        <select
-          class="-ml-0.5 w-full cursor-pointer appearance-none truncate bg-transparent text-sm font-bold text-heading outline-none"
-          value={valueFor(group)}
-          on:change={(event) => onSelect(group, event)}
+    <!-- facet dropdowns: inline on desktop, one scroll row on mobile -->
+    <div class="-mx-1 flex gap-1 overflow-x-auto px-1 [scrollbar-width:none] md:mx-0 md:flex-[2] md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden">
+      {#each shown as { group, current, label } (group.key)}
+        <label
+          class="relative flex h-12 min-w-[150px] shrink-0 cursor-pointer flex-col justify-center gap-0.5 rounded-[10px] pl-3.5 pr-8 transition hover:bg-sand/40 focus-within:bg-sand/40 focus-within:ring-2 focus-within:ring-goldfinch-gold/30 md:h-14 md:min-w-0 md:flex-1 md:border-l md:border-ink/8 md:pl-4"
         >
-          <option value="">All {group.label.toLowerCase()}</option>
-          {#each group.facets as facet (facet.key)}
-            <option value={facet.key}>{facet.label}</option>
-          {/each}
-        </select>
-      </label>
-    {/each}
+          <span class="gf-label">{group.label}</span>
+          <span class={`truncate text-sm font-bold ${current ? 'text-heading' : 'text-ink/70'}`}>{label}</span>
+          <ChevronDown size={15} class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-ink/40" aria-hidden="true" />
+          <!-- the real control sits on top, invisible, so the styled row keeps the
+               native picker, keyboard support and the mobile wheel -->
+          <select
+            class="absolute inset-0 cursor-pointer opacity-0"
+            aria-label={group.label}
+            value={current}
+            on:change={(event) => onSelect(group, event)}
+          >
+            <option value="">{allLabel(group)}</option>
+            {#each group.facets as facet (facet.key)}
+              <option value={facet.key}>{facet.label}</option>
+            {/each}
+          </select>
+        </label>
+      {/each}
+    </div>
 
     <button
       type="button"
-      class="inline-flex h-14 items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-7 text-sm font-extrabold text-heading transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold lg:px-8"
-      on:click={() => document.getElementById('all-destinations')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+      class="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-6 text-sm font-extrabold text-heading transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold md:h-14 md:px-8"
+      on:click={jumpToResults}
     >
       <Search size={17} aria-hidden="true" />
-      Search
+      <span class="md:hidden">Show {resultCount}</span>
+      <span class="hidden md:inline">Search</span>
     </button>
   </div>
 
-  <div class="mt-1 flex flex-wrap items-center gap-2 border-t border-ink/8 px-3 pb-1 pt-3">
-    <span class="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/40">Popular</span>
-    {#each popular as item (item.href)}
-      <a
-        class="rounded-full bg-sand/60 px-3.5 py-1.5 text-xs font-semibold text-ink/70 transition hover:bg-sand hover:text-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
-        href={item.href}
-        data-sveltekit-preload-data="hover"
+  <!-- popular shortcuts; scrolls rather than wrapping to three rows on mobile -->
+  <div class="mt-2 flex items-center gap-2 border-t border-ink/8 px-2 pb-0.5 pt-2.5">
+    <span class="shrink-0 text-[10px] font-bold uppercase tracking-[0.14em] text-ink/40">Popular</span>
+    <div class="flex min-w-0 flex-1 gap-2 overflow-x-auto [scrollbar-width:none] md:flex-wrap [&::-webkit-scrollbar]:hidden">
+      {#each popular as item (item.href)}
+        <a
+          class="shrink-0 whitespace-nowrap rounded-full bg-sand/60 px-3 py-1.5 text-xs font-semibold text-ink/70 transition hover:bg-sand hover:text-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
+          href={item.href}
+          data-sveltekit-preload-data="hover"
+        >
+          {item.label}
+        </a>
+      {/each}
+    </div>
+    {#if hasFilter}
+      <button
+        type="button"
+        class="shrink-0 whitespace-nowrap text-xs font-bold text-clay underline-offset-2 transition hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
+        on:click={() => dispatch('clear')}
       >
-        {item.label}
-      </a>
-    {/each}
-    <span class="ml-auto text-xs font-semibold text-ink/45" aria-live="polite">
+        Clear
+      </button>
+    {/if}
+    <span class="hidden shrink-0 text-xs font-semibold text-ink/45 md:inline" aria-live="polite">
       {resultCount} {resultCount === 1 ? 'destination' : 'destinations'}
     </span>
   </div>

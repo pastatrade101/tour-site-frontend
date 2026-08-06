@@ -170,6 +170,7 @@
       resultCount={filtered.length}
       {popular}
       on:facet={onFacetPair}
+      on:clear={clearAll}
     />
   </div>
 </section>
