@@ -111,8 +111,19 @@ const isAvailable = (code: string, state: Pick<CurrencyStoreState, 'supportedCur
   return Boolean(config?.enabled && (normalized === 'USD' || state.rates[normalized]));
 };
 
-const chooseCurrency = (state: CurrencyStoreState, previous = '') => {
-  const candidates = [previous, browser ? localStorage.getItem(STORAGE_KEY) : '', readCookie(), browserCurrency(), 'USD'];
+// Empty until the visitor actually picks a currency this session. The store starts
+// on 'USD' as a placeholder, and USD is always available — so passing that value in
+// as "the previous choice" made it win the candidate list every time, which both
+// discarded the saved preference on reload and suppressed region detection for
+// first-time visitors.
+let explicitSelection = '';
+
+// Order matters: a stored pick beats an in-session pick (setCurrency writes to
+// localStorage synchronously, so storage is never staler), an in-session pick beats
+// region detection, and detection beats the USD fallback. `explicitSelection` covers
+// the case where storage is unavailable, e.g. private browsing.
+const chooseCurrency = (state: CurrencyStoreState) => {
+  const candidates = [persistedCurrency(), explicitSelection, browserCurrency(), 'USD'];
   for (const candidate of candidates) {
     const code = normalize(candidate);
     if (code && isAvailable(code, state)) return code;
@@ -130,13 +141,14 @@ const hydrateCurrencyState = () => {
       loading: true,
       error: ''
     };
-    nextState.selectedCurrency = chooseCurrency(nextState, get(currency).selectedCurrency);
+    nextState.selectedCurrency = chooseCurrency(nextState);
     currency.set(nextState);
     return;
   }
 
-  const saved = persistedCurrency();
-  if (saved === 'USD') currency.update((state) => ({ ...state, selectedCurrency: 'USD' }));
+  // With no cached state the only known config is USD, so a saved non-USD code
+  // cannot be validated or formatted yet. Leave the selection alone; initCurrency
+  // restores it as soon as the real currency list arrives.
 };
 
 const formatter = (config: CurrencyConfig) => {
@@ -164,7 +176,6 @@ export const initCurrency = async (options: { force?: boolean } = {}) => {
     currency.update((state) => ({ ...state, loading: true, error: '' }));
     try {
       const response = await api.currencies.get();
-      const current = get(currency).selectedCurrency;
       const nextState: CurrencyStoreState = {
         ...initialState,
         ...response.data,
@@ -172,7 +183,7 @@ export const initCurrency = async (options: { force?: boolean } = {}) => {
         loading: false,
         error: ''
       };
-      nextState.selectedCurrency = chooseCurrency(nextState, current);
+      nextState.selectedCurrency = chooseCurrency(nextState);
       persist(nextState.selectedCurrency);
       persistCurrencyState(response.data);
       currency.set(nextState);
@@ -196,6 +207,7 @@ export const setCurrency = (code: string) => {
   const normalized = normalize(code);
   currency.update((state) => {
     if (!isAvailable(normalized, state)) return state;
+    explicitSelection = normalized;
     persist(normalized);
     return { ...state, selectedCurrency: normalized };
   });
