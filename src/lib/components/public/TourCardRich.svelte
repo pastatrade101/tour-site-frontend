@@ -2,7 +2,7 @@
   import { ArrowRight, BedDouble, Clock, MapPin } from '@lucide/svelte';
   import { trackEvent } from '$lib/analytics';
   import { currency, formatUsd } from '$lib/currency';
-  import { imgUrl, thumbUrl } from '$lib/img';
+  import { imgUrl, thumbUrl, sourceFor } from '$lib/img';
   import ShortlistButton from './ShortlistButton.svelte';
   import type { Tour } from '$lib/types';
 
@@ -63,7 +63,7 @@
       {#if tour.main_image_url}
         <img
           class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
-          src={imgUrl(thumbUrl(tour, 'main_image_url'), 760)}
+          src={imgUrl(sourceFor(tour, 760, 'main_image_url'), 760)}
           alt={tour.title}
           loading="lazy"
           decoding="async"

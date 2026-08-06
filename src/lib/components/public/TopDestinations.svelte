@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ArrowRight, MapPin } from '@lucide/svelte';
-  import { imgUrl, thumbUrl } from '$lib/img';
+  import { imgUrl, thumbUrl, sourceFor } from '$lib/img';
   import { trackEvent } from '$lib/analytics';
   import type { Destination } from '$lib/types';
 
@@ -44,7 +44,7 @@
       >
         <img
           class="absolute inset-0 h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-110"
-          src={imgUrl(thumbUrl(d, 'main_image_url', 'image_url', 'banner_image_url'), 700)}
+          src={imgUrl(sourceFor(d, 1000, 'main_image_url', 'image_url', 'banner_image_url'), 1000)}
           alt={d.name}
           loading="lazy"
           decoding="async"

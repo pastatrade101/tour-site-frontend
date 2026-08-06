@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ArrowRight, Newspaper } from '@lucide/svelte';
   import { tilt } from '$lib/animations';
-  import { imgUrl, thumbUrl } from '$lib/img';
+  import { imgUrl, thumbUrl, sourceFor } from '$lib/img';
   import type { BlogPost } from '$lib/types';
 
   export let post: BlogPost;
@@ -11,7 +11,7 @@
   <a href={`/blog/${post.slug}`} class="flex h-full flex-col">
     <div class="relative aspect-[16/10] overflow-hidden bg-skywash">
       {#if post.featured_image_url}
-        <img class="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-105" src={imgUrl(thumbUrl(post, 'featured_image_url'), 760)} alt={post.title} loading="lazy" decoding="async" />
+        <img class="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-105" src={imgUrl(sourceFor(post, 760, 'featured_image_url'), 760)} alt={post.title} loading="lazy" decoding="async" />
       {:else}
         <div class="grid h-full w-full place-items-center bg-gradient-to-br from-sand to-savanna/50 text-forest/35"><Newspaper size={30} /></div>
       {/if}
