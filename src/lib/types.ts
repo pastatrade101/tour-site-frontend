@@ -72,6 +72,8 @@ export type Tour = {
   tour_inclusions?: { title: string; sort_order?: number }[];
   tour_exclusions?: { title: string; sort_order?: number }[];
   status?: string;
+  is_available?: boolean | null;
+  seats_remaining?: number | null;
   is_featured?: boolean;
   is_popular?: boolean;
 };
@@ -130,6 +132,8 @@ export type Destination = {
   score_photography?: number | null;
   score_adventure?: number | null;
   score_budget_from?: number | null;
+  guide?: Array<Record<string, unknown>> | null;
+  guide_reviewed_at?: string | null;
   status?: string;
   is_featured?: boolean;
   meta_title?: string;
