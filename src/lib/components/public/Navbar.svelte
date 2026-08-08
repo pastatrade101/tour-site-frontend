@@ -289,17 +289,16 @@
 
   <!-- ── desktop nav row ────────────────────────────────────────────────── -->
   <div class="hidden border-t border-ink/10 lg:block">
-    <div class="mx-auto flex w-full max-w-[1500px] items-stretch justify-between px-4">
-      <nav class="flex items-center gap-1" aria-label="Primary">
+    <!-- min-w-0 so the nav can shrink instead of pushing the WhatsApp button off
+         the right edge; Accommodation carries a dropdown chevron that Expert
+         Advice did not, which was enough to overflow at 1280. -->
+    <div class="mx-auto flex w-full max-w-[1500px] items-stretch justify-between gap-2 px-4">
+      <nav class="flex min-w-0 flex-1 items-center gap-1" aria-label="Primary">
         {#if scrolled}
           <a href="/" class="mr-1 flex shrink-0 items-center gap-2" aria-label="Goldfinch Adventures home" transition:fly={{ x: -14, duration: 320 }}>
             <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-9 w-9 shrink-0 object-contain" />
             <span class="text-lg font-extrabold tracking-normal text-heading">Goldfinch</span>
           </a>
-          <form class="mr-2 hidden h-9 items-center rounded-full bg-[#f1f1f1] pl-1 pr-2 transition focus-within:ring-2 focus-within:ring-goldfinch-gold/30 xl:flex" on:submit|preventDefault={submitSearch} role="search" transition:fly={{ x: -14, duration: 320 }}>
-            <button class="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[#111]" type="submit" aria-label="Search tours"><Search size={15} strokeWidth={2.6} /></button>
-            <input class="w-32 min-w-0 bg-transparent text-xs font-medium outline-none placeholder:text-[#a9a9a9]" aria-label="Search tour packages" placeholder="Search tours..." bind:value={searchQuery} />
-          </form>
         {/if}
         {#each NAV as item}
           {@const active = isActive(path, item.href)}
@@ -433,7 +432,7 @@
       </nav>
 
       <!-- WhatsApp icon only -->
-      <div class="flex min-h-[54px] items-center border-l border-ink/10 px-5 lg:px-6">
+      <div class="flex min-h-[54px] shrink-0 items-center border-l border-ink/10 px-4 lg:px-5">
         <a
           class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#25D366] text-white shadow-sm ring-4 ring-[#25D366]/15 transition hover:brightness-105"
           href={waHref}

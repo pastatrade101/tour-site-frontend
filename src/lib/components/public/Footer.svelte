@@ -199,7 +199,7 @@
               {#if waDigits}
                 <li class="pt-1">
                   <a
-                    class="inline-flex items-center gap-2 transition hover:text-white"
+                    class="inline-flex max-w-full flex-wrap items-center gap-2 break-all transition hover:text-white"
                     href={waHref}
                     target="_blank"
                     rel="noopener noreferrer"
