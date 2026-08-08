@@ -295,6 +295,10 @@ export const api = {
   lodges: {
     list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Lodge>>(`/lodges${queryString(params)}`),
     get: (slug: string) => apiRequest<Lodge>(`/lodges/${slug}`),
+    bulkRemove: (ids: string[]) =>
+      apiRequest<{ deleted: number; ids: string[] }>('/lodges/bulk-delete', { method: 'POST', body: { ids } }),
+    bulkStatus: (ids: string[], status: string) =>
+      apiRequest<{ updated: number; ids: string[] }>('/lodges/bulk-status', { method: 'POST', body: { ids, status } }),
     create: (body: Record<string, unknown>) => apiRequest<Lodge>('/lodges', { method: 'POST', body }),
     update: (id: string, body: Record<string, unknown>) => apiRequest<Lodge>(`/lodges/${id}`, { method: 'PUT', body }),
     remove: (id: string) => apiRequest(`/lodges/${id}`, { method: 'DELETE' })

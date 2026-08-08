@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { afterNavigate, goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { ArrowDownToLine, ArrowRight, ChevronDown, ChevronRight, CircleHelp, Compass, Globe, MapPin, Menu, MessageCircle, Search, TicketsPlane, User, X } from '@lucide/svelte';
+  import { ArrowDownToLine, ArrowRight, ChevronDown, ChevronRight, CircleHelp, Compass, Globe, MapPin, Menu, MessageCircle, Search, TicketsPlane, User, X, BedDouble } from '@lucide/svelte';
   import { fade, fly } from 'svelte/transition';
   import { api } from '$lib/api/client';
   import { trackEvent } from '$lib/analytics';
@@ -14,7 +14,7 @@
   import CurrencySelector from './CurrencySelector.svelte';
 
   type NavLink = { href: string; label: string; image?: string; description?: string };
-  type DropdownKey = 'destinations' | 'tours' | 'safariStyles';
+  type DropdownKey = 'destinations' | 'tours' | 'safariStyles' | 'accommodation';
   type NavItem = { dropdown?: DropdownKey; href: string; label: string };
 
   // Featured image panel + copy for each mega menu.
@@ -33,6 +33,13 @@
       cta: 'Explore all tours',
       href: '/tours'
     },
+    accommodation: {
+      eyebrow: 'Where to stay',
+      title: 'Camps, lodges & hotels',
+      blurb: 'The places we book and return to — chosen for where they sit, how they are run and who they suit.',
+      cta: 'Browse all stays',
+      href: '/accommodation'
+    },
     safariStyles: {
       eyebrow: 'How to travel',
       title: 'Choose your safari style',
@@ -46,7 +53,8 @@
   const MENU_META: Record<DropdownKey, { icon: typeof Globe; title: string; subtitle: string; viewAll: string }> = {
     destinations: { icon: Globe, title: 'All Destinations', subtitle: 'Discover the best of East Africa', viewAll: 'View all destinations' },
     tours: { icon: TicketsPlane, title: 'Tour Packages', subtitle: 'Published safari itineraries', viewAll: 'View all tours' },
-    safariStyles: { icon: Compass, title: 'Safari Styles', subtitle: 'Browse by travel category', viewAll: 'View all styles' }
+    safariStyles: { icon: Compass, title: 'Safari Styles', subtitle: 'Browse by travel category', viewAll: 'View all styles' },
+    accommodation: { icon: BedDouble, title: 'Accommodation', subtitle: 'Camps, lodges and hotels we book', viewAll: 'View all stays' }
   };
   const featureImage = (key: DropdownKey) => dropdownLinks(key).find((l) => l.image)?.image || '';
 
@@ -55,8 +63,8 @@
     { href: '/destinations', label: 'Destinations', dropdown: 'destinations' },
     { href: '/tours', label: 'Tours', dropdown: 'tours' },
     { href: '/safari-styles', label: 'Safari Styles', dropdown: 'safariStyles' },
+    { href: '/accommodation', label: 'Accommodation', dropdown: 'accommodation' },
     { href: '/experiences', label: 'Experiences' },
-    { href: '/expert-advice', label: 'Expert Advice' },
     { href: '/about', label: 'About Us' },
     { href: '/contact', label: 'Contact' }
   ];
@@ -66,6 +74,7 @@
   let destinations: NavLink[] = [];
   let tours: NavLink[] = [];
   let categories: NavLink[] = [];
+  let lodges: NavLink[] = [];
 
   let menuOpen = false;
   let openDropdown: '' | DropdownKey = '';
@@ -137,7 +146,8 @@
   $: supportEmail = settingText(s, 'contact_email') || 'hello@goldfinch.local';
   $: supportPhone = settingText(s, 'contact_phone') || waNumber;
 
-  const dropdownLinks = (key: DropdownKey) => (key === 'destinations' ? destinations : key === 'tours' ? tours : categories);
+  const dropdownLinks = (key: DropdownKey) =>
+    key === 'destinations' ? destinations : key === 'tours' ? tours : key === 'accommodation' ? lodges : categories;
 
   const toggleDropdown = (key: DropdownKey) => {
     openDropdown = openDropdown === key ? '' : key;
@@ -164,6 +174,19 @@
         const res = await api.tours.list({ status: 'published', limit: 9 });
         const items = res.data.items ?? [];
         if (items.length) tours = items.map((t) => ({ label: String(t.title ?? t.slug), href: `/tours/${t.slug}`, image: t.main_image_url || t.banner_image_url || undefined, description: t.short_description || t.full_description || undefined }));
+      } catch {
+        // keep fallback
+      }
+      try {
+        const res = await api.lodges.list({ status: 'published', limit: 9 });
+        const items = res.data.items ?? [];
+        if (items.length)
+          lodges = items.map((l) => ({
+            label: String(l.name ?? l.slug),
+            href: `/accommodation/${l.slug}`,
+            image: l.hero_image_url || l.image_url || undefined,
+            description: l.why_we_recommend || l.description || undefined
+          }));
       } catch {
         // keep fallback
       }
@@ -281,7 +304,7 @@
         {/if}
         {#each NAV as item}
           {@const active = isActive(path, item.href)}
-          {@const links = item.dropdown === 'destinations' ? destinations : item.dropdown === 'tours' ? tours : item.dropdown === 'safariStyles' ? categories : []}
+          {@const links = item.dropdown ? dropdownLinks(item.dropdown) : []}
           {#if item.dropdown && links.length}
             <!-- svelte-ignore a11y-no-static-element-interactions -->
             <div class="nav-dropdown relative" on:mouseenter={(e) => openDropdownAt(item.dropdown, e.currentTarget)} on:mouseleave={() => (openDropdown = '')}>

@@ -216,6 +216,62 @@
     }
   };
 
+  // ── bulk selection ────────────────────────────────────────────────────────
+  let selectedIds = new Set<string>();
+  let bulkConfirmOpen = false;
+  let bulkBusy = false;
+
+  $: visibleIds = rows.map((l) => l.id);
+  $: selectedCount = selectedIds.size;
+  $: allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+  $: someVisibleSelected = visibleIds.some((id) => selectedIds.has(id)) && !allVisibleSelected;
+
+  const toggleOne = (id: string) => {
+    const next = new Set(selectedIds);
+    next.has(id) ? next.delete(id) : next.add(id);
+    selectedIds = next;
+  };
+  const toggleAllVisible = () => {
+    const next = new Set(selectedIds);
+    if (allVisibleSelected) visibleIds.forEach((id) => next.delete(id));
+    else visibleIds.forEach((id) => next.add(id));
+    selectedIds = next;
+  };
+  const clearSelection = () => (selectedIds = new Set<string>());
+
+  const bulkSetStatus = async (status: string) => {
+    if (!selectedIds.size) return;
+    bulkBusy = true;
+    try {
+      const res = await api.lodges.bulkStatus([...selectedIds], status);
+      const n = res.data?.updated ?? selectedIds.size;
+      showToast(`${n} lodge${n === 1 ? '' : 's'} set to ${status}.`);
+      clearSelection();
+      await load();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Unable to update the selected lodges.', 'error');
+    } finally {
+      bulkBusy = false;
+    }
+  };
+
+  const bulkDelete = async () => {
+    if (!selectedIds.size) return;
+    bulkBusy = true;
+    try {
+      const res = await api.lodges.bulkRemove([...selectedIds]);
+      const n = res.data?.deleted ?? selectedIds.size;
+      showToast(`Deleted ${n} lodge${n === 1 ? '' : 's'}.`);
+      bulkConfirmOpen = false;
+      clearSelection();
+      await load();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Unable to delete the selected lodges.', 'error');
+    } finally {
+      bulkBusy = false;
+    }
+  };
+
   const openDelete = (l: Lodge) => { toDelete = l; confirmOpen = true; };
   const confirmDelete = async () => {
     if (!toDelete) return;
@@ -270,11 +326,55 @@
   {:else if rows.length === 0}
     <AdminEmptyState title="No lodges yet" message="Add your first recommended lodge or camp." actionLabel="New Lodge" icon={Hotel} on:action={openCreate} />
   {:else}
+    {#if selectedCount}
+      <div class="mb-3 flex flex-wrap items-center gap-3 rounded-[8px] border border-goldfinch-gold/40 bg-goldfinch-gold/10 px-4 py-3">
+        <p class="text-sm font-bold text-heading" aria-live="polite">
+          {selectedCount} lodge{selectedCount === 1 ? '' : 's'} selected
+        </p>
+        <button class="text-xs font-semibold text-ink/60 underline-offset-2 transition hover:text-ink hover:underline" type="button" on:click={clearSelection}>
+          Clear selection
+        </button>
+
+        <div class="ml-auto flex flex-wrap items-center gap-2">
+          <span class="text-xs font-bold uppercase tracking-[0.12em] text-ink/45">Set status</span>
+          {#each statusOptions as option (option.value)}
+            <button
+              class="inline-flex h-9 items-center rounded-xl border border-ink/12 bg-surface px-3 text-xs font-bold text-ink transition hover:border-goldfinch-gold/50 hover:bg-sand/60 disabled:opacity-60"
+              type="button"
+              disabled={bulkBusy}
+              on:click={() => bulkSetStatus(option.value)}
+            >
+              {option.label}
+            </button>
+          {/each}
+          <button
+            class="inline-flex h-9 items-center gap-2 rounded-xl border border-red-200 bg-surface px-3.5 text-xs font-bold text-red-700 transition hover:bg-red-50 disabled:opacity-60"
+            type="button"
+            disabled={bulkBusy}
+            on:click={() => (bulkConfirmOpen = true)}
+          >
+            <Trash2 size={14} />
+            Delete {selectedCount}
+          </button>
+        </div>
+      </div>
+    {/if}
+
     <div class="overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
       <div class="overflow-x-auto">
         <table class="w-full min-w-[860px] text-sm">
           <thead class="bg-sand/70 text-xs uppercase tracking-[0.08em] text-ink/60">
             <tr>
+              <th class="w-10 px-4 py-3">
+                <input
+                  class="h-4 w-4 cursor-pointer accent-forest"
+                  type="checkbox"
+                  aria-label={allVisibleSelected ? 'Deselect all lodges' : 'Select all lodges'}
+                  checked={allVisibleSelected}
+                  indeterminate={someVisibleSelected}
+                  on:change={toggleAllVisible}
+                />
+              </th>
               <th class="px-4 py-3 text-left font-semibold">Name</th>
               <th class="px-4 py-3 text-left font-semibold">Destination</th>
               <th class="px-4 py-3 text-left font-semibold">Level / Type</th>
@@ -286,7 +386,16 @@
           </thead>
           <tbody class="divide-y divide-ink/10">
             {#each rows as l (l.id)}
-              <tr class="transition hover:bg-sand/25">
+              <tr class={`transition hover:bg-sand/25 ${selectedIds.has(l.id) ? 'bg-goldfinch-gold/10' : ''}`}>
+                <td class="px-4 py-4">
+                  <input
+                    class="h-4 w-4 cursor-pointer accent-forest"
+                    type="checkbox"
+                    aria-label={`Select ${l.name}`}
+                    checked={selectedIds.has(l.id)}
+                    on:change={() => toggleOne(l.id)}
+                  />
+                </td>
                 <td class="px-4 py-4">
                   <div class="font-semibold text-ink">{l.name}{#if l.is_featured}<span class="ml-2 rounded-full bg-goldfinch-gold/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-goldfinch-gold">Featured</span>{/if}</div>
                   <p class="mt-0.5 font-mono text-xs text-ink/50">{l.slug}</p>
@@ -391,6 +500,14 @@
     </form>
   </div>
 {/if}
+
+<ConfirmModal
+  open={bulkConfirmOpen}
+  title={`Delete ${selectedCount} lodge${selectedCount === 1 ? '' : 's'}`}
+  message={`Delete ${selectedCount} selected lodge${selectedCount === 1 ? '' : 's'}? They are soft deleted and can be restored in the database.`}
+  on:cancel={() => (bulkConfirmOpen = false)}
+  on:confirm={bulkDelete}
+/>
 
 <ConfirmModal
   open={confirmOpen}
