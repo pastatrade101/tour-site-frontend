@@ -293,7 +293,7 @@
          the right edge; Accommodation carries a dropdown chevron that Expert
          Advice did not, which was enough to overflow at 1280. -->
     <div class="mx-auto flex w-full max-w-[1500px] items-stretch justify-between gap-2 px-4">
-      <nav class="flex min-w-0 flex-1 items-stretch gap-1" aria-label="Primary">
+      <nav class="flex min-w-0 flex-1 items-center gap-1" aria-label="Primary">
         {#if scrolled}
           <a href="/" class="mr-1 flex shrink-0 items-center gap-2" aria-label="Goldfinch Adventures home" transition:fly={{ x: -14, duration: 320 }}>
             <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-9 w-9 shrink-0 object-contain" />
@@ -308,8 +308,8 @@
                swap from a plain link to a link+chevron after load. -->
           {#if item.dropdown}
             <!-- svelte-ignore a11y-no-static-element-interactions -->
-            <div class="nav-dropdown relative flex items-stretch" on:mouseenter={(e) => openDropdownAt(item.dropdown, e.currentTarget)} on:mouseleave={() => (openDropdown = '')}>
-              <div class="flex items-stretch">
+            <div class="nav-dropdown relative" on:mouseenter={(e) => openDropdownAt(item.dropdown, e.currentTarget)} on:mouseleave={() => (openDropdown = '')}>
+              <div class="flex items-center">
                 <a
                   class={`relative inline-flex items-center gap-1 rounded px-3 py-[22px] text-[15px] font-semibold transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40 ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink/80'}`}
                   href={item.href}
@@ -426,7 +426,7 @@
 
         <!-- Plan My Trip CTA -->
         <a
-          class={`ml-2 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/50 ${isActive(path, '/plan-my-trip') ? 'bg-deep-green text-white' : 'bg-goldfinch-gold text-heading hover:brightness-105'}`}
+          class={`ml-3 inline-flex h-10 shrink-0 items-center gap-1.5 self-center whitespace-nowrap rounded-full px-5 text-[14px] font-bold tracking-tight shadow-[0_2px_10px_rgba(212,175,55,0.35)] transition duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/60 focus-visible:ring-offset-2 ${isActive(path, '/plan-my-trip') ? 'bg-deep-green text-white shadow-none' : 'bg-goldfinch-gold text-heading hover:shadow-[0_6px_18px_rgba(212,175,55,0.45)]'}`}
           href="/plan-my-trip"
           aria-current={isActive(path, '/plan-my-trip') ? 'page' : undefined}
         >

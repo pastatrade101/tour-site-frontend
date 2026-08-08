@@ -5,7 +5,7 @@
    * it does have — why we recommend the place — and omits any section whose
    * field is empty rather than showing a heading over nothing.
    */
-  import { ArrowRight, ArrowUpRight } from '@lucide/svelte';
+  import { ArrowRight, ArrowUpRight, Binoculars, Gem, Heart, Plane, Sparkles, Users } from '@lucide/svelte';
   import { page } from '$app/stores';
   import { fadeUpOnScroll } from '$lib/animations';
   import { imgUrl, sourceFor } from '$lib/img';
@@ -42,6 +42,18 @@
     lodge: 'Lodge',
     hotel: 'Hotel',
     treehouse: 'Treehouse'
+  };
+
+  // best_for is free text from the CMS, so the icon is matched on what the value
+  // actually says and falls back to a neutral mark rather than guessing.
+  const bestForIcon = (value: string) => {
+    const v = value.toLowerCase();
+    if (/honeymoon|couple|romantic/.test(v)) return Heart;
+    if (/family|families|multi-gen/.test(v)) return Users;
+    if (/wildlife|nature|birding|safari travellers/.test(v)) return Binoculars;
+    if (/luxury/.test(v)) return Gem;
+    if (/pre-safari|transit|airport|stopover/.test(v)) return Plane;
+    return Sparkles;
   };
 
   $: heroImage = sourceFor(lodge, 1920, 'hero_image_url', 'image_url');
@@ -91,6 +103,20 @@
       {#if lodge?.why_we_recommend}
         <p class="mt-5 max-w-2xl text-base leading-8 text-white/80 md:text-lg">{lodge.why_we_recommend}</p>
       {/if}
+
+      {#if lodge?.best_for?.length}
+        <div class="mt-8 border-t border-white/15 pt-6">
+          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">Best for</p>
+          <ul class="mt-3 flex flex-wrap gap-2.5">
+            {#each lodge.best_for as item}
+              <li class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-2 text-sm font-semibold text-white backdrop-blur-sm">
+                <svelte:component this={bestForIcon(item)} size={15} class="shrink-0 text-goldfinch-gold" aria-hidden="true" />
+                {item}
+              </li>
+            {/each}
+          </ul>
+        </div>
+      {/if}
     </div>
   </div>
 </section>
@@ -131,19 +157,6 @@
         </div>
       {/if}
 
-      {#if lodge?.best_for?.length}
-        <div class="mt-14 border-t border-ink/10 pt-8" use:fadeUpOnScroll={{ y: 14 }}>
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-clay">Best for</p>
-          <ul class="mt-5 space-y-3">
-            {#each lodge.best_for as item}
-              <li class="flex items-baseline gap-3 text-base text-ink/75">
-                <span class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-goldfinch-gold" aria-hidden="true"></span>
-                {item}
-              </li>
-            {/each}
-          </ul>
-        </div>
-      {/if}
     </div>
 
     <!-- ── aside ────────────────────────────────────────────────────────── -->
