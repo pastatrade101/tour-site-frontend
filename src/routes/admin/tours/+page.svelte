@@ -162,12 +162,85 @@
 
   const applyFilters = async () => {
     page = 1;
+    clearSelection();
     await loadTours();
   };
 
   const goToPage = async (nextPage: number) => {
     page = nextPage;
+    clearSelection();
     await loadTours();
+  };
+
+  // ── bulk selection ────────────────────────────────────────────────────────
+  // Selection is keyed by id and survives filtering, but is cleared whenever the
+  // visible set changes so the count can never describe rows you cannot see.
+  let selectedIds = new Set<string>();
+  let bulkConfirmOpen = false;
+  let bulkDeleting = false;
+
+  $: visibleIds = rows.map((tour) => tour.id);
+  $: selectedCount = selectedIds.size;
+  $: allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+  $: someVisibleSelected = visibleIds.some((id) => selectedIds.has(id)) && !allVisibleSelected;
+
+  const toggleOne = (id: string) => {
+    const next = new Set(selectedIds);
+    next.has(id) ? next.delete(id) : next.add(id);
+    selectedIds = next;
+  };
+
+  const toggleAllVisible = () => {
+    const next = new Set(selectedIds);
+    if (allVisibleSelected) visibleIds.forEach((id) => next.delete(id));
+    else visibleIds.forEach((id) => next.add(id));
+    selectedIds = next;
+  };
+
+  const clearSelection = () => (selectedIds = new Set<string>());
+
+  // "Select all" on the header checkbox only reaches the current page, which is
+  // misleading when the list is paginated — so once the page is fully selected we
+  // offer to pull every id matching the active filters.
+  let selectingAll = false;
+  const selectAllMatching = async () => {
+    selectingAll = true;
+    try {
+      const response = await api.tours.list({
+        category_id,
+        destination_id,
+        is_available,
+        is_featured,
+        is_popular,
+        limit: 500,
+        page: 1,
+        search,
+        status
+      });
+      selectedIds = new Set((response.data.items as Tour[]).map((tour) => tour.id));
+    } catch (requestError) {
+      showToast(requestError instanceof Error ? requestError.message : 'Unable to select all tours.', 'error');
+    } finally {
+      selectingAll = false;
+    }
+  };
+
+  const bulkDelete = async () => {
+    if (!selectedIds.size) return;
+    bulkDeleting = true;
+
+    try {
+      const response = await api.tours.bulkRemove([...selectedIds]);
+      const deleted = response.data?.deleted ?? selectedIds.size;
+      showToast(`Deleted ${deleted} tour${deleted === 1 ? '' : 's'}.`);
+      bulkConfirmOpen = false;
+      clearSelection();
+      await loadTours();
+    } catch (requestError) {
+      showToast(requestError instanceof Error ? requestError.message : 'Unable to delete the selected tours.', 'error');
+    } finally {
+      bulkDeleting = false;
+    }
   };
 
   const openDeleteConfirm = (tour: Tour) => {
@@ -242,11 +315,55 @@
       on:action={() => goto('/admin/tours/new')}
     />
   {:else}
+    {#if selectedCount}
+      <div class="mb-3 flex flex-wrap items-center gap-3 rounded-[8px] border border-goldfinch-gold/40 bg-goldfinch-gold/10 px-4 py-3">
+        <p class="text-sm font-bold text-heading" aria-live="polite">
+          {selectedCount} tour{selectedCount === 1 ? '' : 's'} selected
+        </p>
+        {#if allVisibleSelected && pagination && pagination.total > selectedCount}
+          <button
+            class="text-xs font-bold text-forest underline-offset-2 transition hover:underline disabled:opacity-60"
+            type="button"
+            disabled={selectingAll}
+            on:click={selectAllMatching}
+          >
+            {selectingAll ? 'Selecting…' : `Select all ${pagination.total} matching`}
+          </button>
+        {/if}
+        <button
+          class="text-xs font-semibold text-ink/60 underline-offset-2 transition hover:text-ink hover:underline"
+          type="button"
+          on:click={clearSelection}
+        >
+          Clear selection
+        </button>
+        <button
+          class="ml-auto inline-flex h-9 items-center gap-2 rounded-xl border border-red-200 bg-surface px-3.5 text-xs font-bold text-red-700 shadow-sm transition hover:bg-red-50 disabled:opacity-60"
+          type="button"
+          disabled={bulkDeleting}
+          on:click={() => (bulkConfirmOpen = true)}
+        >
+          <Trash2 size={14} />
+          {bulkDeleting ? 'Deleting…' : `Delete ${selectedCount}`}
+        </button>
+      </div>
+    {/if}
+
     <div class="overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
       <div class="overflow-x-auto">
         <table class="w-full min-w-[1180px] text-start text-sm">
           <thead class="bg-sand/70 text-xs uppercase tracking-[0.08em] text-ink/60">
             <tr>
+              <th class="w-10 px-4 py-3">
+                <input
+                  class="h-4 w-4 cursor-pointer accent-forest"
+                  type="checkbox"
+                  aria-label={allVisibleSelected ? 'Deselect all tours on this page' : 'Select all tours on this page'}
+                  checked={allVisibleSelected}
+                  indeterminate={someVisibleSelected}
+                  on:change={toggleAllVisible}
+                />
+              </th>
               <th class="px-4 py-3 font-semibold">Tour</th>
               <th class="px-4 py-3 font-semibold">Destination</th>
               <th class="px-4 py-3 font-semibold">Category</th>
@@ -260,7 +377,16 @@
           </thead>
           <tbody class="divide-y divide-ink/10">
             {#each rows as tour}
-              <tr class="transition hover:bg-sand/25">
+              <tr class={`transition hover:bg-sand/25 ${selectedIds.has(tour.id) ? 'bg-goldfinch-gold/10' : ''}`}>
+                <td class="px-4 py-4">
+                  <input
+                    class="h-4 w-4 cursor-pointer accent-forest"
+                    type="checkbox"
+                    aria-label={`Select ${tour.title}`}
+                    checked={selectedIds.has(tour.id)}
+                    on:change={() => toggleOne(tour.id)}
+                  />
+                </td>
                 <td class="px-4 py-4">
                   <div class="font-semibold text-ink">{tour.title}</div>
                   <p class="mt-1 line-clamp-1 text-xs text-ink/55">{tour.short_description || tour.slug}</p>
@@ -314,6 +440,14 @@
     </div>
   {/if}
 </div>
+
+<ConfirmModal
+  open={bulkConfirmOpen}
+  title={`Delete ${selectedCount} tour${selectedCount === 1 ? '' : 's'}`}
+  message={`Delete ${selectedCount} selected tour${selectedCount === 1 ? '' : 's'}? They are soft deleted and can be restored in the database.`}
+  on:cancel={() => (bulkConfirmOpen = false)}
+  on:confirm={bulkDelete}
+/>
 
 <ConfirmModal
   open={confirmOpen}

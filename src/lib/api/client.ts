@@ -197,6 +197,8 @@ export const api = {
     create: (body: Record<string, unknown>) => apiRequest<Tour>('/tours', { method: 'POST', body }),
     update: (id: string, body: Record<string, unknown>) => apiRequest<Tour>(`/tours/${id}`, { method: 'PUT', body }),
     remove: (id: string) => apiRequest(`/tours/${id}`, { method: 'DELETE' }),
+    bulkRemove: (ids: string[]) =>
+      apiRequest<{ deleted: number; ids: string[] }>('/tours/bulk-delete', { method: 'POST', body: { ids } }),
     importCsv: (file: File) => {
       const formData = new FormData();
       formData.append('file', file);
