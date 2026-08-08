@@ -4,6 +4,7 @@
   import { Edit, Globe, Plus, Search, Trash2, X } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
+  import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
@@ -271,7 +272,7 @@
 
         <div class="grid gap-4 sm:grid-cols-2">
           <AdminFormInput label="OG title" name="og_title" bind:value={form.og_title} placeholder="Social share title" />
-          <AdminFormInput label="OG image URL" name="og_image_url" bind:value={form.og_image_url} placeholder="https://..." />
+          <MediaPicker label="Open Graph image" uploadFolder="seo" bind:value={form.og_image_url} />
         </div>
         <AdminTextArea label="OG description" name="og_description" bind:value={form.og_description} rows={2} placeholder="Social share description" />
 

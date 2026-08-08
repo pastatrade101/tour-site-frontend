@@ -4,6 +4,7 @@
   import { Edit, Plane, Plus, Search, Trash2, X } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
+  import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
@@ -333,8 +334,8 @@
         <AdminTextArea label="Getting there / transfers" name="transfer_info" bind:value={form.transfer_info} rows={3} placeholder="Transfer times and how trips connect from here." />
 
         <div class="grid gap-4 sm:grid-cols-2">
-          <AdminFormInput label="Hero image URL" name="hero_image_url" bind:value={form.hero_image_url} placeholder="https://..." />
-          <AdminFormInput label="Card image URL" name="image_url" bind:value={form.image_url} placeholder="https://..." />
+          <MediaPicker label="Hero image" uploadFolder="trip-points" bind:value={form.hero_image_url} />
+          <MediaPicker label="Card image" uploadFolder="trip-points" aspect="aspect-[4/3]" bind:value={form.image_url} />
         </div>
 
         <div class="grid gap-4 sm:grid-cols-3">

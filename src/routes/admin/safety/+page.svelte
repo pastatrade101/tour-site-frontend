@@ -4,6 +4,7 @@
   import { Edit, Plus, Search, ShieldCheck, Trash2, X } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
+  import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
@@ -296,7 +297,7 @@
 
         <AdminTextArea label="Summary" name="summary" bind:value={form.summary} rows={2} placeholder="Short one-line summary shown on the card." />
         <AdminTextArea label="Content" name="content" bind:value={form.content} rows={5} placeholder="The full guidance for this topic." />
-        <AdminFormInput label="Image URL" name="image_url" bind:value={form.image_url} placeholder="https://..." />
+        <MediaPicker label="Image" uploadFolder="safety" aspect="aspect-[4/3]" bind:value={form.image_url} />
 
         <div class="grid gap-4 sm:grid-cols-3">
           <AdminSelect label="Status" name="status" bind:value={form.status} options={statusOptions} />

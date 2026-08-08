@@ -4,6 +4,7 @@
   import { Compass, Edit, Plus, Search, Trash2, X } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
+  import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
@@ -364,8 +365,8 @@
         <AdminFormInput label="Highlights (comma-separated)" name="highlights" bind:value={form.highlights} placeholder="Big Five, Picnic lunch, Photography" />
 
         <div class="grid gap-4 sm:grid-cols-2">
-          <AdminFormInput label="Hero image URL" name="hero_image_url" bind:value={form.hero_image_url} placeholder="https://..." />
-          <AdminFormInput label="Card image URL" name="image_url" bind:value={form.image_url} placeholder="https://..." />
+          <MediaPicker label="Hero image" uploadFolder="activities" bind:value={form.hero_image_url} />
+          <MediaPicker label="Card image" uploadFolder="activities" aspect="aspect-[4/3]" bind:value={form.image_url} />
         </div>
 
         <div class="grid gap-4 sm:grid-cols-3">

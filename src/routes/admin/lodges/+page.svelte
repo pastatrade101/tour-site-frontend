@@ -4,6 +4,7 @@
   import { Edit, Hotel, Plus, Search, Trash2, X } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
+  import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
@@ -351,8 +352,8 @@
         <AdminTextArea label="Why we recommend it" name="why_we_recommend" bind:value={form.why_we_recommend} rows={2} placeholder="Our honest take for travellers." />
 
         <div class="grid gap-4 sm:grid-cols-2">
-          <AdminFormInput label="Hero image URL" name="hero_image_url" bind:value={form.hero_image_url} placeholder="https://..." />
-          <AdminFormInput label="Card image URL" name="image_url" bind:value={form.image_url} placeholder="https://..." />
+          <MediaPicker label="Hero image" uploadFolder="lodges" bind:value={form.hero_image_url} />
+          <MediaPicker label="Card image" uploadFolder="lodges" aspect="aspect-[4/3]" bind:value={form.image_url} />
         </div>
 
         <div class="grid gap-4 sm:grid-cols-3">

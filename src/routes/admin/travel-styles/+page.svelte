@@ -4,6 +4,7 @@
   import { Edit, Heart, Plus, Search, Trash2, X } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
+  import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
@@ -294,7 +295,7 @@
 
         <div class="grid gap-4 sm:grid-cols-2">
           <AdminSelect label="Linked persona" name="persona" bind:value={form.persona} options={personaOptions} />
-          <AdminFormInput label="Hero image URL" name="hero_image_url" bind:value={form.hero_image_url} placeholder="https://..." />
+          <MediaPicker label="Hero image" uploadFolder="travel-styles" bind:value={form.hero_image_url} />
         </div>
 
         <div class="grid gap-4 sm:grid-cols-3">
