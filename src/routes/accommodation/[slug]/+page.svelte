@@ -57,6 +57,13 @@
   };
 
   $: heroImage = sourceFor(lodge, 1920, 'hero_image_url', 'image_url');
+  // Deliberately from a sibling stay, so the band does not repeat the hero.
+  $: ctaImage = sourceFor(
+    allRelated.find((l) => l.hero_image_url || l.image_url),
+    1600,
+    'hero_image_url',
+    'image_url'
+  );
   $: place = lodge?.destinations?.name ?? '';
   $: facts = [LEVEL[String(lodge?.accommodation_level)], TYPE[String(lodge?.lodge_type)], place].filter(Boolean);
 
@@ -259,18 +266,45 @@
           </a>
         {/each}
       </div>
+    </div>
+  </section>
+{/if}
 
-      <div class="mt-10 border-t border-ink/10 pt-8">
-        <p class="max-w-xl font-serif text-xl leading-snug text-heading md:text-2xl">
-          Not sure which one fits? We will match the stay to your route.
-        </p>
+
+<!-- ── closing band: matches the stays index so both pages end alike ─────── -->
+<section class="relative overflow-hidden bg-deep-green text-white">
+  {#if ctaImage}
+    <img class="absolute inset-0 h-full w-full object-cover opacity-25" src={imgUrl(ctaImage, 1600, 70)} alt="" loading="lazy" decoding="async" />
+  {/if}
+  <span class="absolute inset-0 bg-gradient-to-br from-deep-green/95 via-deep-green/85 to-forest/90" aria-hidden="true"></span>
+  <span class="pointer-events-none absolute inset-0 shadow-[inset_0_0_160px_50px_rgba(0,0,0,0.45)]" aria-hidden="true"></span>
+
+  <div class="container-shell relative z-10 py-20 md:py-28">
+    <div class="max-w-3xl" use:fadeUpOnScroll={{ y: 16 }}>
+      <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-goldfinch-gold">Planning together</p>
+      <h2 class="mt-5 font-serif text-3xl font-semibold leading-[1.12] md:text-[46px]">
+        Not sure {lodge?.name ? 'if this is the one' : 'which one fits'}?<br class="hidden sm:block" />
+        We will match the stay to your route.
+      </h2>
+      <p class="mt-5 max-w-xl text-base leading-8 text-white/70">
+        Tell us how you want to travel and we will put the right camps and lodges in the right order — with the
+        driving, flying and pacing already worked out.
+      </p>
+
+      <div class="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
         <a
-          class="mt-5 inline-flex h-12 items-center gap-2 rounded-full bg-goldfinch-gold px-7 text-sm font-extrabold text-heading transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
+          class="inline-flex items-center justify-center gap-2 rounded-full bg-goldfinch-gold px-8 py-3.5 text-sm font-extrabold text-heading shadow-[0_2px_10px_rgba(212,175,55,0.35)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_rgba(212,175,55,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green"
           href="/plan-my-trip"
         >
           Plan my trip <ArrowRight size={16} />
         </a>
+        <a
+          class="inline-flex items-center justify-center gap-2 rounded-full border border-white/25 px-8 py-3.5 text-sm font-bold text-white transition hover:border-white/60 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
+          href="/accommodation"
+        >
+          Browse all stays
+        </a>
       </div>
     </div>
-  </section>
-{/if}
+  </div>
+</section>
