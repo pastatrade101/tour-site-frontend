@@ -56,7 +56,6 @@
     safariStyles: { icon: Compass, title: 'Safari Styles', subtitle: 'Browse by travel category', viewAll: 'View all styles' },
     accommodation: { icon: BedDouble, title: 'Accommodation', subtitle: 'Camps, lodges and hotels we book', viewAll: 'View all stays' }
   };
-  const featureImage = (key: DropdownKey) => dropdownLinks(key).find((l) => l.image)?.image || '';
 
   const NAV: NavItem[] = [
     { href: '/', label: 'Home' },
@@ -304,7 +303,7 @@
         {/if}
         {#each NAV as item}
           {@const active = isActive(path, item.href)}
-          {@const links = item.dropdown ? dropdownLinks(item.dropdown) : []}
+          {@const links = item.dropdown === 'destinations' ? destinations : item.dropdown === 'tours' ? tours : item.dropdown === 'accommodation' ? lodges : item.dropdown === 'safariStyles' ? categories : []}
           {#if item.dropdown && links.length}
             <!-- svelte-ignore a11y-no-static-element-interactions -->
             <div class="nav-dropdown relative" on:mouseenter={(e) => openDropdownAt(item.dropdown, e.currentTarget)} on:mouseleave={() => (openDropdown = '')}>
@@ -333,7 +332,9 @@
               {#if openDropdown === item.dropdown}
                 {@const feat = FEATURE[item.dropdown]}
                 {@const meta = MENU_META[item.dropdown]}
-                {@const featureImg = featureImage(item.dropdown)}
+                <!-- derived from `links` so it updates when the fetch lands; a
+                     featureImage(item.dropdown) call would only name `item`. -->
+                {@const featureImg = links.find((l) => l.image)?.image || ''}
                 {@const previewLinks = links.slice(0, 6)}
                 <div
                   id={`dd-${item.dropdown}`}
@@ -478,7 +479,7 @@
         <nav class="mt-5 grid gap-1" aria-label="Mobile">
           {#each NAV as item}
             {@const active = isActive(path, item.href)}
-            {@const links = item.dropdown === 'destinations' ? destinations : item.dropdown === 'tours' ? tours : item.dropdown === 'safariStyles' ? categories : []}
+            {@const links = item.dropdown === 'destinations' ? destinations : item.dropdown === 'tours' ? tours : item.dropdown === 'accommodation' ? lodges : item.dropdown === 'safariStyles' ? categories : []}
             {#if item.dropdown && links.length}
               <div class="rounded-[8px]">
                 <div class="flex items-center">

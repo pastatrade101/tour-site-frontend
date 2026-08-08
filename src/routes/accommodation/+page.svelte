@@ -59,6 +59,15 @@
   $: shown = lodges.filter((l) => activeFilter?.test(l) ?? true);
   const countFor = (filter: Filter) => lodges.filter(filter.test).length;
 
+  // Backdrop borrowed from the first stay that actually has a photograph; falls
+  // back to a deep-green field, since two of the ten have no image at all.
+  $: heroImage = sourceFor(
+    lodges.find((l) => l.hero_image_url || l.image_url),
+    1920,
+    'hero_image_url',
+    'image_url'
+  );
+
   const title = 'Where to stay — camps, lodges and hotels';
   const description =
     'The camps, lodges and hotels we book across Tanzania — chosen for where they sit, how they are run and who they suit.';
@@ -67,20 +76,38 @@
 <svelte:head>
   <title>{title} | Goldfinch Adventures</title>
   <meta name="description" content={description} />
+  {#if heroImage}
+    <link rel="preload" as="image" href={imgUrl(heroImage, 1920, 72)} fetchpriority="high" />
+  {/if}
 </svelte:head>
 
-<section class="bg-canvas pb-10 pt-14 md:pb-14 md:pt-20">
-  <div class="container-shell">
-    <div class="max-w-3xl" use:fadeUpOnScroll={{ y: 14 }}>
-      <p class="text-xs font-bold uppercase tracking-[0.2em] text-clay">Accommodation</p>
-      <h1 class="mt-4 font-serif text-4xl font-semibold leading-[1.08] text-heading md:text-[56px]">
+<!-- ── cinematic hero ───────────────────────────────────────────────────── -->
+<section class="relative flex min-h-[62vh] items-end overflow-hidden bg-deep-green text-white md:min-h-[74vh]">
+  {#if heroImage}
+    <img
+      class="absolute inset-0 h-full w-full object-cover"
+      src={imgUrl(heroImage, 1920, 72)}
+      alt=""
+      fetchpriority="high"
+      decoding="async"
+    />
+    <span class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/25" aria-hidden="true"></span>
+  {:else}
+    <span class="absolute inset-0 bg-gradient-to-br from-deep-green via-forest to-deep-green" aria-hidden="true"></span>
+  {/if}
+  <span class="pointer-events-none absolute inset-0 shadow-[inset_0_0_180px_60px_rgba(0,0,0,0.55)]" aria-hidden="true"></span>
+
+  <div class="container-shell relative z-10 pb-14 pt-28 md:pb-20">
+    <div class="max-w-3xl" use:fadeUpOnScroll={{ y: 16 }}>
+      <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-goldfinch-gold">Accommodation</p>
+      <h1 class="mt-4 font-serif text-4xl font-semibold leading-[1.05] md:text-[62px]">
         Where you sleep shapes the whole trip
       </h1>
-      <p class="mt-5 max-w-2xl text-base leading-8 text-ink/65 md:text-lg">
+      <p class="mt-5 max-w-2xl text-base leading-8 text-white/80 md:text-lg">
         {description}
       </p>
       {#if lodges.length}
-        <p class="mt-6 text-sm font-semibold text-ink/45">
+        <p class="mt-6 text-sm font-semibold text-white/55">
           {lodges.length} {lodges.length === 1 ? 'place' : 'places'} we book and return to
         </p>
       {/if}
