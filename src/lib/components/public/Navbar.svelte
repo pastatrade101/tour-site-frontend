@@ -293,7 +293,7 @@
          the right edge; Accommodation carries a dropdown chevron that Expert
          Advice did not, which was enough to overflow at 1280. -->
     <div class="mx-auto flex w-full max-w-[1500px] items-stretch justify-between gap-2 px-4">
-      <nav class="flex min-w-0 flex-1 items-center gap-1" aria-label="Primary">
+      <nav class="flex min-w-0 flex-1 items-stretch gap-1" aria-label="Primary">
         {#if scrolled}
           <a href="/" class="mr-1 flex shrink-0 items-center gap-2" aria-label="Goldfinch Adventures home" transition:fly={{ x: -14, duration: 320 }}>
             <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-9 w-9 shrink-0 object-contain" />
@@ -303,17 +303,20 @@
         {#each NAV as item}
           {@const active = isActive(path, item.href)}
           {@const links = item.dropdown === 'destinations' ? destinations : item.dropdown === 'tours' ? tours : item.dropdown === 'accommodation' ? lodges : item.dropdown === 'safariStyles' ? categories : []}
-          {#if item.dropdown && links.length}
+          <!-- Keyed on item.dropdown, not on links.length: the links arrive from a
+               client-side fetch, so gating the markup on them made every nav item
+               swap from a plain link to a link+chevron after load. -->
+          {#if item.dropdown}
             <!-- svelte-ignore a11y-no-static-element-interactions -->
-            <div class="nav-dropdown relative" on:mouseenter={(e) => openDropdownAt(item.dropdown, e.currentTarget)} on:mouseleave={() => (openDropdown = '')}>
-              <div class="flex items-center">
+            <div class="nav-dropdown relative flex items-stretch" on:mouseenter={(e) => openDropdownAt(item.dropdown, e.currentTarget)} on:mouseleave={() => (openDropdown = '')}>
+              <div class="flex items-stretch">
                 <a
                   class={`relative inline-flex items-center gap-1 rounded px-3 py-[22px] text-[15px] font-semibold transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40 ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink/80'}`}
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
                 >
                   {item.label}
-                  {#if active}<span class="absolute inset-x-2.5 bottom-1 h-0.5 rounded-full bg-goldfinch-gold"></span>{/if}
+                  {#if active}<span class="absolute inset-x-2.5 bottom-0 h-[3px] rounded-t-full bg-goldfinch-gold"></span>{/if}
                 </a>
                 <button
                   class="grid h-8 w-7 place-items-center rounded text-ink/70 transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40"
@@ -328,7 +331,7 @@
                 </button>
               </div>
 
-              {#if openDropdown === item.dropdown}
+              {#if openDropdown === item.dropdown && links.length}
                 {@const feat = FEATURE[item.dropdown]}
                 {@const meta = MENU_META[item.dropdown]}
                 <!-- derived from `links` so it updates when the fetch lands; a
@@ -416,7 +419,7 @@
               aria-current={active ? 'page' : undefined}
             >
               {item.label}
-              {#if active}<span class="absolute inset-x-2.5 bottom-1 h-0.5 rounded-full bg-goldfinch-gold"></span>{/if}
+              {#if active}<span class="absolute inset-x-2.5 bottom-0 h-[3px] rounded-t-full bg-goldfinch-gold"></span>{/if}
             </a>
           {/if}
         {/each}
@@ -479,7 +482,7 @@
           {#each NAV as item}
             {@const active = isActive(path, item.href)}
             {@const links = item.dropdown === 'destinations' ? destinations : item.dropdown === 'tours' ? tours : item.dropdown === 'accommodation' ? lodges : item.dropdown === 'safariStyles' ? categories : []}
-            {#if item.dropdown && links.length}
+            {#if item.dropdown}
               <div class="rounded-[8px]">
                 <div class="flex items-center">
                   <a class={`flex-1 rounded-[8px] px-3 py-3 text-[17px] font-semibold transition ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink'}`} href={item.href} on:click={() => (menuOpen = false)}>{item.label}</a>
@@ -487,7 +490,7 @@
                     <ChevronDown size={18} strokeWidth={2.6} class={`transition-transform ${mobileAccordion === item.dropdown ? 'rotate-180' : ''}`} />
                   </button>
                 </div>
-                {#if mobileAccordion === item.dropdown}
+                {#if mobileAccordion === item.dropdown && links.length}
                   {@const meta = MENU_META[item.dropdown]}
                   <div class="mb-2 grid gap-2 rounded-[8px] border border-ink/10 bg-canvas p-2" transition:fly={{ y: -4, duration: 150 }}>
                     {#each links as link (link.href)}
