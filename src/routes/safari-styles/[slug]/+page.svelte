@@ -98,10 +98,10 @@
             {#if category.highlights?.length}
               <div class="grid gap-2 rounded-[8px] bg-white/10 p-3">
                 {#each category.highlights.slice(0, 4) as highlight}
-                  <span class="inline-flex items-start gap-2 text-sm leading-6 text-white/78">
+                  <div class="flex items-start gap-2 text-sm leading-6 text-white/78">
                     <Check size={14} strokeWidth={2.8} class="mt-1 shrink-0 text-goldfinch-gold" />
-                    {highlight}
-                  </span>
+                    <RichText value={highlight} className="min-w-0 text-sm leading-6 text-white/78" />
+                  </div>
                 {/each}
               </div>
             {/if}

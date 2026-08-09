@@ -18,7 +18,7 @@
   import ToastStack from '$lib/components/admin/ToastStack.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
-  import { toMetaText } from '$lib/richText';
+  import { hasRichContent, toMetaText } from '$lib/richText';
 
   type Category = {
     id: string;
@@ -43,7 +43,7 @@
     description: string;
     who_its_for: string;
     fitness: string;
-    highlights: string;
+    highlights: string[];
     icon_url: string;
     image_url: string;
     lottie_url: string;
@@ -69,7 +69,7 @@
     description: '',
     who_its_for: '',
     fitness: '',
-    highlights: '',
+    highlights: [''],
     icon_url: '',
     image_url: '',
     lottie_url: '',
@@ -190,7 +190,7 @@
       description: category.description ?? '',
       who_its_for: category.who_its_for ?? '',
       fitness: category.fitness ?? '',
-      highlights: Array.isArray(category.highlights) ? category.highlights.join('\n') : '',
+      highlights: Array.isArray(category.highlights) && category.highlights.length ? category.highlights.map(String) : [''],
       icon_url: category.icon_url ?? '',
       image_url: category.image_url ?? '',
       lottie_url: category.lottie_url ?? '',
@@ -217,11 +217,25 @@
     lastIconAssetMode = iconAssetMode;
   };
 
+  // Highlights are individually editable bullets, matching the tours form. An
+  // empty bullet is a placeholder row, not content, so it is dropped on save.
+  const cleanHighlights = () =>
+    form.highlights.map((item) => String(item ?? '').trim()).filter((item) => hasRichContent(item));
+
+  const addHighlight = () => {
+    form.highlights = [...form.highlights, ''];
+  };
+
+  const removeHighlight = (index: number) => {
+    const next = form.highlights.filter((_, currentIndex) => currentIndex !== index);
+    form.highlights = next.length ? next : [''];
+  };
+
   const payload = () => ({
     description: form.description || null,
     who_its_for: form.who_its_for || null,
     fitness: form.fitness || null,
-    highlights: form.highlights.split('\n').map((s) => s.trim()).filter(Boolean),
+    highlights: cleanHighlights(),
     icon_url: iconAssetMode === 'icon_url' || iconAssetMode === 'icon_upload' ? form.icon_url || null : null,
     image_url: form.image_url.trim() || null,
     lottie_url: iconAssetMode === 'lottie_url' || iconAssetMode === 'lottie_upload' ? form.lottie_url || null : null,
@@ -404,7 +418,43 @@
           <div class="mt-4 grid gap-4">
             <AdminTextArea label="Who it's for" name="who_its_for" bind:value={form.who_its_for} rows={2} placeholder="First-timers, families and photographers…" />
             <AdminFormInput label="Fitness" name="fitness" bind:value={form.fitness} placeholder="Easy — game drives, no walking required." />
-            <AdminTextArea label="Highlights (one per line)" name="highlights" bind:value={form.highlights} rows={4} placeholder={'The Great Migration\nBig Five game viewing'} />
+            <div class="grid gap-1.5">
+              <div class="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <span class="text-[13px] font-semibold text-ink/65">Highlights</span>
+                  <p class="mt-0.5 text-xs text-ink/45">Each item renders as its own ticked line.</p>
+                </div>
+                <button
+                  class="inline-flex h-9 items-center gap-1.5 rounded-md border border-ink/10 bg-surface px-3 text-xs font-bold text-ink transition hover:border-forest/25 hover:bg-sand/55"
+                  type="button"
+                  on:click={addHighlight}
+                >
+                  <Plus size={14} /> Add
+                </button>
+              </div>
+
+              <div class="grid gap-3">
+                {#each form.highlights as _highlight, index}
+                  <div class="grid gap-2 rounded-[8px] border border-ink/10 bg-surface p-3 sm:grid-cols-[1fr_auto] sm:items-start">
+                    <AdminRichText
+                      label={`Highlight ${index + 1}`}
+                      name={`highlight_${index}`}
+                      bind:value={form.highlights[index]}
+                      rows={2}
+                      headings="none"
+                      placeholder="e.g. The Great Migration river crossings"
+                    />
+                    <button
+                      class="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-red-200 bg-surface px-3 text-xs font-bold text-red-700 transition hover:bg-red-50 sm:mt-6"
+                      type="button"
+                      on:click={() => removeHighlight(index)}
+                    >
+                      <Trash2 size={14} /> Remove
+                    </button>
+                  </div>
+                {/each}
+              </div>
+            </div>
           </div>
         </div>
 

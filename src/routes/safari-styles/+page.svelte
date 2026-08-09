@@ -3,7 +3,8 @@
   import EmptyState from '$lib/components/public/EmptyState.svelte';
   import { fadeUpOnScroll, revealHeading, staggeredCardReveal, tilt } from '$lib/animations';
   import { imgUrl, sourceFor, thumbUrl } from '$lib/img';
-  import { toMetaText } from '$lib/richText';
+  import { toMetaText, toPlainText } from '$lib/richText';
+  import RichText from '$lib/components/public/RichText.svelte';
   import type { TourCategory } from '$lib/types';
   import type { PageData } from './$types';
 
@@ -16,7 +17,7 @@
   $: filtered = categories.filter((category) => {
     const needle = query.trim().toLowerCase();
     if (!needle) return true;
-    return [category.name, toMetaText(category.description, 300), category.who_its_for, category.fitness, ...(category.highlights ?? [])]
+    return [category.name, toMetaText(category.description, 300), category.who_its_for, category.fitness, ...(category.highlights ?? []).map((item) => toPlainText(item))]
       .filter(Boolean)
       .join(' ')
       .toLowerCase()
@@ -128,10 +129,10 @@
               {#if category.highlights?.length}
                 <div class="mt-4 grid gap-1.5">
                   {#each category.highlights.slice(0, 3) as highlight}
-                    <span class="inline-flex items-start gap-2 text-xs font-medium leading-5 text-ink/62">
+                    <div class="flex items-start gap-2 text-xs font-medium leading-5 text-ink/62">
                       <Check size={13} strokeWidth={2.8} class="mt-0.5 shrink-0 text-goldfinch-gold" />
-                      {highlight}
-                    </span>
+                      <RichText value={highlight} className="min-w-0 text-xs font-medium leading-5 text-ink/62" />
+                    </div>
                   {/each}
                 </div>
               {/if}

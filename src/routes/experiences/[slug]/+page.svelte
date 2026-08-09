@@ -97,9 +97,10 @@
           <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">Highlights</p>
           <div class="mt-3 grid gap-2.5">
             {#each info.highlights as h}
-              <span class="inline-flex items-center gap-2 text-sm font-medium text-ink/75">
-                <span class="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-forest/10 text-forest"><Check size={12} strokeWidth={3} /></span>{h}
-              </span>
+              <div class="flex items-start gap-2 text-sm font-medium text-ink/75">
+                <span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-forest/10 text-forest"><Check size={12} strokeWidth={3} /></span>
+                <RichText value={h} className="min-w-0 text-sm font-medium text-ink/75" />
+              </div>
             {/each}
           </div>
         </div>
