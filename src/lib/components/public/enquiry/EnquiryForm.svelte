@@ -4,8 +4,10 @@
    * component only knows about steps, validation, submission and analytics.
    */
   import { createEventDispatcher, tick } from 'svelte';
-  import { ArrowLeft, ArrowRight, Check, Loader2, Send } from '@lucide/svelte';
+  import { ArrowLeft, ArrowRight, Check, Loader2, MessageCircle, Send } from '@lucide/svelte';
   import { currency, formatUsd } from '$lib/currency';
+  import { brand } from '$lib/brand';
+  import { publicSettings, settingText } from '$lib/settings';
   import { trackEvent } from '$lib/analytics';
   import { imgUrl } from '$lib/img';
   import { BUDGET_BANDS_USD } from '$lib/enquiry/fields';
@@ -28,6 +30,22 @@
   let done = false;
   let bookingCode: string | null = null;
   let idempotencyKey = newIdempotencyKey();
+
+  // ── "Continue on WhatsApp" on the success screen ────────────────────────────
+  // Same settings source the navbar and footer use. No hardcoded fallback
+  // number: if none is configured the button simply does not appear, rather
+  // than sending travellers to a number that is not ours.
+  $: waDigits = (
+    settingText($publicSettings, 'whatsapp_number') || settingText($publicSettings, 'contact_phone')
+  ).replace(/[^0-9]/g, '');
+  $: waText = [
+    `Hello ${brand.name}, I have just sent a request through your website.`,
+    bookingCode ? `Reference: ${bookingCode}` : '',
+    tour?.title ? `Trip: ${tour.title}` : category?.name ? `Interested in: ${category.name}` : ''
+  ]
+    .filter(Boolean)
+    .join('\n');
+  $: waHref = waDigits ? `https://wa.me/${waDigits}?text=${encodeURIComponent(waText)}` : '';
   let started = false;
   let bodyEl: HTMLDivElement;
 
@@ -35,6 +53,7 @@
   $: step = steps[stepIndex];
   $: isLast = stepIndex === steps.length - 1;
   $: tour = context.tour;
+  $: category = context.category;
   // Standing rule: never advertise a zero price. Hide the line instead.
   $: tourPrice = Number(tour?.price_from ?? 0) > 0 ? formatUsd(Number(tour?.price_from), $currency) : '';
 
@@ -259,13 +278,35 @@
 
   <svelte:fragment slot="footer">
     {#if done}
-      <button
-        type="button"
-        class="h-11 w-full rounded-full bg-goldfinch-gold px-6 text-[14px] font-bold text-heading transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-        on:click={close}
-      >
-        Close
-      </button>
+      <div class="grid gap-2.5">
+        {#if waHref}
+          <a
+            class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 text-[14px] font-bold text-white transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            href={waHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            on:click={() =>
+              trackEvent('whatsapp_click', {
+                form_type: config.formType,
+                tour_id: tour?.id,
+                tour_title: tour?.title,
+                cta_location: 'enquiry_success'
+              })}
+          >
+            <MessageCircle size={17} />
+            Continue on WhatsApp
+          </a>
+        {/if}
+        <button
+          type="button"
+          class="h-11 w-full rounded-full px-6 text-[14px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white {waHref
+            ? 'border border-white/25 text-white hover:bg-white/10'
+            : 'bg-goldfinch-gold text-heading hover:brightness-105'}"
+          on:click={close}
+        >
+          Close
+        </button>
+      </div>
     {:else}
       <div class="flex items-center gap-3">
         {#if stepIndex > 0}
