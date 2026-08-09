@@ -4,6 +4,8 @@
   import EmptyState from '$lib/components/public/EmptyState.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
+  import EnquiryForm from '$lib/components/public/enquiry/EnquiryForm.svelte';
+  import { configFor } from '$lib/enquiry/configs';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { fadeUpOnScroll, revealHeading, staggeredCardReveal } from '$lib/animations';
   import { imgUrl } from '$lib/img';
@@ -19,6 +21,11 @@
   $: origin = $page.url.origin;
   $: title = category?.meta_title || (category ? `${category.name} Safari Style` : 'Safari Style');
   $: description = toMetaText(category?.meta_description || category?.description || 'Explore this Goldfinch safari style and matching tours.', 170);
+
+  // The visitor already chose this category, so the form never asks again.
+  let enquiryOpen = false;
+  $: enquiryContext = { category: category ? { id: category.id, name: category.name, slug: category.slug } : undefined };
+  $: enquiryConfig = configFor('category_enquiry', enquiryContext);
 </script>
 
 <svelte:head>
@@ -70,10 +77,10 @@
             <RichText value={category.description} className="rich-on-dark mt-5 max-w-2xl text-base font-medium leading-8 text-white/84 md:text-lg" />
           {/if}
           <div class="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <a class="inline-flex h-12 items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-6 text-sm font-bold text-heading shadow-lg shadow-black/10 transition hover:brightness-105" href={`/plan-my-trip?style=${category.slug}`}>
+            <button class="inline-flex h-12 items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-6 text-sm font-bold text-heading shadow-lg shadow-black/10 transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white" type="button" on:click={() => (enquiryOpen = true)}>
               <Sparkles size={17} />
               Plan this style
-            </a>
+            </button>
             <a class="inline-flex h-12 items-center justify-center gap-2 rounded-[8px] border border-white/35 bg-white/8 px-6 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15" href={`/tours?category=${category.slug}`}>
               See matching tours <ArrowRight size={17} />
             </a>
@@ -143,3 +150,5 @@
     <a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-forest hover:text-heading" href="/safari-styles">All safari styles <ArrowRight size={16} /></a>
   </section>
 {/if}
+
+<EnquiryForm open={enquiryOpen} config={enquiryConfig} context={enquiryContext} on:close={() => (enquiryOpen = false)} />

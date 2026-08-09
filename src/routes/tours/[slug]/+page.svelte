@@ -1,6 +1,5 @@
 <script lang="ts">
   import { ArrowRight, BedDouble, CalendarDays, Check, MapPin, MessageCircle, Mountain, Sparkles, Users, Utensils, X } from '@lucide/svelte';
-  import { fade, scale } from 'svelte/transition';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { trackEvent } from '$lib/analytics';
@@ -9,7 +8,8 @@
   import { currency, formatUsd } from '$lib/currency';
   import { publicSettings, settingText } from '$lib/settings';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
-  import BookingForm from '$lib/components/public/BookingForm.svelte';
+  import EnquiryForm from '$lib/components/public/enquiry/EnquiryForm.svelte';
+  import { configFor } from '$lib/enquiry/configs';
   import EmailItineraryCapture from '$lib/components/public/EmailItineraryCapture.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
@@ -33,7 +33,25 @@
   let formOpen = false;
   const openForm = () => (formOpen = true);
   const closeForm = () => (formOpen = false);
-  $: if (browser) document.body.style.overflow = formOpen ? 'hidden' : '';
+  // The enquiry modal locks background scroll itself.
+
+  // Everything the enquiry form needs to know about this tour, so the visitor
+  // is never asked to re-select the trip they are already looking at.
+  $: enquiryContext = {
+    tour: tour
+      ? {
+          id: tour.id,
+          title: tour.title,
+          slug: tour.slug,
+          price_from: Number(tour.price_from ?? 0) || undefined,
+          currency: tour.currency ?? 'USD',
+          duration_days: Number(tour.duration_days ?? 0) || undefined,
+          image: tour.main_image_url || tour.banner_image_url || undefined,
+          destinations: getTourDestinationLabel(tour) || undefined
+        }
+      : undefined
+  };
+  $: enquiryConfig = configFor('tour_enquiry', enquiryContext);
 
   // Shortlist item for the save button.
   $: shortlistItem = tour
@@ -420,22 +438,9 @@
   {/if}
 </section>
 
-<!-- booking request modal -->
-{#if formOpen && tour}
-  <div class="fixed inset-0 z-[60] grid place-items-center overflow-y-auto p-4" role="dialog" aria-modal="true" aria-label="Booking request">
-    <button class="fixed inset-0 cursor-default bg-black/55 backdrop-blur-sm" type="button" aria-label="Close" on:click={closeForm} transition:fade={{ duration: 150 }}></button>
-    <div class="relative my-auto w-full max-w-xl" transition:scale={{ duration: 180, start: 0.97 }}>
-      <button
-        class="absolute -top-3 right-0 z-10 grid h-9 w-9 place-items-center rounded-full bg-surface text-ink shadow-md transition hover:bg-sand sm:-right-3"
-        type="button"
-        aria-label="Close"
-        on:click={closeForm}
-      >
-        <X size={18} />
-      </button>
-      <BookingForm {tour} />
-    </div>
-  </div>
+<!-- tour enquiry -->
+{#if tour}
+  <EnquiryForm open={formOpen} config={enquiryConfig} context={enquiryContext} on:close={closeForm} />
 {/if}
 
 <svelte:window on:keydown={(e) => e.key === 'Escape' && closeForm()} />

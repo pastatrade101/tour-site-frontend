@@ -1,42 +1,72 @@
 <script lang="ts">
-  import Button from './Button.svelte';
-  import FormInput from './FormInput.svelte';
-  import SelectInput from './SelectInput.svelte';
-  import TextArea from './TextArea.svelte';
+  /**
+   * The homepage / listing trip-planning prompt.
+   *
+   * This used to render input fields with no submit handler and no endpoint —
+   * anything a visitor typed into it was silently discarded. It is now a
+   * genuine call to action that opens the three-step trip planner, which does
+   * submit. Props and file name are unchanged so its three mount points
+   * (homepage, tours listing, placeholder pages) needed no edits.
+   *
+   * The popup is only ever opened by this button. It never appears on load.
+   */
+  import { ArrowRight, MessageCircle } from '@lucide/svelte';
+  import EnquiryForm from './enquiry/EnquiryForm.svelte';
+  import { configFor } from '$lib/enquiry/configs';
 
   export let title = 'Plan your East Africa trip';
   export let compact = false;
 
-  const travelInterests = ['Safari', 'Kilimanjaro', 'Gorilla Trekking', 'Beach Holiday', 'Multi-country'].map((value) => ({
-    label: value,
-    value
-  }));
+  let open = false;
+  const config = configFor('homepage_trip_planner');
 
-  const budgetRanges = ['Comfort', 'Premium', 'Luxury', 'Not sure yet'].map((value) => ({
-    label: value,
-    value
-  }));
+  const POINTS = [
+    'A route and pace built around your dates',
+    'Honest advice on timing, parks and lodges',
+    'One local specialist, start to finish'
+  ];
 </script>
 
-<form class={`relative grid gap-4 overflow-hidden rounded-[8px] border border-white/10 bg-surface p-5 shadow-card ${compact ? '' : 'md:p-6'}`}>
-  <div class="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-goldfinch-gold via-forest/45 to-transparent"></div>
+<div
+  class={`relative grid gap-5 overflow-hidden rounded-[10px] border border-ink/10 bg-surface p-5 shadow-card ${compact ? '' : 'md:p-6'}`}
+>
+  <span class="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-goldfinch-gold via-forest/45 to-transparent" aria-hidden="true"></span>
+
   <div>
     <p class="text-sm font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">Tell us about your trip</p>
     <h3 class="mt-2 text-2xl font-bold tracking-normal text-heading">{title}</h3>
-    <p class="mt-2 text-sm leading-6 text-ink/70">Tell us the basics and a local advisor can shape a confident safari, Kilimanjaro, gorilla trekking, or beach plan.</p>
+    <p class="mt-2 text-sm leading-6 text-ink/70">
+      Answer a few questions and a local specialist will come back with a trip that fits your dates, interests and
+      budget.
+    </p>
   </div>
 
-  <div class="grid gap-4 md:grid-cols-2">
-    <FormInput label="Full name" name="full_name" placeholder="Your name" required />
-    <FormInput label="Email" name="email" type="email" placeholder="you@example.com" required />
-    <SelectInput label="Travel interest" name="interest" options={travelInterests} />
-    <SelectInput label="Budget range" name="budget_tier" options={budgetRanges} />
-  </div>
-
-  <TextArea label="Trip notes" name="message" placeholder="Dates, travelers, countries, must-see places..." />
+  <ul class="grid gap-2">
+    {#each POINTS as point}
+      <li class="flex items-start gap-2.5 text-sm leading-6 text-ink/75">
+        <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-goldfinch-gold" aria-hidden="true"></span>
+        {point}
+      </li>
+    {/each}
+  </ul>
 
   <div class="grid gap-3 sm:flex sm:flex-wrap">
-    <Button href="/plan-my-trip" className="w-full rounded-[8px] sm:w-auto">Plan My Trip</Button>
-    <Button href="/contact" variant="secondary" className="w-full rounded-[8px] sm:w-auto">Talk to a Travel Advisor</Button>
+    <button
+      type="button"
+      class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-forest px-6 text-sm font-bold text-white transition hover:bg-deep-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 sm:w-auto"
+      on:click={() => (open = true)}
+    >
+      Plan My Trip <ArrowRight size={16} />
+    </button>
+    <a
+      class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] border border-ink/15 px-6 text-sm font-bold text-heading transition hover:border-goldfinch-gold hover:bg-sand/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold sm:w-auto"
+      href="/contact"
+    >
+      <MessageCircle size={16} /> Talk to a specialist
+    </a>
   </div>
-</form>
+
+  <p class="text-xs text-ink/50">No payment required — we reply within one business day.</p>
+</div>
+
+<EnquiryForm bind:open {config} on:close={() => (open = false)} />

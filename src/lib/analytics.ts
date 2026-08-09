@@ -37,6 +37,13 @@ export type AnalyticsEventName =
   | 'request_trip_submitted'
   | 'quotation_download'
   | 'form_submit_error'
+  // Contextual enquiry forms (homepage / category / tour).
+  | 'form_opened'
+  | 'form_started'
+  | 'form_step_completed'
+  | 'form_validation_error'
+  | 'form_abandoned'
+  | 'form_submitted'
   | 'ai_advisor_opened'
   | 'ai_advisor_message_sent'
   | 'ai_advisor_lead_created'
@@ -58,7 +65,8 @@ const GA4_EVENT_MAP: Partial<Record<AnalyticsEventName, string>> = {
   tour_filter_used: 'filter_applied',
   plan_my_trip_submitted: 'generate_lead',
   begin_journey_submitted: 'generate_lead',
-  request_trip_submitted: 'generate_lead'
+  request_trip_submitted: 'generate_lead',
+  form_submitted: 'generate_lead'
   // page_view, search, and the whatsapp/phone/email/cta clicks keep their name.
 };
 
@@ -68,7 +76,10 @@ const SAFE_KEYS = [
   'accommodation_level', 'duration_days', 'price_from', 'currency', 'budget_range', 'traveller_type',
   'list_name', 'item_position', 'cta_name', 'cta_type', 'cta_location', 'page_section',
   'search_term', 'results_count', 'sort_option', 'filter_name', 'lead_type', 'transaction_id',
-  'form_name', 'method', 'error_type', 'error_code'
+  'form_name', 'method', 'error_type', 'error_code',
+  // Enquiry-form context. Deliberately no name, email, phone or free text —
+  // SAFE_KEYS is the boundary that keeps contact details out of GA4.
+  'form_type', 'step_index', 'step_key', 'field_name', 'category_id', 'category_name', 'tour_slug'
 ] as const;
 
 type SafeKey = (typeof SAFE_KEYS)[number];

@@ -7,11 +7,20 @@
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
+  import EnquiryForm from '$lib/components/public/enquiry/EnquiryForm.svelte';
+  import { configFor } from '$lib/enquiry/configs';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { breadcrumbLd } from '$lib/seo';
   import type { Tour } from '$lib/types';
 
   $: origin = $page.url.origin;
+
+  // The experience IS the category here, so the form opens already knowing it.
+  let enquiryOpen = false;
+  $: enquiryContext = {
+    category: exp ? { id: String(exp.id ?? ''), name: String(exp.name ?? ''), slug: String(exp.slug ?? '') } : undefined
+  };
+  $: enquiryConfig = configFor('category_enquiry', enquiryContext);
 
   let exp: Record<string, unknown> | null = null;
   let tours: Tour[] = [];
@@ -73,9 +82,9 @@
       <h1 class="max-w-3xl text-3xl font-extrabold leading-[1.08] tracking-tight md:text-5xl">{name}</h1>
       {#if exp.description}<RichText value={String(exp.description)} className="rich-on-dark mt-4 max-w-2xl text-[15px] leading-7 text-white/85 md:text-base" />{/if}
       <div class="mt-6 flex flex-wrap gap-3">
-        <a class="inline-flex h-12 items-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-heading transition hover:brightness-105" href={`/plan-my-trip?experience=${slug}`}>
+        <button class="inline-flex h-12 items-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-heading transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white" type="button" on:click={() => (enquiryOpen = true)}>
           <Sparkles size={18} /> Plan a {name} trip
-        </a>
+        </button>
         <a class="inline-flex h-12 items-center gap-2 rounded-xl border border-white/30 px-6 font-semibold text-white transition hover:bg-surface/10" href={`/tours?experience=${slug}`}>
           See {name} tours <ArrowRight size={18} />
         </a>
@@ -129,3 +138,5 @@
     <a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-forest hover:text-heading" href="/experiences">All experiences <ArrowRight size={16} /></a>
   </section>
 {/if}
+
+<EnquiryForm open={enquiryOpen} config={enquiryConfig} context={enquiryContext} on:close={() => (enquiryOpen = false)} />

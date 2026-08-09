@@ -64,8 +64,13 @@
   const statusOptions: Option[] = Object.entries(statusMeta).map(([value, m]) => ({ value, label: m.label }));
   const paymentOptions: Option[] = Object.entries(paymentMeta).map(([value, m]) => ({ value, label: m.label }));
   const sourceLabels: Record<string, string> = {
+    // The three contextual enquiry forms.
+    homepage_trip_planner: 'Trip planner',
+    category_enquiry: 'Category enquiry',
+    tour_enquiry: 'Tour enquiry',
     website_booking_form: 'Website',
     plan_my_trip: 'Plan My Trip',
+    email_itinerary: 'Itinerary by email',
     ai_handoff: 'AI Advisor',
     whatsapp: 'WhatsApp',
     admin_created: 'Admin',
@@ -144,6 +149,64 @@
   };
   const assigneeName = (id?: unknown) => (id && userMap[String(id)]) || '';
   const leadContext = (b: Booking | null) => (b?.lead_context && typeof b.lead_context === 'object' ? (b.lead_context as Record<string, unknown>) : {});
+
+  /**
+   * Flattens lead_context into readable facts.
+   *
+   * The contextual forms nest their data (page, tour, category, utm, answers),
+   * and the previous flat `String(value)` loop turned every one of those into
+   * the literal text "[object Object]" — so all the captured attribution was
+   * invisible to whoever was reading the enquiry.
+   */
+  const LC_SKIP = new Set(['v', 'form_type', 'answers', 'consent', 'attribution', 'page', 'tour', 'category', 'utm']);
+  const prettyKey = (key: string) => key.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
+  const prettyValue = (value: unknown): string => {
+    if (Array.isArray(value)) return value.map((item) => String(item)).filter(Boolean).join(', ');
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (value && typeof value === 'object') {
+      return Object.entries(value as Record<string, unknown>)
+        .filter(([, inner]) => inner !== null && inner !== undefined && inner !== '')
+        .map(([inner, innerValue]) => `${prettyKey(inner)}: ${String(innerValue)}`)
+        .join(' · ');
+    }
+    return String(value ?? '');
+  };
+
+  /** Ordered, human-readable rows for the drawer. */
+  const contextFacts = (b: Booking | null): { key: string; value: string }[] => {
+    const lc = leadContext(b);
+    const facts: { key: string; value: string }[] = [];
+    const push = (key: string, value: unknown) => {
+      const text = prettyValue(value);
+      if (text.trim()) facts.push({ key, value: text });
+    };
+
+    const category = lc.category as Record<string, unknown> | undefined;
+    const tour = lc.tour as Record<string, unknown> | undefined;
+    const page = lc.page as Record<string, unknown> | undefined;
+    const utm = lc.utm as Record<string, unknown> | undefined;
+    const answers = (lc.answers as Record<string, unknown> | undefined) ?? {};
+    const consent = lc.consent as Record<string, unknown> | undefined;
+
+    if (category?.name) push('Category', category.name);
+    if (tour?.title) push('Tour', tour.title);
+    for (const [key, value] of Object.entries(answers)) push(prettyKey(key), value);
+    if (consent) push('Marketing consent', consent.marketing === true ? 'Yes' : 'No');
+    if (utm && Object.keys(utm).length) push('Campaign', utm);
+    if (page?.title) push('Enquired from', page.title);
+
+    // Anything a future form adds that this function does not know about.
+    for (const [key, value] of Object.entries(lc)) {
+      if (LC_SKIP.has(key)) continue;
+      push(prettyKey(key), value);
+    }
+    return facts;
+  };
+
+  const contextUrl = (b: Booking | null): string => {
+    const page = leadContext(b).page as Record<string, unknown> | undefined;
+    return typeof page?.url === 'string' ? page.url : '';
+  };
 
   const queryParams = () => ({
     search,
@@ -568,13 +631,25 @@
         {/if}
 
         {#if Object.keys(lc).length > 0}
+          {@const facts = contextFacts(viewing)}
+          {@const url = contextUrl(viewing)}
           <div>
-            <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">Lead context</p>
-            <div class="mt-1 flex flex-wrap gap-2">
-              {#each Object.entries(lc) as [key, value]}
-                {#if value}<span class="rounded-full bg-forest/10 px-2.5 py-1 text-xs font-medium text-forest">{key.replace(/_/g, ' ')}: {String(value)}</span>{/if}
-              {/each}
-            </div>
+            <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">What they told us</p>
+            {#if facts.length}
+              <dl class="mt-2 grid gap-px overflow-hidden rounded-2xl border border-ink/10 bg-ink/10">
+                {#each facts as fact}
+                  <div class="grid gap-1 bg-surface px-3 py-2 sm:grid-cols-[minmax(140px,180px)_1fr] sm:gap-3">
+                    <dt class="text-xs font-semibold text-ink/50">{fact.key}</dt>
+                    <dd class="text-sm text-ink/80">{fact.value}</dd>
+                  </div>
+                {/each}
+              </dl>
+            {/if}
+            {#if url}
+              <a class="mt-2 inline-flex max-w-full items-center gap-1.5 truncate text-xs font-semibold text-forest hover:underline" href={url} target="_blank" rel="noopener noreferrer">
+                {url}
+              </a>
+            {/if}
           </div>
         {/if}
 
