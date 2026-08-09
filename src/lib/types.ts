@@ -47,9 +47,19 @@ export type Tour = {
   slug: string;
   short_description?: string;
   full_description?: string;
+  seo_title?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
   destination_id?: string | null;
   category_id?: string | null;
   destinations?: { name?: string; slug?: string; country?: string } | null;
+  destination_ids?: string[];
+  tour_destinations?: Array<{
+    destination_id?: string | null;
+    sort_order?: number | null;
+    is_primary?: boolean | null;
+    destinations?: { id?: string; name?: string; slug?: string; country?: string } | null;
+  }> | null;
   tour_categories?: { name?: string; slug?: string } | null;
   experience_type?: string | null;
   persona_tags?: string[];

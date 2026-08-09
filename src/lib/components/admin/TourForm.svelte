@@ -1,13 +1,15 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { ArrowLeft, Save } from '@lucide/svelte';
+  import { ArrowLeft, Plus, Save, Trash2, X } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
+  import AdminRichText from '$lib/components/admin/AdminRichText.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
+  import { hasRichContent, toPlainText } from '$lib/richText';
   import AiAssistButton from '$lib/components/admin/AiAssistButton.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
   import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
@@ -68,7 +70,7 @@
     budget_tier: '',
     category_id: '',
     currency: 'USD',
-    destination_id: '',
+    destination_ids: [] as string[],
     difficulty_level: '',
     duration_days: '1',
     duration_nights: '0',
@@ -77,7 +79,7 @@
     full_description: '',
     group_size_max: '',
     group_size_min: '',
-    highlights: '',
+    highlights: [''] as string[],
     is_available: true,
     is_featured: false,
     is_popular: false,
@@ -98,12 +100,15 @@
   // Live context handed to the AI co-pilot so its drafts fit the trip.
   const aiContext = () => ({
     title: form.title || undefined,
-    destination: destinationOptions.find((o) => o.value === form.destination_id)?.label,
+    destination: selectedDestinationLabels().join(', ') || undefined,
     duration_days: Number(form.duration_days) || undefined,
     budget_tier: form.budget_tier || undefined,
-    highlights: form.highlights || undefined,
+    highlights: highlightPlainList().join('\n') || undefined,
     short_description: form.short_description || undefined,
-    full_description: form.full_description || undefined
+    // The co-pilot reads and writes prose, not markup — full_description is
+    // rich text now, so it is flattened on the way out and re-paragraphed on
+    // the way back in by the editor itself.
+    full_description: toPlainText(form.full_description) || undefined
   });
 
   const showToast = (message: string, type: Toast['type'] = 'success') => {
@@ -133,11 +138,42 @@
       .map((item) => item.trim())
       .filter(Boolean);
 
-  const lineList = (value: unknown) =>
-    String(value ?? '')
-      .split('\n')
-      .map((item) => item.trim())
+  const highlightPlainList = () =>
+    form.highlights
+      .map((item) => toPlainText(item).trim())
       .filter(Boolean);
+
+  const cleanHighlights = () =>
+    form.highlights
+      .map((item) => String(item ?? '').trim())
+      .filter((item) => hasRichContent(item));
+
+  const selectedDestinationLabels = () =>
+    form.destination_ids
+      .map((id) => destinationOptions.find((option) => option.value === id)?.label)
+      .filter(Boolean) as string[];
+
+  const isDestinationSelected = (id: string) => form.destination_ids.includes(id);
+
+  const toggleDestination = (id: string) => {
+    if (!id) return;
+    form.destination_ids = isDestinationSelected(id)
+      ? form.destination_ids.filter((current) => current !== id)
+      : [...form.destination_ids, id];
+  };
+
+  const removeDestination = (id: string) => {
+    form.destination_ids = form.destination_ids.filter((current) => current !== id);
+  };
+
+  const addHighlight = () => {
+    form.highlights = [...form.highlights, ''];
+  };
+
+  const removeHighlight = (index: number) => {
+    const next = form.highlights.filter((_, currentIndex) => currentIndex !== index);
+    form.highlights = next.length ? next : [''];
+  };
 
   const nullableNumber = (value: unknown) => {
     const text = String(value ?? '').trim();
@@ -159,7 +195,6 @@
       ]);
 
       destinationOptions = [
-        { label: 'No destination', value: '' },
         ...destinations.data.items.map((destination) => ({
           label: String(destination.name ?? destination.slug ?? 'Untitled destination'),
           value: String(destination.id)
@@ -190,13 +225,20 @@
     try {
       const response = await api.tours.get(tourId);
       const tour = response.data as Record<string, unknown>;
+      const tourDestinationIds = Array.isArray(tour.tour_destinations)
+        ? (tour.tour_destinations as Array<Record<string, unknown>>)
+            .sort((a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0))
+            .map((row) => String(row.destination_id ?? ''))
+            .filter(Boolean)
+        : [];
+      const primaryDestinationId = String(tour.destination_id ?? '');
 
       form = {
         banner_image_url: String(tour.banner_image_url ?? ''),
         budget_tier: String(tour.budget_tier ?? ''),
         category_id: String(tour.category_id ?? ''),
         currency: String(tour.currency ?? 'USD'),
-        destination_id: String(tour.destination_id ?? ''),
+        destination_ids: [...new Set([...tourDestinationIds, primaryDestinationId].filter(Boolean))],
         difficulty_level: String(tour.difficulty_level ?? ''),
         duration_days: String(tour.duration_days ?? '1'),
         duration_nights: String(tour.duration_nights ?? '0'),
@@ -205,7 +247,7 @@
         full_description: String(tour.full_description ?? ''),
         group_size_max: tour.group_size_max === null || tour.group_size_max === undefined ? '' : String(tour.group_size_max),
         group_size_min: tour.group_size_min === null || tour.group_size_min === undefined ? '' : String(tour.group_size_min),
-        highlights: Array.isArray(tour.highlights) ? tour.highlights.join('\n') : '',
+        highlights: Array.isArray(tour.highlights) && tour.highlights.length ? tour.highlights.map(String) : [''],
         is_available: Boolean(tour.is_available ?? true),
         is_featured: Boolean(tour.is_featured),
         is_popular: Boolean(tour.is_popular),
@@ -236,7 +278,8 @@
     budget_tier: form.budget_tier || null,
     category_id: form.category_id || null,
     currency: String(form.currency ?? '').trim().toUpperCase() || 'USD',
-    destination_id: form.destination_id || null,
+    destination_id: form.destination_ids[0] || null,
+    destination_ids: form.destination_ids,
     difficulty_level: form.difficulty_level || null,
     duration_days: Number(form.duration_days || 1),
     duration_nights: Number(form.duration_nights || 0),
@@ -245,7 +288,7 @@
     full_description: form.full_description || null,
     group_size_max: nullableNumber(form.group_size_max),
     group_size_min: nullableNumber(form.group_size_min),
-    highlights: lineList(form.highlights),
+    highlights: cleanHighlights(),
     is_available: form.is_available,
     is_featured: form.is_featured,
     is_popular: form.is_popular,
@@ -339,8 +382,60 @@
 
         <div class="mt-4 grid gap-4 md:grid-cols-3">
           <AdminSelect label="Status" name="status" bind:value={form.status} options={statusOptions} />
-          <AdminSelect label="Destination" name="destination_id" bind:value={form.destination_id} options={destinationOptions} />
           <AdminSelect label="Category" name="category_id" bind:value={form.category_id} options={categoryOptions} />
+        </div>
+
+        <div class="mt-4 grid gap-2">
+          <div class="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <span class="text-[13px] font-semibold text-ink/65">Destinations</span>
+              <p class="mt-0.5 text-xs text-ink/45">Select every destination this tour visits. The first selected item is the primary destination used by older pages and reports.</p>
+            </div>
+            {#if form.destination_ids.length}
+              <button class="inline-flex h-9 items-center gap-1.5 rounded-md border border-ink/10 bg-surface px-3 text-xs font-bold text-ink/60 transition hover:border-red-200 hover:text-red-700" type="button" on:click={() => (form.destination_ids = [])}>
+                <X size={14} /> Clear
+              </button>
+            {/if}
+          </div>
+
+          {#if form.destination_ids.length}
+            <div class="flex flex-wrap gap-2">
+              {#each form.destination_ids as id, index (id)}
+                {@const option = destinationOptions.find((item) => item.value === id)}
+                {#if option}
+                  <span class="inline-flex max-w-full items-center gap-2 rounded-md border border-forest/15 bg-forest/5 px-3 py-2 text-sm font-semibold text-forest">
+                    {#if index === 0}
+                      <span class="rounded bg-goldfinch-gold/25 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-heading">Primary</span>
+                    {/if}
+                    <span class="truncate">{option.label}</span>
+                    <button class="text-forest/55 transition hover:text-red-700" type="button" aria-label={`Remove ${option.label}`} on:click={() => removeDestination(id)}>
+                      <X size={14} />
+                    </button>
+                  </span>
+                {/if}
+              {/each}
+            </div>
+          {/if}
+
+          <div class="grid max-h-56 gap-2 overflow-y-auto rounded-md border border-ink/10 bg-black/[0.02] p-2 sm:grid-cols-2 lg:grid-cols-3">
+            {#each destinationOptions as option (option.value)}
+              <button
+                type="button"
+                class={`flex min-h-11 items-center justify-between gap-3 rounded-md border px-3 py-2 text-left text-sm transition ${
+                  isDestinationSelected(option.value)
+                    ? 'border-forest/45 bg-forest/10 text-heading'
+                    : 'border-transparent bg-surface text-ink/68 hover:border-ink/10 hover:bg-sand/55'
+                }`}
+                aria-pressed={isDestinationSelected(option.value)}
+                on:click={() => toggleDestination(option.value)}
+              >
+                <span class="min-w-0 truncate font-semibold">{option.label}</span>
+                <span class={`grid h-5 w-5 shrink-0 place-items-center rounded border text-[11px] font-black ${
+                  isDestinationSelected(option.value) ? 'border-forest bg-forest text-white' : 'border-ink/15 text-transparent'
+                }`}>✓</span>
+              </button>
+            {/each}
+          </div>
         </div>
 
         <div class="mt-4 grid gap-4">
@@ -354,10 +449,10 @@
           <div class="grid gap-1.5">
             <div class="flex justify-end gap-1.5">
               <AiAssistButton task="write_description" label="Write" getContext={aiContext} on:apply={(e) => (form.full_description = e.detail.text ?? form.full_description)} />
-              <AiAssistButton task="improve" label="Improve" getContext={aiContext} getText={() => form.full_description} on:apply={(e) => (form.full_description = e.detail.text ?? form.full_description)} />
-              <AiAssistButton task="shorten" label="Shorten" getContext={aiContext} getText={() => form.full_description} on:apply={(e) => (form.full_description = e.detail.text ?? form.full_description)} />
+              <AiAssistButton task="improve" label="Improve" getContext={aiContext} getText={() => toPlainText(form.full_description)} on:apply={(e) => (form.full_description = e.detail.text ?? form.full_description)} />
+              <AiAssistButton task="shorten" label="Shorten" getContext={aiContext} getText={() => toPlainText(form.full_description)} on:apply={(e) => (form.full_description = e.detail.text ?? form.full_description)} />
             </div>
-            <AdminTextArea label="Full description" name="full_description" bind:value={form.full_description} rows={6} />
+            <AdminRichText label="Full description" name="full_description" bind:value={form.full_description} rows={10} />
           </div>
         </div>
       </section>
@@ -393,10 +488,33 @@
         </div>
 
         <div class="mt-4 grid gap-1.5">
-          <div class="flex justify-end">
-            <AiAssistButton task="suggest_highlights" label="Suggest highlights" getContext={aiContext} on:apply={(e) => (form.highlights = (e.detail.items ?? []).join('\n') || form.highlights)} />
+          <div class="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <span class="text-[13px] font-semibold text-ink/65">Highlights</span>
+              <p class="mt-0.5 text-xs text-ink/45">Each item renders as a bullet. Use light formatting only when it improves scanning.</p>
+            </div>
+            <div class="flex gap-2">
+              <AiAssistButton task="suggest_highlights" label="Suggest highlights" getContext={aiContext} on:apply={(e) => (form.highlights = (e.detail.items ?? []).length ? (e.detail.items ?? []).map(String) : form.highlights)} />
+              <button class="inline-flex h-9 items-center gap-1.5 rounded-md border border-ink/10 bg-surface px-3 text-xs font-bold text-ink transition hover:border-forest/25 hover:bg-sand/55" type="button" on:click={addHighlight}>
+                <Plus size={14} /> Add
+              </button>
+            </div>
           </div>
-          <AdminTextArea label="Highlights" name="highlights" bind:value={form.highlights} rows={4} placeholder="One highlight per line. Day-by-day itinerary is managed separately in Itineraries." />
+
+          <div class="grid gap-3">
+            {#each form.highlights as _highlight, index}
+              <div class="grid gap-2 rounded-[8px] border border-ink/10 bg-sand/20 p-3 sm:grid-cols-[1fr_auto] sm:items-start">
+                <AdminRichText label={`Bullet ${index + 1}`} name={`highlight_${index}`} bind:value={form.highlights[index]} rows={3} headings="none" placeholder="e.g. Private game drives in Serengeti" />
+                <button
+                  class="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-red-200 bg-surface px-3 text-xs font-bold text-red-700 transition hover:bg-red-50 sm:mt-6"
+                  type="button"
+                  on:click={() => removeHighlight(index)}
+                >
+                  <Trash2 size={14} /> Remove
+                </button>
+              </div>
+            {/each}
+          </div>
         </div>
       </section>
 

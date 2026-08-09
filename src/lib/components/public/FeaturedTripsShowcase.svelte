@@ -18,6 +18,8 @@
   import { fadeUpOnScroll, revealHeading } from '$lib/animations';
   import { brand } from '$lib/brand';
   import { imgUrl, thumbUrl, sourceFor } from '$lib/img';
+  import { toPlainText } from '$lib/richText';
+  import { getTourDestinations } from '$lib/tourDestinations';
   import { defaultSpecialist } from '$lib/data/specialists';
   import type { Tour } from '$lib/types';
 
@@ -33,7 +35,7 @@
   $: active = tabs.find((t) => t.slug === activeSlug) ?? tabs[0];
 
   const rank = (t: Tour) => (t.is_featured ? 2 : 0) + (t.is_popular ? 1 : 0);
-  const hashtag = (h: string) => '#' + h.replace(/&/g, 'and').replace(/[^a-zA-Z0-9]+/g, '');
+  const hashtag = (h: string) => '#' + toPlainText(h).replace(/&/g, 'and').replace(/[^a-zA-Z0-9]+/g, '');
 
   // Map a highlight phrase to a representative icon for the feature chips.
   const iconFor = (text: string) => {
@@ -55,7 +57,7 @@
         'Private & tailor-made'
       ].filter(Boolean)
     : [];
-  $: chips = (active?.tour.highlights ?? []).slice(0, 6);
+  $: chips = (active?.tour.highlights ?? []).map((item) => toPlainText(item)).filter(Boolean).slice(0, 6);
   $: initials = defaultSpecialist.name.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase();
 
   const buildTiles = async (tab: Tab) => {
@@ -75,7 +77,7 @@
       if (u && !imgs.some((t) => t.url === u)) imgs.push({ url: u, caption: '' });
     }
     // Fill missing captions from the trip highlights as #hashtags.
-    const hl = tour.highlights ?? [];
+    const hl = (tour.highlights ?? []).map((item) => toPlainText(item)).filter(Boolean);
     imgs = imgs.map((t, i) => ({ url: t.url, caption: t.caption || (hl[i] ? hashtag(hl[i]) : '') }));
     tiles = imgs.slice(0, 4);
     galleryCache[tour.id] = tiles;
@@ -101,11 +103,12 @@
       const tours = (res.data.items ?? []) as Tour[];
       const byDest = new Map<string, Tab>();
       for (const tour of tours) {
-        const slug = tour.destinations?.slug;
-        const name = tour.destinations?.name;
-        if (!slug || !name) continue;
-        const existing = byDest.get(slug);
-        if (!existing || rank(tour) > rank(existing.tour)) byDest.set(slug, { slug, name, tour });
+        for (const destination of getTourDestinations(tour)) {
+          const existing = byDest.get(destination.slug);
+          if (!existing || rank(tour) > rank(existing.tour)) {
+            byDest.set(destination.slug, { slug: destination.slug, name: destination.name, tour });
+          }
+        }
       }
       tabs = [...byDest.values()].sort((a, b) => a.name.localeCompare(b.name)).slice(0, 6);
       activeSlug = tabs[0]?.slug ?? '';

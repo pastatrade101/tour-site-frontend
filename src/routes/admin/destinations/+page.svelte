@@ -9,6 +9,7 @@
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
+  import AdminRichText from '$lib/components/admin/AdminRichText.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
   import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
@@ -469,19 +470,19 @@
         </div>
 
         <AdminTextArea label="Short description" name="short_description" bind:value={form.short_description} rows={3} placeholder="Concise destination summary for cards and search." />
-        <AdminTextArea label="Description" name="description" bind:value={form.description} rows={5} placeholder="Destination overview for the public page." />
+        <AdminRichText label="Description" name="description" bind:value={form.description} rows={10} placeholder="Destination overview for the public page." />
 
         <div class="rounded-2xl border border-ink/10 bg-sand/20 p-4">
           <p class="text-sm font-bold text-ink">Health &amp; safety</p>
           <p class="mt-0.5 text-xs text-ink/55">Shown as a "Health &amp; safety" section on this destination's page and summarised on the /safety hub. Leave blank to hide.</p>
           <div class="mt-4 grid gap-4">
-            <AdminTextArea label="Safety overview" name="safety_overview" bind:value={form.safety_overview} rows={3} placeholder="Is it safe? An honest, reassuring overview." />
+            <AdminRichText label="Safety overview" name="safety_overview" bind:value={form.safety_overview} rows={6} placeholder="Is it safe? An honest, reassuring overview." />
             <div class="grid gap-4 md:grid-cols-2">
-              <AdminTextArea label="Health & vaccinations" name="health_vaccinations" bind:value={form.health_vaccinations} rows={3} />
-              <AdminTextArea label="Security advice" name="security_advice" bind:value={form.security_advice} rows={3} />
+              <AdminRichText label="Health & vaccinations" name="health_vaccinations" bind:value={form.health_vaccinations} rows={6} />
+              <AdminRichText label="Security advice" name="security_advice" bind:value={form.security_advice} rows={6} />
             </div>
             <div class="grid gap-4 md:grid-cols-2">
-              <AdminTextArea label="Travel insurance note" name="travel_insurance_note" bind:value={form.travel_insurance_note} rows={2} />
+              <AdminRichText label="Travel insurance note" name="travel_insurance_note" bind:value={form.travel_insurance_note} rows={5} />
               <AdminTextArea label="Emergency contacts" name="emergency_contacts" bind:value={form.emergency_contacts} rows={2} />
             </div>
           </div>

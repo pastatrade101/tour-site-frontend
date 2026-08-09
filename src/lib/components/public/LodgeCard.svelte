@@ -3,6 +3,7 @@
   import { tilt } from '$lib/animations';
   import { currency, formatUsd } from '$lib/currency';
   import { imgUrl, thumbUrl, sourceFor } from '$lib/img';
+  import { toMetaText } from '$lib/richText';
   import type { Lodge } from '$lib/types';
 
   export let lodge: Lodge;
@@ -26,6 +27,7 @@
     lodge.price_per_night_from != null
       ? formatUsd(lodge.price_per_night_from, $currency)
       : '';
+  $: summary = toMetaText(lodge.why_we_recommend || lodge.description || '', 180);
 </script>
 
 <article class="group flex h-full flex-col overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_14px_40px_rgba(57,61,50,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(57,61,50,0.16)]" use:tilt={{ max: 5 }}>
@@ -44,10 +46,8 @@
       {levelLabels[lodge.accommodation_level] ?? lodge.accommodation_level} · {typeLabels[lodge.lodge_type] ?? lodge.lodge_type}
     </p>
     <h3 class="mt-2 text-lg font-bold tracking-normal text-ink">{lodge.name}</h3>
-    {#if lodge.why_we_recommend}
-      <p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/70">{lodge.why_we_recommend}</p>
-    {:else if lodge.description}
-      <p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/70">{lodge.description}</p>
+    {#if summary}
+      <p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/70">{summary}</p>
     {/if}
 
     {#if lodge.best_for?.length}

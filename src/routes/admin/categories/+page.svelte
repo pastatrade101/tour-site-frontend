@@ -10,6 +10,7 @@
   import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
+  import AdminRichText from '$lib/components/admin/AdminRichText.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
   import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
@@ -17,6 +18,7 @@
   import ToastStack from '$lib/components/admin/ToastStack.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
+  import { toMetaText } from '$lib/richText';
 
   type Category = {
     id: string;
@@ -338,7 +340,7 @@
             <tr class="transition hover:bg-sand/25">
               <td class="px-4 py-4">
                 <div class="font-semibold text-ink">{category.name}</div>
-                <p class="mt-1 line-clamp-1 text-xs text-ink/55">{category.description || 'No description yet.'}</p>
+                <p class="mt-1 line-clamp-1 text-xs text-ink/55">{toMetaText(category.description || 'No description yet.', 120)}</p>
               </td>
               <td class="px-4 py-4 text-ink/65">{category.slug}</td>
               <td class="px-4 py-4"><StatusBadge status={category.status} /></td>
@@ -394,7 +396,7 @@
           </label>
         </div>
 
-        <AdminTextArea label="Description" name="description" bind:value={form.description} rows={4} placeholder="Short category description for CMS and public pages." />
+        <AdminRichText label="Description" name="description" bind:value={form.description} rows={7} placeholder="Short category description for CMS and public pages." />
 
         <div class="rounded-2xl border border-ink/10 bg-sand/20 p-4">
           <p class="text-sm font-bold text-ink">Experience page enrichment</p>

@@ -8,6 +8,7 @@
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
+  import AdminRichText from '$lib/components/admin/AdminRichText.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
@@ -296,7 +297,7 @@
         </div>
 
         <AdminTextArea label="Summary" name="summary" bind:value={form.summary} rows={2} placeholder="Short one-line summary shown on the card." />
-        <AdminTextArea label="Content" name="content" bind:value={form.content} rows={5} placeholder="The full guidance for this topic." />
+        <AdminRichText label="Content" name="content" bind:value={form.content} rows={8} placeholder="The full guidance for this topic." />
         <MediaPicker label="Image" uploadFolder="safety" aspect="aspect-[4/3]" bind:value={form.image_url} />
 
         <div class="grid gap-4 sm:grid-cols-3">

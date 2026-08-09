@@ -13,7 +13,8 @@
   import ToastStack from '$lib/components/admin/ToastStack.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
-  import type { Pagination } from '$lib/types';
+  import { getTourDestinationLabel } from '$lib/tourDestinations';
+  import type { Pagination, Tour as PublicTour } from '$lib/types';
 
   type Option = {
     label: string;
@@ -391,7 +392,7 @@
                   <div class="font-semibold text-ink">{tour.title}</div>
                   <p class="mt-1 line-clamp-1 text-xs text-ink/55">{tour.short_description || tour.slug}</p>
                 </td>
-                <td class="px-4 py-4 text-ink/65">{relationText(tour.destinations, 'name')}</td>
+                <td class="px-4 py-4 text-ink/65">{getTourDestinationLabel(tour as unknown as PublicTour, 2) || relationText(tour.destinations, 'name')}</td>
                 <td class="px-4 py-4 text-ink/65">{relationText(tour.tour_categories, 'name')}</td>
                 <td class="px-4 py-4"><StatusBadge status={tour.status} /></td>
                 <td class="px-4 py-4">

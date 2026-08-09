@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ArrowLeft, ArrowRight, MapPin } from '@lucide/svelte';
   import { imgUrl } from '$lib/img';
+  import { toMetaText } from '$lib/richText';
 
   export let eyebrow = 'Top Destinations';
   export let title = 'The Places That Shape the Journey';
@@ -17,7 +18,7 @@
 
   const imageOf = (d: any): string => d?.main_image_url || d?.image_url || d?.banner_image_url || '';
   const metaOf = (d: any): string => d?.region || d?.country || '';
-  const blurbOf = (d: any): string => d?.short_description || d?.description || d?.excerpt || '';
+  const blurbOf = (d: any): string => toMetaText(d?.short_description || d?.description || d?.excerpt || '', 170);
 </script>
 
 {#if destinations.length}

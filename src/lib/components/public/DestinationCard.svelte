@@ -2,13 +2,14 @@
   import { ArrowRight, MapPin } from '@lucide/svelte';
   import { currency, formatUsd } from '$lib/currency';
   import { imgUrl, thumbUrl, sourceFor } from '$lib/img';
+  import { toMetaText } from '$lib/richText';
   import type { Destination } from '$lib/types';
 
   export let destination: Destination;
   export let href = `/destinations/${destination.slug}`;
 
   $: imageUrl = sourceFor(destination, 800, 'main_image_url', 'image_url', 'banner_image_url');
-  $: summary = destination.short_description || destination.description || '';
+  $: summary = toMetaText(destination.short_description || destination.description || '', 160);
   $: locationLabel = [destination.region, destination.country].filter(Boolean).join(', ') || destination.location || '';
   $: budgetLabel = destination.score_budget_from ? formatUsd(destination.score_budget_from, $currency) : '';
 </script>

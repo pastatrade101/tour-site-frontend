@@ -9,6 +9,7 @@
   import { navbarEntrance } from '$lib/animations';
   import { brand } from '$lib/brand';
   import { imgUrl } from '$lib/img';
+  import { toMetaText } from '$lib/richText';
   import { publicSettings, settingText } from '$lib/settings';
   import { canInstall, promptInstall } from '$lib/pwa';
   import CurrencySelector from './CurrencySelector.svelte';
@@ -165,14 +166,14 @@
       try {
         const res = await api.destinations.list({ status: 'published', limit: 9 });
         const items = res.data.items ?? [];
-        if (items.length) destinations = items.map((d) => ({ label: String(d.name ?? d.slug), href: `/destinations/${d.slug}`, image: d.main_image_url || d.image_url || d.banner_image_url || undefined, description: (d.short_description as string) || (d.description as string) || undefined }));
+        if (items.length) destinations = items.map((d) => ({ label: String(d.name ?? d.slug), href: `/destinations/${d.slug}`, image: d.main_image_url || d.image_url || d.banner_image_url || undefined, description: toMetaText((d.short_description as string) || (d.description as string) || '', 120) || undefined }));
       } catch {
         // keep fallback
       }
       try {
         const res = await api.tours.list({ status: 'published', limit: 9 });
         const items = res.data.items ?? [];
-        if (items.length) tours = items.map((t) => ({ label: String(t.title ?? t.slug), href: `/tours/${t.slug}`, image: t.main_image_url || t.banner_image_url || undefined, description: t.short_description || t.full_description || undefined }));
+        if (items.length) tours = items.map((t) => ({ label: String(t.title ?? t.slug), href: `/tours/${t.slug}`, image: t.main_image_url || t.banner_image_url || undefined, description: toMetaText(t.short_description || t.full_description || '', 120) || undefined }));
       } catch {
         // keep fallback
       }
@@ -184,7 +185,7 @@
             label: String(l.name ?? l.slug),
             href: `/accommodation/${l.slug}`,
             image: l.hero_image_url || l.image_url || undefined,
-            description: l.why_we_recommend || l.description || undefined
+            description: toMetaText(l.why_we_recommend || l.description || '', 120) || undefined
           }));
       } catch {
         // keep fallback
@@ -192,7 +193,7 @@
       try {
         const res = await api.categories.list({ status: 'published', limit: 9 });
         const items = res.data.items ?? [];
-        if (items.length) categories = items.map((c) => ({ label: String(c.name ?? c.slug), href: `/safari-styles/${c.slug}`, image: c.image_url || c.icon_url || undefined, description: c.description || c.who_its_for || undefined }));
+        if (items.length) categories = items.map((c) => ({ label: String(c.name ?? c.slug), href: `/safari-styles/${c.slug}`, image: c.image_url || c.icon_url || undefined, description: toMetaText(c.description || c.who_its_for || '', 120) || undefined }));
       } catch {
         // keep fallback
       }

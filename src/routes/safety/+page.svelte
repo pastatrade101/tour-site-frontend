@@ -16,7 +16,9 @@
   import { api } from '$lib/api/client';
   import { staggeredCardReveal } from '$lib/animations/motion';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
+  import RichText from '$lib/components/public/RichText.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
+  import { toMetaText } from '$lib/richText';
   import { breadcrumbLd } from '$lib/seo';
   import type { Destination, SafetyTopic } from '$lib/types';
 
@@ -116,7 +118,7 @@
             <p class="mt-2 text-sm font-semibold leading-6 text-ink/70">{topic.summary}</p>
           {/if}
           {#if topic.content}
-            <p class="mt-2 text-sm leading-6 text-ink/65">{topic.content}</p>
+            <RichText value={topic.content} className="mt-2 text-sm leading-6 text-ink/65" />
           {/if}
         </article>
       {/each}
@@ -144,7 +146,7 @@
             href={`/destinations/${dest.slug}`}
           >
             <h3 class="text-lg font-bold text-ink">{dest.name}</h3>
-            <p class="mt-2 line-clamp-4 text-sm leading-6 text-ink/65">{dest.safety_overview}</p>
+            <p class="mt-2 line-clamp-4 text-sm leading-6 text-ink/65">{toMetaText(dest.safety_overview, 220)}</p>
             <span class="mt-auto inline-flex items-center gap-1.5 pt-4 text-sm font-semibold text-forest transition group-hover:text-heading">
               Read full safety notes <ArrowRight size={16} />
             </span>

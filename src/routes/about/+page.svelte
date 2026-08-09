@@ -8,6 +8,7 @@
   import { publicSettings, settingText } from '$lib/settings';
   import { imgUrl } from '$lib/img';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
+  import RichText from '$lib/components/public/RichText.svelte';
   import type { PageData } from './$types';
 
   export let data: PageData;
@@ -302,7 +303,7 @@
             {f.question}
             <ChevronDown size={18} class="shrink-0 text-ink/40 transition-transform group-open:rotate-180" />
           </summary>
-          <p class="pb-4 text-sm leading-7 text-ink/70">{f.answer}</p>
+          <RichText value={f.answer} className="pb-4 text-sm leading-7 text-ink/70" />
         </details>
       {/each}
     </div>

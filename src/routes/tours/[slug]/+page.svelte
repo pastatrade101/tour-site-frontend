@@ -12,6 +12,7 @@
   import BookingForm from '$lib/components/public/BookingForm.svelte';
   import EmailItineraryCapture from '$lib/components/public/EmailItineraryCapture.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
+  import RichText from '$lib/components/public/RichText.svelte';
   import ShortlistButton from '$lib/components/public/ShortlistButton.svelte';
   import SpecialistCard from '$lib/components/public/SpecialistCard.svelte';
   import { defaultSpecialist } from '$lib/data/specialists';
@@ -20,6 +21,8 @@
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
+  import { toMetaText } from '$lib/richText';
+  import { getTourDestinationLabel } from '$lib/tourDestinations';
   import type { BlogPost, Tour } from '$lib/types';
 
   let tour: Tour | null = null;
@@ -41,7 +44,7 @@
         duration_days: tour.duration_days,
         price_from: tour.price_from,
         currency: tour.currency,
-        destination: (tour as unknown as { destinations?: { name?: string } }).destinations?.name
+        destination: getTourDestinationLabel(tour, 3) || undefined
       }
     : null;
 
@@ -57,7 +60,7 @@
     ? {
         '@type': 'TouristTrip',
         name: tour.title,
-        description: tour.short_description ?? tour.full_description ?? '',
+        description: toMetaText(tour.short_description ?? tour.full_description ?? '', 300),
         ...(tour.main_image_url ? { image: tour.main_image_url } : {}),
         ...(tour.price_from
           ? { offers: { '@type': 'Offer', price: tour.price_from, priceCurrency: tour.currency ?? 'USD' } }
@@ -81,6 +84,7 @@
   $: inclusions = [...(tour?.tour_inclusions ?? [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   $: exclusions = [...(tour?.tour_exclusions ?? [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   $: highlights = tour?.highlights ?? [];
+  $: destinationLabel = getTourDestinationLabel(tour, 3);
   $: groupSize = tour
     ? tour.group_size_min && tour.group_size_max
       ? `${tour.group_size_min}–${tour.group_size_max} people`
@@ -89,6 +93,8 @@
         : tour.group_size ?? ''
     : '';
   $: priceLabel = tour?.price_from ? formatUsd(tour.price_from, $currency) : '';
+  $: tourDescription = tour ? tour.full_description || tour.short_description || '' : '';
+  $: metaDescription = tour ? toMetaText(tour.meta_description || tour.short_description || tour.full_description || '', 170) : '';
 
   // Relevant content for onward navigation (loaded best-effort after the tour).
   let relatedTours: Tour[] = [];
@@ -137,7 +143,7 @@
 
     if (tour) {
       void loadRelated(tour);
-      trackEvent('tour_page_view', { tour_id: tour.id, tour_title: tour.title, destination: tour.destinations?.name });
+      trackEvent('tour_page_view', { tour_id: tour.id, tour_title: tour.title, destination: destinationLabel || tour.destinations?.name });
     }
   };
 
@@ -146,6 +152,14 @@
   $: slug = $page.params.slug ?? '';
   $: if (browser && slug) void load(slug);
 </script>
+
+<svelte:head>
+  {#if tour}
+    <title>{tour.seo_title || tour.meta_title || tour.title} | Goldfinch Adventures</title>
+    {#if metaDescription}<meta name="description" content={metaDescription} />{/if}
+    <link rel="canonical" href={`${origin}/tours/${tour.slug}`} />
+  {/if}
+</svelte:head>
 
 <section class="container-shell py-14">
   {#if loading}
@@ -177,7 +191,9 @@
           {/if}
         </div>
         <h1 class="mt-2 text-4xl font-bold tracking-normal text-ink">{tour.title}</h1>
-        <p class="mt-4 text-base leading-7 text-ink/70">{tour.full_description ?? tour.short_description}</p>
+        {#if tourDescription}
+          <RichText value={tourDescription} className="mt-4 text-base leading-7 text-ink/70" />
+        {/if}
 
         <!-- primary actions (mobile; desktop uses the sticky booking card) -->
         <div class="mt-7 grid gap-3 lg:hidden">
@@ -262,10 +278,10 @@
             <h2 class="text-xl font-bold text-heading">Trip highlights</h2>
             <div class="mt-3 grid gap-2 sm:grid-cols-2">
               {#each highlights as h}
-                <span class="inline-flex items-start gap-2 text-sm leading-6 text-ink/75">
+                <div class="flex items-start gap-2 text-sm leading-6 text-ink/75">
                   <span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-goldfinch-gold/20 text-goldfinch-gold"><Check size={12} strokeWidth={3} /></span>
-                  {h}
-                </span>
+                  <RichText value={h} className="min-w-0 text-sm leading-6 text-ink/75" />
+                </div>
               {/each}
             </div>
           </section>
@@ -284,7 +300,9 @@
                     <div class="min-w-0 flex-1">
                       <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-clay">Day {day.day_number}</p>
                       <h3 class="mt-0.5 text-lg font-bold text-ink">{day.title}</h3>
-                      {#if day.description}<p class="mt-1.5 text-sm leading-6 text-ink/70">{day.description}</p>{/if}
+                      {#if day.description}
+                        <RichText value={day.description} className="mt-1.5 text-sm leading-6 text-ink/70" />
+                      {/if}
                       {#if day.accommodation || day.meals || day.activities}
                         <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs font-medium text-ink/70">
                           {#if day.activities}<span class="inline-flex items-center gap-1.5"><MapPin size={14} class="text-forest" /> {day.activities}</span>{/if}

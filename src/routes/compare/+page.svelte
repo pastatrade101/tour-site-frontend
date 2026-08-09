@@ -4,6 +4,7 @@
   import { api } from '$lib/api/client';
   import { revealHeading, staggeredCardReveal, tilt } from '$lib/animations';
   import { COMPARISONS } from '$lib/data/comparisons';
+  import { toMetaText } from '$lib/richText';
   import type { Comparison } from '$lib/types';
 
   type Card = { slug: string; eyebrow: string; title: string; intro: string };
@@ -14,7 +15,7 @@
     try {
       const res = await api.comparisons.list({ status: 'published', limit: 100 });
       const rows = res.data.items as Comparison[];
-      if (rows.length) items = rows.map((c) => ({ slug: c.slug, eyebrow: c.eyebrow ?? '', title: c.title, intro: c.intro ?? '' }));
+      if (rows.length) items = rows.map((c) => ({ slug: c.slug, eyebrow: c.eyebrow ?? '', title: c.title, intro: toMetaText(c.intro ?? '', 170) }));
     } catch {
       // keep config fallback
     }

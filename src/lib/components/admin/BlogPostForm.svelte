@@ -8,6 +8,7 @@
   import AdminPageHeader from './AdminPageHeader.svelte';
   import AdminSelect from './AdminSelect.svelte';
   import MediaPicker from './MediaPicker.svelte';
+  import AdminRichText from './AdminRichText.svelte';
   import AdminTextArea from './AdminTextArea.svelte';
   import ToastStack from './ToastStack.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
@@ -205,7 +206,7 @@
 
           <AdminTextArea label="Excerpt" name="excerpt" bind:value={form.excerpt} rows={3} placeholder="Short summary shown on blog listing pages and in search results (150–200 chars recommended)." />
 
-          <AdminTextArea label="Content" name="content" bind:value={form.content} rows={16} placeholder="Write your full article here. Markdown or plain text." />
+          <AdminRichText label="Content" name="content" bind:value={form.content} rows={20} headings="h2h3" placeholder="Write your full article here." />
         </div>
       </div>
 

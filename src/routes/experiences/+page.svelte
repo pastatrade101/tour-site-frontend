@@ -5,6 +5,7 @@
   import { revealHeading, staggeredCardReveal, tilt } from '$lib/animations';
   import EmptyState from '$lib/components/public/EmptyState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
+  import { toMetaText } from '$lib/richText';
 
   type Experience = { name: string; slug: string; description: string; image_url: string };
 
@@ -19,7 +20,7 @@
         .map((c) => ({
           name: String(c.name ?? c.slug),
           slug: String(c.slug),
-          description: c.description ? String(c.description) : '',
+          description: c.description ? toMetaText(c.description, 170) : '',
           image_url: c.image_url ? String(c.image_url) : ''
         }));
     } catch {

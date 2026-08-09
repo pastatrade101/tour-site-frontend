@@ -1,4 +1,5 @@
 // schema.org JSON-LD builders (SRS v2.0 §7.4). Pair with <JsonLd data={...} />.
+import { toPlainText } from '$lib/richText';
 
 export const breadcrumbLd = (origin: string, items: { name: string; path: string }[]) => ({
   '@type': 'BreadcrumbList',
@@ -15,7 +16,7 @@ export const faqLd = (faqs: { q: string; a: string }[]) => ({
   mainEntity: faqs.map((f) => ({
     '@type': 'Question',
     name: f.q,
-    acceptedAnswer: { '@type': 'Answer', text: f.a }
+    acceptedAnswer: { '@type': 'Answer', text: toPlainText(f.a).replace(/\s+/g, ' ').trim() }
   }))
 });
 

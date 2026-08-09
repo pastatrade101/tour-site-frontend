@@ -21,6 +21,7 @@
   import HomeHowPlanned from '$lib/components/public/home/HomeHowPlanned.svelte';
   import HomeTravellerStories from '$lib/components/public/home/HomeTravellerStories.svelte';
   import HomePlanningBand from '$lib/components/public/home/HomePlanningBand.svelte';
+  import { getTourDestinationNames, getTourDestinations, matchesTourDestinationSlug } from '$lib/tourDestinations';
   import type { Tour } from '$lib/types';
   import type { PageData } from './$types';
 
@@ -114,8 +115,8 @@
     return [...seen.values()];
   };
 
-  $: destinationOptions = distinctBy(allTours, (t) => t.destinations?.slug)
-    .map((t) => ({ slug: t.destinations!.slug as string, name: t.destinations!.name as string }))
+  $: destinationOptions = distinctBy(allTours.flatMap((tour) => getTourDestinations(tour)), (destination) => destination.slug)
+    .map((destination) => ({ slug: destination.slug, name: destination.name }))
     .sort((a, b) => a.name.localeCompare(b.name));
   $: categoryOptions = distinctBy(allTours, (t) => t.tour_categories?.slug)
     .map((t) => ({ slug: t.tour_categories!.slug as string, name: t.tour_categories!.name as string }))
@@ -123,14 +124,14 @@
   $: popularCategories = categoryOptions.slice(0, 6);
 
   const matchSearch = (t: Tour, q: string) => {
-    const hay = `${t.title} ${t.short_description ?? ''} ${t.destinations?.name ?? ''}`.toLowerCase();
+    const hay = `${t.title} ${t.short_description ?? ''} ${getTourDestinationNames(t)}`.toLowerCase();
     return hay.includes(q.toLowerCase());
   };
 
   $: base = allTours.filter(
     (t) =>
       (!searchTerm || matchSearch(t, searchTerm)) &&
-      (!destSlug || t.destinations?.slug === destSlug)
+      (!destSlug || matchesTourDestinationSlug(t, destSlug))
   );
   const catCount = (slug: string) => base.filter((t) => t.tour_categories?.slug === slug).length;
   const tierCount = (key: string) => base.filter((t) => normTier(t.budget_tier) === key).length;

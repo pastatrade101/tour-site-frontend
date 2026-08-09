@@ -8,13 +8,15 @@
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
-  import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
+  import AdminRichText from '$lib/components/admin/AdminRichText.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
   import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
   import StatusBadge from '$lib/components/admin/StatusBadge.svelte';
   import ToastStack from '$lib/components/admin/ToastStack.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
+  import RichText from '$lib/components/public/RichText.svelte';
+  import { toMetaText } from '$lib/richText';
 
   type Faq = {
     answer: string;
@@ -276,9 +278,11 @@
                     </div>
 
                     {#if expanded.has(faq.id)}
-                      <p class="mt-2 whitespace-pre-line text-sm leading-6 text-ink/65" transition:slide={{ duration: 160 }}>{faq.answer}</p>
+                      <div transition:slide={{ duration: 160 }}>
+                        <RichText value={faq.answer} className="mt-2 text-sm leading-6 text-ink/65" />
+                      </div>
                     {:else}
-                      <p class="mt-1 line-clamp-1 text-sm text-ink/45">{faq.answer}</p>
+                      <p class="mt-1 line-clamp-1 text-sm text-ink/45">{toMetaText(faq.answer, 140)}</p>
                     {/if}
 
                     <div class="mt-3 flex gap-2">
@@ -319,7 +323,7 @@
 
       <div class="mt-6 grid gap-4">
         <AdminFormInput label="Question" name="question" bind:value={form.question} placeholder="e.g. What is the best time for a Serengeti safari?" required />
-        <AdminTextArea label="Answer" name="answer" bind:value={form.answer} rows={6} placeholder="Write a clear, helpful answer that builds trust and handles objections." />
+        <AdminRichText label="Answer" name="answer" bind:value={form.answer} rows={8} headings="none" placeholder="Write a clear, helpful answer that builds trust and handles objections." />
 
         <div class="grid gap-4 sm:grid-cols-3">
           <AdminSelect label="Category" name="category" bind:value={form.category} options={categoryFormOptions} />

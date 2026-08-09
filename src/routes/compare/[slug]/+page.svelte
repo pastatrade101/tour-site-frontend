@@ -6,6 +6,7 @@
   import { revealHeading } from '$lib/animations';
   import { COMPARISONS, getComparison } from '$lib/data/comparisons';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
+  import RichText from '$lib/components/public/RichText.svelte';
   import { breadcrumbLd, faqLd } from '$lib/seo';
   import type { Comparison } from '$lib/types';
 
@@ -97,7 +98,7 @@
       {#key cmp.title}
         <h1 class="mt-2 max-w-3xl text-3xl font-extrabold leading-[1.08] tracking-tight md:text-5xl" use:revealHeading>{cmp.title}</h1>
       {/key}
-      <p class="mt-4 max-w-2xl text-[15px] leading-7 text-white/80 md:text-base">{cmp.intro}</p>
+      <RichText value={cmp.intro} className="rich-on-dark mt-4 max-w-2xl text-[15px] leading-7 text-white/80 md:text-base" />
     </div>
   </section>
 
@@ -127,7 +128,7 @@
       <Sparkles size={22} class="mt-0.5 shrink-0 text-goldfinch-gold" />
       <div>
         <p class="text-sm font-bold uppercase tracking-[0.14em] text-clay">Our honest verdict</p>
-        <p class="mt-2 text-base leading-7 text-ink/80">{cmp.verdict}</p>
+        <RichText value={cmp.verdict} className="mt-2 text-base leading-7 text-ink/80" />
         <a class="mt-4 inline-flex h-11 items-center gap-2 rounded-xl bg-deep-green px-6 font-bold text-white transition hover:bg-forest" href={ctaHref}>
           {cmp.cta.label} <ArrowRight size={16} />
         </a>

@@ -2,9 +2,12 @@
   import { ArrowRight, Newspaper } from '@lucide/svelte';
   import { tilt } from '$lib/animations';
   import { imgUrl, thumbUrl, sourceFor } from '$lib/img';
+  import { toMetaText } from '$lib/richText';
   import type { BlogPost } from '$lib/types';
 
   export let post: BlogPost;
+
+  $: summary = toMetaText(post.excerpt || post.content || '', 180);
 </script>
 
 <article class="group flex h-full flex-col overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-card transition duration-300 hover:-translate-y-0.5 hover:border-forest/25 hover:shadow-card-hover" use:tilt={{ max: 3 }}>
@@ -22,8 +25,8 @@
         <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-clay">{post.author_name}</p>
       {/if}
       <h3 class="mt-2 text-xl font-bold tracking-normal text-ink">{post.title}</h3>
-      {#if post.excerpt}
-        <p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/70">{post.excerpt}</p>
+      {#if summary}
+        <p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/70">{summary}</p>
       {/if}
       <span class="mt-auto inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[8px] bg-canvas px-4 text-sm font-bold text-forest transition group-hover:bg-deep-green group-hover:text-white">
         Read guide <ArrowRight size={14} strokeWidth={2.6} class="transition-transform group-hover:translate-x-0.5" />

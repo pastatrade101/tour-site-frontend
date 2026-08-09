@@ -24,6 +24,7 @@
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
   import { imgUrl } from '$lib/img';
+  import { toMetaText } from '$lib/richText';
   import type { BlogPost, Destination, FAQ, MigrationEntry, Review, ReviewSummary, Testimonial, Tour } from '$lib/types';
   import type { PageData } from './$types';
 
@@ -138,7 +139,7 @@
     .map((c) => ({
       name: String(c.name ?? c.slug ?? ''),
       slug: String(c.slug ?? ''),
-      description: String(c.description ?? c.who_its_for ?? ''),
+      description: toMetaText(c.description ?? c.who_its_for ?? '', 170),
       image: String(c.image_url ?? ''),
       href: `/safari-styles/${String(c.slug ?? '')}`
     }))

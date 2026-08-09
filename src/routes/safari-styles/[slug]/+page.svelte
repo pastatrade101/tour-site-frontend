@@ -3,9 +3,11 @@
   import { page } from '$app/stores';
   import EmptyState from '$lib/components/public/EmptyState.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
+  import RichText from '$lib/components/public/RichText.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { fadeUpOnScroll, revealHeading, staggeredCardReveal } from '$lib/animations';
   import { imgUrl } from '$lib/img';
+  import { toMetaText } from '$lib/richText';
   import { breadcrumbLd } from '$lib/seo';
   import type { Tour, TourCategory } from '$lib/types';
   import type { PageData } from './$types';
@@ -16,7 +18,7 @@
   $: tours = (data.tours ?? []) as Tour[];
   $: origin = $page.url.origin;
   $: title = category?.meta_title || (category ? `${category.name} Safari Style` : 'Safari Style');
-  $: description = category?.meta_description || category?.description || 'Explore this Goldfinch safari style and matching tours.';
+  $: description = toMetaText(category?.meta_description || category?.description || 'Explore this Goldfinch safari style and matching tours.', 170);
 </script>
 
 <svelte:head>
@@ -65,7 +67,7 @@
             {category.name}
           </h1>
           {#if category.description}
-            <p class="mt-5 max-w-2xl text-base font-medium leading-8 text-white/84 md:text-lg">{category.description}</p>
+            <RichText value={category.description} className="rich-on-dark mt-5 max-w-2xl text-base font-medium leading-8 text-white/84 md:text-lg" />
           {/if}
           <div class="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <a class="inline-flex h-12 items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-6 text-sm font-bold text-heading shadow-lg shadow-black/10 transition hover:brightness-105" href={`/plan-my-trip?style=${category.slug}`}>

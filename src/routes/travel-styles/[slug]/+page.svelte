@@ -6,6 +6,7 @@
   import { api } from '$lib/api/client';
   import { getTravelStyle, TRAVEL_STYLES } from '$lib/data/travel-styles';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
+  import RichText from '$lib/components/public/RichText.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { breadcrumbLd } from '$lib/seo';
   import type { TravelStyle, Tour } from '$lib/types';
@@ -89,7 +90,7 @@
       </nav>
       <p class="font-serif text-xl italic text-savanna">{style.name}</p>
       <h1 class="mt-2 max-w-3xl text-3xl font-extrabold leading-[1.08] tracking-tight md:text-5xl">{style.emotionalPromise}</h1>
-      <p class="mt-4 max-w-2xl text-[15px] leading-7 text-white/85 md:text-base">{style.description}</p>
+      <RichText value={style.description} className="rich-on-dark mt-4 max-w-2xl text-[15px] leading-7 text-white/85 md:text-base" />
       <div class="mt-6 flex flex-wrap gap-3">
         <a class="inline-flex h-12 items-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-heading transition hover:brightness-105" href={planHref}>
           <Sparkles size={18} /> Plan a {style.name.toLowerCase()} trip

@@ -3,6 +3,7 @@
   import { tilt } from '$lib/animations';
   import { currency, formatUsd } from '$lib/currency';
   import { imgUrl } from '$lib/img';
+  import { getTourDestinationLabel } from '$lib/tourDestinations';
   import ShortlistButton from './ShortlistButton.svelte';
   import type { Tour } from '$lib/types';
 
@@ -10,6 +11,7 @@
   export let index = 0;
 
   $: image = tour.main_image_url || tour.banner_image_url || '';
+  $: destinationLabel = getTourDestinationLabel(tour, 2);
   // Offer badge derived from the tour's flags (admin-editable via those flags).
   $: badge = tour.is_featured ? 'Best Value' : tour.is_popular ? 'Popular' : index % 2 === 0 ? 'Save 10%' : 'Special Offer';
   $: badgeTone = tour.is_featured
@@ -25,7 +27,7 @@
     duration_days: tour.duration_days,
     price_from: tour.price_from,
     currency: tour.currency,
-    destination: tour.destinations?.name
+    destination: destinationLabel
   };
   $: priceLabel = tour.price_from ? formatUsd(tour.price_from, $currency) : '';
 </script>
@@ -56,8 +58,8 @@
   </a>
 
   <div class="flex flex-1 flex-col p-5">
-    {#if tour.destinations?.name}
-      <p class="text-xs font-semibold uppercase tracking-[0.12em] text-clay">{tour.destinations.name}</p>
+    {#if destinationLabel}
+      <p class="text-xs font-semibold uppercase tracking-[0.12em] text-clay">{destinationLabel}</p>
     {/if}
     <h3 class="mt-1.5 text-lg font-extrabold leading-snug tracking-tight text-ink">{tour.title}</h3>
     {#if tour.short_description}

@@ -4,6 +4,7 @@
   import { revealHeading, staggeredCardReveal, tilt } from '$lib/animations';
   import { api } from '$lib/api/client';
   import { TRAVEL_STYLES } from '$lib/data/travel-styles';
+  import { toMetaText } from '$lib/richText';
   import type { TravelStyle } from '$lib/types';
 
   type Card = { slug: string; name: string; emotionalPromise: string; description: string };
@@ -25,7 +26,7 @@
           slug: s.slug,
           name: s.name,
           emotionalPromise: s.emotional_promise ?? '',
-          description: s.description ?? ''
+          description: toMetaText(s.description ?? '', 170)
         }));
       }
     } catch {

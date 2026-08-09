@@ -26,9 +26,11 @@
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import LodgeCard from '$lib/components/public/LodgeCard.svelte';
+  import RichText from '$lib/components/public/RichText.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { currency, formatUsd } from '$lib/currency';
   import { imgUrl, thumbUrl, sourceFor } from '$lib/img';
+  import { hasRichContent, toMetaText } from '$lib/richText';
   import { breadcrumbLd } from '$lib/seo';
   import type { Activity, Destination, FAQ, Lodge, Review, Tour, TourCategory, TripPoint } from '$lib/types';
   import type { DestinationGalleryImage } from './+page.server';
@@ -62,13 +64,7 @@
     return '';
   };
 
-  const splitParagraphs = (value: unknown) =>
-    text(value)
-      .split(/\n{2,}/)
-      .map((part) => part.replace(/\s+/g, ' ').trim())
-      .filter(Boolean);
-
-  const firstParagraph = (value: unknown) => splitParagraphs(value)[0] ?? '';
+  const firstParagraph = (value: unknown) => toMetaText(value, 230);
 
   const dateLabel = (value: unknown) => {
     const raw = text(value);
@@ -192,7 +188,7 @@
       { icon: 'security', title: 'Security advice', body: text(destination.security_advice) },
       { icon: 'file', title: 'Travel insurance', body: text(destination.travel_insurance_note) },
       { icon: 'phone', title: 'Emergency contacts', body: text(destination.emergency_contacts) }
-    ].filter((item) => item.body);
+    ].filter((item) => toMetaText(item.body));
   };
 
   const positiveNumber = (value: unknown) => {
@@ -247,7 +243,7 @@
           id,
           name,
           slug,
-          description: text(category?.description) || text(category?.who_its_for),
+          description: toMetaText(text(category?.description) || text(category?.who_its_for), 170),
           imageUrl:
             thumbUrl(category as Record<string, unknown> | undefined, 'image_url', 'icon_url') ||
             sourceFor(firstTourWithImage, 2000, 'main_image_url', 'banner_image_url'),
@@ -347,8 +343,8 @@
   $: locationLabel = destination
     ? [destination.region, destination.country].filter(Boolean).join(', ') || destination.location || ''
     : '';
-  $: summary = destination ? destination.short_description || firstParagraph(destination.description) : '';
-  $: introParagraphs = destination ? splitParagraphs(destination.description).slice(0, 4) : [];
+  $: summary = destination ? toMetaText(destination.short_description || destination.description || '', 230) : '';
+  $: hasIntro = destination ? hasRichContent(destination.description) : false;
   $: guideBlocks = destination && Array.isArray(destination.guide) ? (destination.guide.filter(isRecord) as GuideBlock[]) : [];
   $: visibleGuideBlocks = guideBlocks
     .filter((block) => blockTitle(block) || blockBody(block) || blockItems(block).length || tableRows(block).length)
@@ -368,7 +364,7 @@
   $: categoryListSchema = categoryItemListLd(origin, destination, relevantTourCategories);
   $: hasPlanning = safetyItems.length > 0 || tripPoints.length > 0;
   $: title = destination?.meta_title || (destination ? `${destination.name} Travel Guide` : 'Destination');
-  $: description = destination?.meta_description || summary || 'Explore this destination with Goldfinch Adventures.';
+  $: description = toMetaText(destination?.meta_description || summary || 'Explore this destination with Goldfinch Adventures.', 170);
 
   onMount(() => {
     if (destination) trackEvent('destination_page_view', { destination: destination.name });
@@ -517,13 +513,9 @@
       </aside>
 
       <div class="space-y-10">
-        {#if introParagraphs.length}
+        {#if hasIntro}
           <article class="border-b border-ink/10 pb-10">
-            <div class="prose-destination max-w-none space-y-5 text-[15px] leading-8 text-ink/72">
-              {#each introParagraphs as paragraph}
-                <p>{paragraph}</p>
-              {/each}
-            </div>
+            <RichText value={destination.description} className="prose-destination max-w-none text-[15px] leading-8 text-ink/72" />
           </article>
         {/if}
 
@@ -547,11 +539,7 @@
                     </h3>
                   {/if}
                   {#if blockBody(block)}
-                    <div class="mt-4 max-w-[68ch] space-y-4 text-[15px] leading-8 text-ink/72">
-                      {#each splitParagraphs(blockBody(block)) as paragraph}
-                        <p>{paragraph}</p>
-                      {/each}
-                    </div>
+                    <RichText value={blockBody(block)} className="mt-4 max-w-[68ch] text-[15px] leading-8 text-ink/72" />
                   {/if}
 
                   {#if blockItems(block).length}
@@ -702,7 +690,7 @@
                   </div>
                   <h3 class="mt-4 text-xl font-bold leading-tight text-heading">{category.name}</h3>
                   {#if category.description}
-                    <p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/68">{category.description}</p>
+                    <p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/68">{toMetaText(category.description, 170)}</p>
                   {/if}
                   <div class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5 text-sm">
                     <span class="font-semibold text-forest">
@@ -825,7 +813,7 @@
                     {/if}
                   </span>
                   <h3 class="mt-4 text-lg font-bold text-heading">{item.title}</h3>
-                  <p class="mt-2 text-sm leading-6 text-ink/68">{item.body}</p>
+                  <RichText value={item.body} className="mt-2 text-sm leading-6 text-ink/68" />
                 </div>
               {/each}
             </div>

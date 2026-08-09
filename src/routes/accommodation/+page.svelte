@@ -10,6 +10,7 @@
   import { ArrowRight, BedDouble, Gem, MapPin, Tent } from '@lucide/svelte';
   import { fadeUpOnScroll, staggeredCardReveal } from '$lib/animations';
   import { imgUrl, sourceFor } from '$lib/img';
+  import { toMetaText } from '$lib/richText';
   import type { Lodge } from '$lib/types';
   import type { PageData } from './$types';
 
@@ -34,7 +35,7 @@
   const levelLabel = (l: Lodge) => LEVEL[String(l.accommodation_level)] ?? '';
   const typeLabel = (l: Lodge) => TYPE[String(l.lodge_type)] ?? '';
   const placeOf = (l: Lodge) => l.destinations?.name ?? '';
-  const blurbOf = (l: Lodge) => (l.why_we_recommend || l.description || '').trim();
+  const blurbOf = (l: Lodge) => toMetaText(l.why_we_recommend || l.description || '', 190);
 
   // Filters are built from the data, so an option never appears with nothing
   // behind it and every count is real.

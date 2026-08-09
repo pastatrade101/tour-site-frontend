@@ -3,6 +3,7 @@
   import { trackEvent } from '$lib/analytics';
   import { currency, formatUsd } from '$lib/currency';
   import { imgUrl, thumbUrl, sourceFor } from '$lib/img';
+  import { getTourDestinationLabel } from '$lib/tourDestinations';
   import ShortlistButton from './ShortlistButton.svelte';
   import type { Tour } from '$lib/types';
 
@@ -21,11 +22,7 @@
 
   $: comfort = tour.budget_tier ? (tierLabels[tour.budget_tier] ?? tour.budget_tier) : '';
   $: durationLabel = tour.duration_days ? `${tour.duration_days} day${tour.duration_days === 1 ? '' : 's'}` : '';
-  // "N places" only when the itinerary genuinely lists that many stops; otherwise
-  // fall back to the destination name. Nothing here is invented. ("places" rather
-  // than "parks" because a route can also list forests, beaches or towns.)
-  $: placeCount = (tour.highlights ?? []).length;
-  $: parksLabel = placeCount > 1 ? `${placeCount} places` : tour.destinations?.name || '';
+  $: parksLabel = getTourDestinationLabel(tour, 2);
   $: meta = [durationLabel, parksLabel, comfort].filter(Boolean);
 
   // Badge comes from a real flag only.
@@ -42,7 +39,7 @@
     duration_days: tour.duration_days,
     price_from: tour.price_from,
     currency: tour.currency,
-    destination: tour.destinations?.name
+    destination: parksLabel
   };
 </script>
 

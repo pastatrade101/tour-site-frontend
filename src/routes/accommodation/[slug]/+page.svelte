@@ -10,6 +10,8 @@
   import { fadeUpOnScroll } from '$lib/animations';
   import { imgUrl, sourceFor } from '$lib/img';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
+  import RichText from '$lib/components/public/RichText.svelte';
+  import { toMetaText } from '$lib/richText';
   import { breadcrumbLd } from '$lib/seo';
   import type { Lodge } from '$lib/types';
   import type { PageData } from './$types';
@@ -69,7 +71,8 @@
 
   $: origin = $page.url.origin;
   $: title = lodge?.seo_title || lodge?.meta_title || lodge?.name || 'Stay';
-  $: description = lodge?.meta_description || lodge?.why_we_recommend || lodge?.description || '';
+  $: description = toMetaText(lodge?.meta_description || lodge?.why_we_recommend || lodge?.description || '', 170);
+  $: whySnippet = toMetaText(lodge?.why_we_recommend || '', 240);
 </script>
 
 <svelte:head>
@@ -107,8 +110,8 @@
         <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-goldfinch-gold">{place}</p>
       {/if}
       <h1 class="mt-4 font-serif text-4xl font-semibold leading-[1.05] md:text-[62px]">{lodge?.name}</h1>
-      {#if lodge?.why_we_recommend}
-        <p class="mt-5 max-w-2xl text-base leading-8 text-white/80 md:text-lg">{lodge.why_we_recommend}</p>
+      {#if whySnippet}
+        <p class="mt-5 max-w-2xl text-base leading-8 text-white/80 md:text-lg">{whySnippet}</p>
       {/if}
 
       {#if lodge?.best_for?.length}
@@ -150,17 +153,13 @@
         <div use:fadeUpOnScroll={{ y: 14 }}>
           <span class="block h-px w-16 bg-goldfinch-gold" aria-hidden="true"></span>
           <p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">Why we recommend it</p>
-          <p class="mt-4 font-serif text-2xl leading-[1.5] text-heading md:text-[30px] md:leading-[1.45]">
-            {lodge.why_we_recommend}
-          </p>
+          <RichText value={lodge.why_we_recommend} className="mt-4 font-serif text-2xl leading-[1.5] text-heading md:text-[30px] md:leading-[1.45]" />
         </div>
       {/if}
 
       {#if lodge?.description}
-        <div class="mt-12 space-y-5 text-base leading-8 text-ink/70" use:fadeUpOnScroll={{ y: 14 }}>
-          {#each lodge.description.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean) as paragraph}
-            <p>{paragraph}</p>
-          {/each}
+        <div use:fadeUpOnScroll={{ y: 14 }}>
+          <RichText value={lodge.description} className="mt-12 text-base leading-8 text-ink/70" />
         </div>
       {/if}
 
@@ -253,7 +252,7 @@
               </span>
               {#if item.why_we_recommend || item.description}
                 <span class="mt-2 line-clamp-2 text-sm leading-6 text-ink/60">
-                  {item.why_we_recommend || item.description}
+                  {toMetaText(item.why_we_recommend || item.description || '', 150)}
                 </span>
               {/if}
               <span class="mt-4 flex items-center justify-between gap-3 border-t border-ink/10 pt-3 text-xs font-semibold text-ink/45">

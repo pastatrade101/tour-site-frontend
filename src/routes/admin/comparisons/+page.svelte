@@ -8,6 +8,7 @@
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
+  import AdminRichText from '$lib/components/admin/AdminRichText.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
@@ -300,7 +301,7 @@
         </div>
 
         <AdminFormInput label="Eyebrow" name="eyebrow" bind:value={form.eyebrow} placeholder="Safari comparison" />
-        <AdminTextArea label="Intro" name="intro" bind:value={form.intro} rows={2} />
+        <AdminRichText label="Intro" name="intro" bind:value={form.intro} rows={5} />
 
         <div class="grid gap-4 sm:grid-cols-2">
           <AdminFormInput label="Option A name" name="a_name" bind:value={form.a_name} required />
@@ -312,7 +313,7 @@
         </div>
 
         <AdminTextArea label="Dimensions — one per line as: Label :: A side :: B side" name="dimensions" bind:value={form.dimensions} rows={5} placeholder={'Cost :: Higher park fees :: Often better value'} />
-        <AdminTextArea label="Verdict" name="verdict" bind:value={form.verdict} rows={3} />
+        <AdminRichText label="Verdict" name="verdict" bind:value={form.verdict} rows={6} />
 
         <div class="grid gap-4 sm:grid-cols-2">
           <AdminFormInput label="CTA label" name="cta_label" bind:value={form.cta_label} placeholder="Plan a safari" />

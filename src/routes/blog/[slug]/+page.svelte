@@ -8,7 +8,9 @@
   import DestinationCard from '$lib/components/public/DestinationCard.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
+  import RichText from '$lib/components/public/RichText.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
+  import { toMetaText } from '$lib/richText';
   import { breadcrumbLd } from '$lib/seo';
   import type { BlogPost, Destination } from '$lib/types';
 
@@ -57,7 +59,19 @@
   // onMount would leave the page stale. Re-load whenever the slug changes.
   $: slug = $page.params.slug ?? '';
   $: if (browser && slug) void load(slug);
+  $: postMeta = post
+    ? String((post as unknown as { meta_description?: string | null }).meta_description ?? '')
+    : '';
+  $: description = post ? toMetaText(postMeta || post.excerpt || post.content || '', 170) : '';
 </script>
+
+<svelte:head>
+  {#if post}
+    <title>{post.title} | Goldfinch Adventures</title>
+    {#if description}<meta name="description" content={description} />{/if}
+    <link rel="canonical" href={`${origin}/blog/${post.slug}`} />
+  {/if}
+</svelte:head>
 
 <article class="container-shell py-14">
   {#if loading}
@@ -86,9 +100,7 @@
     {#if post.featured_image_url}
       <img class="mt-8 aspect-[16/8] w-full rounded-lg object-cover shadow-soft" src={post.featured_image_url} alt={post.title} />
     {/if}
-    <div class="mt-8 max-w-3xl text-base leading-8 text-ink/75">
-      <p>{post.content}</p>
-    </div>
+    <RichText value={post.content} element="article" className="mt-8 max-w-3xl text-base leading-8 text-ink/75" />
   {/if}
 </article>
 

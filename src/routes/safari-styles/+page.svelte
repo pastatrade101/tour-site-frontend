@@ -3,6 +3,7 @@
   import EmptyState from '$lib/components/public/EmptyState.svelte';
   import { fadeUpOnScroll, revealHeading, staggeredCardReveal, tilt } from '$lib/animations';
   import { imgUrl, sourceFor, thumbUrl } from '$lib/img';
+  import { toMetaText } from '$lib/richText';
   import type { TourCategory } from '$lib/types';
   import type { PageData } from './$types';
 
@@ -15,7 +16,7 @@
   $: filtered = categories.filter((category) => {
     const needle = query.trim().toLowerCase();
     if (!needle) return true;
-    return [category.name, category.description, category.who_its_for, category.fitness, ...(category.highlights ?? [])]
+    return [category.name, toMetaText(category.description, 300), category.who_its_for, category.fitness, ...(category.highlights ?? [])]
       .filter(Boolean)
       .join(' ')
       .toLowerCase()
@@ -106,7 +107,7 @@
             <div class="flex flex-1 flex-col p-5">
               <h2 class="text-xl font-extrabold tracking-normal text-heading">{category.name}</h2>
               {#if category.description}
-                <p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/68">{category.description}</p>
+                <p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/68">{toMetaText(category.description, 170)}</p>
               {/if}
 
               <div class="mt-4 grid gap-2">

@@ -3,6 +3,7 @@
   import { Check } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import { imgUrl } from '$lib/img';
+  import { toMetaText } from '$lib/richText';
 
   // Selectable cards for the REAL published tour categories. Multi-select by
   // default. If the categories endpoint is unavailable we fall back to the
@@ -22,7 +23,7 @@
       cards = (res.data.items ?? [])
         .map((c) => ({
           name: String(c.name ?? c.slug ?? ''),
-          description: String(c.who_its_for ?? c.description ?? ''),
+          description: toMetaText(c.who_its_for ?? c.description ?? '', 140),
           image: String(c.image_url ?? '')
         }))
         .filter((c) => c.name);
@@ -40,7 +41,6 @@
       : 'border-ink/12 bg-surface text-ink/70 hover:border-goldfinch-gold/50';
   $: cardBody = tone === 'dark' ? 'bg-white/[0.04]' : 'bg-surface';
   $: cardTitle = tone === 'dark' ? 'text-white' : 'text-heading';
-  $: cardText = tone === 'dark' ? 'text-white/60' : 'text-ink/60';
 </script>
 
 {#if cards.length}

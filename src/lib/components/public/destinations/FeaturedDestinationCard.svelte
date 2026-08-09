@@ -15,6 +15,7 @@
   import { ArrowRight } from '@lucide/svelte';
   import { bestFor, pairsWith, recommendedStay, travelStyle } from '$lib/destinationFacets';
   import { imgUrl, sourceFor } from '$lib/img';
+  import { toMetaText } from '$lib/richText';
   import type { Destination } from '$lib/types';
 
   export let destination: Destination;
@@ -31,7 +32,7 @@
   $: imageUrl = sourceFor(destination, 1400, 'main_image_url', 'image_url', 'banner_image_url');
   $: imageUrl, (imageFailed = false);
   $: showImage = Boolean(imageUrl) && !imageFailed;
-  $: summary = destination.short_description || destination.description || '';
+  $: summary = toMetaText(destination.short_description || destination.description || '', 230);
   $: region = destination.region || '';
   $: initial = (destination.name || '').trim().charAt(0).toUpperCase();
 

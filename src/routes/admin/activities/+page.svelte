@@ -9,6 +9,7 @@
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
+  import AdminRichText from '$lib/components/admin/AdminRichText.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
   import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
@@ -360,8 +361,8 @@
           <AdminSelect label="Difficulty" name="difficulty" bind:value={form.difficulty} options={difficultyOptions} />
         </div>
 
-        <AdminTextArea label="Description" name="description" bind:value={form.description} rows={3} placeholder="What the activity involves." />
-        <AdminTextArea label="Why we recommend it" name="why_we_recommend" bind:value={form.why_we_recommend} rows={2} placeholder="Our honest take for travellers." />
+        <AdminRichText label="Description" name="description" bind:value={form.description} rows={8} placeholder="What the activity involves." />
+        <AdminRichText label="Why we recommend it" name="why_we_recommend" bind:value={form.why_we_recommend} rows={4} placeholder="Our honest take for travellers." />
         <AdminFormInput label="Highlights (comma-separated)" name="highlights" bind:value={form.highlights} placeholder="Big Five, Picnic lunch, Photography" />
 
         <div class="grid gap-4 sm:grid-cols-2">

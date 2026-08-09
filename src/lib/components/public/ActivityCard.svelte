@@ -2,6 +2,7 @@
   import { Clock, MapPin, Mountain } from '@lucide/svelte';
   import { tilt } from '$lib/animations';
   import { currency, formatUsd } from '$lib/currency';
+  import { toMetaText } from '$lib/richText';
   import type { Activity } from '$lib/types';
 
   export let activity: Activity;
@@ -27,6 +28,7 @@
     activity.price_from != null
       ? formatUsd(activity.price_from, $currency)
       : '';
+  $: summary = toMetaText(activity.why_we_recommend || activity.description || '', 180);
 </script>
 
 <article class="group flex h-full flex-col overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_14px_40px_rgba(57,61,50,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(57,61,50,0.16)]" use:tilt={{ max: 5 }}>
@@ -45,10 +47,8 @@
       {categoryLabels[activity.category] ?? activity.category}
     </p>
     <h3 class="mt-2 text-lg font-bold tracking-normal text-ink">{activity.name}</h3>
-    {#if activity.why_we_recommend}
-      <p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/70">{activity.why_we_recommend}</p>
-    {:else if activity.description}
-      <p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/70">{activity.description}</p>
+    {#if summary}
+      <p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/70">{summary}</p>
     {/if}
 
     <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] font-semibold text-ink/70">

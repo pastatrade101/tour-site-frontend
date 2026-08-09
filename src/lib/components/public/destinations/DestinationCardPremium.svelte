@@ -28,6 +28,7 @@
     wildlifeOf
   } from '$lib/destinationFacets';
   import { imgUrl, sourceFor } from '$lib/img';
+  import { toMetaText } from '$lib/richText';
   import type { Destination } from '$lib/types';
 
   export let destination: Destination;
@@ -45,7 +46,7 @@
   $: style = travelStyle(destination);
   // Short description is populated on all 19; "Best for" is the editor's own
   // one-line summary and is the only honest stand-in if one ever goes missing.
-  $: summary = (destination.short_description ?? '').trim() || bestFor(destination);
+  $: summary = toMetaText((destination.short_description ?? '').trim() || bestFor(destination), 170);
   $: initial = (destination.name ?? '').trim().charAt(0).toUpperCase() || '—';
 
   // Wildlife reads more specifically than experience, so it leads. Two chips is

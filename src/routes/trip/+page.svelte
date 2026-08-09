@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { CalendarDays, CheckCircle2, LogOut, MapPin, MessageCircle, Send, Users, Wallet } from '@lucide/svelte';
   import { api } from '$lib/api/client';
+  import RichText from '$lib/components/public/RichText.svelte';
   import { imgUrl } from '$lib/img';
 
   type Payment = { amount: number; currency: string; payment_method?: string | null; transaction_reference?: string | null; status: string; paid_at?: string | null };
@@ -207,7 +208,7 @@
                   <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-forest/10 text-sm font-bold text-forest">{day.day_number}</span>
                   <div class="min-w-0">
                     <p class="font-bold text-ink">{day.title}</p>
-                    {#if day.description}<p class="mt-1 text-sm leading-6 text-ink/70">{day.description}</p>{/if}
+                    {#if day.description}<RichText value={day.description} className="mt-1 text-sm leading-6 text-ink/70" />{/if}
                     <div class="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink/55">
                       {#if day.accommodation}<span>🏕 {day.accommodation}</span>{/if}
                       {#if day.meals}<span>🍽 {day.meals}</span>{/if}

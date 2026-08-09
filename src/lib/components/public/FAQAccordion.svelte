@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ChevronDown } from '@lucide/svelte';
   import type { FAQ } from '$lib/types';
+  import RichText from './RichText.svelte';
   import { slide } from 'svelte/transition';
 
   export let faqs: FAQ[] = [];
@@ -17,7 +18,9 @@
         </span>
       </button>
       {#if openId === faq.id}
-        <p class="border-t border-ink/10 px-5 pb-5 pt-4 text-sm leading-6 text-ink/70" transition:slide={{ duration: 180 }}>{faq.answer}</p>
+        <div class="border-t border-ink/10 px-5 pb-5 pt-4" transition:slide={{ duration: 180 }}>
+          <RichText value={faq.answer} className="text-sm leading-6 text-ink/70" />
+        </div>
       {/if}
     </div>
   {/each}

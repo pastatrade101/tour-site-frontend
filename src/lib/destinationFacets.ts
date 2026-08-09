@@ -23,6 +23,7 @@
  *   · score_wildlife / score_family / etc. — columns exist but are empty on all 19.
  */
 import type { Destination } from '$lib/types';
+import { toMetaText } from '$lib/richText';
 
 export type Facet = { key: string; label: string; icon: string };
 export type FacetGroup = { key: string; label: string; hint: string; facets: Facet[] };
@@ -59,8 +60,8 @@ const haystack = (destination: Destination) => {
     destination.name,
     destination.region,
     destination.country,
-    destination.short_description,
-    destination.description,
+    toMetaText(destination.short_description, 240),
+    toMetaText(destination.description, 500),
     ...Object.values(facts)
   ]
     .filter(Boolean)

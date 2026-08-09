@@ -9,6 +9,7 @@
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
+  import AdminRichText from '$lib/components/admin/AdminRichText.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
   import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
@@ -16,6 +17,7 @@
   import ToastStack from '$lib/components/admin/ToastStack.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
+  import { toMetaText } from '$lib/richText';
 
   type ItineraryDay = {
     accommodation?: string | null;
@@ -495,7 +497,7 @@
                 <div>
                   <h3 class="text-lg font-bold text-ink">{day.title}</h3>
                   {#if day.description}
-                    <p class="mt-2 max-w-4xl text-sm leading-6 text-ink/62">{day.description}</p>
+                    <p class="mt-2 max-w-4xl text-sm leading-6 text-ink/62">{toMetaText(day.description, 220)}</p>
                   {/if}
                 </div>
               </div>
@@ -563,7 +565,7 @@
       </div>
 
       <div class="mt-4 grid gap-4">
-        <AdminTextArea label="Description" name="description" bind:value={form.description} rows={4} placeholder="Describe what happens on this day..." />
+        <AdminRichText label="Description" name="description" bind:value={form.description} rows={8} placeholder="Describe what happens on this day..." />
       </div>
 
       <div class="mt-4 grid gap-4 md:grid-cols-3">
