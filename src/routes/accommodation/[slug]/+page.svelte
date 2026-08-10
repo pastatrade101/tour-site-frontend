@@ -7,19 +7,21 @@
    */
   import { ArrowRight, ArrowUpRight, Binoculars, Gem, Heart, Plane, Sparkles, Users } from '@lucide/svelte';
   import { page } from '$app/stores';
-  import { fadeUpOnScroll } from '$lib/animations';
+  import { fadeUpOnScroll, staggeredCardReveal } from '$lib/animations';
   import { imgUrl, sourceFor } from '$lib/img';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
+  import TourCard from '$lib/components/public/TourCard.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
   import { toMetaText } from '$lib/richText';
   import { breadcrumbLd } from '$lib/seo';
-  import type { Lodge } from '$lib/types';
+  import type { Lodge, Tour } from '$lib/types';
   import type { PageData } from './$types';
 
   export let data: PageData;
 
   $: lodge = data.lodge as Lodge;
   $: allRelated = (data.related ?? []) as Lodge[];
+  $: safaris = (data.safaris ?? []) as Tour[];
   // Suggestions built from real relationships, not a random slice: same place
   // first, then the same style of stay, then anything else — de-duplicated so a
   // lodge never appears twice.
@@ -197,6 +199,32 @@
     </aside>
   </div>
 </section>
+
+<!-- ── safaris in this area ────────────────────────────────────────────────
+     Trips that visit this property's destination. Deliberately worded as an
+     area relationship: no itinerary records which property it stays at, so
+     claiming "this tour uses this lodge" would be inventing a fact. -->
+{#if safaris.length}
+  <section class="border-t border-ink/10 bg-canvas py-14 md:py-18">
+    <div class="container-shell">
+      <div class="max-w-2xl" use:fadeUpOnScroll={{ y: 14 }}>
+        <span class="block h-px w-16 bg-goldfinch-gold" aria-hidden="true"></span>
+        <p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">Safaris in this area</p>
+        <h2 class="mt-3 font-serif text-3xl font-semibold leading-tight text-heading md:text-[38px]">
+          {place ? `Trips that travel through ${place}` : 'Trips that travel through here'}
+        </h2>
+        <p class="mt-3 text-[15px] leading-7 text-ink/65">
+          Each one is private and tailor-made — tell us you would like to stay at {lodge?.name} and we will build it in.
+        </p>
+      </div>
+      <div class="mt-9 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.05 }}>
+        {#each safaris as tour (tour.id)}
+          <TourCard {tour} />
+        {/each}
+      </div>
+    </div>
+  </section>
+{/if}
 
 <!-- ── other stays: cards here, so the end of the page is a place to browse ─ -->
 {#if suggestions.length}

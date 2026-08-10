@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { env as publicEnv } from '$env/dynamic/public';
-import type { Lodge } from '$lib/types';
+import type { Lodge, Tour } from '$lib/types';
 
 type Body<T> = { data?: T };
 type PaginatedBody<T> = { data?: { items?: T[] } };
@@ -38,5 +38,24 @@ export const load: PageServerLoad = async ({ params, url }) => {
     related = [];
   }
 
-  return { lodge, related };
+  // Safaris that visit this property's destination. This is an area
+  // relationship, not a claim that the trip uses this lodge — the copy on the
+  // page says so, because no itinerary currently records which property it
+  // stays at. Fetched fail-soft; an empty list simply hides the section.
+  let safaris: Tour[] = [];
+  if (lodge.destination_id) {
+    try {
+      const res = await globalThis.fetch(
+        `${base}/tours?destination_id=${lodge.destination_id}&status=published&limit=6`
+      );
+      if (res.ok) {
+        const body = (await res.json()) as PaginatedBody<Tour>;
+        safaris = (body.data?.items ?? []).slice(0, 3);
+      }
+    } catch {
+      safaris = [];
+    }
+  }
+
+  return { lodge, related, safaris };
 };
