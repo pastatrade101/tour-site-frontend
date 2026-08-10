@@ -16,6 +16,7 @@
     Route,
     Users,
     Utensils,
+    Wallet,
     X
   } from '@lucide/svelte';
   import { api } from '$lib/api/client';
@@ -230,6 +231,11 @@
   $: routeLabel = routeOf(tour);
   $: priceLabel = tour?.price_from ? formatUsd(tour.price_from, $currency) : '';
   $: priceFromLabel = priceLabel ? `From ${priceLabel} per person` : 'On request';
+  $: heroStats = ([
+    durationLabel ? { icon: CalendarDays, label: 'Duration', value: durationLabel } : null,
+    destinationLabel ? { icon: MapPin, label: 'Destination', value: destinationLabel } : null,
+    { icon: Wallet, label: priceLabel ? 'Starting from' : 'Price', value: priceFromLabel }
+  ].filter(Boolean) as FactCard[]);
   $: tourDescription = tour?.full_description || tour?.short_description || '';
   $: metaDescription = tour ? shortText(tour.meta_description || tour.short_description || tour.full_description, 170) : '';
   $: categoryLabel = tour?.tour_categories?.name || normaliseLabel(tour?.experience_type);
@@ -474,15 +480,14 @@
         className="absolute inset-0 h-full w-full object-cover"
       />
     {/if}
-    <div class="absolute inset-0 bg-gradient-to-b from-deep-green/35 via-deep-green/10 to-deep-green/50" aria-hidden="true"></div>
-    <div class="absolute inset-x-0 bottom-0 h-[72%] bg-gradient-to-tr from-deep-green/95 via-forest/70 to-transparent" aria-hidden="true"></div>
+    <div class="absolute inset-0 bg-gradient-to-t from-deep-green/25 via-transparent to-deep-green/10" aria-hidden="true"></div>
 
     <div class="relative mx-auto flex min-h-[560px] max-w-7xl flex-col justify-end px-4 pb-12 pt-20 md:min-h-[640px] md:px-6 md:pb-16 md:pt-24 lg:min-h-[680px] lg:pb-20">
       <a href="/tours" class="absolute left-4 top-6 hidden items-center gap-1.5 text-[13px] font-medium text-white/90 transition hover:text-goldfinch-gold md:left-6 md:top-8 md:inline-flex">
         <ArrowLeft class="h-3.5 w-3.5" /> Back to tours
       </a>
 
-      <div class="max-w-3xl pb-2 [text-shadow:0_2px_18px_rgba(39,43,34,0.42)] md:pb-4">
+      <div class="tour-hero-copy relative max-w-3xl pb-2 [text-shadow:0_2px_18px_rgba(39,43,34,0.42)] md:pb-4">
         {#if heroTags.length}
           <div class="mb-5 flex flex-wrap gap-1.5">
             {#each heroTags as tag}
@@ -519,9 +524,21 @@
             View Day by Day
           </button>
         </div>
-        <p class="mt-5 text-[13.5px] text-white/90">
-          {durationLabel || 'Tailored itinerary'}{#if destinationLabel} / {destinationLabel}{/if}{#if priceLabel} / from {priceLabel} per person{/if}
-        </p>
+        {#if heroStats.length}
+          <div class="mt-5 flex max-w-3xl flex-wrap gap-2">
+            {#each heroStats as stat}
+              <div class="hero-stat-chip inline-flex min-w-[156px] max-w-full flex-1 items-center gap-2 rounded-[9px] border border-white/18 bg-white/[0.13] px-3 py-2.5 text-white shadow-[0_10px_24px_rgba(15,23,42,0.16)] backdrop-blur-md sm:flex-none">
+                <span class="grid h-8 w-8 shrink-0 place-items-center rounded-[7px] bg-goldfinch-gold text-heading">
+                  <svelte:component this={stat.icon} size={16} strokeWidth={2.35} />
+                </span>
+                <span class="min-w-0">
+                  <span class="block text-[9.5px] font-bold uppercase tracking-[0.12em] text-white/68">{stat.label}</span>
+                  <span class="block text-[13px] font-bold leading-snug text-white md:text-[13.5px]">{stat.value}</span>
+                </span>
+              </div>
+            {/each}
+          </div>
+        {/if}
       </div>
     </div>
   </section>
@@ -832,55 +849,59 @@
 
             <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {#each accommodationBlocks as block (block.key)}
-                <article class="overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-sm">
+                <article class="group relative aspect-square overflow-hidden rounded-[12px] border border-ink/10 bg-deep-green shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(39,43,34,0.18)] focus-within:-translate-y-0.5 focus-within:shadow-[0_18px_38px_rgba(39,43,34,0.18)]">
                   {#if block.gallery[0]}
-                    <div class="relative h-[220px] bg-sand">
-                      <Img
-                        src={block.gallery[0].record ? '' : block.gallery[0].src}
-                        record={block.gallery[0].record}
-                        fields={block.gallery[0].fields ?? []}
-                        alt={block.gallery[0].caption}
-                        width={720}
-                        sizes="(max-width: 768px) 92vw, 360px"
-                        className="h-full w-full object-cover"
-                      />
-                      <span class="absolute left-3 top-3 rounded-full bg-deep-green/85 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-white backdrop-blur">
-                        {block.dayLabel}
-                      </span>
-                    </div>
+                    <Img
+                      src={block.gallery[0].record ? '' : block.gallery[0].src}
+                      record={block.gallery[0].record}
+                      fields={block.gallery[0].fields ?? []}
+                      alt={block.gallery[0].caption}
+                      width={720}
+                      sizes="(max-width: 768px) 92vw, 360px"
+                      className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.035] group-focus-within:scale-[1.035]"
+                    />
                   {:else}
-                    <div class="grid h-[160px] place-items-center bg-sand/60 text-forest">
+                    <div class="absolute inset-0 grid place-items-center bg-gradient-to-br from-sand to-forest/25 text-forest">
                       <BedDouble size={30} />
                     </div>
                   {/if}
 
-                  <div class="p-5">
-                    <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-clay">{block.dayLabel}</p>
-                    <h3 class="mt-2 font-serif text-[20px] font-semibold leading-snug text-heading">{block.label}</h3>
-                    {#if block.summary}<p class="mt-2 text-[14px] leading-6 text-ink/65">{block.summary}</p>{/if}
-
-                    {#if block.gallery.length > 1}
-                      <div class="mt-4 grid grid-cols-3 gap-2.5">
-                        {#each block.gallery.slice(1, 4) as image}
-                          <div class="aspect-[4/3] overflow-hidden rounded-[8px] border border-ink/10 bg-sand">
-                            <Img
-                              src={image.record ? '' : image.src}
-                              record={image.record}
-                              fields={image.fields ?? []}
-                              alt={image.caption}
-                              width={220}
-                              sizes="120px"
-                              className="h-full w-full object-cover"
-                            />
-                          </div>
-                        {/each}
-                      </div>
-                    {/if}
-
+                  <div class="absolute inset-0 bg-gradient-to-b from-deep-green/22 via-deep-green/22 to-deep-green/96 transition duration-300 group-hover:from-deep-green/35 group-hover:via-deep-green/45 group-hover:to-deep-green/98 group-focus-within:from-deep-green/35 group-focus-within:via-deep-green/45 group-focus-within:to-deep-green/98" aria-hidden="true"></div>
+                  <div class="absolute inset-x-0 bottom-0 h-[66%] bg-gradient-to-t from-deep-green via-deep-green/88 to-transparent" aria-hidden="true"></div>
+                  <div class="relative flex h-full flex-col justify-end p-4 text-white md:p-5">
+                    <span class="mb-auto w-fit rounded-full border border-white/25 bg-deep-green/82 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-[0_8px_18px_rgba(15,23,42,0.24)] backdrop-blur">
+                      {block.dayLabel}
+                    </span>
+                    <div>
+                      <h3 class="accommodation-card-title font-serif text-[20px] font-semibold leading-snug text-white drop-shadow md:text-[21px]">{block.label}</h3>
+                      {#if block.summary}<p class="mt-1 accommodation-card-summary text-[13px] font-semibold leading-5 text-white/90 drop-shadow">{block.summary}</p>{/if}
+                    </div>
+                    <div class="accommodation-card-extra mt-4 overflow-hidden text-white md:max-h-0 md:opacity-0 md:transition-all md:duration-300 md:group-hover:max-h-40 md:group-hover:opacity-100 md:group-focus-within:max-h-40 md:group-focus-within:opacity-100">
+                      {#if block.gallery.length > 1}
+                        <div class="grid grid-cols-3 gap-2">
+                          {#each block.gallery.slice(1, 4) as image}
+                            <div class="aspect-[4/3] overflow-hidden rounded-[7px] border border-white/20 bg-white/10">
+                              <Img
+                                src={image.record ? '' : image.src}
+                                record={image.record}
+                                fields={image.fields ?? []}
+                                alt={image.caption}
+                                width={220}
+                                sizes="120px"
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          {/each}
+                        </div>
+                      {/if}
+                      {#if block.href}
+                        <span class="mt-4 inline-flex items-center gap-1 text-[13px] font-bold text-goldfinch-gold">
+                          View accommodation <ArrowRight size={14} />
+                        </span>
+                      {/if}
+                    </div>
                     {#if block.href}
-                      <a class="mt-5 inline-flex items-center gap-1 text-[13px] font-bold text-forest transition hover:text-heading" href={block.href} data-sveltekit-preload-data="hover">
-                        View accommodation <ArrowRight size={14} />
-                      </a>
+                      <a class="absolute inset-0 z-10 rounded-[12px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-goldfinch-gold" href={block.href} aria-label={`View accommodation ${block.label}`} data-sveltekit-preload-data="hover"></a>
                     {/if}
                   </div>
                 </article>
@@ -1121,6 +1142,22 @@
 {#if breadcrumbLd}<JsonLd data={breadcrumbLd} />{/if}
 
 <style>
+  .tour-hero-copy {
+    isolation: isolate;
+  }
+
+  .tour-hero-copy::before {
+    content: '';
+    position: absolute;
+    inset: -1rem -1.1rem -1.15rem -1.1rem;
+    z-index: -1;
+    border-radius: 12px;
+    background:
+      linear-gradient(90deg, rgb(var(--c-deep-green) / 0.9), rgb(var(--c-forest) / 0.64) 64%, transparent),
+      linear-gradient(180deg, rgb(var(--c-deep-green) / 0.5), rgb(var(--c-deep-green) / 0.84));
+    box-shadow: 0 18px 48px rgb(15 23 42 / 0.2);
+  }
+
   .section-label {
     display: inline-flex;
     align-items: center;
@@ -1147,5 +1184,29 @@
 
   .no-scrollbar::-webkit-scrollbar {
     display: none;
+  }
+
+  .accommodation-card-title,
+  .accommodation-card-summary {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .accommodation-card-title {
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+  }
+
+  .accommodation-card-summary {
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+  }
+
+  @media (min-width: 768px) {
+    .tour-hero-copy::before {
+      inset: -1.4rem -2rem -1.5rem -1.6rem;
+      border-radius: 14px;
+    }
   }
 </style>
