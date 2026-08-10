@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { afterNavigate, goto } from '$app/navigation';
+  import { afterNavigate, goto, preloadData } from '$app/navigation';
   import { page } from '$app/stores';
   import { ArrowDownToLine, ArrowRight, ChevronDown, ChevronRight, CircleHelp, Compass, Globe, MapPin, Menu, MessageCircle, Search, TicketsPlane, User, X, BedDouble } from '@lucide/svelte';
   import { fade, fly } from 'svelte/transition';
@@ -90,6 +90,7 @@
   let ddTop = 120;
   const openDropdownAt = (key: DropdownKey | undefined, el: EventTarget | null) => {
     openDropdown = key ?? '';
+    if (key) preloadRoute(FEATURE[key].href);
     if (el instanceof HTMLElement && typeof window !== 'undefined') {
       const rect = el.getBoundingClientRect();
       const w = Math.min(MEGA_W, window.innerWidth - 32);
@@ -149,6 +150,24 @@
   const dropdownLinks = (key: DropdownKey) =>
     key === 'destinations' ? destinations : key === 'tours' ? tours : key === 'accommodation' ? lodges : categories;
 
+  const preloaded = new Set<string>();
+  const preloadRoute = (href: string | undefined) => {
+    if (!href || !href.startsWith('/') || href.startsWith('//') || href.includes('#') || preloaded.has(href)) return;
+    preloaded.add(href);
+    void preloadData(href).catch(() => preloaded.delete(href));
+  };
+
+  const closeNavigationChrome = () => {
+    menuOpen = false;
+    openDropdown = '';
+    mobileAccordion = '';
+  };
+
+  const activateLink = (href?: string) => {
+    closeNavigationChrome();
+    preloadRoute(href);
+  };
+
   const toggleDropdown = (key: DropdownKey) => {
     openDropdown = openDropdown === key ? '' : key;
   };
@@ -163,23 +182,23 @@
 
   onMount(() => {
     const loadNav = async () => {
-      try {
-        const res = await api.destinations.list({ status: 'published', limit: 9 });
-        const items = res.data.items ?? [];
+      const [destinationResult, tourResult, lodgeResult, categoryResult] = await Promise.allSettled([
+        api.destinations.list({ status: 'published', limit: 9 }),
+        api.tours.list({ status: 'published', limit: 9 }),
+        api.lodges.list({ status: 'published', limit: 9 }),
+        api.categories.list({ status: 'published', limit: 9 })
+      ]);
+
+      if (destinationResult.status === 'fulfilled') {
+        const items = destinationResult.value.data.items ?? [];
         if (items.length) destinations = items.map((d) => ({ label: String(d.name ?? d.slug), href: `/destinations/${d.slug}`, image: d.main_image_url || d.image_url || d.banner_image_url || undefined, description: toMetaText((d.short_description as string) || (d.description as string) || '', 120) || undefined }));
-      } catch {
-        // keep fallback
       }
-      try {
-        const res = await api.tours.list({ status: 'published', limit: 9 });
-        const items = res.data.items ?? [];
+      if (tourResult.status === 'fulfilled') {
+        const items = tourResult.value.data.items ?? [];
         if (items.length) tours = items.map((t) => ({ label: String(t.title ?? t.slug), href: `/tours/${t.slug}`, image: t.main_image_url || t.banner_image_url || undefined, description: toMetaText(t.short_description || t.full_description || '', 120) || undefined }));
-      } catch {
-        // keep fallback
       }
-      try {
-        const res = await api.lodges.list({ status: 'published', limit: 9 });
-        const items = res.data.items ?? [];
+      if (lodgeResult.status === 'fulfilled') {
+        const items = lodgeResult.value.data.items ?? [];
         if (items.length)
           lodges = items.map((l) => ({
             label: String(l.name ?? l.slug),
@@ -187,15 +206,10 @@
             image: l.hero_image_url || l.image_url || undefined,
             description: toMetaText(l.why_we_recommend || l.description || '', 120) || undefined
           }));
-      } catch {
-        // keep fallback
       }
-      try {
-        const res = await api.categories.list({ status: 'published', limit: 9 });
-        const items = res.data.items ?? [];
+      if (categoryResult.status === 'fulfilled') {
+        const items = categoryResult.value.data.items ?? [];
         if (items.length) categories = items.map((c) => ({ label: String(c.name ?? c.slug), href: `/safari-styles/${c.slug}`, image: c.image_url || c.icon_url || undefined, description: toMetaText(c.description || c.who_its_for || '', 120) || undefined }));
-      } catch {
-        // keep fallback
       }
     };
     void loadNav();
@@ -237,7 +251,7 @@
       <Menu size={24} strokeWidth={2.4} />
     </button>
 
-    <a href="/" class="flex min-w-0 items-center justify-center gap-2" aria-label="Goldfinch Adventures home">
+    <a href="/" class="flex min-w-0 items-center justify-center gap-2" aria-label="Goldfinch Adventures home" on:click={() => activateLink('/')}>
       <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-10 w-10 shrink-0 object-contain" />
       <div class="min-w-0 leading-none">
         <p class="truncate text-xl font-extrabold tracking-normal text-heading">Goldfinch</p>
@@ -253,7 +267,7 @@
   <!-- ── desktop top row (collapses smoothly on scroll) ──────────────────── -->
   <div class={`hidden overflow-hidden transition-[max-height,opacity] duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] lg:block ${scrolled ? 'max-h-0 opacity-0' : 'max-h-[96px] opacity-100'}`}>
     <div class="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-7 px-4 lg:h-[80px]">
-      <a href="/" class="flex min-w-[150px] items-center gap-2.5" aria-label="Goldfinch Adventures home">
+      <a href="/" class="flex min-w-[150px] items-center gap-2.5" aria-label="Goldfinch Adventures home" on:click={() => activateLink('/')}>
         <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-12 w-12 shrink-0 object-contain" />
         <div class="leading-none">
           <p class="text-2xl font-extrabold tracking-normal text-heading">Goldfinch</p>
@@ -270,7 +284,7 @@
 
       <div class="flex items-center gap-4 text-[13px] font-semibold">
         <CurrencySelector compact />
-        <a class="inline-flex items-center gap-1 text-forest transition hover:text-heading" href="/contact">
+        <a class="inline-flex items-center gap-1 text-forest transition hover:text-heading" href="/contact" on:click={() => activateLink('/contact')} on:focus={() => preloadRoute('/contact')}>
           <CircleHelp size={15} strokeWidth={2.6} />
           Need help?
         </a>
@@ -281,7 +295,7 @@
         {/if}
       </div>
 
-      <a href="/admin/login" class="inline-flex h-12 items-center gap-2.5 rounded-xl bg-deep-green px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-forest">
+      <a href="/admin/login" class="inline-flex h-12 items-center gap-2.5 rounded-xl bg-deep-green px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-forest" on:click={() => activateLink('/admin/login')} on:focus={() => preloadRoute('/admin/login')}>
         <User size={16} strokeWidth={2.6} />
         Login
       </a>
@@ -294,9 +308,9 @@
          the right edge; Accommodation carries a dropdown chevron that Expert
          Advice did not, which was enough to overflow at 1280. -->
     <div class="mx-auto flex w-full max-w-[1500px] items-stretch justify-between gap-2 px-4">
-      <nav class="flex min-w-0 flex-1 items-center gap-1" aria-label="Primary">
+      <nav class="flex min-w-0 flex-1 items-center gap-1" aria-label="Primary" data-sveltekit-preload-code="hover" data-sveltekit-preload-data="hover">
         {#if scrolled}
-          <a href="/" class="mr-1 flex shrink-0 items-center gap-2" aria-label="Goldfinch Adventures home" transition:fly={{ x: -14, duration: 320 }}>
+          <a href="/" class="mr-1 flex shrink-0 items-center gap-2" aria-label="Goldfinch Adventures home" on:click={() => activateLink('/')} transition:fly={{ x: -14, duration: 320 }}>
             <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-9 w-9 shrink-0 object-contain" />
             <span class="text-lg font-extrabold tracking-normal text-heading">Goldfinch</span>
           </a>
@@ -315,6 +329,8 @@
                   class={`relative inline-flex items-center gap-1 rounded px-3 py-[22px] text-[15px] font-semibold transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40 ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink/80'}`}
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
+                  on:click={() => activateLink(item.href)}
+                  on:focus={() => preloadRoute(item.href)}
                 >
                   {item.label}
                   {#if active}<span class="absolute inset-x-2.5 bottom-0 h-[3px] rounded-t-full bg-goldfinch-gold"></span>{/if}
@@ -358,7 +374,7 @@
                           <p class="mt-1 text-sm font-medium text-ink/60">{meta.subtitle}</p>
                         </div>
                       </div>
-                      <a href={item.href} class="inline-flex h-10 shrink-0 items-center gap-2 rounded-[8px] border border-goldfinch-gold/35 px-4 text-sm font-bold text-clay transition hover:bg-goldfinch-gold hover:text-heading" role="menuitem" aria-label={meta.viewAll}>
+                      <a href={item.href} class="inline-flex h-10 shrink-0 items-center gap-2 rounded-[8px] border border-goldfinch-gold/35 px-4 text-sm font-bold text-clay transition hover:bg-goldfinch-gold hover:text-heading" role="menuitem" aria-label={meta.viewAll} on:click={() => activateLink(item.href)} on:pointerenter={() => preloadRoute(item.href)} on:focus={() => preloadRoute(item.href)}>
                         {meta.viewAll}
                         <ArrowRight size={15} strokeWidth={2.5} />
                       </a>
@@ -366,7 +382,7 @@
 
                     <div class="mt-4 grid grid-cols-2 gap-2.5">
                       {#each previewLinks as link (link.href)}
-                        <a class="group/li flex min-h-[88px] items-start gap-3 rounded-[8px] border border-transparent p-3 transition hover:border-goldfinch-gold/25 hover:bg-canvas" href={link.href} role="menuitem">
+                        <a class="group/li flex min-h-[88px] items-start gap-3 rounded-[8px] border border-transparent p-3 transition hover:border-goldfinch-gold/25 hover:bg-canvas" href={link.href} role="menuitem" on:click={() => activateLink(link.href)} on:pointerenter={() => preloadRoute(link.href)} on:focus={() => preloadRoute(link.href)}>
                           <span class={`grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-[6px] ${link.image ? 'bg-deep-green' : 'bg-sand ring-1 ring-goldfinch-gold/20'}`}>
                             {#if link.image}
                               <img class="h-full w-full object-cover transition duration-500 group-hover/li:scale-105" src={imgUrl(link.image, 160)} alt={link.label} loading="lazy" decoding="async" />
@@ -382,7 +398,7 @@
                       {/each}
                     </div>
 
-                    <a href={item.href} class="mt-4 flex h-11 items-center justify-between gap-4 rounded-[8px] border border-ink/10 bg-sand/55 px-4 text-sm font-bold text-heading transition hover:border-goldfinch-gold/30 hover:bg-sand" role="menuitem">
+                    <a href={item.href} class="mt-4 flex h-11 items-center justify-between gap-4 rounded-[8px] border border-ink/10 bg-sand/55 px-4 text-sm font-bold text-heading transition hover:border-goldfinch-gold/30 hover:bg-sand" role="menuitem" on:click={() => activateLink(item.href)} on:pointerenter={() => preloadRoute(item.href)} on:focus={() => preloadRoute(item.href)}>
                       <span class="inline-flex items-center gap-2">
                         <svelte:component this={meta.icon} size={16} strokeWidth={2.4} />
                         {meta.viewAll}
@@ -392,7 +408,7 @@
                   </div>
 
                   <!-- right: featured image panel with gold CTA -->
-                  <a href={feat.href} class="group/feat relative m-3.5 block min-h-[370px] overflow-hidden rounded-[8px] bg-deep-green" role="menuitem" aria-label={feat.cta}>
+                  <a href={feat.href} class="group/feat relative m-3.5 block min-h-[370px] overflow-hidden rounded-[8px] bg-deep-green" role="menuitem" aria-label={feat.cta} on:click={() => activateLink(feat.href)} on:pointerenter={() => preloadRoute(feat.href)} on:focus={() => preloadRoute(feat.href)}>
                     {#if featureImg}
                       <img class="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover/feat:scale-105" src={imgUrl(featureImg, 720)} alt={feat.title} loading="lazy" decoding="async" />
                     {:else}
@@ -418,6 +434,8 @@
               class={`relative inline-flex items-center rounded px-3 py-[22px] text-[15px] font-semibold transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40 ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink/80'}`}
               href={item.href}
               aria-current={active ? 'page' : undefined}
+              on:click={() => activateLink(item.href)}
+              on:focus={() => preloadRoute(item.href)}
             >
               {item.label}
               {#if active}<span class="absolute inset-x-2.5 bottom-0 h-[3px] rounded-t-full bg-goldfinch-gold"></span>{/if}
@@ -430,6 +448,8 @@
           class={`ml-3 inline-flex h-10 shrink-0 items-center gap-1.5 self-center whitespace-nowrap rounded-full px-5 text-[14px] font-bold tracking-tight shadow-[0_2px_10px_rgba(212,175,55,0.35)] transition duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/60 focus-visible:ring-offset-2 ${isActive(path, '/plan-my-trip') ? 'bg-deep-green text-white shadow-none' : 'bg-goldfinch-gold text-heading hover:shadow-[0_6px_18px_rgba(212,175,55,0.45)]'}`}
           href="/plan-my-trip"
           aria-current={isActive(path, '/plan-my-trip') ? 'page' : undefined}
+          on:click={() => activateLink('/plan-my-trip')}
+          on:focus={() => preloadRoute('/plan-my-trip')}
         >
           {brand.primaryCta}
         </a>
@@ -462,7 +482,7 @@
            below the fold (e.g. an open accordion) were unreachable. -->
       <aside class="absolute right-0 top-0 flex h-dvh w-[86vw] min-w-[300px] max-w-[380px] flex-col overflow-y-auto overscroll-contain border-l border-ink/10 bg-surface px-5 py-5 shadow-[-20px_0_55px_rgba(0,0,0,0.12)]" transition:fly={{ x: 60, duration: 200 }}>
         <div class="flex items-center justify-between gap-4">
-          <a href="/" class="flex shrink-0 items-center gap-2.5" on:click={() => (menuOpen = false)}>
+          <a href="/" class="flex shrink-0 items-center gap-2.5" on:click={() => activateLink('/')}>
             <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-10 w-10 shrink-0 object-contain" />
             <div class="leading-none">
               <p class="text-xl font-extrabold tracking-normal text-heading">Goldfinch</p>
@@ -479,14 +499,14 @@
           <input class="min-w-0 flex-1 bg-transparent px-1 text-sm font-medium outline-none placeholder:text-[#a9a9a9]" aria-label="Search tour packages" placeholder="Search tours..." bind:value={searchQuery} />
         </form>
 
-        <nav class="mt-5 grid gap-1" aria-label="Mobile">
+        <nav class="mt-5 grid gap-1" aria-label="Mobile" data-sveltekit-preload-code="tap" data-sveltekit-preload-data="tap">
           {#each NAV as item}
             {@const active = isActive(path, item.href)}
             {@const links = item.dropdown === 'destinations' ? destinations : item.dropdown === 'tours' ? tours : item.dropdown === 'accommodation' ? lodges : item.dropdown === 'safariStyles' ? categories : []}
             {#if item.dropdown}
               <div class="rounded-[8px]">
                 <div class="flex items-center">
-                  <a class={`flex-1 rounded-[8px] px-3 py-3 text-[17px] font-semibold transition ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink'}`} href={item.href} on:click={() => (menuOpen = false)}>{item.label}</a>
+                  <a class={`flex-1 rounded-[8px] px-3 py-3 text-[17px] font-semibold transition ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink'}`} href={item.href} on:click={() => activateLink(item.href)} on:focus={() => preloadRoute(item.href)}>{item.label}</a>
                   <button class="grid h-11 w-11 place-items-center rounded-[8px] text-ink/70 transition hover:bg-sand/50" type="button" aria-expanded={mobileAccordion === item.dropdown} aria-label={`Toggle ${item.label}`} on:click={() => (mobileAccordion = mobileAccordion === item.dropdown ? '' : (item.dropdown ?? ''))}>
                     <ChevronDown size={18} strokeWidth={2.6} class={`transition-transform ${mobileAccordion === item.dropdown ? 'rotate-180' : ''}`} />
                   </button>
@@ -495,7 +515,7 @@
                   {@const meta = MENU_META[item.dropdown]}
                   <div class="mb-2 grid gap-2 rounded-[8px] border border-ink/10 bg-canvas p-2" transition:fly={{ y: -4, duration: 150 }}>
                     {#each links as link (link.href)}
-                      <a class="group/mobile-link flex min-h-[70px] items-center gap-3 rounded-[6px] px-2 py-2 transition hover:bg-sand/60" href={link.href} on:click={() => (menuOpen = false)}>
+                      <a class="group/mobile-link flex min-h-[70px] items-center gap-3 rounded-[6px] px-2 py-2 transition hover:bg-sand/60" href={link.href} on:click={() => activateLink(link.href)} on:focus={() => preloadRoute(link.href)}>
                         <span class={`grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-[6px] ${link.image ? 'bg-deep-green' : 'bg-sand ring-1 ring-goldfinch-gold/20'}`}>
                           {#if link.image}
                             <img class="h-full w-full object-cover" src={imgUrl(link.image, 120)} alt={link.label} loading="lazy" decoding="async" />
@@ -510,7 +530,7 @@
                         <ChevronRight size={16} strokeWidth={2.5} class="shrink-0 text-ink/25" />
                       </a>
                     {/each}
-                    <a href={item.href} class="flex h-10 items-center justify-between rounded-[6px] bg-sand/70 px-3 text-sm font-bold text-heading transition hover:bg-sand" on:click={() => (menuOpen = false)}>
+                    <a href={item.href} class="flex h-10 items-center justify-between rounded-[6px] bg-sand/70 px-3 text-sm font-bold text-heading transition hover:bg-sand" on:click={() => activateLink(item.href)} on:focus={() => preloadRoute(item.href)}>
                       <span class="inline-flex items-center gap-2">
                         <svelte:component this={meta.icon} size={15} strokeWidth={2.4} />
                         {meta.viewAll}
@@ -521,7 +541,7 @@
                 {/if}
               </div>
             {:else}
-              <a class={`rounded-xl px-3 py-3 text-[17px] font-semibold transition ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink'}`} href={item.href} on:click={() => (menuOpen = false)}>{item.label}</a>
+              <a class={`rounded-xl px-3 py-3 text-[17px] font-semibold transition ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink'}`} href={item.href} on:click={() => activateLink(item.href)} on:focus={() => preloadRoute(item.href)}>{item.label}</a>
             {/if}
           {/each}
 
@@ -540,7 +560,7 @@
               <span class="text-[15px] font-bold text-ink">{waNumber}</span>
             </span>
           </a>
-          <a class="mt-1 text-center text-xs font-medium text-ink/40 transition hover:text-forest" href="/admin/login" on:click={() => (menuOpen = false)}>Staff login</a>
+          <a class="mt-1 text-center text-xs font-medium text-ink/40 transition hover:text-forest" href="/admin/login" on:click={() => activateLink('/admin/login')}>Staff login</a>
         </div>
       </aside>
     </div>

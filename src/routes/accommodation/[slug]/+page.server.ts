@@ -12,12 +12,12 @@ const apiBase = (origin: string) => {
   return raw.startsWith('/') ? `${origin}${raw}` : raw;
 };
 
-export const load: PageServerLoad = async ({ params, url }) => {
+export const load: PageServerLoad = async ({ fetch, params, url }) => {
   const base = apiBase(url.origin);
 
   let lodge: Lodge | null = null;
   try {
-    const res = await globalThis.fetch(`${base}/lodges/${params.slug}`);
+    const res = await fetch(`${base}/lodges/${params.slug}`);
     if (res.ok) lodge = ((await res.json()) as Body<Lodge>).data ?? null;
   } catch {
     lodge = null;
@@ -29,7 +29,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
   // or broken list never takes the detail page down with it.
   let related: Lodge[] = [];
   try {
-    const res = await globalThis.fetch(`${base}/lodges?status=published&limit=100`);
+    const res = await fetch(`${base}/lodges?status=published&limit=100`);
     if (res.ok) {
       const all = ((await res.json()) as PaginatedBody<Lodge>).data?.items ?? [];
       related = all.filter((item) => item.slug !== lodge!.slug);
@@ -45,7 +45,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
   let safaris: Tour[] = [];
   if (lodge.destination_id) {
     try {
-      const res = await globalThis.fetch(
+      const res = await fetch(
         `${base}/tours?destination_id=${lodge.destination_id}&status=published&limit=6`
       );
       if (res.ok) {

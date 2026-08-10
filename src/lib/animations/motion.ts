@@ -281,44 +281,87 @@ export const tilt: Action<HTMLElement, { max?: number; scale?: number; glare?: b
 
 // Cinematic heading reveal — words rise + de-blur in sequence on scroll.
 export const revealHeading: Action<HTMLElement, { stagger?: number; y?: number; start?: string } | undefined> = (node, params = {}) => {
-  const text = (node.textContent ?? '').trim();
-  if (!text) return {};
+  if (!(node.textContent ?? '').trim()) return {};
 
   if (!browser || prefersReducedMotion()) {
     setFinalVisible(node);
     return {};
   }
 
-  // Split into per-character spans (kept word-safe so words never break across
-  // lines), then animate each char in with a stagger — Travelik's "text-anime".
-  const esc = (c: string) => (c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c);
-  node.setAttribute('aria-label', text);
-  node.innerHTML = text
-    .split(/(\s+)/)
-    .map((part) => {
-      if (/^\s+$/.test(part)) return part;
-      const chars = Array.from(part)
-        .map((c) => `<span class="reveal-char" style="display:inline-block;will-change:transform,opacity">${esc(c)}</span>`)
-        .join('');
-      return `<span style="display:inline-block;white-space:nowrap">${chars}</span>`;
-    })
-    .join('');
+  /**
+   * Keep whatever Svelte rendered here alive, just out of sight.
+   *
+   * This used to overwrite node.innerHTML outright, which detached the text
+   * node Svelte writes updates into. On a same-route navigation — a different
+   * destination from the mega menu, say — Svelte reuses the <h1>, sets the new
+   * title on a node that is no longer in the document, and the old heading
+   * stays on screen indefinitely while the rest of the page changes around it.
+   *
+   * Moving Svelte's children into a hidden holder keeps them in the DOM, so
+   * updates still land and a MutationObserver can pick them up and re-split.
+   */
+  const source = document.createElement('span');
+  source.style.display = 'none';
+  while (node.firstChild) source.appendChild(node.firstChild);
+  node.appendChild(source);
 
-  const chars = Array.from(node.querySelectorAll<HTMLElement>('.reveal-char'));
+  const stage = document.createElement('span');
+  node.appendChild(stage);
+
   const stagger = params.stagger ?? 0.025;
   const ease = 'cubic-bezier(0.34, 1.4, 0.64, 1)'; // slight Back-style overshoot
-  chars.forEach((el, i) => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateX(0.4em)';
-    el.style.transition = `opacity 0.5s ease ${(i * stagger).toFixed(3)}s, transform 0.7s ${ease} ${(i * stagger).toFixed(3)}s`;
-  });
-  const stop = observeOnce(node, () => {
-    chars.forEach((el) => {
-      el.style.opacity = '1';
-      el.style.transform = 'translateX(0)';
+  const esc = (c: string) => (c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c);
+
+  let stopObserving = () => {};
+  let rendered = '';
+
+  const render = () => {
+    const text = (source.textContent ?? '').replace(/\s+/g, ' ').trim();
+    if (!text || text === rendered) return;
+    rendered = text;
+
+    // Split into per-character spans, kept word-safe so words never break
+    // across lines, then animate each in with a stagger.
+    node.setAttribute('aria-label', text);
+    stage.innerHTML = text
+      .split(/(\s+)/)
+      .map((part) => {
+        if (/^\s+$/.test(part)) return part;
+        const chars = Array.from(part)
+          .map((c) => `<span class="reveal-char" style="display:inline-block;will-change:transform,opacity">${esc(c)}</span>`)
+          .join('');
+        return `<span style="display:inline-block;white-space:nowrap">${chars}</span>`;
+      })
+      .join('');
+
+    const chars = Array.from(stage.querySelectorAll<HTMLElement>('.reveal-char'));
+    chars.forEach((el, i) => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(0.4em)';
+      el.style.transition = `opacity 0.5s ease ${(i * stagger).toFixed(3)}s, transform 0.7s ${ease} ${(i * stagger).toFixed(3)}s`;
     });
-  });
-  return { destroy: stop };
+
+    stopObserving();
+    stopObserving = observeOnce(node, () => {
+      chars.forEach((el) => {
+        el.style.opacity = '1';
+        el.style.transform = 'translateX(0)';
+      });
+    });
+  };
+
+  render();
+
+  // Fires when Svelte writes a new title into the hidden holder.
+  const watcher = new MutationObserver(render);
+  watcher.observe(source, { characterData: true, childList: true, subtree: true });
+
+  return {
+    destroy() {
+      watcher.disconnect();
+      stopObserving();
+    }
+  };
 };
 
 export const navbarEntrance: Action<HTMLElement, RevealOptions | undefined> = (node, params = {}) => {

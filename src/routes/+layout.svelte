@@ -10,6 +10,7 @@
   import ConsentBanner from '$lib/components/public/ConsentBanner.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import BackToTop from '$lib/components/public/BackToTop.svelte';
+  import NavigationProgress from '$lib/components/public/NavigationProgress.svelte';
   import ShortlistFab from '$lib/components/public/ShortlistFab.svelte';
   import { consent } from '$lib/consent';
   import { setupPwaInstall } from '$lib/pwa';
@@ -175,6 +176,7 @@
 {/if}
 
 {#if !isAdmin}
+  <NavigationProgress />
   <Navbar />
 {/if}
 
