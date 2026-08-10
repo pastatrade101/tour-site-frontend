@@ -19,7 +19,7 @@
   export let ctaHref = '';
 </script>
 
-<section id="lead-form" class="bg-deep-green py-14 md:py-20 scroll-mt-20">
+<section id="lead-form" class="home-planning-band bg-deep-green py-14 md:py-20 scroll-mt-20">
   <div class="container-shell">
     <div class="grid gap-10 lg:grid-cols-2 lg:gap-14">
       <div class="text-white">
@@ -75,3 +75,23 @@
     </div>
   </div>
 </section>
+
+<style>
+  @media (max-width: 767px) {
+    .home-planning-band {
+      padding-block: 3.25rem;
+    }
+
+    .home-planning-band h2 {
+      font-size: clamp(1.85rem, 8vw, 2.3rem);
+      line-height: 1.08;
+      text-wrap: balance;
+    }
+
+    .home-planning-band p,
+    .home-planning-band li {
+      font-size: 0.95rem;
+      line-height: 1.65;
+    }
+  }
+</style>

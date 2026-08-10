@@ -38,9 +38,9 @@
 </script>
 
 {#if features.length}
-  <section class="py-14 md:py-20">
+  <section class="home-why-choose py-14 md:py-20">
     <div class="container-shell">
-      <div class="max-w-[1180px]">
+      <div class="home-why-head max-w-[1180px]">
         {#if eyebrow}
           <div class="inline-flex items-center gap-2">
             <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
@@ -60,10 +60,10 @@
           </p>
         {/if}
       </div>
-      <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="home-why-grid mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {#each features as f, i (f.title)}
           <div
-            class="group rounded-lg border border-ink/10 bg-surface p-6 transition-shadow hover:shadow-[0_6px_20px_rgba(15,23,42,0.06)]"
+            class="home-why-card group rounded-lg border border-ink/10 bg-surface p-6 transition-shadow hover:shadow-[0_6px_20px_rgba(15,23,42,0.06)]"
           >
             <div
               class="inline-flex h-10 w-10 items-center justify-center rounded-md bg-sand text-goldfinch-gold"
@@ -82,3 +82,48 @@
     </div>
   </section>
 {/if}
+
+<style>
+  @media (max-width: 767px) {
+    .home-why-choose {
+      padding-block: 3.25rem;
+      background: rgb(var(--c-canvas));
+    }
+
+    .home-why-head h2 {
+      font-size: clamp(1.85rem, 8vw, 2.25rem);
+      line-height: 1.08;
+      text-wrap: balance;
+    }
+
+    .home-why-head p {
+      font-size: 0.95rem;
+      line-height: 1.65;
+    }
+
+    .home-why-grid {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(250px, 82%);
+      gap: 0.85rem;
+      margin-inline: -16px;
+      margin-top: 1.5rem;
+      overflow-x: auto;
+      padding-inline: 16px;
+      padding-bottom: 0.4rem;
+      scroll-padding-inline: 16px;
+      scroll-snap-type: x mandatory;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .home-why-grid::-webkit-scrollbar {
+      display: none;
+    }
+
+    .home-why-card {
+      min-height: 230px;
+      scroll-snap-align: start;
+    }
+  }
+</style>

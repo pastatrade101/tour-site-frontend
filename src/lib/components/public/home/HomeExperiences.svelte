@@ -45,9 +45,9 @@
 </script>
 
 {#if items.length}
-  <section id="experiences" class="py-20 scroll-mt-20 bg-surface">
+  <section id="experiences" class="home-experiences py-20 scroll-mt-20 bg-surface">
     <div class="container-shell">
-      <div class="max-w-[1180px] mx-auto text-center">
+      <div class="home-experiences-head max-w-[1180px] mx-auto text-center">
         <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">
           {eyebrow}
         </span>
@@ -59,16 +59,16 @@
         </p>
       </div>
 
-      <div class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:items-start">
+      <div class="home-experiences-layout mt-8 grid min-w-0 max-w-full gap-8 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:items-start">
         <!-- Left: interactive experience list (~35%) -->
-        <div class="flex flex-col gap-3">
-          <div class="flex flex-col space-y-3">
+        <div class="min-w-0 max-w-full overflow-hidden sm:overflow-visible flex flex-col gap-3">
+          <div class="home-experience-tabs flex flex-col space-y-3">
             {#each primary as opt, i (opt.slug || i)}
               <button
                 type="button"
                 on:click={() => (activeIndex = i)}
                 aria-pressed={activeIndex === i}
-                class="group relative grid w-full max-w-full grid-cols-[40px_minmax(0,1fr)_20px] items-center gap-3 rounded-xl px-5 py-4 text-left transition-all sm:grid-cols-[44px_minmax(0,1fr)_24px]"
+                class="home-experience-tab group relative grid w-full max-w-full grid-cols-[40px_minmax(0,1fr)_20px] items-center gap-3 rounded-xl px-5 py-4 text-left transition-all sm:grid-cols-[44px_minmax(0,1fr)_24px]"
                 style={activeIndex === i
                   ? 'background: rgb(var(--c-surface)); border: 1px solid rgb(var(--c-goldfinch-gold) / 0.35); box-shadow: inset 3px 0 0 0 rgb(var(--c-goldfinch-gold)), 0 6px 20px -4px rgb(var(--c-ink) / 0.14), -10px 0 24px -14px rgb(var(--c-goldfinch-gold) / 0.45);'
                   : 'background: rgb(var(--c-surface)); border: 1px solid rgb(var(--c-ink) / 0.08); box-shadow: 0 2px 8px -2px rgb(var(--c-ink) / 0.08);'}
@@ -129,8 +129,8 @@
 
         <!-- Right: dynamic preview panel (~65%) -->
         {#if active}
-          <div class="flex flex-col">
-            <div class="relative w-full aspect-[3/2] overflow-hidden rounded-2xl bg-sand">
+          <div class="home-experience-preview flex min-w-0 max-w-full flex-col overflow-hidden">
+            <div class="home-experience-image relative aspect-[3/2] w-full min-w-0 max-w-full overflow-hidden rounded-2xl bg-sand">
               {#if active.image}
                 {#key active.image}
                   <Img
@@ -138,8 +138,9 @@
                     variantsMap={imageVariants}
                     alt={active.name}
                     width={1200}
-                    sizes="(max-width: 1024px) 100vw, 65vw"
-                    className="exp-fade h-full w-full object-cover will-change-[opacity,transform]"
+                    sizes="(max-width: 479px) calc(100vw - 32px), (max-width: 767px) calc(100vw - 48px), (max-width: 1024px) 100vw, 65vw"
+                    pictureClass="block h-full w-full max-w-full"
+                    className="exp-fade block h-full w-full max-w-full object-cover will-change-[opacity,transform]"
                   />
                 {/key}
               {/if}
@@ -225,6 +226,203 @@
     to {
       opacity: 1;
       transform: scale(1);
+    }
+  }
+  @media (max-width: 639px) {
+    .home-experiences {
+      padding-block: 3.25rem;
+      background: rgb(var(--c-surface));
+      max-width: 100vw;
+      overflow-x: clip;
+    }
+
+    .home-experiences :global(.container-shell) {
+      width: calc(100vw - 32px);
+      max-width: 430px;
+      min-width: 0;
+    }
+
+    .home-experiences-head {
+      margin-inline: 0;
+      text-align: left;
+    }
+
+    .home-experiences-head h2 {
+      font-size: clamp(1.85rem, 8vw, 2.25rem);
+      line-height: 1.06;
+      text-wrap: balance;
+    }
+
+    .home-experiences-head p {
+      font-size: 0.95rem;
+      line-height: 1.65;
+    }
+
+    .home-experiences-layout {
+      margin-top: 1.5rem;
+      gap: 1rem;
+      min-width: 0;
+    }
+
+    .home-experience-tabs {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(236px, 78%);
+      gap: 0.75rem;
+      margin-inline: -16px;
+      overflow-x: auto;
+      padding-inline: 16px;
+      padding-bottom: 0.35rem;
+      scroll-padding-inline: 16px;
+      scroll-snap-type: x mandatory;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+      max-width: calc(100vw - 32px);
+    }
+
+    .home-experience-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .home-experience-tab {
+      min-height: 126px;
+      align-items: start;
+      grid-template-columns: 38px minmax(0, 1fr);
+      padding: 1rem;
+      scroll-snap-align: start;
+    }
+
+    .home-experience-tab > :global(svg:last-child) {
+      display: none;
+    }
+
+    .home-experience-image {
+      aspect-ratio: 16 / 9;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      height: auto;
+      border-radius: 12px;
+      border: 1px solid rgb(var(--c-ink) / 0.1);
+      background: rgb(var(--c-sand));
+    }
+
+    .home-experience-preview {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .home-experience-image :global(img) {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      object-fit: cover;
+      object-position: center center;
+    }
+
+    .home-experience-image :global(picture) {
+      display: block;
+      height: 100%;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .home-experience-image :global(.exp-fade) {
+      transform: none;
+    }
+
+    .home-experience-preview > :global(div:last-child) {
+      padding-top: 1rem;
+    }
+
+    .home-experience-preview h3 {
+      margin-top: 0.75rem;
+      font-size: 1.45rem;
+      line-height: 1.08;
+    }
+
+    .home-experience-preview p {
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 4;
+      line-clamp: 4;
+    }
+  }
+  @media (min-width: 480px) and (max-width: 767px) {
+    .home-experiences :global(.container-shell) {
+      width: calc(100vw - 48px);
+      max-width: none;
+    }
+
+    .home-experience-tabs {
+      max-width: calc(100vw - 48px);
+    }
+  }
+  @media (min-width: 640px) and (max-width: 767px) {
+    .home-experiences {
+      padding-block: 4rem;
+      max-width: 100vw;
+      overflow-x: clip;
+    }
+
+    .home-experiences-head {
+      margin-inline: 0;
+      text-align: left;
+    }
+
+    .home-experiences-layout {
+      margin-top: 1.75rem;
+      gap: 1.25rem;
+      min-width: 0;
+    }
+
+    .home-experience-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+      margin-inline: 0;
+      max-width: 100%;
+      overflow: visible;
+      padding: 0;
+      scroll-snap-type: none;
+    }
+
+    .home-experience-tab {
+      min-height: 118px;
+      align-items: start;
+      grid-template-columns: 40px minmax(0, 1fr);
+      padding: 1rem;
+    }
+
+    .home-experience-tab > :global(svg:last-child) {
+      display: none;
+    }
+
+    .home-experience-image {
+      aspect-ratio: 16 / 9;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      border-radius: 14px;
+      border: 1px solid rgb(var(--c-ink) / 0.1);
+    }
+
+    .home-experience-preview {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .home-experience-image :global(picture),
+    .home-experience-image :global(img) {
+      display: block;
+      height: 100%;
+      width: 100%;
+      max-width: 100%;
     }
   }
   @media (prefers-reduced-motion: reduce) {

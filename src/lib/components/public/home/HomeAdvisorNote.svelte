@@ -39,10 +39,10 @@
     .filter((c) => c.items.length);
 </script>
 
-<section class="py-14 md:py-20">
+<section class="home-advisor-note py-14 md:py-20">
   <div class="container-shell">
     <div
-      class="relative overflow-hidden rounded-[12px] border border-ink/20 bg-sand px-7 py-8 sm:px-10 sm:py-10 md:px-14 md:py-14 lg:px-[72px] lg:py-[64px]"
+      class="home-advisor-card relative overflow-hidden rounded-[12px] border border-ink/20 bg-sand px-7 py-8 sm:px-10 sm:py-10 md:px-14 md:py-14 lg:px-[72px] lg:py-[64px]"
       style="box-shadow: 0 18px 45px rgba(57,61,50,0.06)"
     >
       <!-- subtle background compass mark -->
@@ -104,3 +104,29 @@
     </div>
   </div>
 </section>
+
+<style>
+  @media (max-width: 767px) {
+    .home-advisor-note {
+      padding-block: 3.25rem;
+      background: rgb(var(--c-canvas));
+    }
+
+    .home-advisor-card {
+      padding: 1.35rem;
+      border-radius: 12px;
+    }
+
+    .home-advisor-card h2 {
+      font-size: clamp(1.85rem, 8vw, 2.25rem);
+      line-height: 1.08;
+      text-wrap: balance;
+    }
+
+    .home-advisor-card p,
+    .home-advisor-card li {
+      font-size: 0.95rem;
+      line-height: 1.65;
+    }
+  }
+</style>

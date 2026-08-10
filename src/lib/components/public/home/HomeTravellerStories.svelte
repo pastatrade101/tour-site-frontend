@@ -93,9 +93,9 @@
 </script>
 
 {#if items.length}
-  <section class="py-14 md:py-20">
+  <section class="home-traveller-stories py-14 md:py-20">
     <div class="container-shell">
-      <div class="flex items-end justify-between gap-6">
+      <div class="home-traveller-head flex items-end justify-between gap-6">
         <div class="max-w-[1180px]">
           {#if eyebrow}
             <div class="inline-flex items-center gap-2">
@@ -297,5 +297,42 @@
   }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
+  }
+
+  @media (max-width: 767px) {
+    .home-traveller-stories {
+      padding-block: 3.25rem;
+      background: rgb(var(--c-canvas));
+    }
+
+    .home-traveller-head {
+      display: block;
+    }
+
+    .home-traveller-head h2 {
+      font-size: clamp(1.85rem, 8vw, 2.25rem);
+      line-height: 1.08;
+      text-wrap: balance;
+    }
+
+    .review-card {
+      min-height: 250px;
+      width: min(82%, 310px);
+      padding: 1.25rem;
+    }
+
+    .review-card blockquote {
+      font-size: 1.02rem;
+      line-height: 1.35;
+    }
+
+    .traveller-marquee {
+      margin-top: 2.5rem;
+    }
+
+    .traveller-marquee__track li {
+      height: 220px;
+      width: 170px;
+    }
   }
 </style>

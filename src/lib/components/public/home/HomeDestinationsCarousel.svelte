@@ -22,9 +22,9 @@
 </script>
 
 {#if destinations.length}
-  <section class="py-14 md:py-[64px]">
+  <section class="home-destinations-carousel py-14 md:py-[64px]">
     <div class="container-shell">
-      <div class="flex items-end justify-between gap-6">
+      <div class="home-destinations-head flex items-end justify-between gap-6">
         <div class="max-w-[1180px] flex-1">
           {#if eyebrow}
             <div class="inline-flex items-center gap-2">
@@ -70,9 +70,9 @@
         {#each destinations as d (d.id ?? d.slug ?? d.name)}
           <a
             href={`/destinations/${d.slug}`}
-            class="group relative block w-[86%] sm:w-[48%] lg:w-[30%] shrink-0 snap-start overflow-hidden rounded-[10px] border border-ink/10 bg-surface"
+            class="home-destination-card group relative block w-[86%] sm:w-[48%] lg:w-[30%] shrink-0 snap-start overflow-hidden rounded-[10px] border border-ink/10 bg-surface"
           >
-            <div class="relative h-[360px] md:h-[380px] lg:h-[400px] overflow-hidden bg-sand">
+            <div class="home-destination-media relative h-[360px] md:h-[380px] lg:h-[400px] overflow-hidden bg-sand">
               {#if imageOf(d)}
                 <Img
                   record={d}
@@ -114,5 +114,36 @@
   }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
+  }
+
+  @media (max-width: 767px) {
+    .home-destinations-carousel {
+      padding-block: 3.25rem;
+      background: rgb(var(--c-canvas));
+    }
+
+    .home-destinations-head {
+      display: block;
+    }
+
+    .home-destinations-head h2 {
+      font-size: clamp(1.85rem, 8vw, 2.25rem);
+      line-height: 1.08;
+      text-wrap: balance;
+    }
+
+    .home-destinations-head p {
+      font-size: 0.95rem;
+      line-height: 1.65;
+    }
+
+    .home-destination-card {
+      width: min(78%, 300px);
+      border-radius: 12px;
+    }
+
+    .home-destination-media {
+      height: 260px;
+    }
   }
 </style>

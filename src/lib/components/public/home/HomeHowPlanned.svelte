@@ -27,9 +27,9 @@
 </script>
 
 {#if steps.length}
-  <section class="py-14 md:py-20">
+  <section class="home-how-planned py-14 md:py-20">
     <div class="container-shell">
-      <div class="max-w-[1180px]">
+      <div class="home-how-head max-w-[1180px]">
         {#if eyebrow}
           <div class="inline-flex items-center gap-2">
             <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
@@ -49,9 +49,9 @@
           </p>
         {/if}
       </div>
-      <div class="mt-10 grid gap-8 md:grid-cols-4 md:gap-6">
+      <div class="home-how-grid mt-10 grid gap-8 md:grid-cols-4 md:gap-6">
         {#each steps as s, i (s.title)}
-          <div class="border-t border-ink/10 pt-5">
+          <div class="home-how-card border-t border-ink/10 pt-5">
             <div class="font-serif text-4xl text-clay">{stepNumber(i)}</div>
             {#if s.title}
               <h3 class="mt-3 text-lg font-semibold text-heading">{s.title}</h3>
@@ -65,3 +65,38 @@
     </div>
   </section>
 {/if}
+
+<style>
+  @media (max-width: 767px) {
+    .home-how-planned {
+      padding-block: 3.25rem;
+      background: rgb(var(--c-surface));
+    }
+
+    .home-how-head h2 {
+      font-size: clamp(1.85rem, 8vw, 2.25rem);
+      line-height: 1.08;
+      text-wrap: balance;
+    }
+
+    .home-how-head p {
+      font-size: 0.95rem;
+      line-height: 1.65;
+    }
+
+    .home-how-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.85rem;
+      margin-top: 1.5rem;
+    }
+
+    .home-how-card {
+      min-height: 0;
+      border: 1px solid rgb(var(--c-ink) / 0.1);
+      border-radius: 12px;
+      background: rgb(var(--c-surface));
+      padding: 1.1rem;
+    }
+  }
+</style>

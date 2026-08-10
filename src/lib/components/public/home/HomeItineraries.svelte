@@ -39,9 +39,9 @@
 </script>
 
 {#if list.length}
-  <section class="py-14 md:py-[64px]">
+  <section class="home-itineraries py-14 md:py-[64px]">
     <div class="container-shell">
-      <div class="max-w-[1180px]">
+      <div class="home-itineraries-head max-w-[1180px]">
         {#if eyebrow}
           <div class="inline-flex items-center gap-2">
             <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
@@ -63,7 +63,7 @@
       <div class="mt-8 grid gap-5 lg:grid-cols-2 lg:items-stretch">
         <!-- Featured card -->
         {#if featured}
-          <article class="flex flex-col overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <article class="home-itinerary-feature flex flex-col overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
             <div class="relative w-full overflow-hidden bg-sand">
               {#if imageOf(featured)}
                 <Img
@@ -126,7 +126,7 @@
             <li class="flex-1">
               <a
                 href={`/tours/${t.slug}`}
-                class="group flex h-full items-center gap-3 px-4 py-3 transition-colors hover:bg-sand"
+                class="itinerary-list-link group flex h-full items-center gap-3 px-4 py-3 transition-colors hover:bg-sand"
               >
                 {#if imageOf(t)}
                   <Img
@@ -146,7 +146,7 @@
                   {/if}
                 </div>
                 <div class="flex shrink-0 items-center gap-2 pl-2">
-                  <span class="text-[13px] font-semibold text-heading">{priceLabel(t)}</span>
+                  <span class="itinerary-list-price text-[13px] font-semibold text-heading">{priceLabel(t)}</span>
                   <ArrowRight size={14} strokeWidth={2} class="text-clay transition-transform group-hover:translate-x-0.5" />
                 </div>
               </a>
@@ -169,3 +169,44 @@
     </div>
   </section>
 {/if}
+
+<style>
+  @media (max-width: 767px) {
+    .home-itineraries {
+      padding-block: 3.25rem;
+      background: rgb(var(--c-surface));
+    }
+
+    .home-itineraries-head h2 {
+      font-size: clamp(1.85rem, 8vw, 2.25rem);
+      line-height: 1.08;
+      text-wrap: balance;
+    }
+
+    .home-itineraries-head p {
+      font-size: 0.95rem;
+      line-height: 1.65;
+    }
+
+    .home-itinerary-feature {
+      border-radius: 12px;
+    }
+
+    .home-itinerary-feature :global(img) {
+      height: 200px;
+    }
+
+    .itinerary-list-link {
+      align-items: flex-start;
+      min-height: 82px;
+    }
+
+    .itinerary-list-price {
+      max-width: 7.5rem;
+      white-space: normal;
+      text-align: right;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+  }
+</style>
