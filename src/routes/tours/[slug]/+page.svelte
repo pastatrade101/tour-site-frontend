@@ -1,33 +1,70 @@
 <script lang="ts">
-  import { ArrowRight, BedDouble, CalendarDays, Check, MapPin, MessageCircle, Mountain, Sparkles, Users, Utensils, X } from '@lucide/svelte';
+  import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
-  import { trackEvent } from '$lib/analytics';
+  import {
+    ArrowLeft,
+    ArrowRight,
+    BedDouble,
+    CalendarDays,
+    Camera,
+    Check,
+    ChevronDown,
+    Compass,
+    MapPin,
+    Minus,
+    Route,
+    Users,
+    Utensils,
+    X
+  } from '@lucide/svelte';
   import { api } from '$lib/api/client';
-  import { staggeredCardReveal } from '$lib/animations/motion';
+  import { trackEvent } from '$lib/analytics';
   import { currency, formatUsd } from '$lib/currency';
-  import { publicSettings, settingText } from '$lib/settings';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
-  import EnquiryForm from '$lib/components/public/enquiry/EnquiryForm.svelte';
-  import { configFor } from '$lib/enquiry/configs';
-  import EmailItineraryCapture from '$lib/components/public/EmailItineraryCapture.svelte';
-  import JsonLd from '$lib/components/public/JsonLd.svelte';
-  import RichText from '$lib/components/public/RichText.svelte';
-  import ShortlistButton from '$lib/components/public/ShortlistButton.svelte';
-  import SpecialistCard from '$lib/components/public/SpecialistCard.svelte';
-  import { defaultSpecialist } from '$lib/data/specialists';
-  import TripCostSection from '$lib/components/public/TripCostSection.svelte';
+  import BookingForm from '$lib/components/public/BookingForm.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
-  import LoadingState from '$lib/components/public/LoadingState.svelte';
-  import SectionHeader from '$lib/components/public/SectionHeader.svelte';
-  import TourCard from '$lib/components/public/TourCard.svelte';
   import Img from '$lib/components/public/Img.svelte';
+  import JsonLd from '$lib/components/public/JsonLd.svelte';
+  import LoadingState from '$lib/components/public/LoadingState.svelte';
+  import ReviewsWidget from '$lib/components/public/ReviewsWidget.svelte';
+  import RichText from '$lib/components/public/RichText.svelte';
+  import SectionHeader from '$lib/components/public/SectionHeader.svelte';
+  import SpecialistCard from '$lib/components/public/SpecialistCard.svelte';
+  import TourCard from '$lib/components/public/TourCard.svelte';
+  import { defaultSpecialist } from '$lib/data/specialists';
   import { toMetaText } from '$lib/richText';
-  import { getTourDestinationLabel } from '$lib/tourDestinations';
-  import type { BlogPost, Tour } from '$lib/types';
+  import { getTourDestinationLabel, getTourDestinations } from '$lib/tourDestinations';
+  import type { BlogPost, FAQ, ItineraryDay, Tour } from '$lib/types';
 
-  // Same labels the accommodation pages use, so a property reads identically
-  // wherever it appears on the site.
+  type Icon = typeof CalendarDays;
+  type FactCard = { icon: Icon; label: string; value: string };
+  type SnapshotRow = { day: string; place: string; highlights: string; hotel: string };
+  type Stay = NonNullable<ItineraryDay['lodge']>;
+  type MediaImage = {
+    src: string;
+    caption: string;
+    record?: Record<string, unknown>;
+    fields?: string[];
+  };
+  type AccommodationBlock = {
+    key: string;
+    label: string;
+    dayLabel: string;
+    summary: string;
+    href?: string;
+    gallery: MediaImage[];
+  };
+
+  const TABS = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'day-by-day', label: 'Day by Day' },
+    { id: 'accommodation', label: 'Accommodation' },
+    { id: 'prices', label: 'Prices' },
+    { id: 'inclusions', label: 'Inclusions' },
+    { id: 'good-to-know', label: 'Good to Know' }
+  ];
+
   const LODGE_TYPES: Record<string, string> = {
     tented_camp: 'Tented camp',
     mobile_camp: 'Mobile camp',
@@ -39,58 +76,251 @@
   let tour: Tour | null = null;
   let loading = true;
   let error = '';
+  let loadedSlug = '';
+  let sheetOpen = false;
+  let activeTab = TABS[0].id;
+  let openDays: Record<number, boolean> = {};
 
-  // Booking form opens in a modal on request.
-  let formOpen = false;
-  const openForm = () => (formOpen = true);
-  const closeForm = () => (formOpen = false);
-  // The enquiry modal locks background scroll itself.
+  let relatedTours: Tour[] = [];
+  let recentPosts: BlogPost[] = [];
+  let faqs: FAQ[] = [];
+  let lodgeMedia: Record<string, MediaImage[]> = {};
 
-  // Everything the enquiry form needs to know about this tour, so the visitor
-  // is never asked to re-select the trip they are already looking at.
-  $: enquiryContext = {
-    tour: tour
-      ? {
-          id: tour.id,
-          title: tour.title,
-          slug: tour.slug,
-          price_from: Number(tour.price_from ?? 0) || undefined,
-          currency: tour.currency ?? 'USD',
-          duration_days: Number(tour.duration_days ?? 0) || undefined,
-          image: tour.main_image_url || tour.banner_image_url || undefined,
-          destinations: getTourDestinationLabel(tour) || undefined
-        }
-      : undefined
+  const normaliseLabel = (value: string | null | undefined): string =>
+    String(value ?? '')
+      .replace(/[_-]+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+
+  const unique = (items: Array<string | null | undefined>): string[] => {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const item of items) {
+      const value = String(item ?? '').trim();
+      if (!value || seen.has(value.toLowerCase())) continue;
+      seen.add(value.toLowerCase());
+      result.push(value);
+    }
+    return result;
   };
-  $: enquiryConfig = configFor('tour_enquiry', enquiryContext);
 
-  // Shortlist item for the save button.
-  $: shortlistItem = tour
-    ? {
-        slug: tour.slug,
-        title: tour.title,
-        image_url: tour.main_image_url,
-        duration_days: tour.duration_days,
-        price_from: tour.price_from,
-        currency: tour.currency,
-        destination: getTourDestinationLabel(tour, 3) || undefined
-      }
-    : null;
+  const shortText = (value: string | null | undefined, length = 140): string => toMetaText(value ?? '', length).trim();
 
-  // WhatsApp deep-link pre-filled with the trip name (spec §7).
-  $: waDigits = (settingText($publicSettings, 'whatsapp_number') || '+255 700 000 000').replace(/\D/g, '');
-  $: waHref = tour
-    ? `https://wa.me/${waDigits}?text=${encodeURIComponent(`Hi Goldfinch, I'm interested in the ${tour.title}. Can you help me plan it?`)}`
-    : '#';
+  const durationOf = (item: Tour | null): string => {
+    if (!item?.duration_days) return '';
+    const days = `${item.duration_days} day${item.duration_days === 1 ? '' : 's'}`;
+    if (!item.duration_nights) return days;
+    return `${days} / ${item.duration_nights} night${item.duration_nights === 1 ? '' : 's'}`;
+  };
 
-  // SEO schema (SRS v2.0 §7.4): TouristTrip + BreadcrumbList.
+  const groupSizeOf = (item: Tour | null): string => {
+    if (!item) return '';
+    if (item.group_size_min && item.group_size_max) return `${item.group_size_min}-${item.group_size_max} people`;
+    if (item.group_size_max) return `Up to ${item.group_size_max} people`;
+    return item.group_size ?? '';
+  };
+
+  const routeOf = (item: Tour | null): string => {
+    if (!item) return '';
+    if (item.start_location && item.end_location) return `${item.start_location} -> ${item.end_location}`;
+    return item.start_location || item.end_location || '';
+  };
+
+  const dayListLabel = (days: number[]): string => {
+    const sorted = [...new Set(days)].sort((a, b) => a - b);
+    return `${sorted.length === 1 ? 'Day' : 'Days'} ${sorted.join(', ')}`;
+  };
+
+  const stayKey = (stay: Stay | null | undefined): string => String(stay?.id || stay?.slug || '').trim();
+
+  const imageFromStay = (stay: Stay): MediaImage | null => {
+    const src = stay.hero_image_url || stay.image_url || '';
+    return src
+      ? {
+          src,
+          caption: stay.name,
+          record: stay as unknown as Record<string, unknown>,
+          fields: ['hero_image_url', 'image_url']
+        }
+      : null;
+  };
+
+  const imageFromLodgeMedia = (row: Record<string, unknown>, stay: Stay): MediaImage | null => {
+    const src = String(row.image_url || row.file_url || row.url || '').trim();
+    if (!src) return null;
+    return {
+      src,
+      caption: String(row.caption || row.alt_text || stay.name),
+      record: row,
+      fields: ['image_url', 'file_url', 'url']
+    };
+  };
+
+  const galleryForStay = (stay: Stay): MediaImage[] => {
+    const gallery: MediaImage[] = [];
+    const add = (image: MediaImage | null | undefined) => {
+      if (!image?.src || gallery.some((item) => item.src === image.src)) return;
+      gallery.push(image);
+    };
+    add(imageFromStay(stay));
+    for (const image of lodgeMedia[stayKey(stay)] ?? []) add(image);
+    return gallery;
+  };
+
+  const dayImage = (day: ItineraryDay): MediaImage | null => {
+    if (day.image_url) return { src: day.image_url, caption: `Day ${day.day_number}: ${day.title}`, record: day as unknown as Record<string, unknown>, fields: ['image_url'] };
+    if (day.lodge?.hero_image_url) return { src: day.lodge.hero_image_url, caption: day.lodge.name, record: day.lodge as unknown as Record<string, unknown>, fields: ['hero_image_url', 'image_url'] };
+    if (day.lodge?.image_url) return { src: day.lodge.image_url, caption: day.lodge.name, record: day.lodge as unknown as Record<string, unknown>, fields: ['hero_image_url', 'image_url'] };
+    return null;
+  };
+
+  const detailsForDay = (day: ItineraryDay): FactCard[] => {
+    const stay = day.lodge?.name || day.accommodation || '';
+    return [
+      day.title ? { icon: MapPin, label: 'Main stop', value: day.title } : null,
+      stay ? { icon: BedDouble, label: 'Accommodation', value: stay } : null,
+      day.meals ? { icon: Utensils, label: 'Meals', value: day.meals } : null,
+      day.activities ? { icon: Compass, label: 'Activities', value: day.activities } : null
+    ].filter(Boolean) as FactCard[];
+  };
+
+  const isDayOpen = (day: ItineraryDay, index: number): boolean =>
+    openDays[day.day_number] ?? index === 0;
+
+  const toggleDay = (day: ItineraryDay, index: number) => {
+    const currentlyOpen = isDayOpen(day, index);
+    openDays = { ...openDays, [day.day_number]: !currentlyOpen };
+  };
+
+  const scrollToSection = (id: string) => {
+    if (!browser) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY - 96;
+    window.scrollTo({ top, behavior: 'smooth' });
+  };
+
+  const openPlanner = (location: string) => {
+    trackEvent('cta_click', { cta_name: 'Plan This Trip', cta_location: location, tour_id: tour?.id, tour_title: tour?.title });
+    if (browser && window.matchMedia('(max-width: 1023px)').matches) {
+      sheetOpen = true;
+      return;
+    }
+    scrollToSection('plan-this-trip');
+    const el = document.getElementById('plan-this-trip');
+    el?.classList.add('ring-2', 'ring-goldfinch-gold');
+    window.setTimeout(() => el?.classList.remove('ring-2', 'ring-goldfinch-gold'), 1400);
+  };
+
+  const closeSheet = () => {
+    sheetOpen = false;
+  };
+
+  $: slug = $page.params.slug ?? '';
   $: origin = $page.url.origin;
+  $: destinationLabel = getTourDestinationLabel(tour, 4);
+  $: destinations = getTourDestinations(tour);
+  $: itineraryDays = [...(tour?.itinerary_days ?? [])].sort((a, b) => (a.day_number ?? 0) - (b.day_number ?? 0));
+  $: inclusions = [...(tour?.tour_inclusions ?? [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  $: exclusions = [...(tour?.tour_exclusions ?? [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  $: highlights = tour?.highlights?.filter(Boolean) ?? [];
+  $: heroImage = tour?.main_image_url || tour?.banner_image_url || '';
+  $: durationLabel = durationOf(tour);
+  $: groupSize = groupSizeOf(tour);
+  $: routeLabel = routeOf(tour);
+  $: priceLabel = tour?.price_from ? formatUsd(tour.price_from, $currency) : '';
+  $: priceFromLabel = priceLabel ? `From ${priceLabel} per person` : 'On request';
+  $: tourDescription = tour?.full_description || tour?.short_description || '';
+  $: metaDescription = tour ? shortText(tour.meta_description || tour.short_description || tour.full_description, 170) : '';
+  $: categoryLabel = tour?.tour_categories?.name || normaliseLabel(tour?.experience_type);
+  $: heroTags = unique([
+    ...destinations.slice(0, 3).map((destination) => destination.name),
+    categoryLabel,
+    durationLabel
+  ]).slice(0, 5);
+  $: bestFor = tour
+    ? unique([
+        ...(tour.persona_tags ?? []).map(normaliseLabel),
+        tour.tour_categories?.name,
+        tour.experience_type ? normaliseLabel(tour.experience_type) : '',
+        tour.budget_tier ? `${normaliseLabel(tour.budget_tier)} comfort` : ''
+      ])
+    : [];
+  $: tripFacts = tour
+    ? ([
+        durationLabel ? { icon: CalendarDays, label: 'Duration', value: durationLabel } : null,
+        destinationLabel ? { icon: MapPin, label: 'Destinations', value: destinationLabel } : null,
+        routeLabel ? { icon: Route, label: 'Start / End', value: routeLabel } : null,
+        groupSize ? { icon: Users, label: 'Group size', value: groupSize } : null,
+        tour.difficulty_level ? { icon: Compass, label: 'Difficulty', value: normaliseLabel(tour.difficulty_level) } : null,
+        tour.minimum_age ? { icon: Check, label: 'Minimum age', value: `${tour.minimum_age}+` } : null
+      ].filter(Boolean) as FactCard[])
+    : [];
+  $: snapshotRows = itineraryDays.map((day) => ({
+    day: `Day ${day.day_number}`,
+    place: day.title,
+    highlights: shortText(day.activities || day.description, 120),
+    hotel: day.lodge?.name || day.accommodation || ''
+  })) as SnapshotRow[];
+  $: accommodationBlocks = (() => {
+    const linked = new Map<string, { stay: Stay; days: number[] }>();
+
+    for (const day of itineraryDays) {
+      if (day.lodge) {
+        const key = stayKey(day.lodge);
+        if (!key) continue;
+        const existing = linked.get(key);
+        if (existing) existing.days.push(day.day_number);
+        else linked.set(key, { stay: day.lodge, days: [day.day_number] });
+        continue;
+      }
+    }
+
+    const blocks: AccommodationBlock[] = [];
+    for (const [key, item] of linked) {
+      const summary = unique([
+        LODGE_TYPES[String(item.stay.lodge_type)] ?? '',
+        item.stay.accommodation_level ? normaliseLabel(item.stay.accommodation_level) : '',
+        item.stay.destinations?.name ?? ''
+      ]).join(' / ');
+      blocks.push({
+        key,
+        label: item.stay.name,
+        dayLabel: dayListLabel(item.days),
+        summary,
+        href: item.stay.slug ? `/accommodation/${item.stay.slug}` : undefined,
+        gallery: galleryForStay(item.stay)
+      });
+    }
+    return blocks;
+  })();
+  $: visibleTabs = TABS.filter((tab) => tab.id !== 'accommodation' || accommodationBlocks.length);
+  $: priceRows = [
+    { label: 'Starting price', value: priceFromLabel, note: tour?.price_from ? 'Final pricing depends on dates, party size and confirmed availability.' : 'Your specialist will quote this from live availability.' },
+    durationLabel ? { label: 'Duration', value: durationLabel, note: 'Taken from the published itinerary.' } : null,
+    groupSize ? { label: 'Group size', value: groupSize, note: 'Based on the published trip settings.' } : null,
+    routeLabel ? { label: 'Route', value: routeLabel, note: 'Start and end points from this tour.' } : null
+  ].filter(Boolean) as Array<{ label: string; value: string; note: string }>;
+  $: mediaImages = (() => {
+    if (!tour) return [] as MediaImage[];
+    const images: MediaImage[] = [];
+    const add = (image: MediaImage | null | undefined) => {
+      if (!image?.src || images.some((item) => item.src === image.src)) return;
+      images.push(image);
+    };
+    add(heroImage ? { src: heroImage, caption: tour.title, record: tour as unknown as Record<string, unknown>, fields: ['main_image_url', 'banner_image_url'] } : null);
+    for (const day of itineraryDays) {
+      add(dayImage(day));
+      if (day.lodge) for (const image of galleryForStay(day.lodge)) add(image);
+    }
+    return images.slice(0, 10);
+  })();
   $: touristTripLd = tour
     ? {
         '@type': 'TouristTrip',
         name: tour.title,
-        description: toMetaText(tour.short_description ?? tour.full_description ?? '', 300),
-        ...(tour.main_image_url ? { image: tour.main_image_url } : {}),
+        description: shortText(tour.short_description ?? tour.full_description, 300),
+        ...(heroImage ? { image: heroImage } : {}),
         ...(tour.price_from
           ? { offers: { '@type': 'Offer', price: tour.price_from, priceCurrency: tour.currency ?? 'USD' } }
           : {}),
@@ -108,78 +338,111 @@
       }
     : null;
 
-  // Day-by-day itinerary + what's included (embedded in the tour detail response).
-  $: itineraryDays = [...(tour?.itinerary_days ?? [])].sort((a, b) => (a.day_number ?? 0) - (b.day_number ?? 0));
-  $: inclusions = [...(tour?.tour_inclusions ?? [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-  $: exclusions = [...(tour?.tour_exclusions ?? [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-  $: highlights = tour?.highlights ?? [];
-  $: destinationLabel = getTourDestinationLabel(tour, 3);
-  $: groupSize = tour
-    ? tour.group_size_min && tour.group_size_max
-      ? `${tour.group_size_min}–${tour.group_size_max} people`
-      : tour.group_size_max
-        ? `Up to ${tour.group_size_max} people`
-        : tour.group_size ?? ''
-    : '';
-  $: priceLabel = tour?.price_from ? formatUsd(tour.price_from, $currency) : '';
-  $: tourDescription = tour ? tour.full_description || tour.short_description || '' : '';
-  $: metaDescription = tour ? toMetaText(tour.meta_description || tour.short_description || tour.full_description || '', 170) : '';
-
-  // Relevant content for onward navigation (loaded best-effort after the tour).
-  let relatedTours: Tour[] = [];
-  let recentPosts: BlogPost[] = [];
-
   const loadRelated = async (current: Tour) => {
-    const destId = (current as unknown as { destination_id?: string | null }).destination_id ?? null;
-
-    const [tourRes, postRes] = await Promise.allSettled([
+    const destId = current.destination_id ?? null;
+    const [tourRes, postRes, faqRes] = await Promise.allSettled([
       api.tours.list(destId ? { destination_id: destId, limit: 7 } : { limit: 7 }),
-      api.blog.list({ limit: 3 })
+      api.blog.list({ limit: 3 }),
+      api.faqs.list({ status: 'published', limit: 8 })
     ]);
 
     if (tourRes.status === 'fulfilled') {
-      let items = (tourRes.value.data.items ?? []).filter(
-        (item) => item.id !== current.id && item.slug !== current.slug
-      );
-      // If this destination only has the current tour, fall back to any tours.
+      let items = (tourRes.value.data.items ?? []).filter((item) => item.id !== current.id && item.slug !== current.slug);
       if (!items.length && destId) {
         const fallback = await api.tours.list({ limit: 7 }).catch(() => null);
-        items = (fallback?.data.items ?? []).filter(
-          (item) => item.id !== current.id && item.slug !== current.slug
-        );
+        items = (fallback?.data.items ?? []).filter((item) => item.id !== current.id && item.slug !== current.slug);
       }
       relatedTours = items.slice(0, 3);
     }
-    if (postRes.status === 'fulfilled') {
-      recentPosts = postRes.value.data.items ?? [];
-    }
+    if (postRes.status === 'fulfilled') recentPosts = postRes.value.data.items ?? [];
+    if (faqRes.status === 'fulfilled') faqs = faqRes.value.data.items ?? [];
   };
 
-  const load = async (slug: string) => {
+  const loadLodgeMedia = async (current: Tour) => {
+    const stays = new Map<string, Stay>();
+    for (const day of current.itinerary_days ?? []) {
+      if (!day.lodge?.id) continue;
+      const key = stayKey(day.lodge);
+      if (key) stays.set(key, day.lodge);
+    }
+    if (!stays.size) {
+      lodgeMedia = {};
+      return;
+    }
+
+    const results = await Promise.allSettled(
+      [...stays.entries()].map(async ([key, stay]) => {
+        const response = await api.lodges.media(stay.id);
+        const images = (response.data.images ?? [])
+          .map((row) => imageFromLodgeMedia(row, stay))
+          .filter(Boolean) as MediaImage[];
+        return [key, images.slice(0, 6)] as const;
+      })
+    );
+
+    const next: Record<string, MediaImage[]> = {};
+    for (const result of results) {
+      if (result.status === 'fulfilled' && result.value[1].length) next[result.value[0]] = result.value[1];
+    }
+    lodgeMedia = next;
+  };
+
+  const load = async (nextSlug: string) => {
     loading = true;
     error = '';
+    tour = null;
     relatedTours = [];
     recentPosts = [];
+    faqs = [];
+    lodgeMedia = {};
+    openDays = {};
+    sheetOpen = false;
+
     try {
-      const response = await api.tours.get(slug);
+      const response = await api.tours.get(nextSlug);
       tour = response.data;
+      void loadRelated(response.data);
+      void loadLodgeMedia(response.data);
+      trackEvent('tour_page_view', {
+        tour_id: response.data.id,
+        tour_title: response.data.title,
+        destination: getTourDestinationLabel(response.data, 4) || response.data.destinations?.name
+      });
     } catch (requestError) {
       error = requestError instanceof Error ? requestError.message : 'Unable to load tour.';
-      tour = null;
     } finally {
       loading = false;
     }
-
-    if (tour) {
-      void loadRelated(tour);
-      trackEvent('tour_page_view', { tour_id: tour.id, tour_title: tour.title, destination: destinationLabel || tour.destinations?.name });
-    }
   };
 
-  // The component is reused across /tours/[slug] navigations, so a one-shot
-  // onMount would leave the page stale. Re-load whenever the slug changes.
-  $: slug = $page.params.slug ?? '';
-  $: if (browser && slug) void load(slug);
+  $: if (browser && slug && slug !== loadedSlug) {
+    loadedSlug = slug;
+    void load(slug);
+  }
+
+  $: if (browser) document.body.style.overflow = sheetOpen ? 'hidden' : '';
+
+  onMount(() => {
+    const updateActiveTab = () => {
+      const y = window.scrollY + 130;
+      let current = visibleTabs[0]?.id ?? TABS[0].id;
+      for (const tab of visibleTabs) {
+        const el = document.getElementById(tab.id);
+        if (el && el.offsetTop <= y) current = tab.id;
+      }
+      activeTab = current;
+    };
+
+    window.addEventListener('scroll', updateActiveTab, { passive: true });
+    window.addEventListener('resize', updateActiveTab);
+    updateActiveTab();
+
+    return () => {
+      window.removeEventListener('scroll', updateActiveTab);
+      window.removeEventListener('resize', updateActiveTab);
+      document.body.style.overflow = '';
+    };
+  });
 </script>
 
 <svelte:head>
@@ -190,340 +453,604 @@
   {/if}
 </svelte:head>
 
-<section class="container-shell py-14">
-  {#if loading}
+{#if loading}
+  <section class="container-shell py-16">
     <LoadingState message="Loading tour..." />
-  {:else if !tour}
+  </section>
+{:else if !tour}
+  <section class="container-shell py-16">
     <ErrorState message={error || 'Tour not found.'} />
-  {:else}
-    <nav class="mb-6 flex items-center gap-2 text-sm">
-      <a class="font-medium text-ink/70 transition hover:text-forest" href="/tours">Tours</a>
-      <span class="text-ink/30">/</span>
-      <span class="font-medium text-ink/80">{tour.title}</span>
-    </nav>
+  </section>
+{:else}
+  <section data-hero class="relative isolate overflow-hidden bg-deep-green">
+    {#if heroImage}
+      <Img
+        record={tour}
+        fields={['main_image_url', 'banner_image_url']}
+        alt=""
+        width={1800}
+        sizes="100vw"
+        eager
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+    {/if}
+    <div class="absolute inset-0 bg-gradient-to-b from-deep-green/35 via-deep-green/10 to-deep-green/50" aria-hidden="true"></div>
+    <div class="absolute inset-x-0 bottom-0 h-[72%] bg-gradient-to-tr from-deep-green/95 via-forest/70 to-transparent" aria-hidden="true"></div>
 
-    <div class="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-      <div>
-        <div class="aspect-[16/10] overflow-hidden rounded-lg bg-skywash">
-          {#if tour.main_image_url}
-            <Img
-              record={tour}
-              fields={['main_image_url', 'banner_image_url']}
-              alt={tour.title}
-              width={1400}
-              sizes="(max-width: 1024px) 100vw, 55vw"
-              eager
-              className="h-full w-full object-cover"
-            />
-          {/if}
-        </div>
-        <div class="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1">
-          <p class="text-sm font-semibold uppercase tracking-[0.16em] text-clay">{tour.duration_days ?? 1} days</p>
-          {#if tour.price_from}
-            <p class="text-sm text-ink/70">
-              from
-              <span class="text-lg font-extrabold text-heading">{priceLabel}</span>
-              <span class="text-ink/70">/ person</span>
-            </p>
-          {/if}
-        </div>
-        <h1 class="mt-2 text-4xl font-bold tracking-normal text-ink">{tour.title}</h1>
-        {#if tourDescription}
-          <RichText value={tourDescription} className="mt-4 text-base leading-7 text-ink/70" />
-        {/if}
+    <div class="relative mx-auto flex min-h-[560px] max-w-7xl flex-col justify-end px-4 pb-12 pt-20 md:min-h-[640px] md:px-6 md:pb-16 md:pt-24 lg:min-h-[680px] lg:pb-20">
+      <a href="/tours" class="absolute left-4 top-6 hidden items-center gap-1.5 text-[13px] font-medium text-white/90 transition hover:text-goldfinch-gold md:left-6 md:top-8 md:inline-flex">
+        <ArrowLeft class="h-3.5 w-3.5" /> Back to tours
+      </a>
 
-        <!-- primary actions (mobile; desktop uses the sticky booking card) -->
-        <div class="mt-7 grid gap-3 lg:hidden">
-          <button
-            class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-heading shadow-sm transition hover:brightness-105"
-            type="button"
-            on:click={openForm}
-          >
-            <Sparkles size={18} strokeWidth={2.4} /> Request this trip
-          </button>
-          <a
-            class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-6 font-semibold text-white shadow-sm transition hover:brightness-105"
-            href={waHref}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <MessageCircle size={18} strokeWidth={2.2} /> Chat on WhatsApp
-          </a>
-          {#if shortlistItem}
-            <ShortlistButton item={shortlistItem} variant="full" />
-          {/if}
-        </div>
-
-        <!-- "a starting point, tailored to you" (spec §4.4 C) -->
-        <div class="mt-6 flex items-start gap-3 rounded-2xl border border-goldfinch-gold/30 bg-savanna/20 p-4">
-          <Sparkles size={20} class="mt-0.5 shrink-0 text-goldfinch-gold" />
-          <p class="text-sm leading-6 text-ink/75">
-            <span class="font-semibold text-ink">A starting point, tailored to you.</span>
-            This itinerary is a sample — a Goldfinch specialist will adapt it to your dates, pace and interests.
-          </p>
-        </div>
-
-        <!-- trust strip (spec §4.4 B) -->
-        <div class="mt-5 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
-          {#each ['Local experts', 'Customizable itinerary', 'No-pressure planning', 'Secure enquiry'] as point}
-            <span class="inline-flex items-center gap-1.5 text-sm font-medium text-ink/65">
-              <span class="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-forest/10 text-forest"><Check size={11} strokeWidth={3} /></span>
-              {point}
-            </span>
-          {/each}
-        </div>
-
-        <!-- trip facts -->
-        {#if tour.duration_days || tour.start_location || tour.end_location || groupSize || tour.difficulty_level || tour.minimum_age}
-          <div class="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {#if tour.duration_days}
-              <div class="rounded-[10px] border border-ink/10 bg-sand/30 p-3.5">
-                <span class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink/70"><CalendarDays size={13} /> Duration</span>
-                <p class="mt-1 text-sm font-bold text-ink">{tour.duration_days} days{tour.duration_nights ? ` · ${tour.duration_nights} nights` : ''}</p>
-              </div>
-            {/if}
-            {#if tour.start_location || tour.end_location}
-              <div class="rounded-[10px] border border-ink/10 bg-sand/30 p-3.5">
-                <span class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink/70"><MapPin size={13} /> Start / End</span>
-                <p class="mt-1 text-sm font-bold text-ink">{tour.start_location ?? '—'} → {tour.end_location ?? '—'}</p>
-              </div>
-            {/if}
-            {#if groupSize}
-              <div class="rounded-[10px] border border-ink/10 bg-sand/30 p-3.5">
-                <span class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink/70"><Users size={13} /> Group size</span>
-                <p class="mt-1 text-sm font-bold text-ink">{groupSize}</p>
-              </div>
-            {/if}
-            {#if tour.difficulty_level}
-              <div class="rounded-[10px] border border-ink/10 bg-sand/30 p-3.5">
-                <span class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink/70"><Mountain size={13} /> Difficulty</span>
-                <p class="mt-1 text-sm font-bold text-ink">{tour.difficulty_level}</p>
-              </div>
-            {/if}
-            {#if tour.minimum_age}
-              <div class="rounded-[10px] border border-ink/10 bg-sand/30 p-3.5">
-                <span class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink/70"><Check size={13} /> Minimum age</span>
-                <p class="mt-1 text-sm font-bold text-ink">{tour.minimum_age}+</p>
-              </div>
-            {/if}
+      <div class="max-w-3xl pb-2 [text-shadow:0_2px_18px_rgba(39,43,34,0.42)] md:pb-4">
+        {#if heroTags.length}
+          <div class="mb-5 flex flex-wrap gap-1.5">
+            {#each heroTags as tag}
+              <span class="inline-flex items-center rounded-full border border-white/30 bg-deep-green/35 px-2.5 py-0.5 text-[11px] font-medium text-white backdrop-blur">
+                {tag}
+              </span>
+            {/each}
           </div>
         {/if}
+        {#if categoryLabel}
+          <span class="text-[11px] font-bold uppercase tracking-[0.18em] text-goldfinch-gold drop-shadow">{categoryLabel}</span>
+        {/if}
+        <h1 class="mt-3 font-serif text-3xl font-semibold leading-[1.05] tracking-normal text-white sm:text-4xl md:text-5xl lg:text-[54px]">
+          {tour.title}
+        </h1>
+        {#if tour.short_description || tour.full_description}
+          <p class="mt-4 max-w-2xl text-[15px] font-medium leading-relaxed text-white md:text-base">
+            {shortText(tour.short_description || tour.full_description, 230)}
+          </p>
+        {/if}
+        <div class="mt-7 flex flex-col gap-3 sm:flex-row">
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-[6px] bg-goldfinch-gold px-5 py-3 text-sm font-bold text-heading transition hover:brightness-105"
+            on:click={() => openPlanner('hero')}
+          >
+            Plan This Trip
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-[6px] border border-white/35 bg-deep-green/30 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-deep-green/45"
+            on:click={() => scrollToSection('day-by-day')}
+          >
+            View Day by Day
+          </button>
+        </div>
+        <p class="mt-5 text-[13.5px] text-white/90">
+          {durationLabel || 'Tailored itinerary'}{#if destinationLabel} / {destinationLabel}{/if}{#if priceLabel} / from {priceLabel} per person{/if}
+        </p>
+      </div>
+    </div>
+  </section>
 
-        <!-- trip highlights -->
-        {#if highlights.length}
-          <section class="mt-9">
-            <h2 class="text-xl font-bold text-heading">Trip highlights</h2>
-            <div class="mt-3 grid gap-2 sm:grid-cols-2">
-              {#each highlights as h}
-                <div class="flex items-start gap-2 text-sm leading-6 text-ink/75">
-                  <span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-goldfinch-gold/20 text-goldfinch-gold"><Check size={12} strokeWidth={3} /></span>
-                  <RichText value={h} className="min-w-0 text-sm leading-6 text-ink/75" />
+  <div class="sticky top-[70px] z-30 border-b border-ink/10 bg-surface/95 backdrop-blur">
+    <div class="mx-auto max-w-7xl px-4 md:px-6">
+      <div class="no-scrollbar flex gap-6 overflow-x-auto py-3 text-[13.5px] font-semibold text-ink/60">
+        {#each visibleTabs as tab}
+          {@const active = activeTab === tab.id}
+          <button
+            type="button"
+            class={`relative whitespace-nowrap pb-1 transition ${active ? 'text-heading' : 'hover:text-heading'}`}
+            on:click={() => scrollToSection(tab.id)}
+          >
+            {tab.label}
+            <span class={`absolute -bottom-0.5 left-0 right-0 h-[2px] transition-opacity ${active ? 'bg-clay opacity-100' : 'opacity-0'}`}></span>
+          </button>
+        {/each}
+      </div>
+    </div>
+  </div>
+
+  <div class="mx-auto max-w-7xl px-4 md:px-6">
+    <div class="grid gap-10 py-10 md:py-14 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-14">
+      <main class="min-w-0 space-y-14 md:space-y-16">
+        <section id="overview" class="scroll-mt-32">
+          <div class="section-label">
+            <span></span>
+            <p>Overview</p>
+          </div>
+          <h2 class="mt-3 font-serif text-[28px] font-semibold leading-tight text-heading sm:text-[32px] md:text-[38px]">About This Safari</h2>
+          {#if tourDescription}
+            <RichText value={tourDescription} className="mt-4 space-y-4 text-[15px] leading-relaxed text-ink/70" />
+          {/if}
+
+          {#if tripFacts.length}
+            <div class="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {#each tripFacts as fact}
+                <div class="rounded-[10px] border border-ink/10 bg-sand/30 p-3.5">
+                  <span class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink/70">
+                    <svelte:component this={fact.icon} size={13} />
+                    {fact.label}
+                  </span>
+                  <p class="mt-1 text-sm font-bold text-heading">{fact.value}</p>
+                </div>
+              {/each}
+            </div>
+          {/if}
+
+          <button
+            type="button"
+            class="mt-5 inline-flex items-center gap-1 text-[14px] font-semibold text-clay transition hover:text-heading"
+            on:click={() => openPlanner('overview-customize')}
+          >
+            Customize this route <ArrowRight size={14} />
+          </button>
+        </section>
+
+        {#if snapshotRows.length}
+          <section>
+            <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Safari Snapshot</h2>
+            <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">A quick look at the published route, day by day.</p>
+
+            <div class="mt-6 hidden overflow-hidden rounded-t-[10px] border border-ink/10 md:block">
+              <table class="w-full border-collapse text-[14px]">
+                <thead>
+                  <tr class="bg-deep-green text-left text-white">
+                    <th class="px-4 py-3 font-semibold">Day</th>
+                    <th class="px-4 py-3 font-semibold">Place</th>
+                    <th class="px-4 py-3 font-semibold">Highlights</th>
+                    <th class="px-4 py-3 font-semibold">Hotel Options</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {#each snapshotRows as row, index}
+                    <tr class={index % 2 === 0 ? 'bg-surface' : 'bg-sand/35'}>
+                      <td class="border-t border-ink/5 px-4 py-3 align-top font-semibold text-heading">{row.day}</td>
+                      <td class="border-t border-ink/5 px-4 py-3 align-top font-semibold text-clay">{row.place}</td>
+                      <td class="border-t border-ink/5 px-4 py-3 align-top text-ink/70">{row.highlights || 'Published details on request'}</td>
+                      <td class="border-t border-ink/5 px-4 py-3 align-top text-ink/70">{row.hotel || 'Confirmed when quoted'}</td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mt-6 space-y-3 md:hidden">
+              {#each snapshotRows as row}
+                <div class="rounded-[12px] border border-ink/10 bg-surface p-5">
+                  <div class="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink/60">{row.day}</div>
+                  <div class="mt-2 font-serif text-[17px] font-semibold leading-snug text-clay">{row.place}</div>
+                  {#if row.highlights}<p class="mt-2 text-[14px] leading-relaxed text-heading">{row.highlights}</p>{/if}
+                  {#if row.hotel}<p class="mt-2 text-[13.5px] leading-relaxed text-ink/65">{row.hotel}</p>{/if}
                 </div>
               {/each}
             </div>
           </section>
         {/if}
 
-        <!-- day-by-day itinerary -->
-        {#if itineraryDays.length}
-          <section class="mt-10">
-            <h2 class="text-2xl font-bold text-heading">Day-by-day itinerary</h2>
-            <p class="mt-1 text-sm text-ink/70">A sample flow — your specialist can tailor every day to you.</p>
-            <ol class="mt-6 space-y-4">
-              {#each itineraryDays as day (day.day_number)}
-                <li class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-sm transition hover:border-forest/30">
-                  <div class="flex gap-4">
-                    <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-forest text-sm font-extrabold text-white">{day.day_number}</span>
-                    <div class="min-w-0 flex-1">
-                      <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-clay">Day {day.day_number}</p>
-                      <h3 class="mt-0.5 text-lg font-bold text-ink">{day.title}</h3>
-                      {#if day.description}
-                        <RichText value={day.description} className="mt-1.5 text-sm leading-6 text-ink/70" />
-                      {/if}
-                      {#if day.activities || day.meals || (day.accommodation && !day.lodge)}
-                        <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs font-medium text-ink/70">
-                          {#if day.activities}<span class="inline-flex items-center gap-1.5"><MapPin size={14} class="text-forest" /> {day.activities}</span>{/if}
-                          <!-- Free-text stay: unchanged for every day that has
-                               no linked property, which is most of them. -->
-                          {#if day.accommodation && !day.lodge}<span class="inline-flex items-center gap-1.5"><BedDouble size={14} class="text-forest" /> {day.accommodation}</span>{/if}
-                          {#if day.meals}<span class="inline-flex items-center gap-1.5"><Utensils size={14} class="text-forest" /> {day.meals}</span>{/if}
-                        </div>
+        {#if highlights.length}
+          <section>
+            <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Why This Trip Works</h2>
+            <div class="mt-6 grid gap-3 sm:grid-cols-2">
+              {#each highlights as highlight, index}
+                <article class="rounded-[12px] border border-ink/10 bg-surface p-5">
+                  <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-clay">Highlight {index + 1}</p>
+                  <RichText value={highlight} className="mt-2 text-[14.5px] leading-relaxed text-ink/70" />
+                </article>
+              {/each}
+            </div>
+          </section>
+        {/if}
+
+        {#if bestFor.length || tripFacts.length}
+          <section>
+            <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Is This Safari Right for You?</h2>
+            <div class="mt-6 grid gap-4 md:grid-cols-2">
+              {#if bestFor.length}
+                <div class="rounded-[12px] border border-ink/10 bg-surface p-5">
+                  <h3 class="font-serif text-[18px] font-semibold text-heading">Best for</h3>
+                  <ul class="mt-3 space-y-2">
+                    {#each bestFor as item}
+                      <li class="flex items-start gap-2 text-[14.5px] text-heading">
+                        <Check class="mt-0.5 h-4 w-4 shrink-0 text-clay" />
+                        <span>{item}</span>
+                      </li>
+                    {/each}
+                  </ul>
+                </div>
+              {/if}
+              <div class="rounded-[12px] border border-ink/10 bg-sand/45 p-5">
+                <h3 class="font-serif text-[18px] font-semibold text-heading">Planning notes</h3>
+                <ul class="mt-3 space-y-2">
+                  {#each tripFacts as fact}
+                    <li class="flex items-start gap-2 text-[14.5px] text-ink/70">
+                      <Minus class="mt-0.5 h-4 w-4 shrink-0 text-ink/45" />
+                      <span><span class="font-semibold text-heading">{fact.label}:</span> {fact.value}</span>
+                    </li>
+                  {/each}
+                </ul>
+              </div>
+            </div>
+          </section>
+        {/if}
+
+        <section>
+          <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Ways to Customize This Trip</h2>
+          <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">
+            Use the request form to ask the team to adjust the dates, party size, accommodation preference, interests, special requests or route notes.
+          </p>
+          <ul class="mt-6 grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
+            {#each ['Preferred travel date', 'Adults and children', 'Accommodation preference', 'Travel interests', 'Special requests', 'Route notes'] as item}
+              <li class="flex items-start gap-2 text-[14.5px] text-heading">
+                <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-goldfinch-gold"></span>
+                <span>{item}</span>
+              </li>
+            {/each}
+          </ul>
+          <button
+            type="button"
+            class="mt-6 inline-flex items-center justify-center rounded-[6px] bg-goldfinch-gold px-5 py-2.5 text-[14px] font-bold text-heading transition hover:brightness-105"
+            on:click={() => openPlanner('customize')}
+          >
+            Customize This Trip <ArrowRight size={15} />
+          </button>
+        </section>
+
+        <section id="day-by-day" class="scroll-mt-32">
+          <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Day by Day</h2>
+          <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">
+            This is the published itinerary for this tour. The planning team can adjust it around your dates and preferred pace.
+          </p>
+
+          {#if itineraryDays.length}
+            <div class="mt-6 space-y-2.5">
+              {#each itineraryDays as day, index (day.day_number)}
+                {@const open = isDayOpen(day, index)}
+                {@const image = dayImage(day)}
+                {@const details = detailsForDay(day)}
+                <article id={`day-${day.day_number}`} class="overflow-hidden rounded-[12px] border border-ink/10 bg-surface">
+                  <button
+                    type="button"
+                    class="flex w-full items-center gap-4 px-4 py-4 text-left md:px-5"
+                    aria-expanded={open}
+                    on:click={() => toggleDay(day, index)}
+                  >
+                    <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-deep-green text-[13px] font-bold text-white">
+                      {day.day_number}
+                    </span>
+                    <span class="min-w-0 flex-1">
+                      <span class="block font-serif text-[16.5px] font-semibold leading-snug text-heading md:text-[18px]">Day {day.day_number}: {day.title}</span>
+                      <span class="block text-[12.5px] text-ink/60">
+                        {[day.lodge?.name || day.accommodation || '', day.meals || ''].filter(Boolean).join(' / ')}
+                      </span>
+                    </span>
+                    <ChevronDown class={`h-5 w-5 shrink-0 text-ink/60 transition-transform ${open ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {#if open}
+                    <div class="border-t border-ink/10 px-4 pb-8 pt-6 md:px-8 md:pt-8">
+                      {#if image}
+                        <Img
+                          src={image.record ? '' : image.src}
+                          record={image.record}
+                          fields={image.fields ?? []}
+                          alt={image.caption}
+                          width={1000}
+                          sizes="(max-width: 768px) 92vw, 700px"
+                          className="mb-6 h-[220px] w-full rounded-[12px] object-cover sm:h-[280px] md:mb-8 md:h-[380px]"
+                        />
                       {/if}
 
-                      <!-- Linked property: a real card that goes somewhere.
-                           Kept small so it does not outweigh the day itself. -->
+                      <h3 class="mb-[14px] font-serif text-[20px] font-semibold leading-[1.18] tracking-normal text-heading md:mb-4 md:text-[26px] md:leading-[1.15]">
+                        Day {day.day_number}: {day.title}
+                      </h3>
+
+                      {#if day.description}
+                        <RichText value={day.description} className="space-y-4 text-[14.5px] leading-[1.65] text-ink/70 md:text-[16px]" />
+                      {/if}
+
+                      {#if details.length}
+                        <ul class="mb-7 mt-6 rounded-[12px] border border-ink/10 bg-sand/45 p-5 md:p-[22px]">
+                          {#each details as detail, detailIndex}
+                            <li class={`flex items-start gap-3 text-[14.5px] leading-[1.55] md:text-[15px] ${detailIndex > 0 ? 'mt-2.5' : ''}`}>
+                              <svelte:component this={detail.icon} size={16} class="mt-[2px] shrink-0 text-clay" />
+                              <span class="min-w-0 flex-1">
+                                <span class="font-semibold text-heading">{detail.label}:</span>
+                                <span class="text-ink/70"> {detail.value}</span>
+                              </span>
+                            </li>
+                          {/each}
+                        </ul>
+                      {/if}
+
                       {#if day.lodge}
                         {@const stay = day.lodge}
-                        {@const stayImage = stay.hero_image_url || stay.image_url}
-                        <a
-                          class="group mt-3 flex items-center gap-3 rounded-[10px] border border-ink/10 bg-surface p-2 transition hover:border-goldfinch-gold hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
-                          href={`/accommodation/${stay.slug}`}
-                          data-sveltekit-preload-data="hover"
-                        >
-                          {#if stayImage}
-                            <Img
-                              record={stay}
-                              fields={['hero_image_url', 'image_url']}
-                              alt=""
-                              width={120}
-                              height={120}
-                              className="h-12 w-12 shrink-0 rounded-[7px] object-cover"
-                            />
-                          {:else}
-                            <span class="grid h-12 w-12 shrink-0 place-items-center rounded-[7px] bg-sand text-forest" aria-hidden="true">
-                              <BedDouble size={17} />
-                            </span>
-                          {/if}
-                          <span class="min-w-0 flex-1">
-                            <span class="block truncate text-[13px] font-bold text-heading">{stay.name}</span>
-                            <span class="block truncate text-[11.5px] text-ink/55">
-                              {[LODGE_TYPES[String(stay.lodge_type)] ?? '', stay.destinations?.name ?? ''].filter(Boolean).join(' · ')}
-                            </span>
-                          </span>
-                          <span class="inline-flex shrink-0 items-center gap-1 pr-1 text-[11.5px] font-bold text-forest transition group-hover:text-deep-green">
-                            View <ArrowRight size={13} />
-                          </span>
-                        </a>
+                        {@const gallery = galleryForStay(stay)}
+                        <div>
+                          <div class="mb-3.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink/60 md:text-[11px]">Accommodation - {stay.name}</div>
+                          <div class="overflow-hidden rounded-[12px] border border-ink/10 bg-surface">
+                            {#if gallery[0]}
+                              <Img
+                                src={gallery[0].record ? '' : gallery[0].src}
+                                record={gallery[0].record}
+                                fields={gallery[0].fields ?? []}
+                                alt={gallery[0].caption}
+                                width={900}
+                                sizes="(max-width: 768px) 92vw, 700px"
+                                className="h-[190px] w-full object-cover sm:h-[240px]"
+                              />
+                            {/if}
+                            <div class="p-4 md:p-5">
+                              <div class="flex flex-wrap items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                  <h4 class="font-serif text-[19px] font-semibold leading-snug text-heading">{stay.name}</h4>
+                                  <p class="mt-1 text-[13px] font-medium text-ink/60">
+                                    {[LODGE_TYPES[String(stay.lodge_type)] ?? '', stay.accommodation_level ? normaliseLabel(stay.accommodation_level) : '', stay.destinations?.name ?? ''].filter(Boolean).join(' / ')}
+                                  </p>
+                                </div>
+                                <a
+                                  class="inline-flex shrink-0 items-center gap-1 rounded-[6px] border border-ink/10 px-3 py-2 text-[12px] font-bold text-forest transition hover:border-goldfinch-gold hover:text-heading"
+                                  href={`/accommodation/${stay.slug}`}
+                                  data-sveltekit-preload-data="hover"
+                                >
+                                  View accommodation <ArrowRight size={13} />
+                                </a>
+                              </div>
+
+                              {#if gallery.length > 1}
+                                <div class="mt-4 grid grid-cols-3 gap-2.5">
+                                  {#each gallery.slice(1, 4) as image}
+                                    <div class="aspect-[4/3] overflow-hidden rounded-[8px] border border-ink/10 bg-sand">
+                                      <Img
+                                        src={image.record ? '' : image.src}
+                                        record={image.record}
+                                        fields={image.fields ?? []}
+                                        alt={image.caption}
+                                        width={260}
+                                        sizes="160px"
+                                        className="h-full w-full object-cover"
+                                      />
+                                    </div>
+                                  {/each}
+                                </div>
+                              {/if}
+                            </div>
+                          </div>
+                        </div>
                       {/if}
                     </div>
+                  {/if}
+                </article>
+              {/each}
+            </div>
+          {:else}
+            <div class="mt-6 rounded-[12px] border border-ink/10 bg-sand/35 p-5 text-[14px] leading-6 text-ink/70">
+              The day-by-day itinerary has not been published for this tour yet. Send a request and the team will share the current route.
+            </div>
+          {/if}
+        </section>
+
+        {#if accommodationBlocks.length}
+          <section id="accommodation" class="scroll-mt-32">
+            <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Accommodation</h2>
+            <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">
+              These are the accommodations attached to the published itinerary days for this tour.
+            </p>
+
+            <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {#each accommodationBlocks as block (block.key)}
+                <article class="overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-sm">
+                  {#if block.gallery[0]}
+                    <div class="relative h-[220px] bg-sand">
+                      <Img
+                        src={block.gallery[0].record ? '' : block.gallery[0].src}
+                        record={block.gallery[0].record}
+                        fields={block.gallery[0].fields ?? []}
+                        alt={block.gallery[0].caption}
+                        width={720}
+                        sizes="(max-width: 768px) 92vw, 360px"
+                        className="h-full w-full object-cover"
+                      />
+                      <span class="absolute left-3 top-3 rounded-full bg-deep-green/85 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-white backdrop-blur">
+                        {block.dayLabel}
+                      </span>
+                    </div>
+                  {:else}
+                    <div class="grid h-[160px] place-items-center bg-sand/60 text-forest">
+                      <BedDouble size={30} />
+                    </div>
+                  {/if}
+
+                  <div class="p-5">
+                    <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-clay">{block.dayLabel}</p>
+                    <h3 class="mt-2 font-serif text-[20px] font-semibold leading-snug text-heading">{block.label}</h3>
+                    {#if block.summary}<p class="mt-2 text-[14px] leading-6 text-ink/65">{block.summary}</p>{/if}
+
+                    {#if block.gallery.length > 1}
+                      <div class="mt-4 grid grid-cols-3 gap-2.5">
+                        {#each block.gallery.slice(1, 4) as image}
+                          <div class="aspect-[4/3] overflow-hidden rounded-[8px] border border-ink/10 bg-sand">
+                            <Img
+                              src={image.record ? '' : image.src}
+                              record={image.record}
+                              fields={image.fields ?? []}
+                              alt={image.caption}
+                              width={220}
+                              sizes="120px"
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        {/each}
+                      </div>
+                    {/if}
+
+                    {#if block.href}
+                      <a class="mt-5 inline-flex items-center gap-1 text-[13px] font-bold text-forest transition hover:text-heading" href={block.href} data-sveltekit-preload-data="hover">
+                        View accommodation <ArrowRight size={14} />
+                      </a>
+                    {/if}
                   </div>
+                </article>
+              {/each}
+            </div>
+          </section>
+        {/if}
+
+        <section id="prices" class="scroll-mt-32">
+          <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Tour Rates</h2>
+          <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">
+            Rates are shown only from the published tour data. Your final quote is confirmed after dates and availability are checked.
+          </p>
+
+          <div class="mt-6 overflow-hidden rounded-t-[10px] border border-ink/10">
+            <table class="w-full border-collapse text-[14px]">
+              <thead>
+                <tr class="bg-deep-green text-left text-white">
+                  <th class="px-4 py-3 font-semibold">Item</th>
+                  <th class="px-4 py-3 font-semibold">Published detail</th>
+                  <th class="hidden px-4 py-3 font-semibold md:table-cell">Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each priceRows as row, index}
+                  <tr class={index % 2 === 0 ? 'bg-surface' : 'bg-sand/35'}>
+                    <td class="border-t border-ink/5 px-4 py-3 align-top font-semibold text-heading">{row.label}</td>
+                    <td class="border-t border-ink/5 px-4 py-3 align-top text-ink/75">{row.value}</td>
+                    <td class="hidden border-t border-ink/5 px-4 py-3 align-top text-ink/60 md:table-cell">{row.note}</td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+
+          <button
+            type="button"
+            class="mt-5 inline-flex items-center justify-center rounded-[6px] bg-goldfinch-gold px-5 py-2.5 text-[14px] font-bold text-heading transition hover:brightness-105"
+            on:click={() => openPlanner('prices')}
+          >
+            Get My Exact Quote <ArrowRight size={15} />
+          </button>
+        </section>
+
+        <section id="inclusions" class="scroll-mt-32">
+          <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">What's Included</h2>
+          <div class="mt-6 grid gap-4 md:grid-cols-2">
+            <div class="rounded-[12px] border border-ink/10 bg-surface p-5">
+              <h3 class="font-serif text-[18px] font-semibold text-heading">Included</h3>
+              {#if inclusions.length}
+                <ul class="mt-3 space-y-2">
+                  {#each inclusions as item}
+                    <li class="flex items-start gap-2 text-[14.5px] text-heading">
+                      <Check class="mt-0.5 h-4 w-4 shrink-0 text-clay" />
+                      <span>{item.title}</span>
+                    </li>
+                  {/each}
+                </ul>
+              {:else}
+                <p class="mt-3 text-[14.5px] leading-6 text-ink/65">Published inclusions are not listed on this tour yet.</p>
+              {/if}
+            </div>
+
+            <div class="rounded-[12px] border border-ink/10 bg-sand/45 p-5">
+              <h3 class="font-serif text-[18px] font-semibold text-heading">Not Included</h3>
+              {#if exclusions.length}
+                <ul class="mt-3 space-y-2">
+                  {#each exclusions as item}
+                    <li class="flex items-start gap-2 text-[14.5px] text-ink/70">
+                      <Minus class="mt-0.5 h-4 w-4 shrink-0 text-ink/45" />
+                      <span>{item.title}</span>
+                    </li>
+                  {/each}
+                </ul>
+              {:else}
+                <p class="mt-3 text-[14.5px] leading-6 text-ink/65">Published exclusions are not listed on this tour yet.</p>
+              {/if}
+            </div>
+          </div>
+          <button
+            type="button"
+            class="mt-6 inline-flex items-center justify-center rounded-[6px] bg-goldfinch-gold px-5 py-2.5 text-[14px] font-bold text-heading transition hover:brightness-105"
+            on:click={() => openPlanner('inclusions')}
+          >
+            Ask What's Included <ArrowRight size={15} />
+          </button>
+        </section>
+
+        {#if mediaImages.length > 1}
+          <section class="overflow-hidden">
+            <div class="flex items-center gap-2">
+              <Camera class="h-4 w-4 text-clay" aria-hidden="true" />
+              <span class="text-[11px] font-semibold uppercase tracking-[0.16em] text-clay">Images from this itinerary</span>
+            </div>
+            <div class="no-scrollbar mt-5 flex snap-x gap-4 overflow-x-auto pb-2">
+              {#each mediaImages as image}
+                <figure class="relative h-[230px] w-[190px] shrink-0 snap-start overflow-hidden rounded-[12px] bg-sand shadow-[0_12px_28px_rgba(57,61,50,0.10)] md:h-[280px] md:w-[230px]">
+                  <Img
+                    src={image.record ? '' : image.src}
+                    record={image.record}
+                    fields={image.fields ?? []}
+                    alt={image.caption}
+                    width={520}
+                    sizes="230px"
+                    className="h-full w-full object-cover"
+                  />
+                  <div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/70" aria-hidden="true"></div>
+                  <figcaption class="absolute inset-x-0 bottom-0 p-3 text-[13px] font-bold text-white md:text-[14.5px]">{image.caption}</figcaption>
+                </figure>
+              {/each}
+            </div>
+          </section>
+        {/if}
+
+        <section id="good-to-know" class="scroll-mt-32">
+          <div class="section-label">
+            <span></span>
+            <p>Good to Know</p>
+          </div>
+          <h2 class="mt-3 font-serif text-[28px] font-semibold leading-tight text-heading sm:text-[32px] md:text-[38px]">Frequently Asked Questions</h2>
+          {#if faqs.length}
+            <ol class="relative mt-10">
+              {#each faqs as item, index}
+                <li class="relative pb-10 pl-14 last:pb-0 md:pl-20">
+                  {#if index < faqs.length - 1}
+                    <span class="pointer-events-none absolute left-4 top-10 bottom-0 w-px bg-ink/15 md:left-5" aria-hidden="true"></span>
+                  {/if}
+                  <span class="absolute left-0 top-0 inline-flex h-9 w-9 items-center justify-center rounded-full bg-clay font-serif text-[14px] font-semibold text-white md:h-10 md:w-10 md:text-[15px]">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <h3 class="font-serif text-[19px] font-semibold leading-snug text-heading md:text-[22px]">{item.question}</h3>
+                  <RichText value={item.answer} className="mt-3 text-[15px] leading-relaxed text-heading/85 md:text-[17px]" />
                 </li>
               {/each}
             </ol>
-          </section>
-        {/if}
-
-        <!-- what's included / not included -->
-        {#if inclusions.length || exclusions.length}
-          <section class="mt-10 grid gap-6 sm:grid-cols-2">
-            {#if inclusions.length}
-              <div class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-sm">
-                <h3 class="text-base font-bold text-ink">What's included</h3>
-                <ul class="mt-3 space-y-2">
-                  {#each inclusions as inc}
-                    <li class="flex gap-2 text-sm leading-6 text-ink/70">
-                      <span class="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-forest/10 text-forest"><Check size={11} strokeWidth={3} /></span>
-                      {inc.title}
-                    </li>
-                  {/each}
-                </ul>
-              </div>
-            {/if}
-            {#if exclusions.length}
-              <div class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-sm">
-                <h3 class="text-base font-bold text-ink">Not included</h3>
-                <ul class="mt-3 space-y-2">
-                  {#each exclusions as exc}
-                    <li class="flex gap-2 text-sm leading-6 text-ink/70">
-                      <span class="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-black/5 text-ink/40"><X size={11} strokeWidth={3} /></span>
-                      {exc.title}
-                    </li>
-                  {/each}
-                </ul>
-              </div>
-            {/if}
-          </section>
-        {/if}
-
-        <!-- cost confidence (spec §4.4 G) -->
-        <div class="mt-10">
-          <TripCostSection priceFrom={tour.price_from} tourSlug={tour.slug} />
-        </div>
-
-        <!-- low-commitment capture (spec §7) -->
-        <div class="mt-6 sm:max-w-md">
-          <EmailItineraryCapture tourTitle={tour.title} />
-        </div>
-      </div>
-      <div>
-        <!-- sticky booking summary card -->
-        <div class="lg:sticky lg:top-24">
-          <div class="overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_18px_50px_rgba(57,61,50,0.10)]">
-            <div class="bg-gradient-to-br from-deep-green to-forest p-5 text-white">
-              <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-savanna">From</p>
-              <p class="mt-0.5 text-3xl font-extrabold leading-none">
-                {priceLabel || 'On request'}
-                <span class="text-sm font-semibold text-white/70">/ person</span>
-              </p>
-              <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-white/85">
-                {#if tour.duration_days}<span class="inline-flex items-center gap-1.5"><CalendarDays size={14} /> {tour.duration_days} days</span>{/if}
-                {#if groupSize}<span class="inline-flex items-center gap-1.5"><Users size={14} /> {groupSize}</span>{/if}
-              </div>
+          {:else}
+            <div class="mt-6 rounded-[12px] border border-ink/10 bg-sand/35 p-5 text-[14px] leading-6 text-ink/70">
+              No public FAQ entries are published yet. Send your question in the trip request and the team will reply with the latest details.
             </div>
+          {/if}
+        </section>
+      </main>
 
-            <div class="grid gap-3 p-5">
-              <button
-                class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-heading shadow-sm transition hover:brightness-105"
-                type="button"
-                on:click={openForm}
-              >
-                <Sparkles size={18} strokeWidth={2.4} /> Request this trip
-              </button>
-              <a
-                class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-6 font-semibold text-white shadow-sm transition hover:brightness-105"
-                href={waHref}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <MessageCircle size={18} strokeWidth={2.2} /> Chat on WhatsApp
-              </a>
-              {#if shortlistItem}
-                <ShortlistButton item={shortlistItem} variant="full" />
-              {/if}
-
-              <p class="flex items-center justify-center gap-1.5 pt-1 text-center text-xs text-ink/70">
-                <Check size={13} class="text-forest" /> No payment now — a request, not a final booking.
-              </p>
-
-              <div class="mt-1 grid grid-cols-2 gap-x-3 gap-y-1.5 border-t border-ink/[0.07] pt-3">
-                {#each ['Local experts', 'Tailor-made', 'No-pressure planning', 'Private & secure'] as point}
-                  <span class="inline-flex items-center gap-1.5 text-xs font-medium text-ink/70">
-                    <span class="grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full bg-forest/10 text-forest"><Check size={9} strokeWidth={3} /></span>
-                    {point}
-                  </span>
-                {/each}
-              </div>
-            </div>
-          </div>
-
+      <aside id="plan-this-trip" class="hidden transition lg:block">
+        <div class="lg:sticky lg:top-[110px]">
+          <BookingForm {tour} />
           <div class="mt-6">
             <SpecialistCard specialist={defaultSpecialist} />
           </div>
         </div>
-      </div>
+      </aside>
     </div>
-  {/if}
-</section>
+  </div>
 
-<!-- tour enquiry -->
-{#if tour}
-  <EnquiryForm open={formOpen} config={enquiryConfig} context={enquiryContext} on:close={closeForm} />
-{/if}
+  <ReviewsWidget
+    eyebrow="Traveller stories"
+    title="Travellers Who Planned Tanzania With Us"
+    subtitle="Real approved reviews from Goldfinch travellers."
+  />
 
-<svelte:window on:keydown={(e) => e.key === 'Escape' && closeForm()} />
-
-{#if touristTripLd}<JsonLd data={touristTripLd} />{/if}
-{#if breadcrumbLd}<JsonLd data={breadcrumbLd} />{/if}
-
-{#if tour && !loading}
-  <!-- More tours -->
   {#if relatedTours.length}
     <section class="border-t border-ink/[0.06] bg-sand/30 py-14 md:py-20">
       <div class="container-shell">
         <div class="flex flex-wrap items-end justify-between gap-4">
-          <SectionHeader
-            eyebrow="You might also like"
-            title="More tours"
-            description="Other trusted trips travellers book with us."
-          />
-          <a
-            class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading"
-            href="/tours"
-          >
+          <SectionHeader eyebrow="You might also like" title="More tours" description="Other published trips travellers book with us." />
+          <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href="/tours">
             Browse all tours <ArrowRight size={16} />
           </a>
         </div>
-        <div class="mt-9 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 18, stagger: 0.07 }}>
+        <div class="mt-9 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {#each relatedTours as item (item.id)}
             <TourCard tour={item} />
           {/each}
@@ -532,24 +1059,16 @@
     </section>
   {/if}
 
-  <!-- Recent stories -->
   {#if recentPosts.length}
     <section class="py-14 md:py-20">
       <div class="container-shell">
         <div class="flex flex-wrap items-end justify-between gap-4">
-          <SectionHeader
-            eyebrow="Stories &amp; guides"
-            title="From the journal"
-            description="Travel inspiration, tips and stories from the field."
-          />
-          <a
-            class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading"
-            href="/blog"
-          >
+          <SectionHeader eyebrow="Stories &amp; guides" title="From the journal" description="Travel inspiration, tips and stories from the field." />
+          <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href="/blog">
             Read the blog <ArrowRight size={16} />
           </a>
         </div>
-        <div class="mt-9 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 18, stagger: 0.07 }}>
+        <div class="mt-9 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {#each recentPosts as post (post.id)}
             <BlogCard {post} />
           {/each}
@@ -557,4 +1076,76 @@
       </div>
     </section>
   {/if}
+
+  <div class="fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-surface px-4 py-3 shadow-[0_-4px_16px_rgba(15,23,42,0.08)] lg:hidden">
+    <div class="flex items-center gap-3">
+      <div class="min-w-0 flex-1">
+        <div class="truncate text-[13px] font-semibold text-heading">{priceFromLabel}</div>
+        <div class="truncate text-[11.5px] text-ink/65">{durationLabel || 'Tailored trip'}{#if destinationLabel} / {destinationLabel}{/if}</div>
+      </div>
+      <button
+        type="button"
+        class="inline-flex h-11 items-center justify-center rounded-[6px] bg-goldfinch-gold px-5 text-[14px] font-bold text-heading transition hover:brightness-105"
+        on:click={() => openPlanner('mobile-sticky')}
+      >
+        Plan This Trip
+      </button>
+    </div>
+  </div>
+
+  {#if sheetOpen}
+    <div class="fixed inset-0 z-[80] lg:hidden" role="dialog" aria-modal="true">
+      <button class="absolute inset-0 cursor-default bg-black/60" type="button" aria-label="Close planner" on:click={closeSheet}></button>
+      <div class="absolute inset-x-0 bottom-0 flex max-h-[92dvh] flex-col overflow-hidden rounded-t-[16px] bg-deep-green">
+        <button
+          type="button"
+          on:click={closeSheet}
+          aria-label="Close"
+          class="absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+        >
+          <X class="h-4 w-4" />
+        </button>
+        <div class="flex-1 overflow-hidden">
+          <BookingForm {tour} />
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <div class="h-20 lg:hidden" aria-hidden="true"></div>
 {/if}
+
+<svelte:window on:keydown={(event) => event.key === 'Escape' && closeSheet()} />
+
+{#if touristTripLd}<JsonLd data={touristTripLd} />{/if}
+{#if breadcrumbLd}<JsonLd data={breadcrumbLd} />{/if}
+
+<style>
+  .section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .section-label span {
+    height: 1px;
+    width: 1.5rem;
+    background: rgb(var(--c-clay));
+  }
+
+  .section-label p {
+    color: rgb(var(--c-clay));
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+</style>
