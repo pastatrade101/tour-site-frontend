@@ -385,6 +385,7 @@
 
                     <div class="mt-4 grid grid-cols-2 gap-2.5">
                       {#each previewLinks as link (link.href)}
+                        {@const alignThumbTop = item.dropdown === 'destinations' || item.dropdown === 'tours'}
                         <a class="group/li flex min-h-[88px] items-start gap-3 rounded-[8px] border border-transparent p-3 transition hover:border-goldfinch-gold/25 hover:bg-canvas" href={link.href} role="menuitem" on:click={() => activateLink(link.href)} on:pointerenter={() => preloadRoute(link.href)} on:focus={() => preloadRoute(link.href)}>
                           <span class={`grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-[6px] ${link.image ? 'bg-deep-green' : 'bg-sand ring-1 ring-goldfinch-gold/20'}`}>
                             {#if link.image}
@@ -395,7 +396,7 @@
                                 alt={link.label}
                                 width={160}
                                 sizes="56px"
-                                className="h-full w-full object-cover transition duration-500 group-hover/li:scale-105"
+                                className={`h-full w-full object-cover ${alignThumbTop ? 'object-top' : ''} transition duration-500 group-hover/li:scale-105`}
                               />
                             {:else}
                               <svelte:component this={item.dropdown === 'destinations' ? MapPin : item.dropdown === 'tours' ? TicketsPlane : Compass} size={18} strokeWidth={2} class="text-forest/55 transition group-hover/li:text-forest" />
@@ -534,6 +535,7 @@
                   {@const meta = MENU_META[item.dropdown]}
                   <div class="mb-2 grid gap-2 rounded-[8px] border border-ink/10 bg-canvas p-2" transition:fly={{ y: -4, duration: 150 }}>
                     {#each links as link (link.href)}
+                      {@const alignThumbTop = item.dropdown === 'destinations' || item.dropdown === 'tours'}
                       <a class="group/mobile-link flex min-h-[70px] items-center gap-3 rounded-[6px] px-2 py-2 transition hover:bg-sand/60" href={link.href} on:click={() => activateLink(link.href)} on:focus={() => preloadRoute(link.href)}>
                         <span class={`grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-[6px] ${link.image ? 'bg-deep-green' : 'bg-sand ring-1 ring-goldfinch-gold/20'}`}>
                           {#if link.image}
@@ -544,7 +546,7 @@
                               alt={link.label}
                               width={120}
                               sizes="48px"
-                              className="h-full w-full object-cover"
+                              className={`h-full w-full object-cover ${alignThumbTop ? 'object-top' : ''}`}
                             />
                           {:else}
                             <svelte:component this={item.dropdown === 'destinations' ? MapPin : item.dropdown === 'tours' ? TicketsPlane : Compass} size={17} strokeWidth={2} class="text-forest/60" />
