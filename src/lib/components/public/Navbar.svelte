@@ -310,9 +310,9 @@
          the right edge; Accommodation carries a dropdown chevron that Expert
          Advice did not, which was enough to overflow at 1280. -->
     <div class="mx-auto flex w-full max-w-[1500px] items-stretch justify-between gap-2 px-4">
-      <nav class="flex min-w-0 flex-1 items-center gap-1" aria-label="Primary" data-sveltekit-preload-code="hover" data-sveltekit-preload-data="hover">
+      <nav class="flex min-w-0 flex-1 items-center justify-end gap-1" aria-label="Primary" data-sveltekit-preload-code="hover" data-sveltekit-preload-data="hover">
         {#if scrolled}
-          <a href="/" class="mr-1 flex shrink-0 items-center gap-2" aria-label="Goldfinch Adventures home" on:click={() => activateLink('/')} transition:fly={{ x: -14, duration: 320 }}>
+          <a href="/" class="mr-auto flex shrink-0 items-center gap-2" aria-label="Goldfinch Adventures home" on:click={() => activateLink('/')} transition:fly={{ x: -14, duration: 320 }}>
             <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-9 w-9 shrink-0 object-contain" />
             <span class="text-lg font-extrabold tracking-normal text-heading">Goldfinch</span>
           </a>
