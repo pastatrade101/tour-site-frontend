@@ -54,18 +54,21 @@
   };
 
   // Shared control styling: white fields on the forest-green panel.
+  // Every single-line control is the same height, radius and type size, so a
+  // row of mixed inputs reads as one band rather than a ragged stack.
   const INPUT =
-    'w-full rounded-[10px] border bg-white px-3.5 py-2.5 text-[15px] text-ink outline-none transition placeholder:text-ink/40 focus:ring-2 focus:ring-goldfinch-gold';
+    'w-full rounded-[10px] border bg-white px-3.5 text-[14.5px] text-ink outline-none transition placeholder:text-ink/40 focus:ring-2 focus:ring-goldfinch-gold';
+  const H = 'h-11';
 </script>
 
-<div class="grid gap-2" class:sm:col-span-1={field.half} class:sm:col-span-2={!field.half} data-field={field.key}>
+<div class="grid gap-1.5 content-start" class:sm:col-span-1={field.half} class:sm:col-span-2={!field.half} data-field={field.key}>
   {#if field.kind !== 'checkbox'}
     <label class="text-[13px] font-semibold text-white/90" for={id}>
       {field.label}
       {#if field.required}<span class="text-goldfinch-gold" aria-hidden="true">*</span><span class="sr-only">(required)</span>{/if}
     </label>
     {#if field.hint}
-      <p id={hintId} class="-mt-1 text-[12px] leading-5 text-white/55">{field.hint}</p>
+      <p id={hintId} class="-mt-0.5 text-[11.5px] leading-4 text-white/50">{field.hint}</p>
     {/if}
   {/if}
 
@@ -73,7 +76,7 @@
     {@const multi = field.kind === 'chips-multi'}
     {@const selected = multi ? ((value as string[]) ?? []) : []}
     <div
-      class="flex flex-wrap gap-2"
+      class="flex flex-wrap gap-1.5"
       role={multi ? 'group' : 'radiogroup'}
       aria-labelledby={id}
       aria-describedby={describedBy}
@@ -84,7 +87,7 @@
           type="button"
           role={multi ? 'checkbox' : 'radio'}
           aria-checked={active}
-          class="rounded-full border px-3.5 py-2 text-[13px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green"
+          class="chip inline-flex h-9 items-center rounded-full border px-3.5 text-[12.5px] font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green"
           class:border-goldfinch-gold={active}
           class:bg-goldfinch-gold={active}
           class:text-heading={active}
@@ -101,10 +104,10 @@
     <span {id} class="sr-only">{field.label}</span>
 
   {:else if field.kind === 'number'}
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2">
       <button
         type="button"
-        class="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/25 text-white transition hover:bg-white/10 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
+        class="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/25 text-white transition hover:bg-white/10 active:scale-95 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
         aria-label={`Decrease ${field.label}`}
         disabled={Number(value ?? field.min ?? 0) <= (field.min ?? 0)}
         on:click={() => step(-1)}
@@ -113,7 +116,7 @@
       </button>
       <input
         {id}
-        class="{INPUT} w-20 border-transparent text-center font-bold"
+        class="{INPUT} {H} w-16 border-transparent text-center font-bold"
         class:border-red-400={error}
         type="number"
         inputmode="numeric"
@@ -126,7 +129,7 @@
       />
       <button
         type="button"
-        class="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/25 text-white transition hover:bg-white/10 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
+        class="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/25 text-white transition hover:bg-white/10 active:scale-95 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
         aria-label={`Increase ${field.label}`}
         disabled={Number(value ?? 0) >= (field.max ?? 99)}
         on:click={() => step(1)}
@@ -138,7 +141,7 @@
   {:else if field.kind === 'child-ages'}
     <div class="flex flex-wrap gap-2">
       {#each Array(Number(values.children ?? 0)) as _, index}
-        <label class="flex items-center gap-2 rounded-[10px] border border-white/20 bg-white/5 px-2.5 py-1.5">
+        <label class="flex h-10 items-center gap-2 rounded-[10px] border border-white/20 bg-white/5 px-2.5">
           <span class="text-[12px] font-semibold text-white/70">Child {index + 1}</span>
           <input
             class="w-14 rounded-[7px] border-0 bg-white px-2 py-1 text-center text-[14px] font-bold text-ink outline-none focus:ring-2 focus:ring-goldfinch-gold"
@@ -157,7 +160,7 @@
   {:else if field.kind === 'textarea'}
     <textarea
       {id}
-      class="{INPUT} min-h-[96px] resize-y"
+      class="{INPUT} min-h-[66px] py-2 resize-y"
       class:border-transparent={!error}
       class:border-red-400={error}
       rows="3"
@@ -171,7 +174,7 @@
   {:else if field.kind === 'select'}
     <select
       {id}
-      class="{INPUT} appearance-none"
+      class="{INPUT} {H} appearance-none"
       class:border-transparent={!error}
       class:border-red-400={error}
       aria-describedby={describedBy}
@@ -191,7 +194,7 @@
     </div>
 
   {:else if field.kind === 'checkbox'}
-    <label class="flex items-start gap-3 rounded-[10px] border border-white/20 bg-white/5 px-3.5 py-3">
+    <label class="flex items-start gap-2.5 rounded-[10px] border border-white/15 bg-white/5 px-3 py-2.5 transition hover:bg-white/[0.08]">
       <input
         {id}
         class="mt-0.5 h-4 w-4 shrink-0 rounded border-white/40 text-goldfinch-gold focus:ring-goldfinch-gold"
@@ -209,7 +212,7 @@
   {:else}
     <input
       {id}
-      class={INPUT}
+      class="{INPUT} {H}"
       class:border-transparent={!error}
       class:border-red-400={error}
       type={field.kind === 'month' ? 'month' : field.kind}
@@ -232,5 +235,41 @@
   }
   .hover\:bg-white-10:hover {
     background-color: rgb(255 255 255 / 0.1);
+  }
+
+  /* Chips get a small lift on press and a settle on selection — enough to
+     confirm the tap without moving anything around it. */
+  .chip {
+    will-change: transform;
+  }
+
+  .chip:active {
+    transform: scale(0.96);
+  }
+
+  .chip[aria-checked='true'] {
+    animation: chip-pick 180ms ease-out;
+  }
+
+  @keyframes chip-pick {
+    0% {
+      transform: scale(0.94);
+    }
+    60% {
+      transform: scale(1.03);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chip,
+    .chip:active,
+    .chip[aria-checked='true'] {
+      animation: none;
+      transform: none;
+      transition: none;
+    }
   }
 </style>

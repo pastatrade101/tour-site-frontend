@@ -9,7 +9,7 @@
    * or a backdrop click.
    */
   import { createEventDispatcher, onDestroy, onMount, tick } from 'svelte';
-  import { X } from '@lucide/svelte';
+  import { Check, X } from '@lucide/svelte';
 
   export let open = false;
   export let title: string;
@@ -110,7 +110,7 @@
 
   <div class="pointer-events-none fixed inset-0 z-[101] flex items-end justify-center p-0 sm:items-center sm:p-4">
     <div
-      class="pointer-events-auto flex max-h-[92svh] w-full max-w-[640px] flex-col overflow-hidden rounded-t-[18px] bg-deep-green text-white shadow-[0_30px_90px_rgba(0,0,0,0.45)] outline-none sm:max-h-[88svh] sm:rounded-[18px]"
+      class="pointer-events-auto flex max-h-[94svh] w-full max-w-[680px] flex-col overflow-hidden rounded-t-[18px] bg-deep-green text-white shadow-[0_30px_90px_rgba(0,0,0,0.45)] outline-none sm:max-h-[92svh] sm:rounded-[18px]"
       role="dialog"
       aria-modal="true"
       aria-labelledby={labelledBy}
@@ -118,51 +118,72 @@
       bind:this={dialog}
     >
       <!-- header: title, progress, close ------------------------------------->
-      <div class="shrink-0 border-b border-white/12 px-5 pb-4 pt-5 sm:px-7">
-        <div class="flex items-start justify-between gap-4">
+      <div class="shrink-0 border-b border-white/12 px-5 pb-3 pt-4 sm:px-6">
+        <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <h2 id={labelledBy} class="font-serif text-[22px] font-semibold leading-tight sm:text-[26px]">{title}</h2>
+            <h2 id={labelledBy} class="font-serif text-[19px] font-semibold leading-tight sm:text-[22px]">{title}</h2>
             {#if description}
-              <p class="mt-1.5 text-[13px] leading-6 text-white/70">{description}</p>
+              <p class="mt-1 line-clamp-2 text-[12.5px] leading-[1.45] text-white/65">{description}</p>
             {/if}
           </div>
           <button
             type="button"
-            class="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green"
+            class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green"
             aria-label="Close this form"
             on:click={close}
           >
-            <X size={20} />
+            <X size={17} />
           </button>
         </div>
 
         {#if steps.length > 1}
-          <ol class="mt-4 flex items-center gap-2" aria-label="Progress">
+          <!-- Numbered rail rather than a bar: it costs a third of the height
+               and says which step you are on without a separate caption. -->
+          <ol class="mt-3 flex items-center gap-2" aria-label="Progress">
             {#each steps as label, index}
-              <li class="flex flex-1 items-center gap-2">
-                <span
-                  class="h-1.5 flex-1 rounded-full transition-colors duration-300"
-                  class:bg-goldfinch-gold={index <= stepIndex}
-                  class:bg-white-15={index > stepIndex}
-                  aria-hidden="true"
-                ></span>
-                <span class="sr-only">{label}{index === stepIndex ? ' (current step)' : ''}</span>
+              {@const state = index < stepIndex ? 'done' : index === stepIndex ? 'current' : 'todo'}
+              <li class="flex min-w-0 items-center gap-2" class:flex-1={index < steps.length - 1}>
+                <span class="flex min-w-0 items-center gap-1.5">
+                  <span
+                    class="grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full text-[11px] font-extrabold transition-all duration-300 step-dot"
+                    class:is-done={state === 'done'}
+                    class:is-current={state === 'current'}
+                    class:is-todo={state === 'todo'}
+                    aria-hidden="true"
+                  >
+                    {#if state === 'done'}
+                      <Check size={12} strokeWidth={3.5} />
+                    {:else}
+                      {index + 1}
+                    {/if}
+                  </span>
+                  <span
+                    class="truncate text-[12px] font-bold transition-colors duration-300 {state === 'current'
+                      ? 'text-goldfinch-gold'
+                      : state === 'done'
+                        ? 'text-white/70'
+                        : 'text-white/40'} {state === 'current' ? '' : 'hidden sm:inline'}"
+                  >
+                    {label}
+                  </span>
+                </span>
+                {#if index < steps.length - 1}
+                  <span class="h-px flex-1 rounded-full transition-colors duration-300 step-line" class:is-done={index < stepIndex} aria-hidden="true"></span>
+                {/if}
               </li>
             {/each}
           </ol>
-          <p class="mt-2 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold" aria-live="polite">
-            Step {stepIndex + 1} of {steps.length} · {steps[stepIndex]}
-          </p>
+          <p class="sr-only" aria-live="polite">Step {stepIndex + 1} of {steps.length} · {steps[stepIndex]}</p>
         {/if}
       </div>
 
       <!-- body: the only scrolling region ------------------------------------>
-      <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-7">
+      <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 sm:px-6">
         <slot />
       </div>
 
-      <!-- footer ------------------------------------------------------------->
-      <div class="shrink-0 border-t border-white/12 bg-black/10 px-5 py-4 sm:px-7">
+      <!-- footer: sticky, ~70px --------------------------------------------->
+      <div class="shrink-0 border-t border-white/12 bg-black/15 px-5 py-3 sm:px-6">
         <slot name="footer" />
       </div>
     </div>
@@ -170,9 +191,37 @@
 {/if}
 
 <style>
-  /* Tailwind cannot express bg-white/15 as a class:directive target, so the
-     inactive progress segment gets its colour here. */
-  .bg-white-15 {
+  /* Tailwind cannot express fractional-opacity colours as class: directive
+     targets, so the stepper states are declared here. */
+  .step-dot.is-todo {
+    background-color: rgb(255 255 255 / 0.12);
+    color: rgb(255 255 255 / 0.5);
+  }
+
+  .step-dot.is-done {
+    background-color: rgb(255 255 255 / 0.22);
+    color: #fff;
+  }
+
+  .step-dot.is-current {
+    background-color: rgb(var(--c-goldfinch-gold));
+    color: rgb(var(--c-heading));
+    /* A quiet halo rather than a size change, so the rail never reflows. */
+    box-shadow: 0 0 0 3px rgb(var(--c-goldfinch-gold) / 0.25);
+  }
+
+  .step-line {
     background-color: rgb(255 255 255 / 0.15);
+  }
+
+  .step-line.is-done {
+    background-color: rgb(var(--c-goldfinch-gold) / 0.65);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .step-dot,
+    .step-line {
+      transition: none;
+    }
   }
 </style>

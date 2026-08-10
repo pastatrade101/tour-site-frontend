@@ -225,24 +225,23 @@
         <p class="mt-4 text-[13px] text-white/55">We have emailed you a copy.</p>
       </div>
     {:else}
-      <!-- persistent tour summary -------------------------------------------->
+      <!-- persistent tour summary: one compact row, ~80px --------------------->
       {#if tour?.title}
-        <div class="mb-5 flex gap-3 rounded-[12px] border border-white/15 bg-white/[0.06] p-3">
+        <div class="mb-3.5 flex items-center gap-3 rounded-[12px] border border-white/12 bg-white/[0.06] p-2">
           {#if tour.image}
             <img
-              class="h-16 w-20 shrink-0 rounded-[8px] object-cover"
-              src={imgUrl(tour.image, 240, 70)}
+              class="h-[60px] w-[60px] shrink-0 rounded-[8px] object-cover"
+              src={imgUrl(tour.image, 200, 70)}
               alt=""
               loading="lazy"
               decoding="async"
             />
           {/if}
           <div class="min-w-0">
-            <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">You're requesting this tour</p>
-            <p class="mt-1 truncate font-serif text-[16px] font-semibold leading-tight">{tour.title}</p>
-            <p class="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[12px] text-white/65">
+            <p class="truncate font-serif text-[15px] font-semibold leading-snug">{tour.title}</p>
+            <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] leading-4 text-white/60">
               {#if tour.duration_days}<span>{tour.duration_days} days</span>{/if}
-              {#if tourPrice}<span aria-hidden="true">·</span><span>from {tourPrice} pp</span>{/if}
+              {#if tourPrice}<span aria-hidden="true">·</span><span class="font-semibold text-white/80">from {tourPrice} pp</span>{/if}
               {#if tour.destinations}<span aria-hidden="true">·</span><span class="truncate">{tour.destinations}</span>{/if}
             </p>
           </div>
@@ -250,17 +249,22 @@
       {/if}
 
       {#if step?.heading}
-        <p class="mb-1 font-serif text-[19px] leading-tight">{step.heading}</p>
+        <p class="mb-3 text-[13px] font-bold uppercase tracking-[0.14em] text-white/45">{step.heading}</p>
       {/if}
       {#if step?.blurb}
-        <p class="mb-4 text-[13px] leading-6 text-white/60">{step.blurb}</p>
+        <p class="-mt-2 mb-3 text-[12.5px] leading-5 text-white/55">{step.blurb}</p>
       {/if}
 
-      <div class="mt-4 grid gap-5 sm:grid-cols-2">
-        {#each visibleFields as field (field.key)}
-          <EnquiryField field={localise(field)} bind:values error={errors[field.key] ?? ''} />
-        {/each}
-      </div>
+      <!-- Two columns from the first breakpoint; `half` fields pair up, the
+           rest span both. Row gap is deliberately tighter than the column gap:
+           vertical space is the scarce one. -->
+      {#key stepIndex}
+        <div class="grid gap-x-4 gap-y-3 sm:grid-cols-2 step-body">
+          {#each visibleFields as field (field.key)}
+            <EnquiryField field={localise(field)} bind:values error={errors[field.key] ?? ''} />
+          {/each}
+        </div>
+      {/key}
 
       <!-- honeypot: off-screen, not hidden, so bots that check visibility fill it -->
       <div class="absolute left-[-9999px] top-0 h-0 w-0 overflow-hidden" aria-hidden="true">
@@ -335,9 +339,36 @@
         </button>
       </div>
 
-      {#if isLast && config.submitNote}
-        <p class="mt-2.5 text-center text-[12px] leading-5 text-white/55">{config.submitNote}</p>
+      <!-- One reassurance line, on every step rather than only at the end —
+           the doubt it answers is what stops people starting, not finishing. -->
+      {#if config.submitNote}
+        <p class="mt-2 text-center text-[11.5px] leading-4 text-white/45">{config.submitNote}</p>
       {/if}
     {/if}
   </svelte:fragment>
 </EnquiryModal>
+
+<style>
+  /* Steps fade and settle rather than jumping, keyed on the step index so it
+     replays each time. Purely presentational — no layout shift. */
+  .step-body {
+    animation: step-in 220ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  @keyframes step-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .step-body {
+      animation: none;
+    }
+  }
+</style>

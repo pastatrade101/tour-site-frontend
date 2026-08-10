@@ -280,8 +280,7 @@ export const tourConfig = (context: EnquiryContext, departures: Option[] = []): 
   title: 'Request Availability & Exact Price',
   description: "You're requesting this tour. Tell us your dates and we'll confirm what's available.",
   submitLabel: 'Request Availability & Exact Price',
-  submitNote:
-    "No payment required. We'll confirm availability and send a personalised quotation within one business day.",
+  submitNote: "No payment required. We'll confirm availability and send your personalised quotation.",
   steps: [
     {
       key: 'trip',
@@ -308,13 +307,20 @@ export const tourConfig = (context: EnquiryContext, departures: Option[] = []): 
       key: 'preferences',
       label: 'Preferences',
       heading: 'Anything to adjust?',
-      blurb: 'Skip anything that does not apply.',
       fields: [
         {
           key: 'accommodation_preference',
           label: 'Accommodation',
           kind: 'chips',
-          options: opts('Keep the listed accommodation', 'Value option', 'Mid-range', 'Luxury upgrade', 'Recommend the best fit')
+          // Short labels so the row does not wrap; the stored value stays
+          // descriptive for whoever reads the enquiry.
+          options: [
+            { label: 'As listed', value: 'Keep the listed accommodation' },
+            { label: 'Value', value: 'Value option' },
+            { label: 'Mid-range', value: 'Mid-range' },
+            { label: 'Luxury', value: 'Luxury upgrade' },
+            { label: 'Recommend', value: 'Recommend the best fit' }
+          ]
         },
         {
           key: 'room_arrangement',

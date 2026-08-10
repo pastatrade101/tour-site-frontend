@@ -66,7 +66,7 @@ export const childrenField: Field = {
 export const childAgesField: Field = {
   key: 'child_ages',
   label: "Children's ages",
-  hint: 'Ages at the time of travel — this changes which lodges and vehicles we can use.',
+  hint: 'Ages at the time of travel.',
   kind: 'child-ages',
   showIf: (values) => Number(values.children ?? 0) > 0,
   validate: (value, values) => {
@@ -133,7 +133,7 @@ export const accommodationField: Field = {
 export const budgetField: Field = {
   key: 'budget_range',
   label: 'Approximate budget per person',
-  hint: 'Optional — it helps us recommend honestly rather than guess.',
+  hint: 'Optional — helps us recommend honestly.',
   kind: 'chips',
   options: BUDGET_BANDS_USD.map((band) => ({ label: band.label, value: band.value }))
 };
@@ -141,7 +141,7 @@ export const budgetField: Field = {
 export const specialRequestsField: Field = {
   key: 'special_requests',
   label: 'Anything else we should know?',
-  hint: 'Optional — dietary needs, mobility, celebrations, must-sees.',
+  hint: 'Optional — dietary, mobility, celebrations.',
   kind: 'textarea',
   placeholder: 'Tell us anything that would shape the trip…'
 };
@@ -169,8 +169,7 @@ export const emailField: Field = {
 
 export const phoneField: Field = {
   key: 'phone',
-  label: 'Phone / WhatsApp',
-  hint: 'Optional — include your country code.',
+  label: 'Phone / WhatsApp (optional)',
   kind: 'tel',
   half: true,
   placeholder: '+255 …',
@@ -203,13 +202,14 @@ export const contactMethodField: Field = {
   label: 'How should we reply?',
   kind: 'chips',
   options: CONTACT_METHODS,
+  // Pairs with "Preferred language" on one row.
+  half: true,
   required: true
 };
 
 export const bestTimeField: Field = {
   key: 'best_time_to_contact',
-  label: 'Best time to contact you',
-  hint: 'Optional.',
+  label: 'Best time to contact (optional)',
   kind: 'text',
   half: true,
   placeholder: 'e.g. mornings, after 6pm my time'
@@ -218,7 +218,7 @@ export const bestTimeField: Field = {
 export const marketingConsentField: Field = {
   key: 'marketing_consent',
   label: 'Send me occasional travel ideas and offers',
-  hint: 'Optional, and separate from your enquiry — we reply to the enquiry either way.',
+  hint: 'Separate from your enquiry — we reply either way.',
   kind: 'checkbox'
 };
 
