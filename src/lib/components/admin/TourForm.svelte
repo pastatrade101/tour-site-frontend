@@ -63,6 +63,7 @@
 
   let destinationOptions: Option[] = [{ label: 'No destination', value: '' }];
   let categoryOptions: Option[] = [{ label: 'No category', value: '' }];
+  let specialistOptions: Option[] = [{ label: 'No specialist', value: '' }];
   let mediaItems: MediaItem[] = [];
 
   let form = {
@@ -92,6 +93,7 @@
     seo_title: '',
     short_description: '',
     slug: '',
+    specialist_id: '',
     start_location: '',
     status: 'draft' as PublishStatus,
     title: ''
@@ -188,9 +190,10 @@
     loadingOptions = true;
 
     try {
-      const [destinations, categories, media] = await Promise.all([
+      const [destinations, categories, specialists, media] = await Promise.all([
         api.destinations.list({ limit: 100, status: 'all' }),
         api.categories.list({ limit: 100, status: 'all' }),
+        api.specialists.list({ limit: 100, status: 'all' }),
         api.media.list({ file_type: 'image', limit: 100 })
       ]);
 
@@ -207,6 +210,18 @@
           label: String(category.name ?? category.slug ?? 'Untitled category'),
           value: String(category.id)
         }))
+      ];
+
+      specialistOptions = [
+        { label: 'No specialist', value: '' },
+        ...specialists.data.items.filter((specialist) => specialist.id).map((specialist) => {
+          const name = String(specialist.name ?? 'Untitled specialist');
+          const role = String(specialist.role ?? '').trim();
+          return {
+            label: role ? `${name} - ${role}` : name,
+            value: String(specialist.id)
+          };
+        })
       ];
 
       mediaItems = media.data.items as MediaItem[];
@@ -260,6 +275,7 @@
         seo_title: String(tour.seo_title ?? tour.meta_title ?? ''),
         short_description: String(tour.short_description ?? ''),
         slug: String(tour.slug ?? ''),
+        specialist_id: String(tour.specialist_id ?? (tour.specialist as Record<string, unknown> | null | undefined)?.id ?? ''),
         start_location: String(tour.start_location ?? ''),
         status: (tour.status ?? 'draft') as PublishStatus,
         title: String(tour.title ?? '')
@@ -301,6 +317,7 @@
     seo_title: form.seo_title || null,
     short_description: form.short_description || null,
     slug: String(form.slug ?? '').trim(),
+    specialist_id: form.specialist_id || null,
     start_location: form.start_location || null,
     status: form.status,
     title: String(form.title ?? '').trim()
@@ -383,6 +400,7 @@
         <div class="mt-4 grid gap-4 md:grid-cols-3">
           <AdminSelect label="Status" name="status" bind:value={form.status} options={statusOptions} />
           <AdminSelect label="Category" name="category_id" bind:value={form.category_id} options={categoryOptions} />
+          <AdminSelect label="Trip specialist" name="specialist_id" bind:value={form.specialist_id} options={specialistOptions} />
         </div>
 
         <div class="mt-4 grid gap-2">

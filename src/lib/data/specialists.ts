@@ -1,12 +1,8 @@
-// Named travel specialists (SRS v2.0 §5 trust / type 25) — the human face of the
-// brand on tour pages and after enquiry. Static config (no schema); replace names,
-// roles and photos with the real team. Photos optional — initials show otherwise.
-export type Specialist = {
-  name: string;
-  role: string;
-  photo?: string;
-  blurb?: string;
-};
+// Static fallback specialists for generic planning surfaces. Tour and About
+// pages prefer CMS-managed specialists when records are published/assigned.
+import type { Specialist } from '$lib/types';
+
+export type { Specialist };
 
 export const SPECIALISTS: Specialist[] = [
   {

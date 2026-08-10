@@ -76,6 +76,7 @@
         { href: '/admin/categories', label: 'Categories', icon: Tags },
         { href: '/admin/destinations', label: 'Destinations', icon: MapPin },
         { href: '/admin/lodges', label: 'Lodges & Camps', icon: Hotel },
+        { href: '/admin/specialists', label: 'Tour Specialists', icon: Users },
         { href: '/admin/activities', label: 'Activities', icon: Compass },
         { href: '/admin/trip-points', label: 'Start & End Points', icon: Plane },
         { href: '/admin/itineraries', label: 'Itineraries', icon: Route },

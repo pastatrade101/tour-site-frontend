@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     ArrowRight, BadgeCheck, CalendarCheck, Camera, Car, ChevronDown, ChevronLeft, ChevronRight,
-    Clock, Compass, CreditCard, Flag, Headphones, Leaf, MapPin, Mountain, Plane, Quote, ShieldCheck,
+    Clock, Compass, CreditCard, ExternalLink, Flag, Headphones, Leaf, MapPin, Mountain, Plane, Quote, ShieldCheck,
     Sparkles, Star, Tent, Users
   } from '@lucide/svelte';
   import { brand } from '$lib/brand';
@@ -9,6 +9,7 @@
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
   import Img from '$lib/components/public/Img.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
+  import type { Specialist } from '$lib/types';
   import type { PageData } from './$types';
 
   export let data: PageData;
@@ -53,16 +54,8 @@
     { icon: Tent, title: 'Equipment Rentals', body: 'Well-maintained camping and outdoor gear for your safari adventure.' }
   ];
 
-  // Your team — replace names/roles with your real people and add photos in the
-  // CMS. Shown with initials avatars until a photo is set.
-  const TEAM = [
-    { name: 'Emmanuel Lairumbe', role: 'Founder & Safari Expert', exp: '15+ years experience', fav: 'Serengeti', image: '' },
-    { name: 'Neema Mollel', role: 'Safari Consultant', exp: '8+ years experience', fav: 'Ngorongoro', image: '' },
-    { name: 'Jackson Mushi', role: 'Operations Manager', exp: '10+ years experience', fav: 'Tarangire', image: '' },
-    { name: 'Peter Macha', role: 'Kilimanjaro Guide', exp: '12+ years experience', fav: 'Kilimanjaro', image: '' },
-    { name: 'Juma Ally', role: 'Lead Driver Guide', exp: '10+ years experience', fav: 'Lake Manyara', image: '' }
-  ];
   const initials = (name: string) => name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+  const specialistPhoto = (specialist: Specialist) => specialist.photo_url || specialist.photo || '';
 
   // Only list genuine affiliations/certifications your company actually holds.
   const PARTNERS = ['TATO', 'Tanzania National Parks', 'TripAdvisor', 'Safe Travels', 'Travelife', 'IUCN'];
@@ -76,6 +69,7 @@
     { question: 'Can dietary needs be accommodated?', answer: 'Yes — tell us about any dietary requirements or allergies and we arrange meals accordingly throughout your trip.' }
   ];
   $: faqs = (data.faqs ?? []).length ? data.faqs : DEFAULT_FAQS;
+  $: specialists = data.specialists ?? [];
 
   // Real published guest reviews only — carousel hides when there are none.
   $: testimonials = data.testimonials ?? [];
@@ -216,36 +210,69 @@
   </div>
 </section>
 
-<!-- ── Meet the team ────────────────────────────────────────────────────── -->
-<section class="bg-surface py-16 md:py-24" use:sectionReveal>
-  <div class="container-shell">
-    <div class="mx-auto max-w-2xl text-center">
-      <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Meet The Team</p>
-      <h2 class="mt-3 font-serif text-3xl font-semibold text-heading md:text-[40px]">The People Behind Your Safari</h2>
-    </div>
-    <div class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-5" use:staggeredCardReveal={{ y: 16, stagger: 0.05 }}>
-      {#each TEAM as m}
-        <div class="overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-card">
-          {#if m.image}
-            <Img src={m.image} alt={m.name} width={500} sizes="(max-width: 640px) 92vw, 20vw" aspect="4/5" className="aspect-[4/5] w-full object-cover" />
-          {:else}
-            <div class="grid aspect-[4/5] w-full place-items-center bg-gradient-to-br from-forest to-deep-green">
-              <span class="font-serif text-4xl font-semibold text-goldfinch-gold">{initials(m.name)}</span>
+<!-- ── Meet the specialists ─────────────────────────────────────────────── -->
+{#if specialists.length}
+  <section class="bg-surface py-16 md:py-24" use:sectionReveal>
+    <div class="container-shell">
+      <div class="mx-auto max-w-2xl text-center">
+        <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Meet The Team</p>
+        <h2 class="mt-3 font-serif text-3xl font-semibold text-heading md:text-[40px]">The People Behind Your Safari</h2>
+      </div>
+      <div class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.05 }}>
+        {#each specialists as specialist (specialist.id ?? specialist.name)}
+          {@const photo = specialistPhoto(specialist)}
+          <article class="group overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-card transition duration-300 hover:-translate-y-0.5 hover:border-forest/20 hover:shadow-card-hover">
+            <div class="relative aspect-square overflow-hidden bg-deep-green">
+              {#if photo}
+                <Img
+                  record={specialist}
+                  fields={['photo_url', 'photo']}
+                  src={photo}
+                  alt={specialist.name}
+                  width={640}
+                  sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 360px"
+                  aspect="1/1"
+                  className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                />
+              {:else}
+                <div class="grid h-full w-full place-items-center bg-gradient-to-br from-forest to-deep-green">
+                  <span class="font-serif text-5xl font-semibold text-goldfinch-gold">{initials(specialist.name)}</span>
+                </div>
+              {/if}
+              <div class="absolute inset-0 bg-gradient-to-t from-deep-green/80 via-deep-green/20 to-transparent"></div>
+              <div class="absolute inset-x-0 bottom-0 p-5">
+                <p class="font-serif text-2xl font-semibold leading-tight text-white">{specialist.name}</p>
+                <p class="mt-1 text-sm font-bold text-goldfinch-gold">{specialist.role}</p>
+              </div>
             </div>
-          {/if}
-          <div class="p-4">
-            <p class="font-bold text-heading">{m.name}</p>
-            <p class="text-xs font-semibold text-clay">{m.role}</p>
-            <div class="mt-3 grid gap-1.5 border-t border-ink/8 pt-3 text-xs text-ink/60">
-              <span class="inline-flex items-center gap-1.5"><Clock size={12} class="text-goldfinch-gold" /> {m.exp}</span>
-              <span class="inline-flex items-center gap-1.5"><MapPin size={12} class="text-goldfinch-gold" /> Favourite: {m.fav}</span>
+            <div class="p-5">
+              {#if specialist.blurb}
+                <p class="text-sm leading-6 text-ink/70">{specialist.blurb}</p>
+              {/if}
+              <div class="mt-4 flex flex-wrap gap-2 border-t border-ink/8 pt-4">
+                {#if specialist.is_featured}
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-goldfinch-gold/15 px-3 py-1.5 text-xs font-bold text-heading">
+                    <Star size={13} fill="currentColor" /> Featured specialist
+                  </span>
+                {/if}
+                {#if specialist.tripadvisor_url}
+                  <a
+                    class="inline-flex items-center gap-1.5 rounded-full border border-ink/12 bg-sand/45 px-3 py-1.5 text-xs font-bold text-heading transition hover:border-clay/35 hover:bg-sand"
+                    href={specialist.tripadvisor_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    TripAdvisor <ExternalLink size={13} />
+                  </a>
+                {/if}
+              </div>
             </div>
-          </div>
-        </div>
-      {/each}
+          </article>
+        {/each}
+      </div>
     </div>
-  </div>
-</section>
+  </section>
+{/if}
 
 <!-- ── Partners + guest reviews ─────────────────────────────────────────── -->
 <section class="bg-canvas py-16 md:py-20" use:sectionReveal>

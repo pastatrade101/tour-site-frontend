@@ -33,7 +33,6 @@
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import SpecialistCard from '$lib/components/public/SpecialistCard.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
-  import { defaultSpecialist } from '$lib/data/specialists';
   import { toMetaText } from '$lib/richText';
   import { getTourDestinationLabel, getTourDestinations } from '$lib/tourDestinations';
   import type { BlogPost, FAQ, ItineraryDay, Tour } from '$lib/types';
@@ -248,6 +247,7 @@
   $: routeLabel = routeOf(tour);
   $: priceLabel = tour?.price_from ? formatUsd(tour.price_from, $currency) : '';
   $: priceFromLabel = priceLabel ? `From ${priceLabel} per person` : 'On request';
+  $: tourSpecialist = tour?.specialist?.name ? tour.specialist : null;
   $: heroStats = ([
     durationLabel ? { icon: CalendarDays, label: 'Duration', value: durationLabel } : null,
     destinationLabel ? { icon: MapPin, label: 'Destination', value: destinationLabel } : null,
@@ -1075,9 +1075,11 @@
       <aside id="plan-this-trip" class="hidden transition lg:block">
         <div class="lg:sticky lg:top-[110px]">
           <BookingForm {tour} />
-          <div class="mt-6">
-            <SpecialistCard specialist={defaultSpecialist} />
-          </div>
+          {#if tourSpecialist}
+            <div class="mt-6">
+              <SpecialistCard specialist={tourSpecialist} />
+            </div>
+          {/if}
         </div>
       </aside>
     </div>

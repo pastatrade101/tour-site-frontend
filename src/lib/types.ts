@@ -17,6 +17,24 @@ export type Paginated<T> = {
   pagination: Pagination;
 };
 
+export type Specialist = {
+  id?: string;
+  name: string;
+  role: string;
+  photo?: string | null;
+  photo_url?: string | null;
+  photo_url_thumbnail?: string | null;
+  photo_url_variants?: unknown;
+  blurb?: string | null;
+  whatsapp_number?: string | null;
+  tripadvisor_url?: string | null;
+  status?: 'draft' | 'published' | 'archived';
+  is_featured?: boolean;
+  sort_order?: number | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
 export type CurrencyConfig = {
   code: string;
   name: string;
@@ -52,6 +70,8 @@ export type Tour = {
   meta_description?: string | null;
   destination_id?: string | null;
   category_id?: string | null;
+  specialist_id?: string | null;
+  specialist?: Specialist | null;
   destinations?: { name?: string; slug?: string; country?: string } | null;
   destination_ids?: string[];
   tour_destinations?: Array<{
