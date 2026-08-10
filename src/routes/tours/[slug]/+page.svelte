@@ -80,6 +80,7 @@
   let loadedSlug = '';
   let sheetOpen = false;
   let activeTab = TABS[0].id;
+  let activeFaqIndex = -1;
   let openDays: Record<number, boolean> = {};
 
   let relatedTours: Tour[] = [];
@@ -215,6 +216,22 @@
 
   const closeSheet = () => {
     sheetOpen = false;
+  };
+
+  const updateFaqTimeline = () => {
+    if (!browser) return;
+    const items = Array.from(document.querySelectorAll<HTMLElement>('[data-faq-item]'));
+    if (!items.length) {
+      activeFaqIndex = -1;
+      return;
+    }
+
+    const threshold = window.innerHeight * 0.48;
+    let reached = -1;
+    for (const [index, item] of items.entries()) {
+      if (item.getBoundingClientRect().top <= threshold) reached = index;
+    }
+    activeFaqIndex = reached;
   };
 
   $: slug = $page.params.slug ?? '';
@@ -361,7 +378,10 @@
       relatedTours = items.slice(0, 3);
     }
     if (postRes.status === 'fulfilled') recentPosts = postRes.value.data.items ?? [];
-    if (faqRes.status === 'fulfilled') faqs = faqRes.value.data.items ?? [];
+    if (faqRes.status === 'fulfilled') {
+      faqs = faqRes.value.data.items ?? [];
+      requestAnimationFrame(updateFaqTimeline);
+    }
   };
 
   const loadLodgeMedia = async (current: Tour) => {
@@ -401,6 +421,7 @@
     recentPosts = [];
     faqs = [];
     lodgeMedia = {};
+    activeFaqIndex = -1;
     openDays = {};
     sheetOpen = false;
 
@@ -440,12 +461,17 @@
     };
 
     window.addEventListener('scroll', updateActiveTab, { passive: true });
+    window.addEventListener('scroll', updateFaqTimeline, { passive: true });
     window.addEventListener('resize', updateActiveTab);
+    window.addEventListener('resize', updateFaqTimeline);
     updateActiveTab();
+    updateFaqTimeline();
 
     return () => {
       window.removeEventListener('scroll', updateActiveTab);
+      window.removeEventListener('scroll', updateFaqTimeline);
       window.removeEventListener('resize', updateActiveTab);
+      window.removeEventListener('resize', updateFaqTimeline);
       document.body.style.overflow = '';
     };
   });
@@ -1025,11 +1051,12 @@
           {#if faqs.length}
             <ol class="relative mt-10">
               {#each faqs as item, index}
-                <li class="relative pb-10 pl-14 last:pb-0 md:pl-20">
+                {@const faqState = index === activeFaqIndex ? 'is-active' : index < activeFaqIndex ? 'is-complete' : 'is-upcoming'}
+                <li data-faq-item class={`faq-timeline-item ${faqState} relative pb-10 pl-14 last:pb-0 md:pl-20`}>
                   {#if index < faqs.length - 1}
-                    <span class="pointer-events-none absolute left-4 top-10 bottom-0 w-px bg-ink/15 md:left-5" aria-hidden="true"></span>
+                    <span class="faq-connector pointer-events-none absolute left-4 top-10 bottom-0 w-px md:left-5" aria-hidden="true"></span>
                   {/if}
-                  <span class="absolute left-0 top-0 inline-flex h-9 w-9 items-center justify-center rounded-full bg-clay font-serif text-[14px] font-semibold text-white md:h-10 md:w-10 md:text-[15px]">
+                  <span class="faq-number absolute left-0 top-0 inline-flex h-9 w-9 items-center justify-center rounded-full font-serif text-[14px] font-semibold md:h-10 md:w-10 md:text-[15px]">
                     {String(index + 1).padStart(2, '0')}
                   </span>
                   <h3 class="font-serif text-[19px] font-semibold leading-snug text-heading md:text-[22px]">{item.question}</h3>
@@ -1186,6 +1213,74 @@
     display: none;
   }
 
+  .faq-number {
+    color: rgb(var(--c-heading));
+    background: rgb(var(--c-surface));
+    box-shadow: 0 0 0 1px rgb(149 144 125 / 0.35);
+    transform: scale(1);
+    transition:
+      background-color 220ms ease,
+      color 220ms ease,
+      transform 220ms ease,
+      box-shadow 220ms ease;
+  }
+
+  .faq-connector {
+    overflow: hidden;
+    background: rgb(149 144 125 / 0.3);
+  }
+
+  .faq-connector::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgb(var(--c-clay));
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform 420ms ease;
+  }
+
+  .faq-timeline-item.is-complete .faq-number,
+  .faq-timeline-item.is-active .faq-number {
+    color: white;
+    background: rgb(var(--c-clay));
+  }
+
+  .faq-timeline-item.is-complete .faq-number {
+    box-shadow: 0 0 0 1px rgb(var(--c-clay) / 0.86);
+  }
+
+  .faq-timeline-item.is-active .faq-number {
+    transform: scale(1.08);
+    box-shadow:
+      0 12px 26px rgb(170 61 29 / 0.24),
+      0 0 0 1px rgb(var(--c-clay)),
+      0 0 0 6px rgb(228 169 46 / 0.14);
+    animation: faq-number-pop 420ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  }
+
+  .faq-timeline-item.is-complete .faq-connector::before {
+    transform: scaleY(1);
+  }
+
+  .faq-timeline-item.is-active .faq-connector::before {
+    transform: scaleY(0.45);
+  }
+
+  @keyframes faq-number-pop {
+    0% {
+      transform: scale(0.92);
+    }
+
+    60% {
+      transform: scale(1.14);
+    }
+
+    100% {
+      transform: scale(1.08);
+    }
+  }
+
   .accommodation-card-title,
   .accommodation-card-summary {
     display: -webkit-box;
@@ -1207,6 +1302,14 @@
     .tour-hero-copy::before {
       inset: -1.4rem -2rem -1.5rem -1.6rem;
       border-radius: 14px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .faq-number,
+    .faq-connector::before {
+      transition: none;
+      animation: none;
     }
   }
 </style>
