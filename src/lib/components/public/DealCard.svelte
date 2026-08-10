@@ -2,9 +2,9 @@
   import { ArrowRight, Clock } from '@lucide/svelte';
   import { tilt } from '$lib/animations';
   import { currency, formatUsd } from '$lib/currency';
-  import { imgUrl } from '$lib/img';
   import { getTourDestinationLabel } from '$lib/tourDestinations';
   import ShortlistButton from './ShortlistButton.svelte';
+  import Img from './Img.svelte';
   import type { Tour } from '$lib/types';
 
   export let tour: Tour;
@@ -35,7 +35,14 @@
 <article class="group relative flex h-full flex-col overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-card transition duration-300 hover:-translate-y-0.5 hover:border-forest/25 hover:shadow-card-hover" use:tilt={{ max: 3 }}>
   <a href={`/tours/${tour.slug}`} class="relative block aspect-[4/3] overflow-hidden bg-skywash">
     {#if image}
-      <img class="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-105" src={imgUrl(image, 760)} alt={tour.title} loading="lazy" decoding="async" />
+      <Img
+        record={tour}
+        fields={['main_image_url', 'banner_image_url']}
+        alt={tour.title}
+        width={760}
+        sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 33vw"
+        className="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-105"
+      />
     {/if}
     <span class="pointer-events-none absolute inset-0 bg-gradient-to-t from-deep-green/55 via-transparent to-transparent"></span>
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ArrowRight, Heart, Trash2 } from '@lucide/svelte';
   import { revealHeading } from '$lib/animations';
+  import Img from '$lib/components/public/Img.svelte';
   import { currency, formatUsd } from '$lib/currency';
   import { clearShortlist, removeShortlist, shortlist } from '$lib/shortlist';
 
@@ -28,7 +29,9 @@
       {#each items as item (item.slug)}
         <article class="flex flex-col overflow-hidden rounded-2xl border border-ink/10 bg-surface shadow-soft sm:flex-row">
           <a href={`/tours/${item.slug}`} class="aspect-[16/10] w-full shrink-0 overflow-hidden bg-skywash sm:aspect-auto sm:w-48">
-            {#if item.image_url}<img class="h-full w-full object-cover" src={item.image_url} alt={item.title} loading="lazy" />{/if}
+            {#if item.image_url}
+              <Img src={item.image_url} alt={item.title} width={420} sizes="(max-width: 640px) 92vw, 192px" className="h-full w-full object-cover" />
+            {/if}
           </a>
           <div class="flex flex-1 flex-col p-5">
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold">

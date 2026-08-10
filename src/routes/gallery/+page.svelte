@@ -1,12 +1,14 @@
 <script lang="ts">
   import { Camera, Compass, MapPin } from '@lucide/svelte';
-  import { imgUrl } from '$lib/img';
+  import type { ImageVariantMap } from '$lib/img';
   import { brand } from '$lib/brand';
   import { SAMPLE_GALLERY } from '$lib/data/sampleGallery';
   import GalleryViewer from '$lib/components/public/GalleryViewer.svelte';
+  import Img from '$lib/components/public/Img.svelte';
   import type { PageData } from './$types';
 
   export let data: PageData;
+  let imageVariants: ImageVariantMap = (data.imageVariants ?? {}) as ImageVariantMap;
 
   // Real published images ordered by sort_order; falls back to a sample set so
   // the page is never blank while the gallery is being populated.
@@ -28,7 +30,16 @@
 <!-- header -->
 <section class="relative isolate overflow-hidden bg-deep-green text-white">
   {#if images[0]}
-    <img class="absolute inset-0 h-full w-full object-cover opacity-60" src={imgUrl(String(images[0].image_url), 1800)} alt="" aria-hidden="true" />
+    <Img
+      record={images[0]}
+      fields={['image_url']}
+      variantsMap={imageVariants}
+      width={1800}
+      sizes="100vw"
+      alt=""
+      eager
+      className="absolute inset-0 h-full w-full object-cover opacity-60"
+    />
   {/if}
   <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(20,18,15,0.45)_0%,rgba(20,18,15,0.25)_45%,rgba(20,18,15,0.78)_100%)]"></div>
   <div class="container-shell relative py-16 [text-shadow:0_2px_16px_rgba(0,0,0,0.5)] md:py-20">
@@ -65,5 +76,5 @@
       Showing sample images. Publish your own in <span class="font-bold">Admin → Gallery</span> and they’ll replace these automatically.
     </p>
   {/if}
-  <GalleryViewer {images} showFilters />
+  <GalleryViewer {images} showFilters {imageVariants} />
 </section>

@@ -5,10 +5,11 @@
   import { revealHeading, staggeredCardReveal } from '$lib/animations';
   import { currency, formatUsd } from '$lib/currency';
   import { DESTINATION_SCORES, getDestinationScores, topDimension, type DestinationScores } from '$lib/data/destination-scores';
+  import Img from '$lib/components/public/Img.svelte';
   import ScoreBars from '$lib/components/public/ScoreBars.svelte';
   import type { Destination } from '$lib/types';
 
-  type Row = { slug: string; name: string; image: string; scores: DestinationScores };
+  type Row = { slug: string; name: string; image: string; scores: DestinationScores; record?: Destination };
   let rows: Row[] = [];
 
   // Build scores from the destination's own fields; fall back to static config.
@@ -35,7 +36,7 @@
       rows = (res.data.items as Destination[])
         .map((d) => ({ d, scores: scoresFor(d) }))
         .filter((x): x is { d: Destination; scores: DestinationScores } => Boolean(x.d.slug && x.scores))
-        .map(({ d, scores }) => ({ slug: d.slug, name: d.name, image: d.main_image_url || d.image_url || d.banner_image_url || '', scores }));
+        .map(({ d, scores }) => ({ slug: d.slug, name: d.name, image: d.main_image_url || d.image_url || d.banner_image_url || '', scores, record: d }));
     } catch {
       rows = [];
     }
@@ -68,7 +69,17 @@
       <article class="flex flex-col overflow-hidden rounded-2xl border border-ink/10 bg-surface shadow-soft">
         <div class="flex items-center gap-4 border-b border-ink/10 p-5">
           <div class="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-skywash">
-            {#if row.image}<img class="h-full w-full object-cover" src={row.image} alt={row.name} loading="lazy" />{/if}
+            {#if row.image}
+              <Img
+                record={row.record}
+                fields={['main_image_url', 'image_url', 'banner_image_url']}
+                src={row.record ? '' : row.image}
+                alt={row.name}
+                width={160}
+                height={160}
+                className="h-full w-full object-cover"
+              />
+            {/if}
           </div>
           <div>
             <h2 class="text-lg font-extrabold text-heading">{row.name}</h2>

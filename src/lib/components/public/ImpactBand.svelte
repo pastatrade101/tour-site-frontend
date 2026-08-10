@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { Check } from '@lucide/svelte';
 	import { fadeUpOnScroll } from '$lib/animations';
-	import { imgUrl } from '$lib/img';
+	import Img from './Img.svelte';
+	import type { ImageVariantMap } from '$lib/img';
 
 	export let eyebrow = 'Our impact';
 	export let title = 'Every Safari You Book Creates Change';
@@ -22,6 +23,7 @@
 		}
 	];
 	export let imageUrl = '';
+	export let imageVariants: ImageVariantMap = {};
 	export let badge = '10%';
 	export let badgeLabel = 'of every trip reinvested locally';
 	export let primaryCta = 'Learn about our impact';
@@ -36,12 +38,13 @@
 		<div class={`relative grid items-center gap-10 ${imageUrl ? 'lg:grid-cols-2 lg:gap-16' : ''}`}>
 			{#if imageUrl}
 				<div class="relative pb-6">
-					<img
-						class="aspect-[4/3] w-full rounded-[8px] object-cover"
-						src={imgUrl(imageUrl, 1100)}
+					<Img
+						src={imageUrl}
+						variantsMap={imageVariants}
 						alt=""
-						loading="lazy"
-						decoding="async"
+						width={1100}
+						sizes="(max-width: 1024px) 100vw, 50vw"
+						className="aspect-[4/3] w-full rounded-[8px] object-cover"
 					/>
 					{#if badge || badgeLabel}
 						<div

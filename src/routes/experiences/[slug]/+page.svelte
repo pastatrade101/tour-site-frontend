@@ -4,6 +4,7 @@
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
   import { getExperienceInfo } from '$lib/data/experiences';
+  import Img from '$lib/components/public/Img.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
@@ -70,7 +71,15 @@
   <JsonLd data={breadcrumbLd(origin, [{ name: 'Home', path: '/' }, { name: 'Experiences', path: '/experiences' }, { name, path: `/experiences/${slug}` }])} />
   <section class="relative overflow-hidden bg-deep-green text-white">
     {#if image}
-      <img class="absolute inset-0 h-full w-full object-cover opacity-45" src={image} alt={name} />
+      <Img
+        record={exp}
+        fields={['image_url']}
+        alt={name}
+        width={1600}
+        sizes="100vw"
+        eager
+        className="absolute inset-0 h-full w-full object-cover opacity-45"
+      />
     {/if}
     <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-deep-green/80 to-deep-green/40"></div>
     <div class="container-shell relative py-14 md:py-20">

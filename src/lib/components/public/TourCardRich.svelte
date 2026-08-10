@@ -2,7 +2,7 @@
   import { ArrowRight, BedDouble, Clock, MapPin } from '@lucide/svelte';
   import { trackEvent } from '$lib/analytics';
   import { currency, formatUsd } from '$lib/currency';
-  import { imgUrl, thumbUrl, sourceFor } from '$lib/img';
+  import Img from './Img.svelte';
   import { getTourDestinationLabel } from '$lib/tourDestinations';
   import ShortlistButton from './ShortlistButton.svelte';
   import type { Tour } from '$lib/types';
@@ -58,12 +58,13 @@
     <!-- image -->
     <div class="relative aspect-[16/11] w-full overflow-hidden bg-forest">
       {#if tour.main_image_url}
-        <img
-          class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
-          src={imgUrl(sourceFor(tour, 760, 'main_image_url'), 760)}
+        <Img
+          record={tour}
+          fields={['main_image_url']}
           alt={tour.title}
-          loading="lazy"
-          decoding="async"
+          width={760}
+          sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 380px"
+          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
         />
       {:else}
         <div class="grid h-full w-full place-items-center bg-gradient-to-br from-forest to-deep-green text-white/30">

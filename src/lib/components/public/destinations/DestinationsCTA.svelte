@@ -14,10 +14,11 @@
   import { ArrowRight, MapPin, MessageCircle, PenLine, ShieldCheck, Users } from '@lucide/svelte';
   import { trackEvent } from '$lib/analytics';
   import { fadeUpOnScroll } from '$lib/animations';
-  import { imgUrl } from '$lib/img';
+  import Img from '../Img.svelte';
 
   /** Optional background photograph. Any destination image works — it is scrimmed hard. */
   export let image = '';
+  export let imageRecord: Record<string, any> | null | undefined = undefined;
   /** Full https wa.me link, or empty to hide the WhatsApp button entirely. */
   export let whatsapp = '';
   /** Number of published destinations. The only count on this page that is real. */
@@ -30,7 +31,6 @@
   $: imageSrc = typeof image === 'string' ? image.trim() : '';
   $: waRaw = typeof whatsapp === 'string' ? whatsapp.trim() : '';
 
-  $: backdrop = imageSrc ? imgUrl(imageSrc, 1800, 65) : '';
   // Only ever follow an absolute https link — a malformed setting must not
   // become a javascript: or data: href.
   $: waHref = /^https:\/\//i.test(waRaw) ? waRaw : '';
@@ -50,14 +50,15 @@
 </script>
 
 <section class="relative isolate overflow-hidden bg-deep-green text-white" aria-labelledby="destinations-cta-heading">
-  {#if backdrop}
-    <img
-      class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.18]"
-      src={backdrop}
+  {#if imageSrc}
+    <Img
+      record={imageRecord}
+      fields={['banner_image_url', 'main_image_url', 'image_url']}
+      src={imageRecord ? '' : imageSrc}
       alt=""
-      aria-hidden="true"
-      loading="lazy"
-      decoding="async"
+      width={1800}
+      sizes="100vw"
+      className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.18]"
     />
     <!-- Scrim holds the band close to brand green so AA contrast survives any
          photograph, including a bright sky filling the headline area. -->

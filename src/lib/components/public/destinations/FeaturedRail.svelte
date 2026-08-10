@@ -6,11 +6,12 @@
    * facts — recommended stay and its wildlife/experience facets. There is no
    * season chip and no rating: the CMS holds no month or ratings data, and the
    * badge is the real `is_featured` flag rather than an invented popularity rank.
-   */
+  */
   import { ArrowRight, ChevronLeft, ChevronRight, Clock } from '@lucide/svelte';
-  import { imgUrl, sourceFor } from '$lib/img';
+  import { sourceFor } from '$lib/img';
   import { recommendedStay, regionOf, wildlifeOf, experiencesOf } from '$lib/destinationFacets';
   import type { Destination } from '$lib/types';
+  import Img from '../Img.svelte';
 
   export let destinations: Destination[] = [];
   export let title = 'Featured destinations';
@@ -96,14 +97,15 @@
           data-sveltekit-preload-data="hover"
         >
           {#if image}
-            <img
-              class="absolute inset-0 h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.06]"
-              src={imgUrl(image, 700, 72)}
+            <Img
+              record={destination}
+              fields={['main_image_url', 'image_url', 'banner_image_url']}
               alt=""
-              width="300"
-              height="375"
-              loading={index < 2 ? 'eager' : 'lazy'}
-              decoding="async"
+              width={600}
+              height={750}
+              sizes="300px"
+              eager={index < 2}
+              className="absolute inset-0 h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.06]"
             />
           {:else}
             <!-- 13 of 19 destinations have no photograph; this keeps the rail

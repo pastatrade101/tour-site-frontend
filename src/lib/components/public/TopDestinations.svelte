@@ -1,8 +1,9 @@
 <script lang="ts">
   import { ArrowRight, MapPin } from '@lucide/svelte';
-  import { imgUrl, thumbUrl, sourceFor } from '$lib/img';
+  import { thumbUrl } from '$lib/img';
   import { trackEvent } from '$lib/analytics';
   import type { Destination } from '$lib/types';
+  import Img from './Img.svelte';
 
   // Edge-to-edge mosaic of REAL published destinations: an intro tile plus up
   // to 7 photo tiles. Hovering a tile zooms the photo and reveals a
@@ -42,12 +43,13 @@
         on:click={() => onRequest(d)}
         aria-label={`Request a trip to ${d.name}`}
       >
-        <img
-          class="absolute inset-0 h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-110"
-          src={imgUrl(sourceFor(d, 1000, 'main_image_url', 'image_url', 'banner_image_url'), 1000)}
+        <Img
+          record={d}
+          fields={['main_image_url', 'image_url', 'banner_image_url']}
           alt={d.name}
-          loading="lazy"
-          decoding="async"
+          width={1000}
+          sizes="(max-width: 767px) 50vw, 25vw"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-110"
         />
         <!-- base scrim for the name; deepens on hover -->
         <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent transition duration-500 group-hover:from-black/85 group-hover:via-black/40" aria-hidden="true"></div>

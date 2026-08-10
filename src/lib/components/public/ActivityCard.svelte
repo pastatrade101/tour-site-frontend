@@ -4,6 +4,7 @@
   import { currency, formatUsd } from '$lib/currency';
   import { toMetaText } from '$lib/richText';
   import type { Activity } from '$lib/types';
+  import Img from './Img.svelte';
 
   export let activity: Activity;
 
@@ -34,7 +35,14 @@
 <article class="group flex h-full flex-col overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_14px_40px_rgba(57,61,50,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(57,61,50,0.16)]" use:tilt={{ max: 5 }}>
   <div class="relative aspect-[4/3] overflow-hidden bg-skywash">
     {#if imageUrl}
-      <img class="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-110" src={imageUrl} alt={activity.name} loading="lazy" />
+      <Img
+        record={activity}
+        fields={['image_url', 'hero_image_url']}
+        alt={activity.name}
+        width={700}
+        sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 33vw"
+        className="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-110"
+      />
     {/if}
     {#if activity.badge}
       <span class="absolute left-3 top-3 inline-flex items-center rounded-full bg-goldfinch-gold px-2.5 py-1 text-[11px] font-bold text-heading shadow">

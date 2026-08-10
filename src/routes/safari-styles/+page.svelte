@@ -2,9 +2,10 @@
   import { ArrowRight, Check, Compass, Gauge, Search, Sparkles, Users } from '@lucide/svelte';
   import EmptyState from '$lib/components/public/EmptyState.svelte';
   import { fadeUpOnScroll, revealHeading, staggeredCardReveal, tilt } from '$lib/animations';
-  import { imgUrl, sourceFor, thumbUrl } from '$lib/img';
+  import { imgUrl, sourceFor, srcsetFor, variantSrc, variantsOf } from '$lib/img';
   import { toMetaText, toPlainText } from '$lib/richText';
   import RichText from '$lib/components/public/RichText.svelte';
+  import Img from '$lib/components/public/Img.svelte';
   import type { TourCategory } from '$lib/types';
   import type { PageData } from './$types';
 
@@ -13,7 +14,13 @@
   let query = '';
   $: categories = (data.categories ?? []) as TourCategory[];
   // full-bleed hero: the 600px thumbnail would be upscaled
-  $: heroImage = sourceFor(categories.find((category) => category.image_url), 1800, 'image_url');
+  $: heroCategory = categories.find((category) => category.image_url);
+  $: heroImage = sourceFor(heroCategory, 1800, 'image_url');
+  $: heroVariants = variantsOf(heroCategory, 'image_url');
+  $: heroPreloadType = heroVariants?.avif ? 'image/avif' : heroVariants ? 'image/webp' : undefined;
+  $: heroPreloadSrcset = heroVariants ? srcsetFor(heroVariants, heroVariants.avif ? 'avif' : 'webp') : '';
+  $: heroPreloadHref =
+    variantSrc(heroVariants, 1800, heroVariants?.avif ? 'avif' : 'webp') || imgUrl(heroImage, 1600, 72);
   $: filtered = categories.filter((category) => {
     const needle = query.trim().toLowerCase();
     if (!needle) return true;
@@ -32,13 +39,29 @@
     content="Browse Goldfinch safari styles from the live tour-category library and choose the way you want to travel."
   />
   {#if heroImage}
-    <link rel="preload" as="image" href={imgUrl(heroImage, 1600, 72)} fetchpriority="high" />
+    <link
+      rel="preload"
+      as="image"
+      href={heroPreloadHref}
+      imagesrcset={heroPreloadSrcset || undefined}
+      imagesizes="100vw"
+      type={heroPreloadType}
+      fetchpriority="high"
+    />
   {/if}
 </svelte:head>
 
 <section class="relative overflow-hidden bg-deep-green text-white">
   {#if heroImage}
-    <img class="absolute inset-0 h-full w-full object-cover" src={imgUrl(heroImage, 1800, 72)} alt="" fetchpriority="high" />
+    <Img
+      record={heroCategory}
+      fields={['image_url']}
+      alt=""
+      width={1800}
+      sizes="100vw"
+      eager
+      className="absolute inset-0 h-full w-full object-cover"
+    />
     <div class="absolute inset-0 bg-gradient-to-r from-deep-green via-deep-green/78 to-deep-green/30"></div>
     <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-transparent to-deep-green/25"></div>
   {:else}
@@ -96,7 +119,14 @@
           >
             <div class="relative aspect-[16/10] overflow-hidden bg-skywash">
               {#if category.image_url}
-                <img class="h-full w-full object-cover transition duration-700 group-hover:scale-105" src={imgUrl(category.image_url, 820)} alt={category.name} loading="lazy" decoding="async" />
+                <Img
+                  record={category}
+                  fields={['image_url']}
+                  alt={category.name}
+                  width={820}
+                  sizes="(max-width: 640px) 92vw, (max-width: 1280px) 46vw, 33vw"
+                  className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                />
               {:else}
                 <div class="grid h-full w-full place-items-center bg-gradient-to-br from-sand to-savanna/50 text-forest/40">
                   <Compass size={34} />

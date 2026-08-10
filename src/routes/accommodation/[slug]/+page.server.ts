@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { env as publicEnv } from '$env/dynamic/public';
 import type { Lodge, Tour } from '$lib/types';
+import { attachResolvedVariantFields, type ImageVariantMap } from '$lib/img';
 
 type Body<T> = { data?: T };
 type PaginatedBody<T> = { data?: { items?: T[] } };
@@ -10,6 +11,31 @@ const apiBase = (origin: string) => {
   const raw = publicEnv.PUBLIC_API_URL?.trim().replace(/\/+$/, '');
   if (!raw) return 'http://localhost:5000/api';
   return raw.startsWith('/') ? `${origin}${raw}` : raw;
+};
+
+const collectImageUrls = (rows: Array<Record<string, unknown>>, fields: string[]) => {
+  const urls = new Set<string>();
+  for (const row of rows) {
+    for (const field of fields) {
+      const value = row[field];
+      if (typeof value === 'string' && value.trim()) urls.add(value.trim());
+    }
+  }
+  return urls;
+};
+
+const resolveImageVariants = async (fetchFn: typeof fetch, base: string, urls: Set<string>): Promise<ImageVariantMap> => {
+  const list = [...urls].slice(0, 100);
+  if (!list.length) return {};
+  try {
+    const query = new URLSearchParams({ urls: list.join(',') });
+    const res = await fetchFn(`${base}/public/image-variants?${query}`);
+    if (!res.ok) return {};
+    const body = (await res.json()) as { data?: ImageVariantMap };
+    return body.data ?? {};
+  } catch {
+    return {};
+  }
 };
 
 export const load: PageServerLoad = async ({ fetch, params, url }) => {
@@ -56,6 +82,18 @@ export const load: PageServerLoad = async ({ fetch, params, url }) => {
       safaris = [];
     }
   }
+
+  const variantUrls = new Set<string>();
+  for (const url of collectImageUrls([lodge as Record<string, unknown>], ['hero_image_url', 'image_url'])) variantUrls.add(url);
+  for (const url of collectImageUrls((lodge.images ?? []) as Array<Record<string, unknown>>, ['image_url'])) variantUrls.add(url);
+  for (const url of collectImageUrls(related as Array<Record<string, unknown>>, ['hero_image_url', 'image_url'])) variantUrls.add(url);
+  for (const url of collectImageUrls(safaris as Array<Record<string, unknown>>, ['main_image_url', 'banner_image_url'])) variantUrls.add(url);
+
+  const imageVariants = await resolveImageVariants(fetch, base, variantUrls);
+  attachResolvedVariantFields([lodge as Record<string, any>], imageVariants, ['hero_image_url', 'image_url']);
+  attachResolvedVariantFields((lodge.images ?? []) as Array<Record<string, any>>, imageVariants, ['image_url']);
+  attachResolvedVariantFields(related as Array<Record<string, any>>, imageVariants, ['hero_image_url', 'image_url']);
+  attachResolvedVariantFields(safaris as Array<Record<string, any>>, imageVariants, ['main_image_url', 'banner_image_url']);
 
   return { lodge, related, safaris };
 };

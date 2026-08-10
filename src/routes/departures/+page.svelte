@@ -7,6 +7,7 @@
   import { revealHeading, staggeredCardReveal, tilt } from '$lib/animations';
   import { currency, formatUsd } from '$lib/currency';
   import Button from '$lib/components/public/Button.svelte';
+  import Img from '$lib/components/public/Img.svelte';
   import SelectInput from '$lib/components/public/SelectInput.svelte';
   import EmptyState from '$lib/components/public/EmptyState.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
@@ -22,7 +23,10 @@
     duration_days: number | null;
     end_date: string | null;
     id: string;
+    banner_image_url?: string | null;
+    banner_image_url_variants?: unknown;
     main_image_url: string | null;
+    main_image_url_variants?: unknown;
     notes: string | null;
     price: number | null;
     start_date: string;
@@ -217,7 +221,14 @@
             <article class="group flex flex-col overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_14px_40px_rgba(57,61,50,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(57,61,50,0.16)]" use:tilt={{ max: 5 }}>
               <div class="relative aspect-[16/10] overflow-hidden bg-skywash">
                 {#if g.tour.main_image_url}
-                  <img class="h-full w-full object-cover transition duration-300 group-hover:scale-105" src={g.tour.main_image_url} alt={g.tour.tour_title} loading="lazy" />
+                  <Img
+                    record={g.tour}
+                    fields={['main_image_url', 'banner_image_url']}
+                    alt={g.tour.tour_title}
+                    width={760}
+                    sizes="(max-width: 768px) 92vw, (max-width: 1280px) 45vw, 31vw"
+                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                  />
                 {:else}
                   <div class="grid h-full w-full place-items-center text-forest/30"><Compass size={36} /></div>
                 {/if}

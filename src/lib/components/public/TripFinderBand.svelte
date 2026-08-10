@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { ArrowRight, Clock, Compass, MapPin } from '@lucide/svelte';
   import { api } from '$lib/api/client';
+  import Img from '$lib/components/public/Img.svelte';
   import type { Destination } from '$lib/types';
 
   // Fallbacks (shown until live images load, or if the API is empty).
@@ -9,10 +10,13 @@
   const FB_KILI = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=80';
   const FB_ZNZ = 'https://images.unsplash.com/photo-1605731414532-6b26976cc153?auto=format&fit=crop&w=400&q=80';
 
+  type Preview = { src: string; label: string; record?: Record<string, unknown>; fields: string[] };
+
+  let heroRecord: Destination | null = null;
   let heroImage = FB_HERO;
-  let previews: { src: string; label: string }[] = [
-    { src: FB_KILI, label: 'Kilimanjaro' },
-    { src: FB_ZNZ, label: 'Zanzibar' }
+  let previews: Preview[] = [
+    { src: FB_KILI, label: 'Kilimanjaro', fields: [] },
+    { src: FB_ZNZ, label: 'Zanzibar', fields: [] }
   ];
 
   onMount(async () => {
@@ -23,19 +27,25 @@
     const dests = destRes.status === 'fulfilled' ? ((destRes.value.data.items ?? []) as Destination[]) : [];
     const cats = catRes.status === 'fulfilled' ? ((catRes.value.data.items ?? []) as Array<Record<string, unknown>>) : [];
 
-    const destImg = (slug: string) => {
-      const d = dests.find((x) => x.slug === slug);
-      return d ? d.banner_image_url || d.main_image_url || d.image_url || '' : '';
-    };
-    const catImg = (slug: string) => {
-      const c = cats.find((x) => x.slug === slug);
-      return c?.image_url ? String(c.image_url) : '';
-    };
+    const destRecord = (slug: string) => dests.find((x) => x.slug === slug) ?? null;
+    const destImg = (d: Destination | null | undefined) => d?.banner_image_url || d?.main_image_url || d?.image_url || '';
+    const catRecord = (slug: string) => cats.find((x) => x.slug === slug) ?? null;
+    const catImg = (c: Record<string, unknown> | null | undefined) => (c?.image_url ? String(c.image_url) : '');
 
-    heroImage = destImg('tanzania') || (dests[0]?.banner_image_url || dests[0]?.main_image_url || dests[0]?.image_url) || FB_HERO;
+    heroRecord = destRecord('tanzania') ?? dests[0] ?? null;
+    heroImage = destImg(heroRecord) || FB_HERO;
+
+    const kili = catRecord('kilimanjaro');
+    const zanzibar = destRecord('zanzibar');
+    const zanzibarBeach = catRecord('zanzibar-beach');
     previews = [
-      { src: catImg('kilimanjaro') || FB_KILI, label: 'Kilimanjaro' },
-      { src: destImg('zanzibar') || catImg('zanzibar-beach') || FB_ZNZ, label: 'Zanzibar' }
+      { src: catImg(kili) || FB_KILI, label: 'Kilimanjaro', record: kili ?? undefined, fields: ['image_url'] },
+      {
+        src: destImg(zanzibar) || catImg(zanzibarBeach) || FB_ZNZ,
+        label: 'Zanzibar',
+        record: (zanzibar as unknown as Record<string, unknown>) ?? zanzibarBeach ?? undefined,
+        fields: zanzibar ? ['banner_image_url', 'main_image_url', 'image_url'] : ['image_url']
+      }
     ];
   });
 </script>
@@ -87,11 +97,14 @@
 
     <!-- ── visual collage ────────────────────────────────────────── -->
     <div class="relative min-h-[280px] overflow-hidden bg-forest lg:min-h-full">
-      <img
-        class="absolute inset-0 h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-105"
-        src={heroImage}
+      <Img
+        record={heroRecord}
+        fields={['banner_image_url', 'main_image_url', 'image_url']}
+        src={heroRecord ? '' : heroImage}
         alt="Tanzania safari"
-        loading="lazy"
+        width={1000}
+        sizes="(max-width: 1024px) 100vw, 48vw"
+        className="absolute inset-0 h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-105"
       />
       <!-- blend toward the green panel + bottom depth -->
       <span class="pointer-events-none absolute inset-0 bg-gradient-to-r from-deep-green/70 via-deep-green/10 to-transparent" aria-hidden="true"></span>
@@ -107,7 +120,15 @@
         {#each previews as p (p.label)}
           <div class="overflow-hidden rounded-[10px] border border-white/50 bg-surface/90 p-1.5 shadow-[0_10px_26px_rgba(57,61,50,0.28)] backdrop-blur transition-transform duration-300 hover:-translate-y-0.5">
             <div class="relative h-20 overflow-hidden rounded-[7px]">
-              <img class="h-full w-full object-cover" src={p.src} alt={p.label} loading="lazy" />
+              <Img
+                record={p.record}
+                fields={p.fields}
+                src={p.record ? '' : p.src}
+                alt={p.label}
+                width={240}
+                sizes="144px"
+                className="h-full w-full object-cover"
+              />
               <span class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-deep-green/80 to-transparent px-2 py-1 text-[11px] font-bold text-white">
                 {p.label}
               </span>

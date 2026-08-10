@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ArrowRight, ShieldCheck } from '@lucide/svelte';
-  import { imgUrl } from '$lib/img';
+  import Img from '$lib/components/public/Img.svelte';
 
   // Honest "typical cost" band (spec §4.1 F / §6). Rows come from the CMS
   // (cost_ranges section → extra_data.ranges); the section hides when there are none.
@@ -26,13 +26,12 @@
       <div class="group relative flex min-h-[200px] flex-col overflow-hidden rounded-[8px] border border-ink/10 bg-surface p-5 shadow-card transition duration-300 hover:-translate-y-0.5 hover:border-goldfinch-gold/40 hover:shadow-card-hover">
         <!-- very faint photo texture (only when the CMS row provides an image) -->
         {#if row.image}
-          <img
-            class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.08] transition duration-700 group-hover:scale-105 group-hover:opacity-[0.14]"
-            src={imgUrl(row.image, 520)}
+          <Img
+            src={row.image}
             alt=""
-            aria-hidden="true"
-            loading="lazy"
-            decoding="async"
+            width={520}
+            sizes="(max-width: 640px) 92vw, (max-width: 1024px) 45vw, 24vw"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.08] transition duration-700 group-hover:scale-105 group-hover:opacity-[0.14]"
           />
         {/if}
         <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-surface via-surface/80 to-canvas/70"></div>

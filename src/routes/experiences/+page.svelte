@@ -4,10 +4,11 @@
   import { api } from '$lib/api/client';
   import { revealHeading, staggeredCardReveal, tilt } from '$lib/animations';
   import EmptyState from '$lib/components/public/EmptyState.svelte';
+  import Img from '$lib/components/public/Img.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import { toMetaText } from '$lib/richText';
 
-  type Experience = { name: string; slug: string; description: string; image_url: string };
+  type Experience = { name: string; slug: string; description: string; image_url: string; image_url_variants?: unknown };
 
   let experiences: Experience[] = [];
   let loading = true;
@@ -21,7 +22,8 @@
           name: String(c.name ?? c.slug),
           slug: String(c.slug),
           description: c.description ? toMetaText(c.description, 170) : '',
-          image_url: c.image_url ? String(c.image_url) : ''
+          image_url: c.image_url ? String(c.image_url) : '',
+          image_url_variants: c.image_url_variants
         }));
     } catch {
       experiences = [];
@@ -52,7 +54,14 @@
       {#each experiences as exp (exp.slug)}
         <a class="group relative flex h-64 flex-col justify-end overflow-hidden rounded-[12px] bg-deep-green shadow-[0_14px_40px_rgba(57,61,50,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(57,61,50,0.16)]" href={`/experiences/${exp.slug}`} use:tilt={{ max: 5 }}>
           {#if exp.image_url}
-            <img class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105" src={exp.image_url} alt={exp.name} loading="lazy" />
+            <Img
+              record={exp}
+              fields={['image_url']}
+              alt={exp.name}
+              width={760}
+              sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 31vw"
+              className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            />
           {/if}
           <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-deep-green/40 to-transparent"></div>
           <div class="relative p-5 text-white">

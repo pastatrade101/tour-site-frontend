@@ -75,3 +75,115 @@ export const sourceFor = (
   }
   return '';
 };
+
+// ── Responsive variants ─────────────────────────────────────────────────────
+// The backend writes a WebP + AVIF ladder alongside uploads:
+//   <folder>/<uuid>.<ext> -> <folder>/responsive/<uuid>/<width>.{avif,webp}
+//
+// Public list/detail APIs attach `<field>_variants` for known image columns.
+// Homepage/gallery section URLs can use the batch `/public/image-variants`
+// resolver, which returns widths keyed by original URL. In both cases we only
+// put widths that actually exist in `srcset`, because a 404 candidate can break
+// image selection instead of falling back.
+
+export type ImageVariants = { base: string; widths: number[]; avif?: boolean };
+export type ResolvedImageVariant = {
+  base?: string | null;
+  widths?: number[] | null;
+  variant_widths?: number[] | null;
+  avif?: boolean | null;
+  hasAvif?: boolean | null;
+  has_avif?: boolean | null;
+};
+export type ImageVariantMap = Record<string, ResolvedImageVariant | ImageVariants | undefined>;
+
+const cleanWidths = (widths: unknown): number[] =>
+  Array.isArray(widths)
+    ? [...new Set(widths.map((width) => Number(width)).filter((width) => Number.isFinite(width) && width > 0))].sort(
+        (a, b) => a - b
+      )
+    : [];
+
+export const variantBaseFromUrl = (url: string | null | undefined): string => {
+  if (!url || url.startsWith('data:') || url.startsWith('blob:')) return '';
+  const clean = url.split(/[?#]/)[0];
+  const fileName = clean.split('/').pop() ?? '';
+  const stem = fileName.replace(/\.[^.]+$/, '');
+  const folder = clean.replace(/\/[^/]+$/, '');
+  if (!stem || stem === fileName || !folder || folder === clean) return '';
+  return `${folder}/responsive/${stem}`;
+};
+
+export const variantForUrl = (
+  url: string | null | undefined,
+  meta: ResolvedImageVariant | ImageVariants | null | undefined
+): ImageVariants | null => {
+  if (!meta) return null;
+  const raw = meta as ResolvedImageVariant & Partial<ImageVariants>;
+  const widths = cleanWidths(raw.widths ?? raw.variant_widths);
+  if (!widths.length) return null;
+  const base = typeof raw.base === 'string' && raw.base ? raw.base : variantBaseFromUrl(url);
+  if (!base) return null;
+  return {
+    base,
+    widths,
+    avif: raw.avif === true || raw.hasAvif === true || raw.has_avif === true
+  };
+};
+
+export const variantFromMap = (
+  url: string | null | undefined,
+  variants: ImageVariantMap | null | undefined
+): ImageVariants | null => (url && variants ? variantForUrl(url, variants[url]) : null);
+
+export const variantsOf = (
+  record: Record<string, any> | null | undefined,
+  ...fields: string[]
+): ImageVariants | null => {
+  if (!record) return null;
+  for (const field of fields) {
+    const original = record[field];
+    const value = record[`${field}_variants`];
+    const variants = variantForUrl(typeof original === 'string' ? original : '', value);
+    if (variants) return variants;
+  }
+  return null;
+};
+
+export const attachResolvedVariantFields = <T extends Record<string, any>>(
+  rows: T[],
+  variants: ImageVariantMap,
+  fields: string[]
+): T[] => {
+  if (!rows.length || !Object.keys(variants).length) return rows;
+  for (const row of rows) {
+    for (const field of fields) {
+      const url = row[field];
+      if (typeof url !== 'string' || !url) continue;
+      if (row[`${field}_variants`]) continue;
+      const resolved = variantFromMap(url, variants);
+      if (resolved) (row as Record<string, any>)[`${field}_variants`] = resolved;
+    }
+  }
+  return rows;
+};
+
+/** `srcset` string for one format, or '' when there is nothing to offer. */
+export const srcsetFor = (variants: ImageVariants | null, ext: 'avif' | 'webp'): string => {
+  if (!variants?.widths?.length) return '';
+  if (ext === 'avif' && !variants.avif) return '';
+  return cleanWidths(variants.widths).map((width) => `${variants.base}/${width}.${ext} ${width}w`).join(', ');
+};
+
+/**
+ * Best single src from the ladder for a known render width — used as the <img>
+ * fallback inside a <picture>, and anywhere a srcset is overkill.
+ */
+export const variantSrc = (variants: ImageVariants | null, renderWidth: number, ext: 'avif' | 'webp' = 'webp'): string => {
+  if (!variants?.widths?.length) return '';
+  if (ext === 'avif' && !variants.avif) return '';
+  const target = renderWidth * 2; // retina
+  const widths = cleanWidths(variants.widths);
+  const pick = widths.find((width) => width >= target) ?? widths[widths.length - 1];
+  return `${variants.base}/${pick}.${ext}`;
+};

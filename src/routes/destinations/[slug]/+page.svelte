@@ -29,7 +29,8 @@
   import RichText from '$lib/components/public/RichText.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { currency, formatUsd } from '$lib/currency';
-  import { imgUrl, thumbUrl, sourceFor } from '$lib/img';
+  import { imgUrl, thumbUrl, sourceFor, srcsetFor, variantSrc, variantsOf } from '$lib/img';
+  import Img from '$lib/components/public/Img.svelte';
   import { hasRichContent, toMetaText } from '$lib/richText';
   import { breadcrumbLd } from '$lib/seo';
   import type { Activity, Destination, FAQ, Lodge, Review, Tour, TourCategory, TripPoint } from '$lib/types';
@@ -40,7 +41,7 @@
 
   type GuideBlock = Record<string, unknown>;
   type BlockItem = { title: string; body: string };
-  type DisplayImage = { id: string; title: string; caption: string; alt: string; url: string };
+  type DisplayImage = { id: string; title: string; caption: string; alt: string; url: string; record?: Record<string, unknown>; fields: string[] };
   type Fact = { icon: 'map' | 'compass' | 'calendar' | 'budget' | 'camera' | 'star'; label: string; value: string };
   type SafetyItem = { icon: 'shield' | 'health' | 'file' | 'phone' | 'security'; title: string; body: string };
   type DestinationTourCategory = {
@@ -49,6 +50,8 @@
     slug: string;
     description: string;
     imageUrl: string;
+    imageRecord?: Record<string, unknown>;
+    imageFields: string[];
     tourCount: number;
     minPrice: number | null;
     minDays: number | null;
@@ -131,7 +134,7 @@
     const seen = new Set<string>();
     const images: DisplayImage[] = [];
 
-    const add = (url: string, title: string, caption = '', alt = title) => {
+    const add = (url: string, title: string, caption = '', alt = title, record?: Record<string, unknown>, fields: string[] = []) => {
       const normalized = url.trim();
       if (!normalized || seen.has(normalized)) return;
       seen.add(normalized);
@@ -140,7 +143,9 @@
         title,
         caption,
         alt,
-        url: normalized
+        url: normalized,
+        record,
+        fields
       });
     };
 
@@ -150,13 +155,15 @@
         text(item.image_url),
         text(item.title) || text(item.alt_text) || destination.name,
         text(item.caption),
-        text(item.alt_text) || text(item.title) || destination.name
+        text(item.alt_text) || text(item.title) || destination.name,
+        item as Record<string, unknown>,
+        ['image_url']
       );
     }
 
-    add(sourceFor(destination, 2000, 'main_image_url'), destination.name, locationLabel);
-    add(sourceFor(destination, 2000, 'image_url'), destination.name, locationLabel);
-    add(sourceFor(destination, 2000, 'banner_image_url'), destination.name, locationLabel);
+    add(sourceFor(destination, 2000, 'main_image_url'), destination.name, locationLabel, destination.name, destination as Record<string, unknown>, ['main_image_url']);
+    add(sourceFor(destination, 2000, 'image_url'), destination.name, locationLabel, destination.name, destination as Record<string, unknown>, ['image_url']);
+    add(sourceFor(destination, 2000, 'banner_image_url'), destination.name, locationLabel, destination.name, destination as Record<string, unknown>, ['banner_image_url']);
 
     return images;
   };
@@ -238,15 +245,18 @@
         const prices = tours.map((tour) => positiveNumber(tour.price_from)).filter((price): price is number => price !== null);
         const days = tours.map((tour) => positiveNumber(tour.duration_days)).filter((day): day is number => day !== null);
         const firstTourWithImage = tours.find((tour) => sourceFor(tour, 2000, 'main_image_url', 'banner_image_url'));
+        const categoryImage = thumbUrl(category as Record<string, unknown> | undefined, 'image_url', 'icon_url');
 
         return {
           id,
           name,
           slug,
           description: toMetaText(text(category?.description) || text(category?.who_its_for), 170),
-          imageUrl:
-            thumbUrl(category as Record<string, unknown> | undefined, 'image_url', 'icon_url') ||
-            sourceFor(firstTourWithImage, 2000, 'main_image_url', 'banner_image_url'),
+          imageUrl: categoryImage || sourceFor(firstTourWithImage, 2000, 'main_image_url', 'banner_image_url'),
+          imageRecord: categoryImage
+            ? (category as unknown as Record<string, unknown>)
+            : (firstTourWithImage as unknown as Record<string, unknown> | undefined),
+          imageFields: categoryImage ? ['image_url', 'icon_url'] : ['main_image_url', 'banner_image_url'],
           tourCount: tours.length,
           minPrice: prices.length ? Math.min(...prices) : null,
           minDays: days.length ? Math.min(...days) : null,
@@ -340,6 +350,11 @@
 
   $: heroImage = destination ? sourceFor(destination, 2000, 'banner_image_url', 'main_image_url', 'image_url') : '';
   $: mainImage = destination ? sourceFor(destination, 2000, 'main_image_url', 'image_url', 'banner_image_url') : '';
+  $: heroVariants = variantsOf(destination, 'banner_image_url', 'main_image_url', 'image_url');
+  $: heroPreloadType = heroVariants?.avif ? 'image/avif' : heroVariants ? 'image/webp' : undefined;
+  $: heroPreloadSrcset = heroVariants ? srcsetFor(heroVariants, heroVariants.avif ? 'avif' : 'webp') : '';
+  $: heroPreloadHref =
+    variantSrc(heroVariants, 2000, heroVariants?.avif ? 'avif' : 'webp') || imgUrl(heroImage, 1800, 72);
   $: locationLabel = destination
     ? [destination.region, destination.country].filter(Boolean).join(', ') || destination.location || ''
     : '';
@@ -378,7 +393,15 @@
     <meta property="og:image" content={destination?.og_image_url || heroImage} />
   {/if}
   {#if heroImage}
-    <link rel="preload" as="image" href={imgUrl(heroImage, 1800, 72)} fetchpriority="high" />
+    <link
+      rel="preload"
+      as="image"
+      href={heroPreloadHref}
+      imagesrcset={heroPreloadSrcset || undefined}
+      imagesizes="100vw"
+      type={heroPreloadType}
+      fetchpriority="high"
+    />
   {/if}
 </svelte:head>
 
@@ -404,12 +427,14 @@
 
   <section class="relative min-h-[560px] overflow-hidden bg-deep-green text-white md:min-h-[640px]">
     {#if heroImage}
-      <img
-        class="absolute inset-0 h-full w-full object-cover"
-        src={imgUrl(heroImage, 2000, 72)}
+      <Img
+        record={destination}
+        fields={['banner_image_url', 'main_image_url', 'image_url']}
         alt=""
-        fetchpriority="high"
-        decoding="async"
+        width={2000}
+        sizes="100vw"
+        eager
+        className="absolute inset-0 h-full w-full object-cover"
       />
       <div class="absolute inset-0 bg-gradient-to-r from-deep-green via-deep-green/78 to-deep-green/20"></div>
       <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-transparent to-black/25"></div>
@@ -493,7 +518,14 @@
         {/if}
         {#if mainImage}
           <div class="mt-7 overflow-hidden rounded-[8px] bg-skywash shadow-soft">
-            <img class="aspect-[4/3] w-full object-cover" src={imgUrl(mainImage, 900, 72)} alt={destination.name} loading="lazy" decoding="async" />
+            <Img
+              record={destination}
+              fields={['main_image_url', 'image_url', 'banner_image_url']}
+              alt={destination.name}
+              width={900}
+              sizes="(max-width: 1024px) 100vw, 40vw"
+              className="aspect-[4/3] w-full object-cover"
+            />
           </div>
         {/if}
 
@@ -581,12 +613,13 @@
                 {#if imageFromBlock(block)}
                   <figure class="mt-6">
                     <div class="overflow-hidden rounded-[8px] bg-skywash shadow-soft">
-                      <img
-                        class="aspect-[16/9] w-full object-cover transition duration-700 hover:scale-[1.04]"
-                        src={imgUrl(imageFromBlock(block), 1100, 72)}
+                      <Img
+                        src={imageFromBlock(block)}
                         alt={blockCaption(block) || blockTitle(block) || destination.name}
-                        loading="lazy"
-                        decoding="async"
+                        width={1100}
+                        sizes="(max-width: 1024px) 92vw, 62vw"
+                        aspect="16/9"
+                        className="aspect-[16/9] w-full object-cover transition duration-700 hover:scale-[1.04]"
                       />
                     </div>
                     {#if blockCaption(block)}
@@ -614,12 +647,15 @@
         <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
           {#each visualImages.slice(0, 6) as image, index (image.id)}
             <a class={`group relative block overflow-hidden rounded-[8px] bg-forest shadow-card ring-1 ring-black/10 ${index === 0 ? 'lg:row-span-2' : ''}`} href="/gallery">
-              <img
-                class={`w-full object-cover transition duration-700 ease-out group-hover:scale-[1.06] ${index === 0 ? 'aspect-[4/5] lg:h-full' : 'aspect-[4/3]'}`}
-                src={imgUrl(image.url, index === 0 ? 1100 : 760, 72)}
+              <Img
+                record={image.record}
+                fields={image.fields}
+                src={image.record ? '' : image.url}
                 alt={image.alt}
-                loading={index === 0 ? 'eager' : 'lazy'}
-                decoding="async"
+                width={index === 0 ? 1100 : 760}
+                sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 31vw"
+                eager={index === 0}
+                className={`w-full object-cover transition duration-700 ease-out group-hover:scale-[1.06] ${index === 0 ? 'aspect-[4/5] lg:h-full' : 'aspect-[4/3]'}`}
               />
               <div class="absolute inset-0 bg-gradient-to-t from-black/82 via-black/18 to-transparent opacity-80 transition group-hover:opacity-95"></div>
               <div class="absolute inset-x-0 bottom-0 p-4 text-white transition duration-300 group-hover:-translate-y-1">
@@ -664,12 +700,14 @@
               >
                 <div class="relative aspect-[16/10] overflow-hidden bg-skywash">
                   {#if category.imageUrl}
-                    <img
-                      class="h-full w-full object-cover transition duration-700 group-hover:scale-[1.06]"
-                      src={imgUrl(category.imageUrl, 520, 72)}
+                    <Img
+                      record={category.imageRecord}
+                      fields={category.imageFields}
+                      src={category.imageRecord ? '' : category.imageUrl}
                       alt={category.name}
-                      loading="lazy"
-                      decoding="async"
+                      width={520}
+                      sizes="(max-width: 768px) 92vw, (max-width: 1280px) 45vw, 31vw"
+                      className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.06]"
                     />
                   {:else}
                     <div class="grid h-full place-items-center bg-forest/8 text-forest">
@@ -838,7 +876,14 @@
               <Quote size={30} class="absolute right-5 top-5 text-sand" />
               <div class="flex items-center gap-3">
                 {#if review.author_photo_url}
-                  <img class="h-11 w-11 rounded-[8px] object-cover" src={review.author_photo_url} alt={review.author_name} loading="lazy" decoding="async" />
+                  <Img
+                    record={review}
+                    fields={['author_photo_url']}
+                    alt={review.author_name}
+                    width={120}
+                    height={120}
+                    className="h-11 w-11 rounded-[8px] object-cover"
+                  />
                 {:else}
                   <span class="grid h-11 w-11 place-items-center rounded-[8px] bg-forest/10 text-sm font-bold text-forest">{reviewInitials(review)}</span>
                 {/if}

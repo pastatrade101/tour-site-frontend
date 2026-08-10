@@ -1,12 +1,13 @@
 <script lang="ts">
   import { trackEvent } from '$lib/analytics';
-  import { imgUrl, thumbUrl, sourceFor } from '$lib/img';
+  import { sourceFor } from '$lib/img';
   import { tilt } from '$lib/animations';
   import { currency, formatUsd } from '$lib/currency';
   import { Image as ImageIcon } from '@lucide/svelte';
   import { toMetaText } from '$lib/richText';
   import { getTourDestinationLabel } from '$lib/tourDestinations';
   import ShortlistButton from './ShortlistButton.svelte';
+  import Img from './Img.svelte';
   import type { Tour } from '$lib/types';
 
   export let tour: Tour;
@@ -33,7 +34,14 @@
   <a href={`/tours/${tour.slug}`} class="flex h-full flex-col" on:click={() => trackEvent('tour_card_click', { tour_id: tour.id, tour_title: tour.title })}>
     <div class="aspect-[4/3] overflow-hidden bg-skywash">
       {#if tourImage}
-        <img class="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-110" src={imgUrl(tourImage, 700)} alt={tour.title} loading="lazy" decoding="async" />
+        <Img
+          record={tour}
+          fields={['main_image_url', 'banner_image_url']}
+          alt={tour.title}
+          width={700}
+          sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 33vw"
+          className="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-110"
+        />
       {:else}
         <div class="grid h-full w-full place-items-center bg-skywash text-forest/35">
           <ImageIcon size={30} />

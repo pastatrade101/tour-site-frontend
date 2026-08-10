@@ -1,14 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { ChevronLeft, ChevronRight, MapPin, Route, X } from '@lucide/svelte';
-  import { imgUrl } from '$lib/img';
+  import Img from './Img.svelte';
   import { staggeredCardReveal } from '$lib/animations';
+  import type { ImageVariantMap } from '$lib/img';
 
   type Item = Record<string, unknown>;
   export let images: Item[] = [];
   export let showFilters = false;
   export let dark = false; // dark section (homepage) vs light page
   export let mosaic = false; // varied bento tiles vs uniform squares
+  export let imageVariants: ImageVariantMap = {};
 
   // Bento span pattern (applied md+), cycling every 8 tiles for visual rhythm.
   const mosaicSpan = (i: number) => {
@@ -23,7 +25,6 @@
   const tourOf = (im: Item) => (im.tours as { title?: string; slug?: string } | null) ?? null;
   const cap = (im: Item) =>
     (typeof im.title === 'string' && im.title.trim()) || (typeof im.caption === 'string' && im.caption.trim()) || '';
-  const src = (im: Item, w: number) => imgUrl(String(im.image_url ?? ''), w);
 
   $: valid = (images ?? []).filter((im) => typeof im.image_url === 'string' && im.image_url);
 
@@ -76,18 +77,21 @@
       {@const c = cap(im)}
       {@const d = destOf(im)}
       {@const t = tourOf(im)}
+      {@const largeTile = mosaic && (i % 8 === 0 || i % 8 === 5)}
       <button
         type="button"
         class={`group relative aspect-square overflow-hidden rounded-[10px] bg-deep-green ring-1 ring-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold ${mosaic ? `md:aspect-auto ${mosaicSpan(i)}` : ''}`}
         on:click={() => open(i)}
         aria-label={c || 'View photo'}
       >
-        <img
-          class="absolute inset-0 h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-110"
-          src={src(im, 560)}
+        <Img
+          record={im}
+          fields={['image_url']}
+          variantsMap={imageVariants}
+          width={largeTile ? 1100 : 640}
+          sizes={largeTile ? '(max-width: 767px) 50vw, 50vw' : '(max-width: 767px) 50vw, 25vw'}
           alt={String(im.alt_text ?? im.title ?? 'Safari gallery image')}
-          loading={i < 8 ? 'eager' : 'lazy'}
-          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-110"
         />
         <span class="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_42%,rgba(15,26,24,0.86))] opacity-85 transition group-hover:opacity-100"></span>
         {#if d?.name}
@@ -125,7 +129,15 @@
           <ChevronLeft size={22} />
         </button>
       {/if}
-      <img class="pointer-events-auto max-h-full max-w-full rounded-[6px] object-contain" src={src(active, 1600)} alt={String(active.alt_text ?? active.title ?? 'Safari gallery image')} />
+      <Img
+        record={active}
+        fields={['image_url']}
+        variantsMap={imageVariants}
+        width={1600}
+        sizes="100vw"
+        alt={String(active.alt_text ?? active.title ?? 'Safari gallery image')}
+        className="pointer-events-auto max-h-full max-w-full rounded-[6px] object-contain"
+      />
       {#if filtered.length > 1}
         <button type="button" class="pointer-events-auto absolute right-2 z-10 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:right-4" on:click={next} aria-label="Next">
           <ChevronRight size={22} />

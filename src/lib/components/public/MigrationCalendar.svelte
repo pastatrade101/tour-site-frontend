@@ -3,9 +3,10 @@
   import { browser } from '$app/environment';
   import { MapPin } from '@lucide/svelte';
   import { api } from '$lib/api/client';
-  import { imgUrl } from '$lib/img';
+  import Img from './Img.svelte';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
   import type { MigrationEntry } from '$lib/types';
+  import type { ImageVariantMap } from '$lib/img';
 
   // Serengeti Great Migration month-by-month guide. Self-hiding: renders nothing
   // until published entries exist, so the homepage is unchanged until content is
@@ -16,6 +17,7 @@
   // Toggle the whole section from Admin → Homepage (migration_section.is_active).
   export let active = true;
   export let entries: MigrationEntry[] = [];
+  export let imageVariants: ImageVariantMap = {};
 
   let loaded = entries.length > 0;
   let currentMonth = '';
@@ -57,12 +59,14 @@
           >
             {#if entry.image_url}
               <div class="relative aspect-[16/10] overflow-hidden">
-                <img
-                  class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
-                  src={imgUrl(entry.image_url, 700)}
+                <Img
+                  record={entry}
+                  fields={['image_url']}
+                  variantsMap={imageVariants}
                   alt={`Great Migration in ${entry.month}`}
-                  loading="lazy"
-                  decoding="async"
+                  width={700}
+                  sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 33vw"
+                  className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
                 />
                 <span class="absolute left-3 top-3 rounded-[6px] bg-heading/85 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white backdrop-blur">{entry.month}</span>
                 {#if current}

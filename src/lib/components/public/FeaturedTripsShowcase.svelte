@@ -17,14 +17,15 @@
   import { api } from '$lib/api/client';
   import { fadeUpOnScroll, revealHeading } from '$lib/animations';
   import { brand } from '$lib/brand';
-  import { imgUrl, thumbUrl, sourceFor } from '$lib/img';
+  import { variantForUrl, type ImageVariants } from '$lib/img';
+  import Img from '$lib/components/public/Img.svelte';
   import { toPlainText } from '$lib/richText';
   import { getTourDestinations } from '$lib/tourDestinations';
   import { defaultSpecialist } from '$lib/data/specialists';
   import type { Tour } from '$lib/types';
 
   type Tab = { slug: string; name: string; tour: Tour };
-  type Tile = { url: string; caption: string };
+  type Tile = { url: string; caption: string; variants?: ImageVariants | null };
 
   let tabs: Tab[] = [];
   let activeSlug = '';
@@ -68,7 +69,14 @@
       const res = await api.tourImages.list({ tour_id: tour.id, limit: 8 });
       const items = (res.data.items ?? []) as Array<Record<string, unknown>>;
       imgs = items
-        .map((x) => ({ url: String(x.image_url ?? ''), caption: x.caption ? String(x.caption) : '' }))
+        .map((x) => {
+          const url = String(x.image_url ?? '');
+          return {
+            url,
+            caption: x.caption ? String(x.caption) : '',
+            variants: variantForUrl(url, x.image_url_variants as any)
+          };
+        })
         .filter((t) => t.url);
     } catch {
       imgs = [];
@@ -170,7 +178,7 @@
             <div class="mt-auto flex items-center gap-3 pt-8">
               <span class="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-forest/10 text-sm font-bold text-forest">
                 {#if defaultSpecialist.photo}
-                  <img class="h-full w-full object-cover" src={defaultSpecialist.photo} alt={defaultSpecialist.name} />
+                  <Img src={defaultSpecialist.photo} alt={defaultSpecialist.name} width={88} height={88} className="h-full w-full object-cover" />
                 {:else}{initials}{/if}
               </span>
               <div class="leading-tight">
@@ -185,7 +193,14 @@
             <div class={`grid aspect-[5/4] gap-3 ${gridClass}`}>
               {#each tiles as tile, i (tile.url)}
                 <a href={`/tours/${active.tour.slug}`} class={`group relative overflow-hidden rounded-2xl bg-skywash ${spanClass(i, tiles.length)}`}>
-                  <img class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]" src={imgUrl(tile.url, 800)} alt={tile.caption || active.tour.title} loading="lazy" decoding="async" />
+                  <Img
+                    src={tile.url}
+                    variants={tile.variants ?? null}
+                    alt={tile.caption || active.tour.title}
+                    width={800}
+                    sizes="(max-width: 1024px) 90vw, 46vw"
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+                  />
                   {#if tile.caption}
                     <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent p-3">
                       <span class="text-sm font-semibold text-white drop-shadow">{tile.caption}</span>
@@ -197,7 +212,14 @@
           {:else}
             <div class="aspect-[5/4] overflow-hidden rounded-2xl bg-skywash">
               {#if active.tour.main_image_url}
-                <img class="h-full w-full object-cover" src={imgUrl(sourceFor(active.tour, 800, 'main_image_url'), 800)} alt={active.tour.title} loading="lazy" decoding="async" />
+                <Img
+                  record={active.tour}
+                  fields={['main_image_url', 'banner_image_url']}
+                  alt={active.tour.title}
+                  width={900}
+                  sizes="(max-width: 1024px) 90vw, 46vw"
+                  className="h-full w-full object-cover"
+                />
               {/if}
             </div>
           {/if}

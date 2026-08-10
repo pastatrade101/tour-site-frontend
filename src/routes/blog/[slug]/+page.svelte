@@ -6,6 +6,7 @@
   import { staggeredCardReveal } from '$lib/animations/motion';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
   import DestinationCard from '$lib/components/public/DestinationCard.svelte';
+  import Img from '$lib/components/public/Img.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
@@ -98,7 +99,16 @@
       <p class="mt-4 text-lg leading-8 text-ink/70">{post.excerpt}</p>
     </div>
     {#if post.featured_image_url}
-      <img class="mt-8 aspect-[16/8] w-full rounded-lg object-cover shadow-soft" src={post.featured_image_url} alt={post.title} />
+      <Img
+        record={post}
+        fields={['featured_image_url']}
+        alt={post.title}
+        width={1500}
+        sizes="100vw"
+        eager
+        aspect="16/8"
+        className="mt-8 aspect-[16/8] w-full rounded-lg object-cover shadow-soft"
+      />
     {/if}
     <RichText value={post.content} element="article" className="mt-8 max-w-3xl text-base leading-8 text-ink/75" />
   {/if}

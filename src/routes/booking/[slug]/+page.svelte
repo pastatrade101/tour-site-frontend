@@ -6,6 +6,7 @@
   import { revealHeading } from '$lib/animations';
   import { currency, formatUsd } from '$lib/currency';
   import BookingForm from '$lib/components/public/BookingForm.svelte';
+  import Img from '$lib/components/public/Img.svelte';
   import type { Tour } from '$lib/types';
 
   let tour: Tour | null = null;
@@ -47,7 +48,15 @@
     <div class="mt-6 overflow-hidden rounded-2xl border border-ink/10 bg-surface shadow-soft">
       <div class="aspect-[16/10] bg-skywash">
         {#if heroImage}
-          <img class="h-full w-full object-cover" src={heroImage} alt={tour.title} />
+          <Img
+            record={tour}
+            fields={['main_image_url', 'banner_image_url']}
+            alt={tour.title}
+            width={900}
+            sizes="(max-width: 1024px) 92vw, 34vw"
+            eager
+            className="h-full w-full object-cover"
+          />
         {/if}
       </div>
       <div class="grid gap-3 p-5">

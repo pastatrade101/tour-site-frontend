@@ -27,9 +27,10 @@
     travelStyle,
     wildlifeOf
   } from '$lib/destinationFacets';
-  import { imgUrl, sourceFor } from '$lib/img';
+  import { sourceFor } from '$lib/img';
   import { toMetaText } from '$lib/richText';
   import type { Destination } from '$lib/types';
+  import Img from '../Img.svelte';
 
   export let destination: Destination;
   /** Set on the first row of the grid so the above-the-fold images do not lazy-load. */
@@ -74,16 +75,15 @@
     {#if imageUrl}
       <!-- alt="" on purpose: the link itself already reads out the name, region
            and summary, so a repeated caption is noise for a screen reader. -->
-      <img
-        class="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-        src={imgUrl(imageUrl, 800, 72)}
-        srcset={`${imgUrl(imageUrl, 480, 70)} 480w, ${imgUrl(imageUrl, 800, 72)} 800w, ${imgUrl(imageUrl, 1200, 72)} 1200w`}
+      <Img
+        record={destination}
+        fields={['main_image_url', 'image_url', 'banner_image_url']}
         sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 88vw"
-        width="800"
-        height="1000"
+        width={800}
+        height={1000}
         alt=""
-        loading={eager ? 'eager' : 'lazy'}
-        decoding="async"
+        eager={eager}
+        className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
       />
       <!-- Soft foot so the region label and the pill stay legible on any photograph. -->
       <div

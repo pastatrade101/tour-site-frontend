@@ -5,6 +5,7 @@
   import { api } from '$lib/api/client';
   import { currency, formatUsd } from '$lib/currency';
   import type { Activity as ActivityRecord } from '$lib/types';
+  import Img from './Img.svelte';
 
   type ActivityCard = {
     badge?: string;
@@ -14,6 +15,7 @@
     location: string;
     price?: number;
     priceLabel: string;
+    record?: ActivityRecord;
     title: string;
     href: string;
   };
@@ -90,6 +92,7 @@
     location: a.location_label || a.destinations?.name || '',
     price: a.price_from ?? undefined,
     priceLabel: a.price_unit || 'Per person',
+    record: a,
     title: a.name,
     href: a.destinations?.slug ? `/destinations?d=${a.destinations.slug}` : '/tours'
   });
@@ -129,11 +132,14 @@
           use:tilt={{ max: 5 }}
         >
           <a href={activity.href} class="relative block aspect-[16/10] overflow-hidden bg-skywash">
-            <img
-              class="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-110"
-              src={activity.image}
+            <Img
+              record={activity.record}
+              fields={['image_url', 'hero_image_url']}
+              src={activity.record ? '' : activity.image}
               alt={activity.title}
-              loading="lazy"
+              width={700}
+              sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 33vw"
+              className="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-110"
             />
             <span class="pointer-events-none absolute inset-0 bg-gradient-to-t from-deep-green/45 via-transparent to-transparent"></span>
 

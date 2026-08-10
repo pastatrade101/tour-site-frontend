@@ -8,13 +8,13 @@
   import { trackEvent } from '$lib/analytics';
   import { navbarEntrance } from '$lib/animations';
   import { brand } from '$lib/brand';
-  import { imgUrl } from '$lib/img';
   import { toMetaText } from '$lib/richText';
   import { publicSettings, settingText } from '$lib/settings';
   import { canInstall, promptInstall } from '$lib/pwa';
   import CurrencySelector from './CurrencySelector.svelte';
+  import Img from './Img.svelte';
 
-  type NavLink = { href: string; label: string; image?: string; description?: string };
+  type NavLink = { href: string; label: string; image?: string; description?: string; record?: Record<string, any>; fields?: string[] };
   type DropdownKey = 'destinations' | 'tours' | 'safariStyles' | 'accommodation';
   type NavItem = { dropdown?: DropdownKey; href: string; label: string };
 
@@ -191,11 +191,11 @@
 
       if (destinationResult.status === 'fulfilled') {
         const items = destinationResult.value.data.items ?? [];
-        if (items.length) destinations = items.map((d) => ({ label: String(d.name ?? d.slug), href: `/destinations/${d.slug}`, image: d.main_image_url || d.image_url || d.banner_image_url || undefined, description: toMetaText((d.short_description as string) || (d.description as string) || '', 120) || undefined }));
+        if (items.length) destinations = items.map((d) => ({ label: String(d.name ?? d.slug), href: `/destinations/${d.slug}`, image: d.main_image_url || d.image_url || d.banner_image_url || undefined, description: toMetaText((d.short_description as string) || (d.description as string) || '', 120) || undefined, record: d as Record<string, any>, fields: ['main_image_url', 'image_url', 'banner_image_url'] }));
       }
       if (tourResult.status === 'fulfilled') {
         const items = tourResult.value.data.items ?? [];
-        if (items.length) tours = items.map((t) => ({ label: String(t.title ?? t.slug), href: `/tours/${t.slug}`, image: t.main_image_url || t.banner_image_url || undefined, description: toMetaText(t.short_description || t.full_description || '', 120) || undefined }));
+        if (items.length) tours = items.map((t) => ({ label: String(t.title ?? t.slug), href: `/tours/${t.slug}`, image: t.main_image_url || t.banner_image_url || undefined, description: toMetaText(t.short_description || t.full_description || '', 120) || undefined, record: t as Record<string, any>, fields: ['main_image_url', 'banner_image_url'] }));
       }
       if (lodgeResult.status === 'fulfilled') {
         const items = lodgeResult.value.data.items ?? [];
@@ -204,12 +204,14 @@
             label: String(l.name ?? l.slug),
             href: `/accommodation/${l.slug}`,
             image: l.hero_image_url || l.image_url || undefined,
-            description: toMetaText(l.why_we_recommend || l.description || '', 120) || undefined
+            description: toMetaText(l.why_we_recommend || l.description || '', 120) || undefined,
+            record: l as Record<string, any>,
+            fields: ['hero_image_url', 'image_url']
           }));
       }
       if (categoryResult.status === 'fulfilled') {
         const items = categoryResult.value.data.items ?? [];
-        if (items.length) categories = items.map((c) => ({ label: String(c.name ?? c.slug), href: `/safari-styles/${c.slug}`, image: c.image_url || c.icon_url || undefined, description: toMetaText(c.description || c.who_its_for || '', 120) || undefined }));
+        if (items.length) categories = items.map((c) => ({ label: String(c.name ?? c.slug), href: `/safari-styles/${c.slug}`, image: c.image_url || c.icon_url || undefined, description: toMetaText(c.description || c.who_its_for || '', 120) || undefined, record: c as Record<string, any>, fields: ['image_url', 'icon_url'] }));
       }
     };
     void loadNav();
@@ -353,7 +355,8 @@
                 {@const meta = MENU_META[item.dropdown]}
                 <!-- derived from `links` so it updates when the fetch lands; a
                      featureImage(item.dropdown) call would only name `item`. -->
-                {@const featureImg = links.find((l) => l.image)?.image || ''}
+                {@const featureLink = links.find((l) => l.image)}
+                {@const featureImg = featureLink?.image || ''}
                 {@const previewLinks = links.slice(0, 6)}
                 <div
                   id={`dd-${item.dropdown}`}
@@ -385,7 +388,15 @@
                         <a class="group/li flex min-h-[88px] items-start gap-3 rounded-[8px] border border-transparent p-3 transition hover:border-goldfinch-gold/25 hover:bg-canvas" href={link.href} role="menuitem" on:click={() => activateLink(link.href)} on:pointerenter={() => preloadRoute(link.href)} on:focus={() => preloadRoute(link.href)}>
                           <span class={`grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-[6px] ${link.image ? 'bg-deep-green' : 'bg-sand ring-1 ring-goldfinch-gold/20'}`}>
                             {#if link.image}
-                              <img class="h-full w-full object-cover transition duration-500 group-hover/li:scale-105" src={imgUrl(link.image, 160)} alt={link.label} loading="lazy" decoding="async" />
+                              <Img
+                                record={link.record}
+                                fields={link.fields ?? []}
+                                src={link.record ? '' : link.image}
+                                alt={link.label}
+                                width={160}
+                                sizes="56px"
+                                className="h-full w-full object-cover transition duration-500 group-hover/li:scale-105"
+                              />
                             {:else}
                               <svelte:component this={item.dropdown === 'destinations' ? MapPin : item.dropdown === 'tours' ? TicketsPlane : Compass} size={18} strokeWidth={2} class="text-forest/55 transition group-hover/li:text-forest" />
                             {/if}
@@ -410,7 +421,15 @@
                   <!-- right: featured image panel with gold CTA -->
                   <a href={feat.href} class="group/feat relative m-3.5 block min-h-[370px] overflow-hidden rounded-[8px] bg-deep-green" role="menuitem" aria-label={feat.cta} on:click={() => activateLink(feat.href)} on:pointerenter={() => preloadRoute(feat.href)} on:focus={() => preloadRoute(feat.href)}>
                     {#if featureImg}
-                      <img class="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover/feat:scale-105" src={imgUrl(featureImg, 720)} alt={feat.title} loading="lazy" decoding="async" />
+                      <Img
+                        record={featureLink?.record}
+                        fields={featureLink?.fields ?? []}
+                        src={featureLink?.record ? '' : featureImg}
+                        alt={feat.title}
+                        width={720}
+                        sizes="340px"
+                        className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover/feat:scale-105"
+                      />
                     {:else}
                       <div class="absolute inset-0 grid place-items-center bg-deep-green text-goldfinch-gold/45">
                         <svelte:component this={meta.icon} size={56} strokeWidth={1.7} />
@@ -518,7 +537,15 @@
                       <a class="group/mobile-link flex min-h-[70px] items-center gap-3 rounded-[6px] px-2 py-2 transition hover:bg-sand/60" href={link.href} on:click={() => activateLink(link.href)} on:focus={() => preloadRoute(link.href)}>
                         <span class={`grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-[6px] ${link.image ? 'bg-deep-green' : 'bg-sand ring-1 ring-goldfinch-gold/20'}`}>
                           {#if link.image}
-                            <img class="h-full w-full object-cover" src={imgUrl(link.image, 120)} alt={link.label} loading="lazy" decoding="async" />
+                            <Img
+                              record={link.record}
+                              fields={link.fields ?? []}
+                              src={link.record ? '' : link.image}
+                              alt={link.label}
+                              width={120}
+                              sizes="48px"
+                              className="h-full w-full object-cover"
+                            />
                           {:else}
                             <svelte:component this={item.dropdown === 'destinations' ? MapPin : item.dropdown === 'tours' ? TicketsPlane : Compass} size={17} strokeWidth={2} class="text-forest/60" />
                           {/if}

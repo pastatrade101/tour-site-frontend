@@ -4,8 +4,8 @@
   import { ExternalLink, Star } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import { SITE_URL } from '$lib/config/env';
-  import { imgUrl } from '$lib/img';
   import { aggregateRatingLd } from '$lib/seo';
+  import Img from './Img.svelte';
   import JsonLd from './JsonLd.svelte';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
   import type { Review, ReviewSummary } from '$lib/types';
@@ -118,7 +118,14 @@
             <article class="flex h-full flex-col gap-4 rounded-[8px] border border-ink/10 bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:border-forest/25 hover:shadow-card-hover">
               <div class="flex items-start gap-3">
                 {#if review.author_photo_url}
-                  <img class="h-12 w-12 shrink-0 rounded-[8px] object-cover ring-1 ring-ink/10" src={imgUrl(review.author_photo_url, 160)} alt={review.author_name} loading="lazy" decoding="async" />
+                  <Img
+                    record={review}
+                    fields={['author_photo_url']}
+                    alt={review.author_name}
+                    width={120}
+                    height={120}
+                    className="h-12 w-12 shrink-0 rounded-[8px] object-cover ring-1 ring-ink/10"
+                  />
                 {:else}
                   <div class="grid h-12 w-12 shrink-0 place-items-center rounded-[8px] bg-forest/10 text-sm font-bold text-forest ring-1 ring-forest/15">{initialsOf(review)}</div>
                 {/if}

@@ -1,7 +1,8 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { imgUrl } from '$lib/img';
   import { trackEvent } from '$lib/analytics';
+  import Img from '../Img.svelte';
+  import type { ImageVariantMap } from '$lib/img';
 
   type Cta = { label: string; href: string };
   type QuickLink = { label: string; href: string };
@@ -13,6 +14,7 @@
   export let primaryCta: Cta = { label: 'Find my best options →', href: '#lead-form' };
   export let secondaryCta: Cta = { label: 'Explore Tanzania →', href: '#experiences' };
   export let imageUrl = '';
+  export let imageVariants: ImageVariantMap = {};
   export let trustPoints: string[] = [];
   export let quickLinks: QuickLink[] = [];
   // Quick planner. `experiences` are REAL published tour categories, so the
@@ -49,15 +51,16 @@
 
 <section data-hero class="relative isolate overflow-hidden">
   {#if imageUrl}
-    <img
-      src={imgUrl(imageUrl, 1920)}
+    <Img
+      src={imageUrl}
+      variantsMap={imageVariants}
       alt=""
-      width="1920"
-      height="1200"
-      fetchpriority="high"
-      decoding="async"
-      class="absolute inset-0 h-full w-full object-cover"
-      style="filter: saturate(1.1) contrast(1.05) brightness(1.02)"
+      width={1920}
+      height={1200}
+      sizes="100vw"
+      eager
+      className="absolute inset-0 h-full w-full object-cover"
+      imgStyle="filter: saturate(1.1) contrast(1.05) brightness(1.02)"
     />
   {/if}
   <div

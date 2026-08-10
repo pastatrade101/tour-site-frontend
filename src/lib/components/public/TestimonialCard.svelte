@@ -1,5 +1,6 @@
 <script lang="ts">
   import { MapPin, Star } from '@lucide/svelte';
+  import Img from '$lib/components/public/Img.svelte';
   import type { Testimonial } from '$lib/types';
 
   export let testimonial: Testimonial;
@@ -21,7 +22,14 @@
   <!-- header -->
   <div class="flex items-start gap-3">
     {#if testimonial.client_image_url}
-      <img class="h-12 w-12 shrink-0 rounded-[8px] object-cover ring-1 ring-ink/10" src={testimonial.client_image_url} alt={testimonial.client_name} loading="lazy" decoding="async" />
+      <Img
+        record={testimonial}
+        fields={['client_image_url']}
+        alt={testimonial.client_name}
+        width={96}
+        height={96}
+        className="h-12 w-12 shrink-0 rounded-[8px] object-cover ring-1 ring-ink/10"
+      />
     {:else}
       <div class="grid h-12 w-12 shrink-0 place-items-center rounded-[8px] bg-forest/10 text-sm font-bold text-forest ring-1 ring-forest/15">
         {initials}

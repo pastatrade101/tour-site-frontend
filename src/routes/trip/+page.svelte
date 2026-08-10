@@ -2,8 +2,8 @@
   import { onMount } from 'svelte';
   import { CalendarDays, CheckCircle2, LogOut, MapPin, MessageCircle, Send, Users, Wallet } from '@lucide/svelte';
   import { api } from '$lib/api/client';
+  import Img from '$lib/components/public/Img.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
-  import { imgUrl } from '$lib/img';
 
   type Payment = { amount: number; currency: string; payment_method?: string | null; transaction_reference?: string | null; status: string; paid_at?: string | null };
   type Day = { day_number: number; title: string; description?: string | null; accommodation?: string | null; meals?: string | null; activities?: string | null };
@@ -21,7 +21,14 @@
     estimated_amount?: number | null;
     amount_paid: number;
     balance_due: number;
-    tour?: { title?: string; main_image_url?: string | null; duration_days?: number | null } | null;
+    tour?: {
+      title?: string;
+      main_image_url?: string | null;
+      main_image_url_variants?: unknown;
+      banner_image_url?: string | null;
+      banner_image_url_variants?: unknown;
+      duration_days?: number | null;
+    } | null;
     payments: Payment[];
     itinerary: Day[];
   };
@@ -172,7 +179,15 @@
         <!-- Trip summary -->
         <div class="overflow-hidden rounded-2xl border border-ink/10 bg-surface shadow-soft">
           {#if trip.tour?.main_image_url}
-            <img class="h-44 w-full object-cover md:h-56" src={imgUrl(trip.tour.main_image_url, 1000)} alt={trip.tour?.title ?? 'Trip'} />
+            <Img
+              record={trip.tour}
+              fields={['main_image_url', 'banner_image_url']}
+              alt={trip.tour?.title ?? 'Trip'}
+              width={1100}
+              sizes="(max-width: 1024px) 92vw, 62vw"
+              eager
+              className="h-44 w-full object-cover md:h-56"
+            />
           {/if}
           <div class="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3">
             <div class="flex items-start gap-2.5">

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ArrowRight } from '@lucide/svelte';
-  import { imgUrl } from '$lib/img';
+  import Img from '$lib/components/public/Img.svelte';
 
   export let title = '';
   export let subtitle = '';
@@ -14,12 +14,12 @@
   class="group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-deep-green shadow-soft ring-1 ring-ink/5"
 >
   {#if image}
-    <img
-      class="absolute inset-0 h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.06]"
-      src={imgUrl(image, 800)}
+    <Img
+      src={image}
       alt={title}
-      loading="lazy"
-      decoding="async"
+      width={800}
+      sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 31vw"
+      className="absolute inset-0 h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.06]"
     />
   {/if}
   <!-- gradient so the overlaid text stays legible -->

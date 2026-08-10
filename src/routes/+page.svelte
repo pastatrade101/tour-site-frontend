@@ -23,7 +23,7 @@
   import LeadCaptureForm from '$lib/components/public/LeadCaptureForm.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
-  import { imgUrl } from '$lib/img';
+  import { imgUrl, srcsetFor, variantFromMap, variantSrc, type ImageVariantMap } from '$lib/img';
   import { toMetaText } from '$lib/richText';
   import type { BlogPost, Destination, FAQ, MigrationEntry, Review, ReviewSummary, Testimonial, Tour } from '$lib/types';
   import type { PageData } from './$types';
@@ -55,6 +55,7 @@
   let migrationEntries: MigrationEntry[] = data.migrationEntries ?? [];
   let galleryItems: GalleryCardItem[] = (data.galleryItems ?? []) as GalleryCardItem[];
   let categories: Record<string, unknown>[] = (data.categories ?? []) as Record<string, unknown>[];
+  let imageVariants: ImageVariantMap = (data.imageVariants ?? {}) as ImageVariantMap;
   let sections: Record<string, HomeSection> = Object.fromEntries(
     (data.homeSections as unknown as HomeSection[]).map((s) => [s.section_key, s])
   );
@@ -74,6 +75,11 @@
 
   $: heroExtra = (sections.hero?.extra_data ?? {}) as Record<string, unknown>;
   $: heroImageResolved = cms('hero', 'image_url', '/images/surf-hero.jpg');
+  $: heroVariants = variantFromMap(heroImageResolved, imageVariants);
+  $: heroPreloadType = heroVariants?.avif ? 'image/avif' : heroVariants ? 'image/webp' : undefined;
+  $: heroPreloadSrcset = heroVariants ? srcsetFor(heroVariants, heroVariants.avif ? 'avif' : 'webp') : '';
+  $: heroPreloadHref =
+    variantSrc(heroVariants, 1800, heroVariants?.avif ? 'avif' : 'webp') || imgUrl(heroImageResolved, 1800, 72);
   $: heroSlides = destinations
     .map((d) => d.banner_image_url || d.main_image_url || d.image_url || '')
     .filter(Boolean)
@@ -206,7 +212,15 @@
 </script>
 
 <svelte:head>
-  <link rel="preload" as="image" href={imgUrl(heroImageResolved, 1800, 72)} fetchpriority="high" />
+  <link
+    rel="preload"
+    as="image"
+    href={heroPreloadHref}
+    imagesrcset={heroPreloadSrcset || undefined}
+    imagesizes="100vw"
+    type={heroPreloadType}
+    fetchpriority="high"
+  />
 </svelte:head>
 
 <!-- ─────────────────────────────────────────────────────────────────────────
@@ -229,6 +243,7 @@
     }}
     trustPoints={arr(heroExtra.trust_points)}
     experiences={experienceItems.map((e) => ({ label: e.name, slug: e.slug }))}
+    {imageVariants}
   />
 {/if}
 
@@ -239,6 +254,7 @@
     eyebrow={cmsExtra('experiences', 'eyebrow', 'Ways to Travel')}
     title={cms('experiences', 'title', 'What Kind of Tanzania Trip Are You Imagining?')}
     subtitle={cms('experiences', 'subtitle', "You do not need to know the perfect route yet. Start with the experience that feels closest to your trip, and we'll help connect the right places, timing, lodges, transfers and pace.")}
+    {imageVariants}
   />
 {/if}
 
@@ -308,6 +324,7 @@
       .filter((g) => typeof g.image_url === 'string' && g.image_url)
       .slice(0, 10)
       .map((g) => ({ src: String(g.image_url), caption: String(g.title ?? g.alt_text ?? '') }))}
+    {imageVariants}
   />
 {/if}
 
@@ -336,6 +353,7 @@
   eyebrow={cmsExtra('migration_section', 'eyebrow', 'Great Migration')}
   title={cms('migration_section', 'title', 'Where the herds are, month by month')}
   subtitle={cms('migration_section', 'subtitle', 'Plan around the river crossings and calving season with our month-by-month guide.')}
+  {imageVariants}
 />
 
 <!-- 10b · Gallery preview -->
@@ -363,7 +381,7 @@
     </div>
 
     <div class="mt-9">
-      <GalleryViewer images={galleryDisplay.slice(0, 8)} dark mosaic />
+      <GalleryViewer images={galleryDisplay.slice(0, 8)} dark mosaic {imageVariants} />
     </div>
   </div>
 </section>
@@ -389,7 +407,7 @@
 
 <!-- 12 · Impact -->
 {#if isSectionActive('impact')}
-  <ImpactBand {...impactProps} />
+  <ImpactBand {...impactProps} {imageVariants} />
 {/if}
 
 <!-- 13 · FAQ -->

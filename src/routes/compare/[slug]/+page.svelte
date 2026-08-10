@@ -5,6 +5,7 @@
   import { api } from '$lib/api/client';
   import { revealHeading } from '$lib/animations';
   import { COMPARISONS, getComparison } from '$lib/data/comparisons';
+  import Img from '$lib/components/public/Img.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
   import { breadcrumbLd, faqLd } from '$lib/seo';
@@ -85,7 +86,7 @@
   <!-- hero -->
   <section class="relative overflow-hidden bg-deep-green text-white">
     {#if cmp.a.image}
-      <img class="absolute inset-0 h-full w-full object-cover opacity-40" src={cmp.a.image} alt="" />
+      <Img src={cmp.a.image} alt="" width={1600} sizes="100vw" eager className="absolute inset-0 h-full w-full object-cover opacity-40" />
     {/if}
     <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-deep-green/80 to-deep-green/40"></div>
     <div class="container-shell relative py-14 md:py-20">

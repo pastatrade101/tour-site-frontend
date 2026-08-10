@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ArrowRight } from '@lucide/svelte';
   import { currency, formatUsd } from '$lib/currency';
-  import { imgUrl } from '$lib/img';
+  import Img from '../Img.svelte';
 
   export let eyebrow = 'Featured Itineraries';
   export let title = 'Trip Ideas You Can Shape Around You';
@@ -66,13 +66,14 @@
           <article class="flex flex-col overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
             <div class="relative w-full overflow-hidden bg-sand">
               {#if imageOf(featured)}
-                <img
-                  src={imgUrl(imageOf(featured), 1200)}
+                <Img
+                  record={featured}
+                  fields={['main_image_url', 'image_url', 'hero_image_url', 'banner_image_url']}
                   alt=""
-                  loading="lazy"
                   width={1200}
                   height={680}
-                  class="h-[220px] w-full object-cover sm:h-[260px] lg:h-[320px]"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="h-[220px] w-full object-cover sm:h-[260px] lg:h-[320px]"
                 />
               {/if}
               {#if badgeLabel(featured)}
@@ -128,13 +129,14 @@
                 class="group flex h-full items-center gap-3 px-4 py-3 transition-colors hover:bg-sand"
               >
                 {#if imageOf(t)}
-                  <img
-                    src={imgUrl(imageOf(t), 200)}
+                  <Img
+                    record={t}
+                    fields={['main_image_url', 'image_url', 'hero_image_url', 'banner_image_url']}
                     alt=""
-                    loading="lazy"
                     width={128}
                     height={128}
-                    class="h-14 w-14 shrink-0 rounded-[8px] object-cover"
+                    sizes="56px"
+                    className="h-14 w-14 shrink-0 rounded-[8px] object-cover"
                   />
                 {/if}
                 <div class="min-w-0 flex-1">

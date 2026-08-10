@@ -8,9 +8,10 @@
   import { configFor } from '$lib/enquiry/configs';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { fadeUpOnScroll, revealHeading, staggeredCardReveal } from '$lib/animations';
-  import { imgUrl } from '$lib/img';
+  import { imgUrl, srcsetFor, variantSrc, variantsOf } from '$lib/img';
   import { toMetaText } from '$lib/richText';
   import { breadcrumbLd } from '$lib/seo';
+  import Img from '$lib/components/public/Img.svelte';
   import type { Tour, TourCategory } from '$lib/types';
   import type { PageData } from './$types';
 
@@ -21,6 +22,11 @@
   $: origin = $page.url.origin;
   $: title = category?.meta_title || (category ? `${category.name} Safari Style` : 'Safari Style');
   $: description = toMetaText(category?.meta_description || category?.description || 'Explore this Goldfinch safari style and matching tours.', 170);
+  $: heroVariants = variantsOf(category, 'image_url');
+  $: heroPreloadType = heroVariants?.avif ? 'image/avif' : heroVariants ? 'image/webp' : undefined;
+  $: heroPreloadSrcset = heroVariants ? srcsetFor(heroVariants, heroVariants.avif ? 'avif' : 'webp') : '';
+  $: heroPreloadHref =
+    variantSrc(heroVariants, 1800, heroVariants?.avif ? 'avif' : 'webp') || imgUrl(category?.image_url, 1600, 72);
 
   // The visitor already chose this category, so the form never asks again.
   let enquiryOpen = false;
@@ -32,7 +38,15 @@
   <title>{title} | Goldfinch Adventures</title>
   <meta name="description" content={description} />
   {#if category?.image_url}
-    <link rel="preload" as="image" href={imgUrl(category.image_url, 1600, 72)} fetchpriority="high" />
+    <link
+      rel="preload"
+      as="image"
+      href={heroPreloadHref}
+      imagesrcset={heroPreloadSrcset || undefined}
+      imagesizes="100vw"
+      type={heroPreloadType}
+      fetchpriority="high"
+    />
   {/if}
 </svelte:head>
 
@@ -47,7 +61,15 @@
 
   <section class="relative overflow-hidden bg-deep-green text-white">
     {#if category.image_url}
-      <img class="absolute inset-0 h-full w-full object-cover" src={imgUrl(category.image_url, 1800, 72)} alt="" fetchpriority="high" />
+      <Img
+        record={category}
+        fields={['image_url']}
+        alt=""
+        width={1800}
+        sizes="100vw"
+        eager
+        className="absolute inset-0 h-full w-full object-cover"
+      />
       <div class="absolute inset-0 bg-gradient-to-r from-deep-green via-deep-green/80 to-deep-green/30"></div>
       <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-transparent to-deep-green/20"></div>
     {:else}

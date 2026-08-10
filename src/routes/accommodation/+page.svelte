@@ -6,10 +6,11 @@
    * the ten have no photograph. What it does have is strong prose and a clean
    * taxonomy, so the page is built to be read: hairline-separated rows, large
    * serif names, and a thumbnail only where one genuinely exists.
-   */
+  */
   import { ArrowRight, BedDouble, Gem, MapPin, Tent } from '@lucide/svelte';
   import { fadeUpOnScroll, staggeredCardReveal } from '$lib/animations';
-  import { imgUrl, sourceFor } from '$lib/img';
+  import { imgUrl, sourceFor, srcsetFor, variantSrc, variantsOf } from '$lib/img';
+  import Img from '$lib/components/public/Img.svelte';
   import { toMetaText } from '$lib/richText';
   import type { Lodge } from '$lib/types';
   import type { PageData } from './$types';
@@ -62,12 +63,18 @@
 
   // Backdrop borrowed from the first stay that actually has a photograph; falls
   // back to a deep-green field, since two of the ten have no image at all.
+  $: heroLodge = lodges.find((l) => l.hero_image_url || l.image_url);
   $: heroImage = sourceFor(
-    lodges.find((l) => l.hero_image_url || l.image_url),
+    heroLodge,
     1920,
     'hero_image_url',
     'image_url'
   );
+  $: heroVariants = variantsOf(heroLodge, 'hero_image_url', 'image_url');
+  $: heroPreloadType = heroVariants?.avif ? 'image/avif' : heroVariants ? 'image/webp' : undefined;
+  $: heroPreloadSrcset = heroVariants ? srcsetFor(heroVariants, heroVariants.avif ? 'avif' : 'webp') : '';
+  $: heroPreloadHref =
+    variantSrc(heroVariants, 1920, heroVariants?.avif ? 'avif' : 'webp') || imgUrl(heroImage, 1920, 72);
 
   // Hero stats, every one counted from the records on this page — no rounding up
   // and nothing shown when the count is zero.
@@ -82,8 +89,9 @@
   ].filter((stat) => stat.value > 0);
 
   // A different photograph from the hero so the page does not repeat itself.
+  $: ctaLodge = lodges.filter((l) => l.hero_image_url || l.image_url).at(-1);
   $: ctaImage = sourceFor(
-    lodges.filter((l) => l.hero_image_url || l.image_url).at(-1),
+    ctaLodge,
     1600,
     'hero_image_url',
     'image_url'
@@ -98,19 +106,29 @@
   <title>{title} | Goldfinch Adventures</title>
   <meta name="description" content={description} />
   {#if heroImage}
-    <link rel="preload" as="image" href={imgUrl(heroImage, 1920, 72)} fetchpriority="high" />
+    <link
+      rel="preload"
+      as="image"
+      href={heroPreloadHref}
+      imagesrcset={heroPreloadSrcset || undefined}
+      imagesizes="100vw"
+      type={heroPreloadType}
+      fetchpriority="high"
+    />
   {/if}
 </svelte:head>
 
 <!-- ── cinematic hero ───────────────────────────────────────────────────── -->
 <section class="relative flex min-h-[62vh] items-end overflow-hidden bg-deep-green text-white md:min-h-[74vh]">
   {#if heroImage}
-    <img
-      class="absolute inset-0 h-full w-full object-cover"
-      src={imgUrl(heroImage, 1920, 72)}
+    <Img
+      record={heroLodge}
+      fields={['hero_image_url', 'image_url']}
       alt=""
-      fetchpriority="high"
-      decoding="async"
+      width={1920}
+      sizes="100vw"
+      eager
+      className="absolute inset-0 h-full w-full object-cover"
     />
     <span class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/25" aria-hidden="true"></span>
   {:else}
@@ -197,7 +215,14 @@
                 </span>
                 {#if image}
                   <span class="h-16 w-20 shrink-0 overflow-hidden rounded-[8px] bg-sand sm:h-20 sm:w-28">
-                    <img class="h-full w-full object-cover transition duration-700 group-hover:scale-105" src={imgUrl(image, 320, 72)} alt="" loading="lazy" decoding="async" />
+                    <Img
+                      record={lodge}
+                      fields={['image_url', 'hero_image_url']}
+                      alt=""
+                      width={320}
+                      sizes="112px"
+                      className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                    />
                   </span>
                 {/if}
                 <span class="min-w-0 flex-1">
@@ -225,12 +250,14 @@
               >
                 <span class={`relative block w-full overflow-hidden bg-forest ${variant === 'feature' ? 'aspect-[16/10] sm:aspect-[21/9]' : 'aspect-[4/3]'}`}>
                   {#if image}
-                    <img
-                      class="absolute inset-0 h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.05]"
-                      src={imgUrl(image, variant === 'feature' ? 1400 : 800, 72)}
+                    <Img
+                      record={lodge}
+                      fields={['image_url', 'hero_image_url']}
                       alt=""
-                      loading={index < 2 ? 'eager' : 'lazy'}
-                      decoding="async"
+                      width={variant === 'feature' ? 1400 : 800}
+                      sizes={variant === 'feature' ? '100vw' : '(max-width: 640px) 92vw, 50vw'}
+                      eager={index < 2}
+                      className="absolute inset-0 h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.05]"
                     />
                   {:else}
                     <!-- two of the ten have no photograph; the frame still reads -->
@@ -288,7 +315,14 @@
   <!-- ── closing band ──────────────────────────────────────────────────── -->
   <section class="relative overflow-hidden bg-deep-green text-white">
     {#if ctaImage}
-      <img class="absolute inset-0 h-full w-full object-cover opacity-25" src={imgUrl(ctaImage, 1600, 70)} alt="" loading="lazy" decoding="async" />
+      <Img
+        record={ctaLodge}
+        fields={['hero_image_url', 'image_url']}
+        alt=""
+        width={1600}
+        sizes="100vw"
+        className="absolute inset-0 h-full w-full object-cover opacity-25"
+      />
     {/if}
     <span class="absolute inset-0 bg-gradient-to-br from-deep-green/95 via-deep-green/85 to-forest/90" aria-hidden="true"></span>
     <span class="pointer-events-none absolute inset-0 shadow-[inset_0_0_160px_50px_rgba(0,0,0,0.45)]" aria-hidden="true"></span>

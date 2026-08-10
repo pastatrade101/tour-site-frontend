@@ -3,9 +3,9 @@
   import { fade, scale } from 'svelte/transition';
   import { X } from '@lucide/svelte';
   import { goto } from '$app/navigation';
-  import { imgUrl } from '$lib/img';
   import { brand } from '$lib/brand';
   import { publicSettings, settingText } from '$lib/settings';
+  import Img from '$lib/components/public/Img.svelte';
   import PlanMyTripForm from '$lib/components/public/PlanMyTripForm.svelte';
 
   // The planning request opens immediately as a focused dialog over a blurred
@@ -36,7 +36,7 @@
 
 <!-- Blurred scene behind the dialog -->
 <div class="fixed inset-0 -z-10" aria-hidden="true">
-  <img class="h-full w-full object-cover" src={imgUrl(heroImage, 1600)} alt="" />
+  <Img src={heroImage} alt="" width={1600} sizes="100vw" eager className="h-full w-full object-cover" />
   <div class="absolute inset-0 bg-deep-green/70"></div>
 </div>
 

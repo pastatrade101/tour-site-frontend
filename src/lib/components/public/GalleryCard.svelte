@@ -15,11 +15,13 @@
 
 <script lang="ts">
   import { FileText, Film, Image as ImageIcon, MapPin } from '@lucide/svelte';
-  import { imgUrl } from '$lib/img';
+  import Img from './Img.svelte';
+  import type { ImageVariantMap } from '$lib/img';
 
   export let item: GalleryCardItem;
   export let featured = false;
   export let href = '/gallery';
+  export let imageVariants: ImageVariantMap = {};
 
   $: title = item.title?.trim() || item.alt_text?.trim() || 'Gallery moment';
   $: caption = item.caption?.trim() || '';
@@ -41,12 +43,15 @@
   class={`group relative isolate block overflow-hidden rounded-[10px] bg-forest shadow-card ring-1 ring-black/10 transition duration-300 hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold ${featured ? 'min-h-[360px] md:row-span-2 md:min-h-[520px]' : 'min-h-[300px]'}`}
 >
   {#if item.image_url}
-    <img
-      class="absolute inset-0 h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.06]"
-      src={imgUrl(item.image_url, featured ? 1200 : 760)}
+    <Img
+      record={item}
+      fields={['image_url']}
+      variantsMap={imageVariants}
+      width={featured ? 1200 : 760}
+      sizes={featured ? '(max-width: 767px) 100vw, 66vw' : '(max-width: 767px) 100vw, 33vw'}
       alt={item.alt_text || title}
-      loading={featured ? 'eager' : 'lazy'}
-      decoding="async"
+      eager={featured}
+      className="absolute inset-0 h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.06]"
     />
   {:else}
     <div class="absolute inset-0 grid place-items-center bg-gradient-to-br from-forest to-deep-green text-white/30"><ImageIcon size={40} /></div>

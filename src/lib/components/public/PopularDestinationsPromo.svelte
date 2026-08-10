@@ -4,11 +4,13 @@
   import { goto } from '$app/navigation';
   import { api } from '$lib/api/client';
   import { fadeUpOnScroll, revealHeading, tilt } from '$lib/animations';
+  import Img from '$lib/components/public/Img.svelte';
   import type { Destination } from '$lib/types';
 
   const FALLBACK_PROMO = 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=80';
 
   let destinations: Destination[] = [];
+  let promoRecord: Destination | null = null;
   let promoImage = FALLBACK_PROMO;
   let dest = '';
 
@@ -69,7 +71,8 @@
       const res = await api.destinations.list({ status: 'published', limit: 12 });
       destinations = ((res.data.items ?? []) as Destination[]).filter((d) => d.slug && imgOf(d));
       const tz = destinations.find((d) => d.slug === 'tanzania');
-      promoImage = imgOf(tz ?? destinations[0]) || FALLBACK_PROMO;
+      promoRecord = tz ?? destinations[0] ?? null;
+      promoImage = promoRecord ? imgOf(promoRecord) : FALLBACK_PROMO;
     } catch {
       destinations = [];
     }
@@ -85,7 +88,15 @@
       <div class="grid overflow-hidden rounded-[12px] border border-ink/10 shadow-[0_18px_50px_rgba(57,61,50,0.10)] lg:grid-cols-[0.82fr_1.18fr]">
       <!-- ── left promo ─────────────────────────────────────────── -->
       <div class="relative flex flex-col justify-center overflow-hidden px-6 py-14 text-white md:px-10 md:py-20">
-        <img class="absolute inset-0 h-full w-full object-cover" src={promoImage} alt="" aria-hidden="true" loading="lazy" />
+        <Img
+          record={promoRecord}
+          fields={['main_image_url', 'banner_image_url', 'image_url']}
+          src={promoRecord ? '' : promoImage}
+          alt=""
+          width={1000}
+          sizes="(max-width: 1024px) 100vw, 42vw"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
         <div class="absolute inset-0 bg-gradient-to-br from-deep-green/90 via-deep-green/80 to-forest/70"></div>
 
         <div class="relative max-w-md">
@@ -133,7 +144,14 @@
               {#each destinations as d, i (d.slug)}
                 {@const rating = ratingOf(d)}
                 <a class="dest-card group relative block aspect-[3/4] overflow-hidden rounded-[12px] shadow-soft" href={`/destinations/${d.slug}`} use:registerCard={i} use:tilt={{ max: 6 }}>
-                  <img class="h-full w-full object-cover transition-transform duration-[600ms] ease-out group-hover:scale-105" src={imgOf(d)} alt={d.name} loading="lazy" />
+                  <Img
+                    record={d}
+                    fields={['main_image_url', 'banner_image_url', 'image_url']}
+                    alt={d.name}
+                    width={560}
+                    sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 28vw"
+                    className="h-full w-full object-cover transition-transform duration-[600ms] ease-out group-hover:scale-105"
+                  />
 
                   {#if rating}
                     <span class="absolute left-3 top-3 inline-flex items-center gap-1 rounded-md bg-goldfinch-gold px-2.5 py-1 text-xs font-bold text-heading shadow">

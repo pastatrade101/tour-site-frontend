@@ -21,7 +21,7 @@
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
-  import { imgUrl } from '$lib/img';
+  import Img from '$lib/components/public/Img.svelte';
   import { toMetaText } from '$lib/richText';
   import { getTourDestinationLabel } from '$lib/tourDestinations';
   import type { BlogPost, Tour } from '$lib/types';
@@ -206,7 +206,15 @@
       <div>
         <div class="aspect-[16/10] overflow-hidden rounded-lg bg-skywash">
           {#if tour.main_image_url}
-            <img class="h-full w-full object-cover" src={tour.main_image_url} alt={tour.title} />
+            <Img
+              record={tour}
+              fields={['main_image_url', 'banner_image_url']}
+              alt={tour.title}
+              width={1400}
+              sizes="(max-width: 1024px) 100vw, 55vw"
+              eager
+              className="h-full w-full object-cover"
+            />
           {/if}
         </div>
         <div class="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -353,12 +361,13 @@
                           data-sveltekit-preload-data="hover"
                         >
                           {#if stayImage}
-                            <img
-                              class="h-12 w-12 shrink-0 rounded-[7px] object-cover"
-                              src={imgUrl(stayImage, 120, 68)}
+                            <Img
+                              record={stay}
+                              fields={['hero_image_url', 'image_url']}
                               alt=""
-                              loading="lazy"
-                              decoding="async"
+                              width={120}
+                              height={120}
+                              className="h-12 w-12 shrink-0 rounded-[7px] object-cover"
                             />
                           {:else}
                             <span class="grid h-12 w-12 shrink-0 place-items-center rounded-[7px] bg-sand text-forest" aria-hidden="true">

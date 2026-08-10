@@ -7,10 +7,10 @@
    * fetched at thumbnail size and only upgraded when the lightbox opens. A
    * property with a dozen photographs should not cost a dozen full-size
    * downloads to look at one.
-   */
+  */
   import { onDestroy, tick } from 'svelte';
   import { ChevronLeft, ChevronRight, Expand, X } from '@lucide/svelte';
-  import { imgUrl } from '$lib/img';
+  import Img from './Img.svelte';
   import type { LodgeImage } from '$lib/types';
 
   export let images: LodgeImage[] = [];
@@ -71,13 +71,14 @@
       class="group relative col-span-1 aspect-[4/3] overflow-hidden rounded-[12px] bg-forest sm:aspect-auto sm:h-full sm:min-h-[320px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2"
       on:click={() => show(0)}
     >
-      <img
-        class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-        src={imgUrl(lead.image_url, 1100, 72)}
+      <Img
+        record={lead}
+        fields={['image_url']}
         alt={alt(lead, 0)}
-        loading="eager"
-        fetchpriority="high"
-        decoding="async"
+        width={1100}
+        sizes="(max-width: 640px) 100vw, 50vw"
+        eager
+        className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
       />
       <span class="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" aria-hidden="true"></span>
     </button>
@@ -90,12 +91,13 @@
             class="group relative aspect-[4/3] overflow-hidden rounded-[10px] bg-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2"
             on:click={() => show(offset + 1)}
           >
-            <img
-              class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
-              src={imgUrl(image.image_url, 520, 70)}
+            <Img
+              record={image}
+              fields={['image_url']}
               alt={alt(image, offset + 1)}
-              loading="lazy"
-              decoding="async"
+              width={520}
+              sizes="(max-width: 640px) 50vw, 25vw"
+              className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
             />
             <!-- The last tile carries the overflow count rather than adding a
                  separate button nobody would look for. -->
@@ -161,11 +163,13 @@
 
       <figure class="flex min-h-0 flex-1 flex-col items-center justify-center">
         <!-- Only the visible photo is ever requested at full size. -->
-        <img
-          class="max-h-full min-h-0 w-auto max-w-full rounded-[10px] object-contain"
-          src={imgUrl(ordered[index].image_url, 1600, 78)}
+        <Img
+          record={ordered[index]}
+          fields={['image_url']}
           alt={alt(ordered[index], index)}
-          decoding="async"
+          width={1600}
+          sizes="100vw"
+          className="max-h-full min-h-0 w-auto max-w-full rounded-[10px] object-contain"
         />
         {#if ordered[index].caption}
           <figcaption class="mt-3 max-w-2xl text-center text-[13px] leading-6 text-white/70">

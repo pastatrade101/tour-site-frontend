@@ -1,9 +1,10 @@
 <script lang="ts">
   import { ArrowRight, MapPin } from '@lucide/svelte';
   import { currency, formatUsd } from '$lib/currency';
-  import { imgUrl, thumbUrl, sourceFor } from '$lib/img';
+  import { sourceFor } from '$lib/img';
   import { toMetaText } from '$lib/richText';
   import type { Destination } from '$lib/types';
+  import Img from './Img.svelte';
 
   export let destination: Destination;
   export let href = `/destinations/${destination.slug}`;
@@ -19,7 +20,14 @@
     <!-- image -->
     <div class="relative aspect-[4/3] overflow-hidden bg-skywash">
       {#if imageUrl}
-        <img class="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-105" src={imgUrl(imageUrl, 800)} alt={destination.name} loading="lazy" decoding="async" />
+        <Img
+          record={destination}
+          fields={['main_image_url', 'image_url', 'banner_image_url']}
+          alt={destination.name}
+          width={800}
+          sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 33vw"
+          className="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-105"
+        />
       {:else}
         <div class="grid h-full w-full place-items-center bg-gradient-to-br from-sand to-savanna/50 text-forest/40"><MapPin size={30} /></div>
       {/if}

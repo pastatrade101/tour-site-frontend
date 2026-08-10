@@ -111,8 +111,9 @@
   $: collections = collectionsOf(destinations);
   $: regions = [...new Set(destinations.map(regionOf).filter(Boolean))].sort();
   // full-bleed hero: never the 600px thumbnail, which would be upscaled
+  $: heroDestination = destinations.find((destination) => thumbUrl(destination, 'banner_image_url', 'main_image_url', 'image_url'));
   $: heroImage = sourceFor(
-    destinations.find((destination) => thumbUrl(destination, 'banner_image_url', 'main_image_url', 'image_url')),
+    heroDestination,
     1920,
     'banner_image_url',
     'main_image_url',
@@ -157,7 +158,7 @@
   <JsonLd data={destinationListSchema} />
 {/if}
 
-<DestinationsHero {heroImage} total={destinations.length} {regions} />
+<DestinationsHero {heroImage} heroRecord={heroDestination} total={destinations.length} {regions} />
 
 <!-- Sits below the hero on its own ground rather than straddling the seam. -->
 <section class="bg-canvas pt-8 md:pt-10">
@@ -255,4 +256,4 @@
   </div>
 </section>
 
-<DestinationsCTA image={heroImage} {whatsapp} total={destinations.length} />
+<DestinationsCTA image={heroImage} imageRecord={heroDestination} {whatsapp} total={destinations.length} />

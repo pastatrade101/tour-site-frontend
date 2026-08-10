@@ -2,8 +2,8 @@
   import { onMount } from 'svelte';
   import { Check } from '@lucide/svelte';
   import { api } from '$lib/api/client';
-  import { imgUrl } from '$lib/img';
   import { toMetaText } from '$lib/richText';
+  import Img from './Img.svelte';
 
   // Selectable cards for the REAL published tour categories. Multi-select by
   // default. If the categories endpoint is unavailable we fall back to the
@@ -13,7 +13,7 @@
   export let tone: 'dark' | 'light' = 'dark';
   export let onToggle: (value: string) => void = () => {};
 
-  type Card = { name: string; description: string; image: string };
+  type Card = { name: string; description: string; image: string; record?: Record<string, unknown> };
   let cards: Card[] = [];
   let loaded = false;
 
@@ -24,7 +24,8 @@
         .map((c) => ({
           name: String(c.name ?? c.slug ?? ''),
           description: toMetaText(c.who_its_for ?? c.description ?? '', 140),
-          image: String(c.image_url ?? '')
+          image: String(c.image_url ?? ''),
+          record: c as Record<string, unknown>
         }))
         .filter((c) => c.name);
     } catch {
@@ -58,12 +59,13 @@
       >
         <div class="relative aspect-[4/3] w-full overflow-hidden bg-forest">
           {#if c.image}
-            <img
-              class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-              src={imgUrl(c.image, 320)}
+            <Img
+              record={c.record}
+              fields={['image_url']}
               alt={c.name}
-              loading="lazy"
-              decoding="async"
+              width={320}
+              sizes="148px"
+              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
             />
           {:else}
             <div class="h-full w-full bg-gradient-to-br from-forest to-deep-green"></div>

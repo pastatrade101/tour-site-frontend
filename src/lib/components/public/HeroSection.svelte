@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { ArrowRight, Check, ChevronDown, Star } from '@lucide/svelte';
   import { brand } from '$lib/brand';
-  import { imgUrl } from '$lib/img';
+  import Img from '$lib/components/public/Img.svelte';
   import { trackEvent } from '$lib/analytics';
 
   export let eyebrow = 'Rated 4.9/5 by travellers';
@@ -81,7 +81,7 @@
   {#each images as src, i (src)}
     <div class={`absolute inset-0 transition-opacity duration-[1200ms] ease-out ${i === index ? 'opacity-100' : 'opacity-0'}`} aria-hidden={i === index ? undefined : 'true'}>
       {#if loaded.has(i)}
-        <img class="h-full w-full object-cover" src={imgUrl(src, i === 0 ? 1800 : 1400, 72)} alt="" loading={i === 0 ? 'eager' : 'lazy'} decoding="async" fetchpriority={i === 0 ? 'high' : 'auto'} sizes="100vw" />
+        <Img src={src} alt="" width={i === 0 ? 1800 : 1400} sizes="100vw" eager={i === 0} className="h-full w-full object-cover" />
       {/if}
     </div>
   {/each}

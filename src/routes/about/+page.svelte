@@ -6,8 +6,8 @@
   } from '@lucide/svelte';
   import { brand } from '$lib/brand';
   import { publicSettings, settingText } from '$lib/settings';
-  import { imgUrl } from '$lib/img';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
+  import Img from '$lib/components/public/Img.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
   import type { PageData } from './$types';
 
@@ -90,7 +90,7 @@
 
 <!-- ── Hero ─────────────────────────────────────────────────────────────── -->
 <section class="relative isolate overflow-hidden bg-deep-green text-white">
-  <img class="absolute inset-0 h-full w-full object-cover" src={imgUrl(heroImage, 1800)} alt="" aria-hidden="true" />
+  <Img src={heroImage} alt="" width={1800} sizes="100vw" eager className="absolute inset-0 h-full w-full object-cover" />
   <div class="absolute inset-0 bg-[linear-gradient(105deg,rgba(12,16,12,0.86)_0%,rgba(12,16,12,0.55)_45%,rgba(12,16,12,0.25)_100%)]"></div>
   <div class="container-shell relative grid gap-10 py-20 md:py-28 lg:grid-cols-[1.35fr_0.65fr] lg:items-center">
     <div class="max-w-2xl [text-shadow:0_2px_18px_rgba(0,0,0,0.45)]">
@@ -131,7 +131,14 @@
 <section class="bg-surface py-16 md:py-24" use:sectionReveal>
   <div class="container-shell grid gap-10 lg:grid-cols-2 lg:items-center">
     <div class="overflow-hidden rounded-[14px] shadow-[0_24px_60px_rgba(57,61,50,0.16)]" use:fadeUpOnScroll={{ y: 16 }}>
-      <img class="aspect-[4/3] w-full object-cover" src={imgUrl(settingText(s, 'about_story_image') || heroImage, 1000)} alt="Safari in Tanzania" loading="lazy" />
+      <Img
+        src={settingText(s, 'about_story_image') || heroImage}
+        alt="Safari in Tanzania"
+        width={1000}
+        sizes="(max-width: 1024px) 92vw, 46vw"
+        aspect="4/3"
+        className="aspect-[4/3] w-full object-cover"
+      />
     </div>
     <div use:fadeUpOnScroll={{ y: 16, delay: 0.08 }}>
       <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Our Story</p>
@@ -220,7 +227,7 @@
       {#each TEAM as m}
         <div class="overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-card">
           {#if m.image}
-            <img class="aspect-[4/5] w-full object-cover" src={imgUrl(m.image, 500)} alt={m.name} loading="lazy" />
+            <Img src={m.image} alt={m.name} width={500} sizes="(max-width: 640px) 92vw, 20vw" aspect="4/5" className="aspect-[4/5] w-full object-cover" />
           {:else}
             <div class="grid aspect-[4/5] w-full place-items-center bg-gradient-to-br from-forest to-deep-green">
               <span class="font-serif text-4xl font-semibold text-goldfinch-gold">{initials(m.name)}</span>
@@ -268,7 +275,14 @@
         <div class="mt-5 flex items-center justify-between">
           <div class="flex items-center gap-3">
             {#if activeT.client_image_url}
-              <img class="h-11 w-11 rounded-full object-cover ring-2 ring-goldfinch-gold/30" src={imgUrl(activeT.client_image_url, 96)} alt={activeT.client_name} />
+              <Img
+                record={activeT}
+                fields={['client_image_url']}
+                alt={activeT.client_name}
+                width={96}
+                height={96}
+                className="h-11 w-11 rounded-full object-cover ring-2 ring-goldfinch-gold/30"
+              />
             {:else}
               <span class="grid h-11 w-11 place-items-center rounded-full bg-forest/10 font-bold text-forest">{initials(activeT.client_name)}</span>
             {/if}
@@ -312,7 +326,7 @@
 
 <!-- ── Final CTA ────────────────────────────────────────────────────────── -->
 <section class="relative isolate overflow-hidden bg-deep-green text-white">
-  <img class="absolute inset-0 h-full w-full object-cover opacity-45" src={imgUrl(heroImage, 1800)} alt="" aria-hidden="true" />
+  <Img src={heroImage} alt="" width={1800} sizes="100vw" className="absolute inset-0 h-full w-full object-cover opacity-45" />
   <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(12,16,12,0.7),rgba(12,16,12,0.82))]"></div>
   <div class="container-shell relative py-16 text-center md:py-20">
     <Sparkles size={24} class="mx-auto text-goldfinch-gold" />

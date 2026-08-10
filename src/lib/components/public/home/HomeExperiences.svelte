@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ArrowRight, Compass, Plane, Heart, Waves, Users, Sparkles, Mountain, TreePine, Camera, MapPin } from '@lucide/svelte';
-  import { imgUrl } from '$lib/img';
+  import Img from '../Img.svelte';
+  import type { ImageVariantMap } from '$lib/img';
 
   // "What Kind of Tanzania Trip Are You Imagining?" — an interactive list of
   // experience types (Goldfinch tour categories) on the left, with a large
@@ -24,6 +25,7 @@
   export let subtitle =
     "You do not need to know the perfect route yet. Start with the experience that feels closest to your trip, and we'll help connect the right places, timing, lodges, transfers and pace.";
   export let items: ExperienceItem[] = [];
+  export let imageVariants: ImageVariantMap = {};
   export let moreLabel = 'More experiences';
   export let bestForLabel = 'Best for';
   export let primaryCtaPrefix = 'Explore';
@@ -131,11 +133,13 @@
             <div class="relative w-full aspect-[3/2] overflow-hidden rounded-2xl bg-sand">
               {#if active.image}
                 {#key active.image}
-                  <img
-                    src={imgUrl(active.image, 1200)}
+                  <Img
+                    src={active.image}
+                    variantsMap={imageVariants}
                     alt={active.name}
-                    loading="lazy"
-                    class="exp-fade h-full w-full object-cover will-change-[opacity,transform]"
+                    width={1200}
+                    sizes="(max-width: 1024px) 100vw, 65vw"
+                    className="exp-fade h-full w-full object-cover will-change-[opacity,transform]"
                   />
                 {/key}
               {/if}
@@ -210,7 +214,7 @@
 <style>
   /* Matches the source's fade-in-0 / zoom-in-95 / duration-300 entry on the
      preview image each time the active experience changes. */
-  .exp-fade {
+  :global(.exp-fade) {
     animation: exp-fade-in 300ms ease-out both;
   }
   @keyframes exp-fade-in {
@@ -224,7 +228,7 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .exp-fade {
+    :global(.exp-fade) {
       animation: none;
     }
   }

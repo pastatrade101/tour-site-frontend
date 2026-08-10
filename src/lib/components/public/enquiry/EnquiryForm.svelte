@@ -9,10 +9,10 @@
   import { brand } from '$lib/brand';
   import { publicSettings, settingText } from '$lib/settings';
   import { trackEvent } from '$lib/analytics';
-  import { imgUrl } from '$lib/img';
   import { BUDGET_BANDS_USD } from '$lib/enquiry/fields';
   import { newIdempotencyKey, submitEnquiry } from '$lib/enquiry/submit';
   import type { EnquiryContext, Field, FormConfig, FormValues } from '$lib/enquiry/types';
+  import Img from '$lib/components/public/Img.svelte';
   import EnquiryField from './EnquiryField.svelte';
   import EnquiryModal from './EnquiryModal.svelte';
 
@@ -229,12 +229,12 @@
       {#if tour?.title}
         <div class="mb-3.5 flex items-center gap-3 rounded-[12px] border border-white/12 bg-white/[0.06] p-2">
           {#if tour.image}
-            <img
-              class="h-[60px] w-[60px] shrink-0 rounded-[8px] object-cover"
-              src={imgUrl(tour.image, 200, 70)}
+            <Img
+              src={tour.image}
               alt=""
-              loading="lazy"
-              decoding="async"
+              width={160}
+              height={160}
+              className="h-[60px] w-[60px] shrink-0 rounded-[8px] object-cover"
             />
           {/if}
           <div class="min-w-0">

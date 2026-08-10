@@ -11,12 +11,13 @@
    * primary design, not a fallback: the photo half becomes a deep-green
    * editorial panel carrying a serif monogram and the region, and the content
    * half widens to take the space back.
-   */
+  */
   import { ArrowRight } from '@lucide/svelte';
   import { bestFor, pairsWith, recommendedStay, travelStyle } from '$lib/destinationFacets';
-  import { imgUrl, sourceFor } from '$lib/img';
+  import { sourceFor } from '$lib/img';
   import { toMetaText } from '$lib/richText';
   import type { Destination } from '$lib/types';
+  import Img from '../Img.svelte';
 
   export let destination: Destination;
   /** Position in the featured row — even cards lead with the image, odd cards
@@ -65,15 +66,14 @@
     <!-- Visual half: photograph when the CMS has one, editorial panel when it does not. -->
     <div class={`relative min-w-0 overflow-hidden bg-deep-green lg:min-h-[460px] ${visualOrder}`}>
       {#if showImage}
-        <img
-          class="aspect-[4/3] h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100 sm:aspect-[16/10] lg:aspect-auto"
-          src={imgUrl(imageUrl, 1200, 72)}
-          srcset={`${imgUrl(imageUrl, 800, 70)} 800w, ${imgUrl(imageUrl, 1200, 72)} 1200w, ${imgUrl(imageUrl, 1600, 72)} 1600w`}
+        <Img
+          record={destination}
+          fields={['main_image_url', 'image_url', 'banner_image_url']}
+          width={1400}
           sizes="(min-width: 1024px) 50vw, 100vw"
           alt=""
-          loading="lazy"
-          decoding="async"
-          on:error={() => (imageFailed = true)}
+          onError={() => (imageFailed = true)}
+          className="aspect-[4/3] h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100 sm:aspect-[16/10] lg:aspect-auto"
         />
       {:else}
         <div class="grid min-h-[240px] place-items-center px-8 py-14 sm:min-h-[300px] lg:min-h-[460px] lg:py-20">

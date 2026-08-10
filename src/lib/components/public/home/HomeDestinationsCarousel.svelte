@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ArrowLeft, ArrowRight, MapPin } from '@lucide/svelte';
-  import { imgUrl } from '$lib/img';
   import { toMetaText } from '$lib/richText';
+  import Img from '../Img.svelte';
 
   export let eyebrow = 'Top Destinations';
   export let title = 'The Places That Shape the Journey';
@@ -74,13 +74,14 @@
           >
             <div class="relative h-[360px] md:h-[380px] lg:h-[400px] overflow-hidden bg-sand">
               {#if imageOf(d)}
-                <img
-                  src={imgUrl(imageOf(d), 800)}
+                <Img
+                  record={d}
+                  fields={['main_image_url', 'image_url', 'banner_image_url']}
                   alt=""
-                  loading="lazy"
-                  width="800"
-                  height="1000"
-                  class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                  width={800}
+                  height={1000}
+                  sizes="(max-width: 640px) 86vw, (max-width: 1024px) 48vw, 30vw"
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
                 />
               {/if}
               <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/85 via-black/40 to-transparent"></div>

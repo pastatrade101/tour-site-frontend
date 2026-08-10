@@ -17,9 +17,11 @@
   import { ArrowRight, Compass, MapPin, Users } from '@lucide/svelte';
   import { trackEvent } from '$lib/analytics';
   import { fadeUpOnScroll } from '$lib/animations';
-  import { imgUrl } from '$lib/img';
+  import { imgUrl, srcsetFor, variantSrc, variantsOf } from '$lib/img';
+  import Img from '../Img.svelte';
 
   export let heroImage = '';
+  export let heroRecord: Record<string, any> | null | undefined = undefined;
   export let total = 0;
   export let regions: string[] = [];
 
@@ -29,6 +31,10 @@
   // data comes from the CMS, where a null image or a missing region array is a
   // normal state, not an error.
   $: image = (heroImage || '').trim();
+  $: heroVariants = variantsOf(heroRecord, 'banner_image_url', 'main_image_url', 'image_url');
+  $: heroPreloadType = heroVariants?.avif ? 'image/avif' : heroVariants ? 'image/webp' : undefined;
+  $: heroPreloadSrcset = heroVariants ? srcsetFor(heroVariants, heroVariants.avif ? 'avif' : 'webp') : '';
+  $: heroPreloadHref = variantSrc(heroVariants, 2200, heroVariants?.avif ? 'avif' : 'webp') || imgUrl(image, 2200, 74);
   $: regionList = [...new Set((regions || []).map((region) => (region || '').trim()).filter(Boolean))];
   $: countLine =
     total > 0 ? `${total} ${total === 1 ? 'destination' : 'destinations'} to explore` : 'Every destination we plan, in one place';
@@ -46,7 +52,15 @@
 
 <svelte:head>
   {#if image}
-    <link rel="preload" as="image" href={imgUrl(image, 2200, 74)} fetchpriority="high" />
+    <link
+      rel="preload"
+      as="image"
+      href={heroPreloadHref}
+      imagesrcset={heroPreloadSrcset || undefined}
+      imagesizes="100vw"
+      type={heroPreloadType}
+      fetchpriority="high"
+    />
   {/if}
 </svelte:head>
 
@@ -56,14 +70,15 @@
        typography sits on identical values either way. -->
   <div class="absolute inset-0" aria-hidden="true">
     {#if image}
-      <img
-        class="hero-media h-full w-full object-cover"
-        src={imgUrl(image, 2200, 74)}
+      <Img
+        record={heroRecord}
+        fields={['banner_image_url', 'main_image_url', 'image_url']}
+        src={heroRecord ? '' : image}
         alt=""
+        width={2200}
         sizes="100vw"
-        loading="eager"
-        fetchpriority="high"
-        decoding="async"
+        eager
+        className="hero-media h-full w-full object-cover"
       />
       <div class="hero-scrim absolute inset-0"></div>
     {:else}
@@ -226,7 +241,7 @@
     display: none;
   }
 
-  .hero-media {
+  :global(.hero-media) {
     animation: hero-settle 1400ms cubic-bezier(0.22, 1, 0.36, 1) both;
     will-change: transform;
   }
@@ -243,7 +258,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .hero-media {
+    :global(.hero-media) {
       animation: none;
       opacity: 1;
       transform: none;
