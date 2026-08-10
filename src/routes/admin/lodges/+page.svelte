@@ -5,6 +5,7 @@
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
+  import AdminLodgeMedia from '$lib/components/admin/AdminLodgeMedia.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
@@ -101,6 +102,9 @@
   let confirmOpen = false;
   let slugManuallyEdited = false;
   let editing: Lodge | null = null;
+  // Gallery + amenities live in their own component but save through here, so a
+  // brand-new property has an id to attach them to.
+  let mediaEditor: AdminLodgeMedia;
   let toDelete: Lodge | null = null;
   let form = emptyForm();
   let toasts: Toast[] = [];
@@ -142,11 +146,13 @@
     editing = null;
     form = emptyForm();
     slugManuallyEdited = false;
+    void mediaEditor?.load(null);
     modalOpen = true;
   };
 
   const openEdit = (l: Lodge) => {
     editing = l;
+    void mediaEditor?.load(l.id);
     form = {
       name: l.name,
       slug: l.slug,
@@ -201,13 +207,30 @@
       meta_description: form.meta_description.trim() || null
     };
     try {
+      // Gallery and amenities are saved after the lodge, because a new
+      // property has no id to attach them to until it exists. A failure here
+      // is reported without losing the lodge that did save.
+      let savedId = editing?.id ?? '';
       if (editing) {
         await api.lodges.update(editing.id, payload);
         showToast('Lodge updated.');
       } else {
-        await api.lodges.create(payload);
+        const created = await api.lodges.create(payload);
+        savedId = String((created.data as { id?: string } | undefined)?.id ?? '');
         showToast('Lodge created.');
       }
+
+      if (savedId) {
+        try {
+          await mediaEditor?.save(savedId);
+        } catch (mediaError) {
+          showToast(
+            mediaError instanceof Error ? mediaError.message : 'The lodge saved, but its gallery did not.',
+            'error'
+          );
+        }
+      }
+
       closeModal();
       await load();
     } catch (err) {
@@ -464,6 +487,11 @@
         <div class="grid gap-4 sm:grid-cols-2">
           <MediaPicker label="Hero image" uploadFolder="lodges" bind:value={form.hero_image_url} />
           <MediaPicker label="Card image" uploadFolder="lodges" aspect="aspect-[4/3]" bind:value={form.image_url} />
+        </div>
+
+        <!-- Gallery + amenities: same screen as the copy, not a separate page. -->
+        <div class="rounded-2xl border border-ink/10 bg-sand/15 p-4">
+          <AdminLodgeMedia bind:this={mediaEditor} />
         </div>
 
         <div class="grid gap-4 sm:grid-cols-3">

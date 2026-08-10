@@ -111,7 +111,20 @@ export type ItineraryDay = {
   day_number: number;
   title: string;
   description?: string | null;
+  /** Free text — still the fallback for any day with no linked property. */
   accommodation?: string | null;
+  accommodation_id?: string | null;
+  /** The linked property, joined by the API. Null when the day uses free text. */
+  lodge?: {
+    id: string;
+    name: string;
+    slug: string;
+    lodge_type?: string | null;
+    accommodation_level?: string | null;
+    hero_image_url?: string | null;
+    image_url?: string | null;
+    destinations?: { name?: string | null } | null;
+  } | null;
   meals?: string | null;
   activities?: string | null;
   image_url?: string | null;
@@ -171,7 +184,28 @@ export type Country = {
   og_image_url?: string;
 };
 
+export type LodgeImage = {
+  id?: string;
+  image_url: string;
+  alt_text?: string | null;
+  caption?: string | null;
+  sort_order?: number;
+  is_cover?: boolean;
+};
+
+export type Amenity = {
+  id: string;
+  name: string;
+  icon_key?: string | null;
+  sort_order?: number;
+};
+
 export type Lodge = {
+  /** Attached by GET /lodges/:slug. Empty until the gallery is populated. */
+  images?: LodgeImage[];
+  amenities?: Amenity[];
+  /** Tours whose itinerary genuinely stays here — never a same-area guess. */
+  featured_in_tours?: Tour[];
   id: string;
   name: string;
   slug: string;

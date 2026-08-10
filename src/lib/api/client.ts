@@ -301,7 +301,17 @@ export const api = {
       apiRequest<{ updated: number; ids: string[] }>('/lodges/bulk-status', { method: 'POST', body: { ids, status } }),
     create: (body: Record<string, unknown>) => apiRequest<Lodge>('/lodges', { method: 'POST', body }),
     update: (id: string, body: Record<string, unknown>) => apiRequest<Lodge>(`/lodges/${id}`, { method: 'PUT', body }),
-    remove: (id: string) => apiRequest(`/lodges/${id}`, { method: 'DELETE' })
+    remove: (id: string) => apiRequest(`/lodges/${id}`, { method: 'DELETE' }),
+    // Gallery and amenities are saved as whole sets, so one call each covers
+    // upload, reorder, cover, edit and delete without a half-saved state.
+    media: (id: string) =>
+      apiRequest<{ images: Record<string, unknown>[]; amenity_ids: string[]; amenities: Record<string, unknown>[] }>(
+        `/lodges/${id}/media`
+      ),
+    saveImages: (id: string, images: Record<string, unknown>[]) =>
+      apiRequest<{ count: number }>(`/lodges/${id}/images`, { method: 'PUT', body: { images } }),
+    saveAmenities: (id: string, amenityIds: string[]) =>
+      apiRequest<{ count: number }>(`/lodges/${id}/amenities`, { method: 'PUT', body: { amenity_ids: amenityIds } })
   },
   activities: {
     list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Activity>>(`/activities${queryString(params)}`),

@@ -11,17 +11,26 @@
   import { imgUrl, sourceFor } from '$lib/img';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
+  import LodgeGallery from '$lib/components/public/LodgeGallery.svelte';
+  import LodgeAmenities from '$lib/components/public/LodgeAmenities.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
   import { toMetaText } from '$lib/richText';
   import { breadcrumbLd } from '$lib/seo';
-  import type { Lodge, Tour } from '$lib/types';
+  import type { Amenity, Lodge, LodgeImage, Tour } from '$lib/types';
   import type { PageData } from './$types';
 
   export let data: PageData;
 
   $: lodge = data.lodge as Lodge;
   $: allRelated = (data.related ?? []) as Lodge[];
-  $: safaris = (data.safaris ?? []) as Tour[];
+  $: images = (lodge?.images ?? []) as LodgeImage[];
+  $: amenities = (lodge?.amenities ?? []) as Amenity[];
+  // Trips that genuinely stay here, from the itinerary link. The same-area list
+  // is only a fallback for properties nothing points at yet.
+  $: featuredIn = (lodge?.featured_in_tours ?? []) as Tour[];
+  $: areaTours = (data.safaris ?? []) as Tour[];
+  $: tourList = featuredIn.length ? featuredIn : areaTours;
+  $: toursAreReal = featuredIn.length > 0;
   // Suggestions built from real relationships, not a random slice: same place
   // first, then the same style of stay, then anything else — de-duplicated so a
   // lodge never appears twice.
@@ -60,7 +69,10 @@
     return Sparkles;
   };
 
-  $: heroImage = sourceFor(lodge, 1920, 'hero_image_url', 'image_url');
+  // The gallery cover leads when one is set; otherwise the existing image
+  // fields carry the hero exactly as before.
+  $: coverImage = images.find((image) => image.is_cover)?.image_url ?? images[0]?.image_url ?? '';
+  $: heroImage = coverImage || sourceFor(lodge, 1920, 'hero_image_url', 'image_url');
   // Deliberately from a sibling stay, so the band does not repeat the hero.
   $: ctaImage = sourceFor(
     allRelated.find((l) => l.hero_image_url || l.image_url),
@@ -165,6 +177,26 @@
         </div>
       {/if}
 
+      {#if images.length}
+        <div class="mt-12" use:fadeUpOnScroll={{ y: 14 }}>
+          <span class="block h-px w-16 bg-goldfinch-gold" aria-hidden="true"></span>
+          <p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">The property</p>
+          <div class="mt-5">
+            <LodgeGallery {images} propertyName={lodge?.name ?? ''} />
+          </div>
+        </div>
+      {/if}
+
+      {#if amenities.length}
+        <div class="mt-12" use:fadeUpOnScroll={{ y: 14 }}>
+          <span class="block h-px w-16 bg-goldfinch-gold" aria-hidden="true"></span>
+          <p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">What's here</p>
+          <div class="mt-5">
+            <LodgeAmenities {amenities} />
+          </div>
+        </div>
+      {/if}
+
     </div>
 
     <!-- ── aside ────────────────────────────────────────────────────────── -->
@@ -204,21 +236,31 @@
      Trips that visit this property's destination. Deliberately worded as an
      area relationship: no itinerary records which property it stays at, so
      claiming "this tour uses this lodge" would be inventing a fact. -->
-{#if safaris.length}
+{#if tourList.length}
   <section class="border-t border-ink/10 bg-canvas py-14 md:py-18">
     <div class="container-shell">
       <div class="max-w-2xl" use:fadeUpOnScroll={{ y: 14 }}>
         <span class="block h-px w-16 bg-goldfinch-gold" aria-hidden="true"></span>
-        <p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">Safaris in this area</p>
+        <p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">
+          {toursAreReal ? 'Featured in these safaris' : 'Safaris in this area'}
+        </p>
         <h2 class="mt-3 font-serif text-3xl font-semibold leading-tight text-heading md:text-[38px]">
-          {place ? `Trips that travel through ${place}` : 'Trips that travel through here'}
+          {#if toursAreReal}
+            Trips that stay at {lodge?.name}
+          {:else}
+            {place ? `Trips that travel through ${place}` : 'Trips that travel through here'}
+          {/if}
         </h2>
         <p class="mt-3 text-[15px] leading-7 text-ink/65">
-          Each one is private and tailor-made — tell us you would like to stay at {lodge?.name} and we will build it in.
+          {#if toursAreReal}
+            Every one of these itineraries includes a night here. Each is private and can be reshaped around your dates.
+          {:else}
+            Each one is private and tailor-made — tell us you would like to stay at {lodge?.name} and we will build it in.
+          {/if}
         </p>
       </div>
       <div class="mt-9 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.05 }}>
-        {#each safaris as tour (tour.id)}
+        {#each tourList as tour (tour.id)}
           <TourCard {tour} />
         {/each}
       </div>

@@ -21,9 +21,20 @@
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
+  import { imgUrl } from '$lib/img';
   import { toMetaText } from '$lib/richText';
   import { getTourDestinationLabel } from '$lib/tourDestinations';
   import type { BlogPost, Tour } from '$lib/types';
+
+  // Same labels the accommodation pages use, so a property reads identically
+  // wherever it appears on the site.
+  const LODGE_TYPES: Record<string, string> = {
+    tented_camp: 'Tented camp',
+    mobile_camp: 'Mobile camp',
+    lodge: 'Lodge',
+    hotel: 'Hotel',
+    treehouse: 'Treehouse'
+  };
 
   let tour: Tour | null = null;
   let loading = true;
@@ -321,12 +332,49 @@
                       {#if day.description}
                         <RichText value={day.description} className="mt-1.5 text-sm leading-6 text-ink/70" />
                       {/if}
-                      {#if day.accommodation || day.meals || day.activities}
+                      {#if day.activities || day.meals || (day.accommodation && !day.lodge)}
                         <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs font-medium text-ink/70">
                           {#if day.activities}<span class="inline-flex items-center gap-1.5"><MapPin size={14} class="text-forest" /> {day.activities}</span>{/if}
-                          {#if day.accommodation}<span class="inline-flex items-center gap-1.5"><BedDouble size={14} class="text-forest" /> {day.accommodation}</span>{/if}
+                          <!-- Free-text stay: unchanged for every day that has
+                               no linked property, which is most of them. -->
+                          {#if day.accommodation && !day.lodge}<span class="inline-flex items-center gap-1.5"><BedDouble size={14} class="text-forest" /> {day.accommodation}</span>{/if}
                           {#if day.meals}<span class="inline-flex items-center gap-1.5"><Utensils size={14} class="text-forest" /> {day.meals}</span>{/if}
                         </div>
+                      {/if}
+
+                      <!-- Linked property: a real card that goes somewhere.
+                           Kept small so it does not outweigh the day itself. -->
+                      {#if day.lodge}
+                        {@const stay = day.lodge}
+                        {@const stayImage = stay.hero_image_url || stay.image_url}
+                        <a
+                          class="group mt-3 flex items-center gap-3 rounded-[10px] border border-ink/10 bg-surface p-2 transition hover:border-goldfinch-gold hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
+                          href={`/accommodation/${stay.slug}`}
+                          data-sveltekit-preload-data="hover"
+                        >
+                          {#if stayImage}
+                            <img
+                              class="h-12 w-12 shrink-0 rounded-[7px] object-cover"
+                              src={imgUrl(stayImage, 120, 68)}
+                              alt=""
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          {:else}
+                            <span class="grid h-12 w-12 shrink-0 place-items-center rounded-[7px] bg-sand text-forest" aria-hidden="true">
+                              <BedDouble size={17} />
+                            </span>
+                          {/if}
+                          <span class="min-w-0 flex-1">
+                            <span class="block truncate text-[13px] font-bold text-heading">{stay.name}</span>
+                            <span class="block truncate text-[11.5px] text-ink/55">
+                              {[LODGE_TYPES[String(stay.lodge_type)] ?? '', stay.destinations?.name ?? ''].filter(Boolean).join(' · ')}
+                            </span>
+                          </span>
+                          <span class="inline-flex shrink-0 items-center gap-1 pr-1 text-[11.5px] font-bold text-forest transition group-hover:text-deep-green">
+                            View <ArrowRight size={13} />
+                          </span>
+                        </a>
                       {/if}
                     </div>
                   </div>
