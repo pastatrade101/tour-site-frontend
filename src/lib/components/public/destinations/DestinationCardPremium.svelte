@@ -35,6 +35,8 @@
   export let destination: Destination;
   /** Set on the first row of the grid so the above-the-fold images do not lazy-load. */
   export let eager = false;
+  /** Compact presentation for horizontal discovery rails. */
+  export let compact = false;
 
   // One read of the editor's "At a glance" list — every fact below comes from it.
   $: facts = quickFacts(destination);
@@ -66,6 +68,7 @@
 </script>
 
 <a
+  class:destination-card-compact={compact}
   class="destination-card-premium group flex h-full flex-col overflow-hidden rounded-[10px] bg-surface shadow-card transition duration-300 ease-out hover:-translate-y-1 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none motion-reduce:hover:translate-y-0"
   href={`/destinations/${destination.slug}`}
   data-sveltekit-preload-data="hover"
@@ -280,6 +283,78 @@
 
     .destination-card-title {
       font-size: 1.15rem;
+    }
+  }
+
+  /* Discovery rails use this compact variant so the page can show more real
+     destinations without turning each collection into a wall of cards. */
+  .destination-card-compact .destination-card-media {
+    aspect-ratio: 16 / 9;
+  }
+
+  .destination-card-compact .destination-card-body {
+    padding: 1rem 1.1rem 1.05rem;
+  }
+
+  .destination-card-compact .destination-card-title {
+    font-size: 1.18rem;
+    line-height: 1.08;
+  }
+
+  .destination-card-compact .destination-card-summary {
+    margin-top: 0.45rem;
+    line-height: 1.45;
+  }
+
+  .destination-card-compact .destination-card-facts {
+    margin-top: 0.8rem;
+    padding-top: 0.7rem;
+  }
+
+  .destination-card-compact .destination-card-link {
+    padding-top: 0.8rem;
+  }
+
+  @media (max-width: 639px) {
+    .destination-card-compact {
+      display: grid;
+      grid-template-columns: minmax(104px, 32%) minmax(0, 1fr);
+      min-height: 136px;
+    }
+
+    .destination-card-compact .destination-card-media {
+      min-height: 136px;
+      height: 100%;
+    }
+
+    .destination-card-compact .destination-card-body {
+      min-height: 136px;
+      padding: 0.8rem 0.85rem;
+    }
+
+    .destination-card-compact .destination-card-title {
+      font-size: 1rem;
+    }
+
+    .destination-card-compact .destination-card-summary {
+      font-size: 0.74rem;
+    }
+
+    .destination-card-compact .destination-card-facts {
+      max-height: 1.8rem;
+      margin-top: 0.55rem;
+      padding-top: 0.5rem;
+    }
+
+    .destination-card-compact .destination-card-link {
+      padding-top: 0.55rem;
+      font-size: 0.58rem;
+    }
+  }
+
+  @media (min-width: 640px) and (max-width: 767px) {
+    .destination-card-compact .destination-card-media {
+      aspect-ratio: 16 / 9;
     }
   }
 </style>

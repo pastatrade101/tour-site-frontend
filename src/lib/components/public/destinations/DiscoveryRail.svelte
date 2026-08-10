@@ -124,7 +124,7 @@
 <svelte:window on:resize={queueMeasure} />
 
 {#if destinations.length}
-  <section class="destination-discovery-rail py-10 md:py-14" aria-labelledby={headingId}>
+  <section class="destination-discovery-rail py-6 md:py-8" aria-labelledby={headingId}>
     <div class="container-shell">
       <div class="destination-discovery-head flex flex-wrap items-end justify-between gap-x-10 gap-y-5" use:fadeUpOnScroll={{ y: 14 }}>
         <div class="max-w-[620px]">
@@ -193,7 +193,7 @@
       >
         {#each destinations as destination (destination.id || destination.slug || destination.name)}
           <li class="destination-discovery-item w-[78vw] max-w-[300px] shrink-0 snap-start sm:w-[300px] md:w-[340px] md:max-w-none [&>*]:h-full">
-            <DestinationCardPremium {destination} />
+            <DestinationCardPremium {destination} compact />
           </li>
         {/each}
       </ul>

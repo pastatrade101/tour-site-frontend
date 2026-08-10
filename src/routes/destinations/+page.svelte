@@ -197,7 +197,7 @@
 
 {#if !isFiltering}
   {#each collections as collection (collection.key)}
-    <section class="destinations-collection-section bg-canvas pt-10 md:pt-14">
+    <section class="destinations-collection-section bg-canvas pt-0 md:pt-2">
       <div class="destinations-collection-shell container-shell">
         <DiscoveryRail title={collection.title} blurb={collection.blurb} destinations={collection.items} />
       </div>
@@ -205,7 +205,7 @@
   {/each}
 {/if}
 
-<section id="all-destinations" class="destinations-all-section scroll-mt-28 bg-sand/35 py-14 md:py-18 mt-12 md:mt-16">
+<section id="all-destinations" class="destinations-all-section scroll-mt-28 mt-6 bg-sand/35 py-10 md:mt-8 md:py-14">
   <div class="destinations-all-shell container-shell">
     <div class="destinations-all-heading flex flex-wrap items-end justify-between gap-4" use:fadeUpOnScroll={{ y: 14 }}>
       <div class="max-w-2xl">
