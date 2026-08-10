@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { browser } from '$app/environment';
   import {
     ArrowLeft,
     ArrowRight,
@@ -18,12 +19,14 @@
     Shield,
     ShieldCheck
   } from '@lucide/svelte';
+  import { api } from '$lib/api/client';
   import { trackEvent } from '$lib/analytics';
   import { fadeUpOnScroll, revealHeading, staggeredCardReveal } from '$lib/animations';
   import ActivityCard from '$lib/components/public/ActivityCard.svelte';
   import DestinationCard from '$lib/components/public/DestinationCard.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
+  import LoadingState from '$lib/components/public/LoadingState.svelte';
   import ReviewsWidget from '$lib/components/public/ReviewsWidget.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
@@ -563,16 +566,137 @@
   const roleLabel = (role: TripPoint['role']) =>
     role === 'start' ? 'Trips start here' : role === 'end' ? 'Trips end here' : 'Start & end point';
 
-  $: destination = data.destination as Destination | null;
-  $: relatedTours = (data.relatedTours ?? []) as Tour[];
-  $: tourCategories = (data.tourCategories ?? []) as TourCategory[];
-  $: otherDestinations = (data.otherDestinations ?? []) as Destination[];
-  $: lodges = (data.lodges ?? []) as Lodge[];
-  $: activities = (data.activities ?? []) as Activity[];
-  $: tripPoints = (data.tripPoints ?? []) as TripPoint[];
-  $: galleryImages = (data.galleryImages ?? []) as DestinationGalleryImage[];
-  $: faqs = (data.faqs ?? []) as FAQ[];
-  $: origin = data.origin ?? '';
+  const deferredItems = <T,>(result: PromiseSettledResult<{ data?: { items?: T[] } }>) =>
+    result.status === 'fulfilled' ? result.value?.data?.items ?? [] : [];
+
+  const deferUntilIdle = (fn: () => void) => {
+    if (!browser) return;
+    const idle = (window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number })
+      .requestIdleCallback;
+    if (idle) idle(() => fn(), { timeout: 1000 });
+    else window.setTimeout(fn, 250);
+  };
+
+  let destination = data.destination as Destination | null;
+  let relatedTours = (data.relatedTours ?? []) as Tour[];
+  let tourCategories = (data.tourCategories ?? []) as TourCategory[];
+  let otherDestinations = (data.otherDestinations ?? []) as Destination[];
+  let lodges = (data.lodges ?? []) as Lodge[];
+  let activities = (data.activities ?? []) as Activity[];
+  let tripPoints = (data.tripPoints ?? []) as TripPoint[];
+  let galleryImages = (data.galleryImages ?? []) as DestinationGalleryImage[];
+  let faqs = (data.faqs ?? []) as FAQ[];
+  let origin = data.origin ?? '';
+  let currentDestinationId = destination?.id ?? '';
+  let deferredRequestedFor = '';
+  let loadedSlug = destination?.slug ?? '';
+  let loading = !destination;
+  let error = '';
+
+  const resetDeferredDataFromServer = () => {
+    relatedTours = (data.relatedTours ?? []) as Tour[];
+    tourCategories = (data.tourCategories ?? []) as TourCategory[];
+    otherDestinations = (data.otherDestinations ?? []) as Destination[];
+    lodges = (data.lodges ?? []) as Lodge[];
+    activities = (data.activities ?? []) as Activity[];
+    tripPoints = (data.tripPoints ?? []) as TripPoint[];
+    galleryImages = (data.galleryImages ?? []) as DestinationGalleryImage[];
+    faqs = (data.faqs ?? []) as FAQ[];
+    activeFaqIndex = -1;
+    activePlanningTab = '';
+  };
+
+  const loadDestinationExtras = async (current: Destination) => {
+    const [
+      relatedTourResult,
+      categoryResult,
+      destinationResult,
+      lodgeResult,
+      activityResult,
+      tripPointResult,
+      galleryResult,
+      faqResult
+    ] = await Promise.allSettled([
+      api.tours.list({ destination_id: current.id, status: 'published', is_available: true, limit: 12 }),
+      api.categories.list({ status: 'published', limit: 100 }),
+      api.destinations.list({ status: 'published', limit: 9 }),
+      api.lodges.list({ destination_id: current.id, status: 'published', limit: 3 }),
+      api.activities.list({ destination_id: current.id, status: 'published', limit: 6 }),
+      api.tripPoints.list({ destination_id: current.id, status: 'published', limit: 4 }),
+      api.gallery.list({ destination_id: current.id, media_type: 'image', status: 'published', limit: 10 }),
+      api.faqs.list({ destination_id: current.id, status: 'published', limit: 8 })
+    ]);
+
+    if (destination?.id !== current.id) return;
+
+    relatedTours = deferredItems<Tour>(relatedTourResult);
+    tourCategories = deferredItems<TourCategory>(categoryResult);
+    otherDestinations = deferredItems<Destination>(destinationResult)
+      .filter((item) => item.id !== current.id && item.slug !== current.slug)
+      .slice(0, 3);
+    lodges = deferredItems<Lodge>(lodgeResult);
+    activities = deferredItems<Activity>(activityResult);
+    tripPoints = deferredItems<TripPoint>(tripPointResult);
+    galleryImages = deferredItems<DestinationGalleryImage>(galleryResult);
+    faqs = deferredItems<FAQ>(faqResult);
+
+    requestAnimationFrame(() => {
+      updateActiveDestinationTab(visibleTabs);
+      updateFaqTimeline();
+    });
+  };
+
+  const requestDestinationExtras = (current: Destination | null) => {
+    if (!browser || !current?.id || deferredRequestedFor === current.id) return;
+    deferredRequestedFor = current.id;
+    deferUntilIdle(() => void loadDestinationExtras(current));
+  };
+
+  const loadDestination = async (nextSlug: string) => {
+    loading = true;
+    error = '';
+    destination = null;
+    currentDestinationId = '';
+    deferredRequestedFor = '';
+    activeTab = DESTINATION_TABS[0].id;
+    resetDeferredDataFromServer();
+
+    try {
+      const response = await api.destinations.get(nextSlug);
+      const nextDestination = response.data;
+      if (!nextDestination?.id) throw new Error('Destination not found.');
+      destination = nextDestination;
+      currentDestinationId = nextDestination.id;
+      origin = data.origin ?? origin;
+      requestDestinationExtras(nextDestination);
+      requestAnimationFrame(() => updateActiveDestinationTab(visibleTabs));
+      trackEvent('destination_page_view', { destination: nextDestination.name });
+    } catch (requestError) {
+      error = requestError instanceof Error ? requestError.message : 'Unable to load destination.';
+    } finally {
+      loading = false;
+    }
+  };
+
+  $: {
+    const nextDestination = data.destination as Destination | null;
+    const nextDestinationId = nextDestination?.id ?? '';
+    if (nextDestinationId && nextDestinationId !== currentDestinationId) {
+      destination = nextDestination;
+      origin = data.origin ?? '';
+      currentDestinationId = nextDestinationId;
+      deferredRequestedFor = '';
+      resetDeferredDataFromServer();
+    }
+  }
+
+  $: slug = data.slug ?? destination?.slug ?? '';
+  $: if (browser && slug && slug !== loadedSlug) {
+    loadedSlug = slug;
+    void loadDestination(slug);
+  }
+
+  $: if (browser && destination?.id) requestDestinationExtras(destination);
 
   $: heroImage = destination ? sourceFor(destination, 2000, 'banner_image_url', 'main_image_url', 'image_url') : '';
   $: mainImage = destination ? sourceFor(destination, 2000, 'main_image_url', 'image_url', 'banner_image_url') : '';
@@ -694,9 +818,13 @@
   {/if}
 </svelte:head>
 
-{#if !destination}
+{#if loading}
   <section class="container-shell py-20">
-    <ErrorState message="Destination not found." />
+    <LoadingState message="Loading destination..." />
+  </section>
+{:else if !destination}
+  <section class="container-shell py-20">
+    <ErrorState message={error || 'Destination not found.'} />
   </section>
 {:else}
   <div class="destination-page overflow-x-clip">
