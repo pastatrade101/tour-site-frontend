@@ -66,12 +66,12 @@
 </script>
 
 <a
-  class="group flex h-full flex-col overflow-hidden rounded-[10px] bg-surface shadow-card transition duration-300 ease-out hover:-translate-y-1 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+  class="destination-card-premium group flex h-full flex-col overflow-hidden rounded-[10px] bg-surface shadow-card transition duration-300 ease-out hover:-translate-y-1 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none motion-reduce:hover:translate-y-0"
   href={`/destinations/${destination.slug}`}
   data-sveltekit-preload-data="hover"
 >
   <!-- Media band: identical 4/5 ratio with or without a photograph. -->
-  <div class="relative aspect-[4/5] w-full overflow-hidden bg-sand">
+  <div class="destination-card-media relative aspect-[4/5] w-full overflow-hidden bg-sand">
     {#if imageUrl}
       <!-- alt="" on purpose: the link itself already reads out the name, region
            and summary, so a repeated caption is noise for a screen reader. -->
@@ -83,7 +83,7 @@
         height={1000}
         alt=""
         eager={eager}
-        className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+        className="destination-card-image h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
       />
       <!-- Soft foot so the region label and the pill stay legible on any photograph. -->
       <div
@@ -113,7 +113,7 @@
 
     {#if destination.is_featured}
       <span
-        class="absolute left-4 top-4 rounded-full bg-goldfinch-gold px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-heading"
+        class="destination-card-badge absolute left-4 top-4 rounded-full bg-goldfinch-gold px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-heading"
       >
         Featured
       </span>
@@ -121,7 +121,7 @@
 
     {#if region}
       <p
-        class={`absolute inset-x-0 bottom-0 flex items-center gap-2 px-5 pb-4 text-[10px] font-bold uppercase tracking-[0.18em] ${imageUrl ? 'text-white/85' : 'text-ink/55'}`}
+        class={`destination-card-region absolute inset-x-0 bottom-0 flex items-center gap-2 px-5 pb-4 text-[10px] font-bold uppercase tracking-[0.18em] ${imageUrl ? 'text-white/85' : 'text-ink/55'}`}
       >
         <MapPin size={12} strokeWidth={2.5} class={imageUrl ? 'shrink-0 text-goldfinch-gold' : 'shrink-0 text-forest/70'} />
         <span class="truncate">{region}</span>
@@ -130,21 +130,21 @@
   </div>
 
   <!-- Editorial block -->
-  <div class="flex min-w-0 flex-1 flex-col p-5 sm:p-6">
+  <div class="destination-card-body flex min-w-0 flex-1 flex-col p-5 sm:p-6">
     <h3
-      class="break-words font-serif text-[21px] font-bold leading-[1.15] text-heading transition-colors duration-300 ease-out group-hover:text-forest motion-reduce:transition-none"
+      class="destination-card-title break-words font-serif text-[21px] font-bold leading-[1.15] text-heading transition-colors duration-300 ease-out group-hover:text-forest motion-reduce:transition-none"
     >
       {destination.name}
     </h3>
 
     {#if summary}
-      <p class="mt-2.5 line-clamp-2 text-sm leading-6 text-ink/65">{summary}</p>
+      <p class="destination-card-summary mt-2.5 line-clamp-2 text-sm leading-6 text-ink/65">{summary}</p>
     {/if}
 
     {#if showFacts}
       <!-- Quick facts only: recommended stay, then the facets its own "Best for"
            and "Travel style" text matches. Nothing derived, nothing invented. -->
-      <div class="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-ink/10 pt-4">
+      <div class="destination-card-facts mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-ink/10 pt-4">
         {#if stay}
           <span class="inline-flex min-w-0 items-center gap-1.5 text-[11px] font-semibold text-ink/60">
             <Clock3 size={13} strokeWidth={2.2} class="shrink-0 text-forest/70" />
@@ -171,7 +171,7 @@
 
     <!-- Always present for keyboard and touch; the arrow is what moves on hover. -->
     <span
-      class="mt-auto flex items-center gap-2.5 pt-5 text-[11px] font-bold uppercase tracking-[0.18em] text-forest"
+      class="destination-card-link mt-auto flex items-center gap-2.5 pt-5 text-[11px] font-bold uppercase tracking-[0.18em] text-forest"
     >
       View guide
       <span
@@ -182,3 +182,104 @@
     </span>
   </div>
 </a>
+
+<style>
+  @media (max-width: 767px) {
+    .destination-card-premium {
+      border-radius: 14px;
+      box-shadow: 0 10px 28px rgb(57 61 50 / 0.08);
+    }
+
+    .destination-card-badge {
+      left: 0.7rem;
+      top: 0.7rem;
+      padding: 0.25rem 0.55rem;
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+    }
+
+    .destination-card-region {
+      padding: 0 0.8rem 0.75rem;
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+    }
+
+    .destination-card-body {
+      padding: 0.95rem;
+    }
+
+    .destination-card-title {
+      font-size: 1.08rem;
+      line-height: 1.08;
+    }
+
+    .destination-card-summary {
+      margin-top: 0.45rem;
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+
+    .destination-card-facts {
+      margin-top: 0.75rem;
+      gap: 0.45rem;
+      padding-top: 0.7rem;
+    }
+
+    .destination-card-facts span {
+      min-width: 0;
+      font-size: 0.66rem;
+      line-height: 1.1;
+    }
+
+    .destination-card-link {
+      gap: 0.45rem;
+      padding-top: 0.8rem;
+      font-size: 0.62rem;
+      letter-spacing: 0.13em;
+    }
+
+    .destination-card-link > span {
+      height: 1.45rem;
+      width: 1.45rem;
+    }
+  }
+
+  @media (max-width: 639px) {
+    .destination-card-premium {
+      display: grid;
+      grid-template-columns: minmax(112px, 34%) minmax(0, 1fr);
+      min-height: 148px;
+    }
+
+    .destination-card-media {
+      height: 100%;
+      min-height: 148px;
+      aspect-ratio: auto;
+    }
+
+    :global(.destination-card-image) {
+      height: 100%;
+      width: 100%;
+      object-position: center center;
+    }
+
+    .destination-card-body {
+      min-height: 148px;
+    }
+
+    .destination-card-facts {
+      max-height: 2.1rem;
+      overflow: hidden;
+    }
+  }
+
+  @media (min-width: 640px) and (max-width: 767px) {
+    .destination-card-media {
+      aspect-ratio: 16 / 11;
+    }
+
+    .destination-card-title {
+      font-size: 1.15rem;
+    }
+  }
+</style>

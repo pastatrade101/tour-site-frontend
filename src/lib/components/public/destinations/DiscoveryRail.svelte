@@ -124,9 +124,9 @@
 <svelte:window on:resize={queueMeasure} />
 
 {#if destinations.length}
-  <section class="py-10 md:py-14" aria-labelledby={headingId}>
+  <section class="destination-discovery-rail py-10 md:py-14" aria-labelledby={headingId}>
     <div class="container-shell">
-      <div class="flex flex-wrap items-end justify-between gap-x-10 gap-y-5" use:fadeUpOnScroll={{ y: 14 }}>
+      <div class="destination-discovery-head flex flex-wrap items-end justify-between gap-x-10 gap-y-5" use:fadeUpOnScroll={{ y: 14 }}>
         <div class="max-w-[620px]">
           <h2
             id={headingId}
@@ -185,14 +185,14 @@
       <ul
         bind:this={railEl}
         id={railId}
-        class="gf-rail -mx-6 mt-7 flex snap-x snap-mandatory scroll-pl-6 gap-4 overflow-x-auto overscroll-x-contain px-6 pb-6 pt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-goldfinch-gold md:gap-6 lg:-mx-2 lg:scroll-pl-2 lg:px-2"
+        class="destination-discovery-track gf-rail -mx-6 mt-7 flex snap-x snap-mandatory scroll-pl-6 gap-4 overflow-x-auto overscroll-x-contain px-6 pb-6 pt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-goldfinch-gold md:gap-6 lg:-mx-2 lg:scroll-pl-2 lg:px-2"
         tabindex="0"
         aria-label={railLabel}
         on:scroll={queueMeasure}
         on:keydown={onRailKeydown}
       >
         {#each destinations as destination (destination.id || destination.slug || destination.name)}
-          <li class="w-[78vw] max-w-[300px] shrink-0 snap-start sm:w-[300px] md:w-[340px] md:max-w-none [&>*]:h-full">
+          <li class="destination-discovery-item w-[78vw] max-w-[300px] shrink-0 snap-start sm:w-[300px] md:w-[340px] md:max-w-none [&>*]:h-full">
             <DestinationCardPremium {destination} />
           </li>
         {/each}
@@ -210,5 +210,52 @@
   }
   .gf-rail::-webkit-scrollbar {
     display: none;
+  }
+
+  @media (max-width: 767px) {
+    .destination-discovery-rail {
+      padding-block: 1.35rem;
+    }
+
+    .destination-discovery-head {
+      gap: 0.8rem;
+    }
+
+    .destination-discovery-head h2 {
+      font-size: clamp(1.55rem, 6.2vw, 1.9rem);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .destination-discovery-head p {
+      margin-top: 0.45rem;
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .destination-discovery-head a {
+      height: auto;
+      min-height: 2rem;
+      font-size: 0.8rem;
+    }
+
+    .destination-discovery-track {
+      margin-top: 1rem;
+      margin-inline: -16px;
+      scroll-padding-left: 16px;
+      gap: 0.75rem;
+      padding: 0.25rem 16px 0.65rem;
+    }
+
+    .destination-discovery-item {
+      width: min(78vw, 300px);
+      max-width: none;
+    }
+  }
+
+  @media (min-width: 640px) and (max-width: 767px) {
+    .destination-discovery-item {
+      width: min(44vw, 300px);
+    }
   }
 </style>

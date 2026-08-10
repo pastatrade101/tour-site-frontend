@@ -494,7 +494,7 @@
     <ErrorState message={error || 'Tour not found.'} />
   </section>
 {:else}
-  <section data-hero class="relative isolate overflow-hidden bg-deep-green">
+  <section data-hero class="tour-detail-hero relative isolate overflow-hidden bg-deep-green">
     {#if heroImage}
       <Img
         record={tour}
@@ -503,19 +503,19 @@
         width={1800}
         sizes="100vw"
         eager
-        className="absolute inset-0 h-full w-full object-cover"
+        className="tour-detail-hero-image absolute inset-0 h-full w-full object-cover"
       />
     {/if}
-    <div class="absolute inset-0 bg-gradient-to-t from-deep-green/25 via-transparent to-deep-green/10" aria-hidden="true"></div>
+    <div class="tour-detail-hero-overlay absolute inset-0 bg-gradient-to-t from-deep-green/25 via-transparent to-deep-green/10" aria-hidden="true"></div>
 
-    <div class="container-shell relative flex min-h-[560px] flex-col justify-end pb-12 pt-20 md:min-h-[640px] md:pb-16 md:pt-24 lg:min-h-[680px] lg:pb-20">
+    <div class="tour-detail-hero-shell container-shell relative flex min-h-[560px] flex-col justify-end pb-12 pt-20 md:min-h-[640px] md:pb-16 md:pt-24 lg:min-h-[680px] lg:pb-20">
       <a href="/tours" class="absolute left-0 top-6 hidden items-center gap-1.5 text-[13px] font-medium text-white/90 transition hover:text-goldfinch-gold md:top-8 md:inline-flex">
         <ArrowLeft class="h-3.5 w-3.5" /> Back to tours
       </a>
 
       <div class="tour-hero-copy relative max-w-3xl pb-2 [text-shadow:0_2px_18px_rgba(39,43,34,0.42)] md:pb-4">
         {#if heroTags.length}
-          <div class="mb-5 flex flex-wrap gap-1.5">
+          <div class="tour-hero-tags mb-5 flex flex-wrap gap-1.5">
             {#each heroTags as tag}
               <span class="inline-flex items-center rounded-full border border-white/30 bg-deep-green/35 px-2.5 py-0.5 text-[11px] font-medium text-white backdrop-blur">
                 {tag}
@@ -534,7 +534,7 @@
             {shortText(tour.short_description || tour.full_description, 230)}
           </p>
         {/if}
-        <div class="mt-7 flex flex-col gap-3 sm:flex-row">
+        <div class="tour-hero-actions mt-7 flex flex-col gap-3 sm:flex-row">
           <button
             type="button"
             class="inline-flex items-center justify-center rounded-[6px] bg-goldfinch-gold px-5 py-3 text-sm font-bold text-heading transition hover:brightness-105"
@@ -551,7 +551,7 @@
           </button>
         </div>
         {#if heroStats.length}
-          <div class="mt-5 flex max-w-3xl flex-wrap gap-2">
+          <div class="tour-hero-stats mt-5 flex max-w-3xl flex-wrap gap-2">
             {#each heroStats as stat}
               <div class="hero-stat-chip inline-flex min-w-[156px] max-w-full flex-1 items-center gap-2 rounded-[9px] border border-white/18 bg-white/[0.13] px-3 py-2.5 text-white shadow-[0_10px_24px_rgba(15,23,42,0.16)] backdrop-blur-md sm:flex-none">
                 <span class="grid h-8 w-8 shrink-0 place-items-center rounded-[7px] bg-goldfinch-gold text-heading">
@@ -569,9 +569,9 @@
     </div>
   </section>
 
-  <div class="sticky top-[70px] z-30 border-b border-ink/10 bg-surface/95 backdrop-blur">
+  <div class="tour-detail-tabs sticky top-[70px] z-30 border-b border-ink/10 bg-surface/95 backdrop-blur">
     <div class="container-shell">
-      <div class="no-scrollbar flex gap-6 overflow-x-auto py-3 text-[13.5px] font-semibold text-ink/60">
+      <div class="tour-detail-tablist no-scrollbar flex gap-6 overflow-x-auto py-3 text-[13.5px] font-semibold text-ink/60">
         {#each visibleTabs as tab}
           {@const active = activeTab === tab.id}
           <button
@@ -587,10 +587,10 @@
     </div>
   </div>
 
-  <div class="container-shell">
-    <div class="grid gap-10 py-10 md:py-14 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-14">
-      <main class="min-w-0 space-y-14 md:space-y-16">
-        <section id="overview" class="scroll-mt-32">
+  <div class="tour-detail-content container-shell">
+    <div class="tour-detail-layout grid gap-10 py-10 md:py-14 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-14">
+      <main class="tour-detail-main min-w-0 space-y-10 md:space-y-16">
+        <section id="overview" class="tour-section scroll-mt-32">
           <div class="section-label">
             <span></span>
             <p>Overview</p>
@@ -601,7 +601,7 @@
           {/if}
 
           {#if tripFacts.length}
-            <div class="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div class="tour-facts-grid mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {#each tripFacts as fact}
                 <div class="rounded-[10px] border border-ink/10 bg-sand/30 p-3.5">
                   <span class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink/70">
@@ -624,7 +624,7 @@
         </section>
 
         {#if snapshotRows.length}
-          <section>
+          <section class="tour-section">
             <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Safari Snapshot</h2>
             <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">A quick look at the published route, day by day.</p>
 
@@ -651,7 +651,7 @@
               </table>
             </div>
 
-            <div class="mt-6 space-y-3 md:hidden">
+            <div class="tour-snapshot-mobile mt-6 space-y-3 md:hidden">
               {#each snapshotRows as row}
                 <div class="rounded-[12px] border border-ink/10 bg-surface p-5">
                   <div class="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink/60">{row.day}</div>
@@ -665,9 +665,9 @@
         {/if}
 
         {#if highlights.length}
-          <section>
+          <section class="tour-section">
             <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Why This Trip Works</h2>
-            <div class="mt-6 grid gap-3 sm:grid-cols-2">
+            <div class="tour-highlight-grid mt-6 grid gap-3 sm:grid-cols-2">
               {#each highlights as highlight, index}
                 <article class="rounded-[12px] border border-ink/10 bg-surface p-5">
                   <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-clay">Highlight {index + 1}</p>
@@ -679,9 +679,9 @@
         {/if}
 
         {#if bestFor.length || tripFacts.length}
-          <section>
+          <section class="tour-section">
             <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Is This Safari Right for You?</h2>
-            <div class="mt-6 grid gap-4 md:grid-cols-2">
+            <div class="tour-two-col-grid mt-6 grid gap-4 md:grid-cols-2">
               {#if bestFor.length}
                 <div class="rounded-[12px] border border-ink/10 bg-surface p-5">
                   <h3 class="font-serif text-[18px] font-semibold text-heading">Best for</h3>
@@ -710,12 +710,12 @@
           </section>
         {/if}
 
-        <section>
+        <section class="tour-section">
           <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Ways to Customize This Trip</h2>
           <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">
             Use the request form to ask the team to adjust the dates, party size, accommodation preference, interests, special requests or route notes.
           </p>
-          <ul class="mt-6 grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
+          <ul class="tour-customize-list mt-6 grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
             {#each ['Preferred travel date', 'Adults and children', 'Accommodation preference', 'Travel interests', 'Special requests', 'Route notes'] as item}
               <li class="flex items-start gap-2 text-[14.5px] text-heading">
                 <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-goldfinch-gold"></span>
@@ -732,22 +732,22 @@
           </button>
         </section>
 
-        <section id="day-by-day" class="scroll-mt-32">
+        <section id="day-by-day" class="tour-section scroll-mt-32">
           <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Day by Day</h2>
           <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">
             This is the published itinerary for this tour. The planning team can adjust it around your dates and preferred pace.
           </p>
 
           {#if itineraryDays.length}
-            <div class="mt-6 space-y-2.5">
+            <div class="tour-day-list mt-6 space-y-2.5">
               {#each itineraryDays as day, index (day.day_number)}
                 {@const open = isDayOpen(day, index)}
                 {@const image = dayImage(day)}
                 {@const details = detailsForDay(day)}
-                <article id={`day-${day.day_number}`} class="overflow-hidden rounded-[12px] border border-ink/10 bg-surface">
+                <article id={`day-${day.day_number}`} class="tour-day-card overflow-hidden rounded-[12px] border border-ink/10 bg-surface">
                   <button
                     type="button"
-                    class="flex w-full items-center gap-4 px-4 py-4 text-left md:px-5"
+                    class="tour-day-toggle flex w-full items-center gap-4 px-4 py-4 text-left md:px-5"
                     aria-expanded={open}
                     on:click={() => toggleDay(day, index)}
                   >
@@ -764,7 +764,7 @@
                   </button>
 
                   {#if open}
-                    <div class="border-t border-ink/10 px-4 pb-8 pt-6 md:px-8 md:pt-8">
+                    <div class="tour-day-body border-t border-ink/10 px-4 pb-8 pt-6 md:px-8 md:pt-8">
                       {#if image}
                         <Img
                           src={image.record ? '' : image.src}
@@ -773,7 +773,7 @@
                           alt={image.caption}
                           width={1000}
                           sizes="(max-width: 768px) 92vw, 700px"
-                          className="mb-6 h-[220px] w-full rounded-[12px] object-cover sm:h-[280px] md:mb-8 md:h-[380px]"
+                          className="tour-day-image mb-6 h-[220px] w-full rounded-[12px] object-cover sm:h-[280px] md:mb-8 md:h-[380px]"
                         />
                       {/if}
 
@@ -786,7 +786,7 @@
                       {/if}
 
                       {#if details.length}
-                        <ul class="mb-7 mt-6 rounded-[12px] border border-ink/10 bg-sand/45 p-5 md:p-[22px]">
+                        <ul class="tour-day-details mb-7 mt-6 rounded-[12px] border border-ink/10 bg-sand/45 p-5 md:p-[22px]">
                           {#each details as detail, detailIndex}
                             <li class={`flex items-start gap-3 text-[14.5px] leading-[1.55] md:text-[15px] ${detailIndex > 0 ? 'mt-2.5' : ''}`}>
                               <svelte:component this={detail.icon} size={16} class="mt-[2px] shrink-0 text-clay" />
@@ -802,9 +802,9 @@
                       {#if day.lodge}
                         {@const stay = day.lodge}
                         {@const gallery = galleryForStay(stay)}
-                        <div>
+                        <div class="tour-day-accommodation">
                           <div class="mb-3.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink/60 md:text-[11px]">Accommodation - {stay.name}</div>
-                          <div class="overflow-hidden rounded-[12px] border border-ink/10 bg-surface">
+                          <div class="tour-day-accommodation-card overflow-hidden rounded-[12px] border border-ink/10 bg-surface">
                             {#if gallery[0]}
                               <Img
                                 src={gallery[0].record ? '' : gallery[0].src}
@@ -813,7 +813,7 @@
                                 alt={gallery[0].caption}
                                 width={900}
                                 sizes="(max-width: 768px) 92vw, 700px"
-                                className="h-[190px] w-full object-cover sm:h-[240px]"
+                                className="tour-day-accommodation-image h-[190px] w-full object-cover sm:h-[240px]"
                               />
                             {/if}
                             <div class="p-4 md:p-5">
@@ -867,13 +867,13 @@
         </section>
 
         {#if accommodationBlocks.length}
-          <section id="accommodation" class="scroll-mt-32">
+          <section id="accommodation" class="tour-section scroll-mt-32">
             <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Accommodation</h2>
             <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">
               These are the accommodations attached to the published itinerary days for this tour.
             </p>
 
-            <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div class="tour-accommodation-grid mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {#each accommodationBlocks as block (block.key)}
                 <article class="group relative aspect-square overflow-hidden rounded-[12px] border border-ink/10 bg-deep-green shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(39,43,34,0.18)] focus-within:-translate-y-0.5 focus-within:shadow-[0_18px_38px_rgba(39,43,34,0.18)]">
                   {#if block.gallery[0]}
@@ -936,13 +936,13 @@
           </section>
         {/if}
 
-        <section id="prices" class="scroll-mt-32">
+        <section id="prices" class="tour-section scroll-mt-32">
           <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Tour Rates</h2>
           <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">
             Rates are shown only from the published tour data. Your final quote is confirmed after dates and availability are checked.
           </p>
 
-          <div class="mt-6 overflow-hidden rounded-t-[10px] border border-ink/10">
+          <div class="tour-rates-table mt-6 overflow-hidden rounded-t-[10px] border border-ink/10">
             <table class="w-full border-collapse text-[14px]">
               <thead>
                 <tr class="bg-deep-green text-left text-white">
@@ -972,9 +972,9 @@
           </button>
         </section>
 
-        <section id="inclusions" class="scroll-mt-32">
+        <section id="inclusions" class="tour-section scroll-mt-32">
           <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">What's Included</h2>
-          <div class="mt-6 grid gap-4 md:grid-cols-2">
+          <div class="tour-two-col-grid mt-6 grid gap-4 md:grid-cols-2">
             <div class="rounded-[12px] border border-ink/10 bg-surface p-5">
               <h3 class="font-serif text-[18px] font-semibold text-heading">Included</h3>
               {#if inclusions.length}
@@ -1017,12 +1017,12 @@
         </section>
 
         {#if mediaImages.length > 1}
-          <section class="overflow-hidden">
+          <section class="tour-section overflow-hidden">
             <div class="flex items-center gap-2">
               <Camera class="h-4 w-4 text-clay" aria-hidden="true" />
               <span class="text-[11px] font-semibold uppercase tracking-[0.16em] text-clay">Images from this itinerary</span>
             </div>
-            <div class="no-scrollbar mt-5 flex snap-x gap-4 overflow-x-auto pb-2">
+            <div class="tour-media-strip no-scrollbar mt-5 flex snap-x gap-4 overflow-x-auto pb-2">
               {#each mediaImages as image}
                 <figure class="relative h-[230px] w-[190px] shrink-0 snap-start overflow-hidden rounded-[12px] bg-sand shadow-[0_12px_28px_rgba(57,61,50,0.10)] md:h-[280px] md:w-[230px]">
                   <Img
@@ -1042,7 +1042,7 @@
           </section>
         {/if}
 
-        <section id="good-to-know" class="scroll-mt-32">
+        <section id="good-to-know" class="tour-section scroll-mt-32">
           <div class="section-label">
             <span></span>
             <p>Good to Know</p>
@@ -1127,7 +1127,7 @@
     </section>
   {/if}
 
-  <div class="fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-surface px-4 py-3 shadow-[0_-4px_16px_rgba(15,23,42,0.08)] lg:hidden">
+  <div class="tour-mobile-cta fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-surface px-4 py-3 shadow-[0_-4px_16px_rgba(15,23,42,0.08)] lg:hidden">
     <div class="flex items-center gap-3">
       <div class="min-w-0 flex-1">
         <div class="truncate text-[13px] font-semibold text-heading">{priceFromLabel}</div>
@@ -1298,6 +1298,410 @@
   .accommodation-card-summary {
     line-clamp: 2;
     -webkit-line-clamp: 2;
+  }
+
+  @media (max-width: 767px) {
+    .tour-detail-hero {
+      min-height: clamp(660px, calc(100svh - 70px), 880px);
+      max-width: 100vw;
+      overflow-x: clip;
+    }
+
+    .tour-detail-hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgb(var(--c-deep-green) / 0.06) 0%, rgb(var(--c-deep-green) / 0.2) 36%, rgb(var(--c-deep-green) / 0.82) 100%),
+        linear-gradient(90deg, rgb(var(--c-deep-green) / 0.74) 0%, rgb(var(--c-deep-green) / 0.28) 56%, transparent 100%);
+      pointer-events: none;
+    }
+
+    :global(.tour-detail-hero-image) {
+      object-position: center center;
+    }
+
+    .tour-detail-hero-overlay {
+      background: linear-gradient(to top, rgb(var(--c-deep-green) / 0.42), transparent 58%, rgb(var(--c-deep-green) / 0.12));
+    }
+
+    .tour-detail-hero-shell {
+      min-height: clamp(660px, calc(100svh - 70px), 880px);
+      justify-content: end;
+      padding-top: 4.75rem;
+      padding-bottom: 2rem;
+      z-index: 1;
+    }
+
+    .tour-hero-copy {
+      max-width: 100%;
+      padding-bottom: 0;
+      text-shadow: 0 2px 18px rgb(0 0 0 / 0.45);
+    }
+
+    .tour-hero-copy::before {
+      inset: auto -0.75rem -0.95rem -0.75rem;
+      top: 4.25rem;
+      border-radius: 16px;
+      background:
+        linear-gradient(180deg, rgb(var(--c-deep-green) / 0.08), rgb(var(--c-deep-green) / 0.88)),
+        linear-gradient(90deg, rgb(var(--c-deep-green) / 0.76), rgb(var(--c-forest) / 0.56));
+      box-shadow: 0 18px 44px rgb(15 23 42 / 0.22);
+    }
+
+    .tour-hero-tags {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: max-content;
+      gap: 0.4rem;
+      margin-inline: -16px;
+      margin-bottom: 1rem;
+      overflow-x: auto;
+      padding-inline: 16px;
+      padding-bottom: 0.1rem;
+      scrollbar-width: none;
+    }
+
+    .tour-hero-tags::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tour-hero-copy h1 {
+      max-width: 11.5ch;
+      font-size: clamp(2.25rem, 10.4vw, 3.35rem);
+      line-height: 0.98;
+      text-wrap: balance;
+    }
+
+    .tour-hero-copy p {
+      max-width: 100%;
+      font-size: 0.95rem;
+      line-height: 1.55;
+      text-wrap: pretty;
+    }
+
+    .tour-hero-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.6rem;
+      margin-top: 1.15rem;
+    }
+
+    .tour-hero-actions :global(button) {
+      min-height: 2.75rem;
+      padding-inline: 0.75rem;
+      padding-block: 0.65rem;
+      font-size: 0.8125rem;
+      line-height: 1.15;
+    }
+
+    .tour-hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.45rem;
+      margin-top: 1rem;
+    }
+
+    .hero-stat-chip {
+      min-width: 0;
+      align-items: start;
+      gap: 0.45rem;
+      border-radius: 12px;
+      padding: 0.55rem;
+    }
+
+    .hero-stat-chip :global(svg) {
+      height: 0.85rem;
+      width: 0.85rem;
+    }
+
+    .hero-stat-chip > span:first-child {
+      height: 1.7rem;
+      width: 1.7rem;
+      border-radius: 0.45rem;
+    }
+
+    .hero-stat-chip span span:first-child {
+      font-size: 0.52rem;
+      letter-spacing: 0.08em;
+    }
+
+    .hero-stat-chip span span:last-child {
+      display: -webkit-box;
+      overflow: hidden;
+      font-size: 0.72rem;
+      line-height: 1.12;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+    }
+
+    .tour-detail-tabs {
+      top: 70px;
+    }
+
+    .tour-detail-tablist {
+      gap: 1rem;
+      padding-block: 0.7rem;
+      font-size: 0.8125rem;
+      scroll-padding-inline: 16px;
+      scroll-snap-type: x proximity;
+    }
+
+    .tour-detail-tablist :global(button) {
+      scroll-snap-align: start;
+    }
+
+    .tour-detail-layout {
+      gap: 0;
+      padding-block: 2.25rem 1.5rem;
+    }
+
+    .tour-section {
+      scroll-margin-top: 7.5rem;
+    }
+
+    .tour-section h2 {
+      font-size: clamp(1.65rem, 7vw, 2.05rem);
+      line-height: 1.08;
+    }
+
+    .tour-section h3 {
+      letter-spacing: 0;
+    }
+
+    .section-label p {
+      font-size: 0.68rem;
+      letter-spacing: 0.13em;
+    }
+
+    .tour-facts-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.6rem;
+      margin-top: 1.25rem;
+    }
+
+    .tour-facts-grid > :global(div) {
+      border-radius: 12px;
+      padding: 0.85rem;
+    }
+
+    .tour-highlight-grid,
+    .tour-two-col-grid {
+      gap: 0.75rem;
+    }
+
+    .tour-highlight-grid :global(article),
+    .tour-two-col-grid > :global(div),
+    .tour-snapshot-mobile > :global(div) {
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .tour-customize-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 0.9rem;
+      row-gap: 0.7rem;
+    }
+
+    .tour-day-list {
+      margin-top: 1.15rem;
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .tour-day-card {
+      border-radius: 14px;
+    }
+
+    .tour-day-toggle {
+      gap: 0.75rem;
+      padding: 0.95rem;
+    }
+
+    .tour-day-toggle > span:first-child {
+      height: 2rem;
+      width: 2rem;
+      font-size: 0.78rem;
+    }
+
+    .tour-day-body {
+      padding: 0.9rem 0.9rem 1rem;
+    }
+
+    :global(.tour-day-image) {
+      aspect-ratio: 16 / 10;
+      height: auto;
+      margin-bottom: 1rem;
+      border-radius: 12px;
+    }
+
+    .tour-day-details {
+      margin-block: 1rem 1.1rem;
+      border-radius: 12px;
+      padding: 0.9rem;
+    }
+
+    .tour-day-accommodation-card {
+      border-radius: 12px;
+    }
+
+    :global(.tour-day-accommodation-image) {
+      aspect-ratio: 16 / 9;
+      height: auto;
+    }
+
+    .tour-day-accommodation-card :global(.p-4) {
+      padding: 0.9rem;
+    }
+
+    .tour-day-accommodation-card a {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .tour-accommodation-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .tour-accommodation-grid :global(article) {
+      border-radius: 14px;
+    }
+
+    .tour-accommodation-grid :global(article .relative) {
+      padding: 0.8rem;
+    }
+
+    .accommodation-card-title {
+      font-size: 1rem;
+      line-height: 1.08;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+    }
+
+    .accommodation-card-summary {
+      font-size: 0.72rem;
+      line-height: 1.25;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+    }
+
+    .accommodation-card-extra {
+      display: none;
+    }
+
+    .tour-rates-table {
+      margin-inline: -0.25rem;
+      overflow-x: auto;
+    }
+
+    .tour-rates-table table {
+      min-width: 520px;
+    }
+
+    .tour-media-strip {
+      margin-inline: -16px;
+      padding-inline: 16px;
+      scroll-padding-inline: 16px;
+      scroll-snap-type: x mandatory;
+    }
+
+    .tour-mobile-cta {
+      padding: 0.65rem 1rem calc(0.65rem + env(safe-area-inset-bottom));
+    }
+
+    .tour-mobile-cta button {
+      height: 2.6rem;
+      padding-inline: 1rem;
+      white-space: nowrap;
+    }
+  }
+
+  @media (max-width: 479px) {
+    .tour-detail-hero-shell {
+      min-height: clamp(650px, calc(100svh - 70px), 850px);
+    }
+
+    .tour-hero-copy h1 {
+      max-width: 10.5ch;
+    }
+
+    .tour-hero-copy p {
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+    }
+
+    .tour-hero-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .hero-stat-chip {
+      align-items: center;
+    }
+
+    .hero-stat-chip span span:last-child {
+      -webkit-line-clamp: 1;
+      line-clamp: 1;
+    }
+
+    .tour-accommodation-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (min-width: 480px) and (max-width: 767px) {
+    .tour-detail-hero {
+      min-height: clamp(600px, 78svh, 780px);
+    }
+
+    .tour-detail-hero-shell {
+      width: calc(100vw - 48px);
+      max-width: none;
+      min-height: clamp(600px, 78svh, 780px);
+      padding-top: 5rem;
+      padding-bottom: 2.25rem;
+    }
+
+    .tour-hero-copy {
+      max-width: 620px;
+    }
+
+    .tour-hero-copy h1 {
+      max-width: 13ch;
+      font-size: clamp(3rem, 8vw, 4rem);
+    }
+
+    .tour-hero-actions {
+      max-width: 430px;
+    }
+
+    .tour-detail-content {
+      width: calc(100vw - 48px);
+      max-width: none;
+    }
+
+    .tour-hero-stats {
+      max-width: 620px;
+    }
+  }
+
+  @media (min-width: 640px) and (max-width: 767px) {
+    .tour-facts-grid,
+    .tour-highlight-grid,
+    .tour-two-col-grid,
+    .tour-customize-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .tour-accommodation-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
   }
 
   @media (min-width: 768px) {

@@ -161,7 +161,7 @@
 <DestinationsHero {heroImage} heroRecord={heroDestination} total={destinations.length} {regions} />
 
 <!-- Sits below the hero on its own ground rather than straddling the seam. -->
-<section class="bg-canvas pt-8 md:pt-10">
+<section class="destinations-filter-section bg-canvas pt-8 md:pt-10">
   <div class="container-shell">
     <DestinationSearchBar
       bind:value={search}
@@ -176,7 +176,7 @@
   </div>
 </section>
 
-<section class="bg-canvas pt-8 md:pt-10">
+<section class="destinations-experience-section bg-canvas pt-8 md:pt-10">
   <div class="container-shell">
     <ExperienceTiles
       facets={experienceFacets}
@@ -188,7 +188,7 @@
 </section>
 
 {#if featured.length && !isFiltering}
-  <section class="bg-canvas pt-8 md:pt-12">
+  <section class="destinations-featured-section bg-canvas pt-8 md:pt-12">
     <div class="container-shell">
       <FeaturedRail destinations={featured} />
     </div>
@@ -197,30 +197,30 @@
 
 {#if !isFiltering}
   {#each collections as collection (collection.key)}
-    <section class="bg-canvas pt-10 md:pt-14">
-      <div class="container-shell">
+    <section class="destinations-collection-section bg-canvas pt-10 md:pt-14">
+      <div class="destinations-collection-shell container-shell">
         <DiscoveryRail title={collection.title} blurb={collection.blurb} destinations={collection.items} />
       </div>
     </section>
   {/each}
 {/if}
 
-<section id="all-destinations" class="scroll-mt-28 bg-sand/35 py-14 md:py-18 mt-12 md:mt-16">
-  <div class="container-shell">
-    <div class="flex flex-wrap items-end justify-between gap-4" use:fadeUpOnScroll={{ y: 14 }}>
+<section id="all-destinations" class="destinations-all-section scroll-mt-28 bg-sand/35 py-14 md:py-18 mt-12 md:mt-16">
+  <div class="destinations-all-shell container-shell">
+    <div class="destinations-all-heading flex flex-wrap items-end justify-between gap-4" use:fadeUpOnScroll={{ y: 14 }}>
       <div class="max-w-2xl">
         <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Every destination</p>
         <h2 class="mt-3 font-serif text-3xl font-bold leading-tight text-heading md:text-[42px]">
           {isFiltering ? 'Matching destinations' : 'Choose where your trip begins'}
         </h2>
       </div>
-      <p class="text-sm font-semibold text-ink/50" aria-live="polite">
+      <p class="destinations-result-count text-sm font-semibold text-ink/50" aria-live="polite">
         {filtered.length} of {destinations.length}
       </p>
     </div>
 
     {#if filtered.length}
-      <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
+      <div class="destinations-grid mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
         {#each filtered as destination, index (destination.id)}
           <DestinationCardPremium {destination} eager={index < 3} />
         {/each}
@@ -245,7 +245,7 @@
       {#if featured.length}
         <div class="mt-12">
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">You might start here</p>
-          <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="destinations-grid mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {#each featured.slice(0, 3) as destination (destination.id)}
               <DestinationCardPremium {destination} />
             {/each}
@@ -257,3 +257,73 @@
 </section>
 
 <DestinationsCTA image={heroImage} imageRecord={heroDestination} {whatsapp} total={destinations.length} />
+
+<style>
+  @media (max-width: 767px) {
+    .destinations-filter-section {
+      padding-top: 1rem;
+    }
+
+    .destinations-experience-section {
+      padding-top: 1.05rem;
+    }
+
+    .destinations-featured-section {
+      padding-top: 1.4rem;
+    }
+
+    .destinations-collection-section {
+      padding-top: 1.15rem;
+    }
+
+    .destinations-collection-shell {
+      width: 100%;
+      max-width: none;
+    }
+
+    .destinations-all-section {
+      margin-top: 2rem;
+      padding-block: 2.5rem;
+      scroll-margin-top: 7rem;
+    }
+
+    .destinations-all-heading {
+      align-items: flex-start;
+      gap: 0.65rem;
+    }
+
+    .destinations-all-heading h2 {
+      margin-top: 0.55rem;
+      font-size: clamp(1.8rem, 7.6vw, 2.2rem);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .destinations-result-count {
+      border-radius: 999px;
+      background: rgb(var(--c-surface));
+      padding: 0.35rem 0.7rem;
+      font-size: 0.75rem;
+      box-shadow: 0 8px 20px rgb(57 61 50 / 0.05);
+    }
+
+    .destinations-grid {
+      margin-top: 1.15rem;
+      gap: 0.8rem;
+    }
+  }
+
+  @media (min-width: 480px) and (max-width: 767px) {
+    .destinations-all-shell {
+      width: calc(100vw - 48px);
+      max-width: none;
+    }
+  }
+
+  @media (min-width: 640px) and (max-width: 767px) {
+    .destinations-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.9rem;
+    }
+  }
+</style>

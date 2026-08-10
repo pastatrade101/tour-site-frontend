@@ -49,7 +49,7 @@
   ].filter((point): point is TrustPoint => point !== null);
 </script>
 
-<section class="relative isolate overflow-hidden bg-deep-green text-white" aria-labelledby="destinations-cta-heading">
+<section class="destinations-cta relative isolate overflow-hidden bg-deep-green text-white" aria-labelledby="destinations-cta-heading">
   {#if imageSrc}
     <Img
       record={imageRecord}
@@ -83,9 +83,9 @@
     aria-hidden="true"
   ></span>
 
-  <div class="container-shell relative py-20 md:py-28">
-    <div class="mx-auto max-w-3xl text-center" use:fadeUpOnScroll={{ y: 16 }}>
-      <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-goldfinch-gold">Plan with Goldfinch</p>
+  <div class="destinations-cta-shell container-shell relative py-20 md:py-28">
+    <div class="destinations-cta-copy mx-auto max-w-3xl text-center" use:fadeUpOnScroll={{ y: 16 }}>
+      <p class="destinations-cta-eyebrow text-[11px] font-bold uppercase tracking-[0.2em] text-goldfinch-gold">Plan with Goldfinch</p>
 
       <h2
         id="destinations-cta-heading"
@@ -94,12 +94,12 @@
         Not sure where to begin?
       </h2>
 
-      <p class="mx-auto mt-6 max-w-2xl text-base leading-8 text-white/80 md:text-lg md:leading-9">
+      <p class="destinations-cta-body mx-auto mt-6 max-w-2xl text-base leading-8 text-white/80 md:text-lg md:leading-9">
         Tell us roughly when you would like to travel and what you would like to see, and our planners
         in Tanzania will shape a route around it.
       </p>
 
-      <div class="mt-10 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+      <div class="destinations-cta-actions mt-10 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
         <a
           class="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-7 text-[15px] font-bold text-heading shadow-lg shadow-black/20 transition duration-200 ease-out hover:-translate-y-0.5 hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green sm:w-auto"
           href="/plan-my-trip"
@@ -124,7 +124,7 @@
       </div>
 
       <ul
-        class="mx-auto mt-12 grid max-w-3xl gap-x-10 gap-y-4 border-t border-white/10 pt-8 text-left sm:grid-cols-2 lg:flex lg:flex-wrap lg:justify-center lg:gap-x-8"
+        class="destinations-cta-trust mx-auto mt-12 grid max-w-3xl gap-x-10 gap-y-4 border-t border-white/10 pt-8 text-left sm:grid-cols-2 lg:flex lg:flex-wrap lg:justify-center lg:gap-x-8"
       >
         {#each trustPoints as point (point.text)}
           <li class="flex items-center gap-2.5 text-sm font-medium leading-6 text-white/75">
@@ -136,3 +136,66 @@
     </div>
   </div>
 </section>
+
+<style>
+  @media (max-width: 767px) {
+    .destinations-cta-shell {
+      padding-block: 3rem;
+    }
+
+    .destinations-cta-copy {
+      text-align: left;
+    }
+
+    .destinations-cta-copy h2 {
+      margin-top: 0.9rem;
+      font-size: clamp(2rem, 8.4vw, 2.55rem);
+      line-height: 1.04;
+      letter-spacing: 0;
+    }
+
+    .destinations-cta-body {
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .destinations-cta-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.6rem;
+      margin-top: 1.4rem;
+    }
+
+    .destinations-cta-actions a {
+      height: auto;
+      min-height: 2.85rem;
+      padding: 0.7rem 0.8rem;
+      font-size: 0.82rem;
+      line-height: 1.15;
+      text-align: center;
+    }
+
+    .destinations-cta-trust {
+      margin-top: 1.5rem;
+      grid-template-columns: 1fr;
+      gap: 0.55rem;
+      border-top-color: rgb(255 255 255 / 0.12);
+      padding-top: 1rem;
+    }
+
+    .destinations-cta-trust li {
+      border-radius: 12px;
+      background: rgb(255 255 255 / 0.08);
+      padding: 0.65rem 0.75rem;
+      font-size: 0.82rem;
+      line-height: 1.3;
+    }
+  }
+
+  @media (max-width: 479px) {
+    .destinations-cta-actions {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

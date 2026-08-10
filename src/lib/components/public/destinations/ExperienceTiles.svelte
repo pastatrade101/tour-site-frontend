@@ -20,20 +20,20 @@
 </script>
 
 {#if shown.length}
-  <section aria-label={title}>
-    <p class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-ink/45">
+  <section class="destination-experience-tiles" aria-label={title}>
+    <p class="destination-experience-title flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-ink/45">
       <span class="h-3 w-[3px] rounded-full bg-goldfinch-gold" aria-hidden="true"></span>
       {title}
     </p>
 
     <!-- scrolls on mobile rather than wrapping into a ragged block -->
-    <div class="-mx-4 mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0 lg:grid-cols-5">
+    <div class="destination-experience-row -mx-4 mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0 lg:grid-cols-5">
       {#each shown as facet (facet.key)}
         {@const active = activeFacet === facet.key}
         {@const count = counts[facet.key] ?? 0}
         <button
           type="button"
-          class={`group flex min-w-[190px] snap-start items-center gap-3 rounded-[10px] border px-4 py-3.5 text-left transition duration-200 md:min-w-0
+          class={`destination-experience-chip group flex min-w-[190px] snap-start items-center gap-3 rounded-[10px] border px-4 py-3.5 text-left transition duration-200 md:min-w-0
             ${active
               ? 'border-goldfinch-gold bg-goldfinch-gold/10 shadow-card'
               : 'border-ink/10 bg-surface hover:-translate-y-0.5 hover:border-goldfinch-gold/50 hover:shadow-card'}
@@ -53,3 +53,58 @@
     </div>
   </section>
 {/if}
+
+<style>
+  @media (max-width: 767px) {
+    .destination-experience-title {
+      font-size: 0.66rem;
+      letter-spacing: 0.14em;
+    }
+
+    .destination-experience-row {
+      margin-top: 0.75rem;
+      margin-inline: -16px;
+      padding-inline: 16px;
+      scroll-padding-inline: 16px;
+      gap: 0.55rem;
+    }
+
+    .destination-experience-chip {
+      min-width: min(54vw, 190px);
+      gap: 0.55rem;
+      border-radius: 999px;
+      padding: 0.55rem 0.75rem;
+    }
+
+    .destination-experience-chip > span:first-child {
+      height: 2rem;
+      width: 2rem;
+      border-radius: 999px;
+      font-size: 0.95rem;
+    }
+
+    .destination-experience-chip span span:first-child {
+      font-size: 0.8rem;
+      line-height: 1.05;
+    }
+
+    .destination-experience-chip span span:last-child {
+      font-size: 0.68rem;
+      line-height: 1.1;
+    }
+  }
+
+  @media (min-width: 640px) and (max-width: 767px) {
+    .destination-experience-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      overflow: visible;
+      padding-inline: 0;
+      margin-inline: 0;
+    }
+
+    .destination-experience-chip {
+      min-width: 0;
+    }
+  }
+</style>

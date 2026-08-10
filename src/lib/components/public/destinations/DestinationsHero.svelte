@@ -64,7 +64,7 @@
   {/if}
 </svelte:head>
 
-<section class="relative isolate overflow-hidden bg-deep-green text-white">
+<section class="destinations-index-hero relative isolate overflow-hidden bg-deep-green text-white">
   <!-- Background layer: photograph + scrim when we have one, otherwise a lit
        green field. Both paths end in the same top wash and vignette, so the
        typography sits on identical values either way. -->
@@ -89,7 +89,7 @@
   </div>
 
   <div class="hero-shell container-shell relative z-10 flex min-h-[62vh] flex-col pb-12 pt-20 md:min-h-[72vh] md:pb-16 md:pt-24">
-    <nav class="mb-auto flex flex-wrap items-center gap-2 text-[13px] font-medium text-white/60" aria-label="Breadcrumb">
+    <nav class="hero-breadcrumb mb-auto flex flex-wrap items-center gap-2 text-[13px] font-medium text-white/60" aria-label="Breadcrumb">
       <a class="inline-flex min-h-[44px] items-center rounded-[6px] pr-1 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green" href="/">
         Home
       </a>
@@ -97,9 +97,9 @@
       <span class="text-white/90" aria-current="page">Destinations</span>
     </nav>
 
-    <div class="grid grid-cols-12 pt-10 md:pt-14">
-      <div class="col-span-12 min-w-0 lg:col-span-8 xl:col-span-7" use:fadeUpOnScroll={{ y: 16 }}>
-        <p class="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] text-goldfinch-gold">
+    <div class="hero-copy-grid grid grid-cols-12 pt-10 md:pt-14">
+      <div class="hero-copy col-span-12 min-w-0 lg:col-span-8 xl:col-span-7" use:fadeUpOnScroll={{ y: 16 }}>
+        <p class="hero-label flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] text-goldfinch-gold">
           <span class="h-px w-8 bg-goldfinch-gold/70" aria-hidden="true"></span>
           Goldfinch destinations
         </p>
@@ -108,12 +108,12 @@
           Where would you like to <span class="whitespace-nowrap font-normal italic text-goldfinch-gold">wake up</span>?
         </h1>
 
-        <p class="mt-5 max-w-[52ch] text-[15px] leading-7 text-white/80 md:mt-6 md:text-lg md:leading-9">
+        <p class="hero-description mt-5 max-w-[52ch] text-[15px] leading-7 text-white/80 md:mt-6 md:text-lg md:leading-9">
           Crater rims, migration plains, woodland and reef — the places our planners know first-hand, with honest notes
           on how long to stay and what pairs well with what.
         </p>
 
-        <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center md:mt-9">
+        <div class="hero-actions mt-8 gap-3 md:mt-9 md:flex md:flex-wrap md:items-center">
           <a
             class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-7 text-sm font-bold text-heading shadow-lg shadow-black/15 transition duration-200 ease-out hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green sm:w-auto"
             href="/plan-my-trip"
@@ -130,7 +130,7 @@
           </a>
         </div>
 
-        <ul class="mt-8 flex flex-col gap-3 text-[13px] font-medium text-white/72 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-7 sm:gap-y-3 md:mt-10">
+        <ul class="hero-trust mt-8 gap-3 text-[13px] font-medium text-white/72 md:mt-10 md:flex md:flex-wrap md:items-center md:gap-x-7 md:gap-y-3">
           {#each trustPoints as point (point.label)}
             <li class="flex items-center gap-2.5">
               <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/10 text-goldfinch-gold" aria-hidden="true">
@@ -152,7 +152,7 @@
     {#if regionList.length}
       <!-- Orientation, not a filter: the real regions this index covers, read left
            to right. A rail on mobile rather than a block of wrapping chips. -->
-      <div class="mt-10 border-t border-white/12 pt-5 md:mt-12">
+      <div class="hero-regions mt-10 border-t border-white/12 pt-5 md:mt-12">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
           <p class="shrink-0 text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">Regions</p>
           <ul
@@ -244,6 +244,194 @@
   :global(.hero-media) {
     animation: hero-settle 1400ms cubic-bezier(0.22, 1, 0.36, 1) both;
     will-change: transform;
+  }
+
+  @media (max-width: 767px) {
+    .destinations-index-hero {
+      min-height: clamp(650px, calc(100svh - 70px), 860px);
+      max-width: 100vw;
+      overflow-x: clip;
+    }
+
+    .hero-shell {
+      min-height: clamp(650px, calc(100svh - 70px), 860px);
+      justify-content: end;
+      padding-top: 4.75rem;
+      padding-bottom: 1.7rem;
+    }
+
+    .hero-breadcrumb {
+      margin-bottom: 0;
+      font-size: 0.75rem;
+    }
+
+    .hero-copy-grid {
+      padding-top: 2.8rem;
+    }
+
+    .hero-copy {
+      max-width: 100%;
+      text-shadow: 0 2px 18px rgb(0 0 0 / 0.45);
+    }
+
+    .hero-label {
+      gap: 0.65rem;
+      font-size: 0.66rem;
+      letter-spacing: 0.16em;
+    }
+
+    .hero-label span {
+      width: 1.35rem;
+    }
+
+    .hero-copy h1 {
+      margin-top: 1rem;
+      max-width: 11.5ch;
+      font-size: clamp(2.55rem, 11vw, 3.45rem);
+      line-height: 0.98;
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+
+    .hero-description {
+      margin-top: 1rem;
+      max-width: 100%;
+      font-size: 0.95rem;
+      line-height: 1.55;
+      text-wrap: pretty;
+    }
+
+    .hero-actions {
+      display: grid !important;
+      width: 100%;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 0.6rem;
+      margin-top: 1.15rem;
+    }
+
+    .hero-actions a {
+      width: 100%;
+      min-width: 0;
+      min-height: 2.75rem;
+      height: auto;
+      padding: 0.65rem 0.75rem;
+      font-size: 0.8125rem;
+      line-height: 1.15;
+      text-align: center;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+    }
+
+    .hero-trust {
+      display: grid !important;
+      width: 100%;
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      gap: 0.45rem;
+      margin-top: 1rem;
+      font-size: 0.72rem;
+      line-height: 1.15;
+    }
+
+    .hero-trust li {
+      width: 100%;
+      min-width: 0;
+      align-items: start;
+      gap: 0.45rem;
+      border-radius: 12px;
+      background: rgb(255 255 255 / 0.1);
+      padding: 0.55rem;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+
+    .hero-trust li > span:first-child {
+      height: 1.7rem;
+      width: 1.7rem;
+      border-radius: 0.45rem;
+      background: rgb(var(--c-goldfinch-gold) / 0.16);
+    }
+
+    .hero-trust li > span:last-child {
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+    }
+
+    .hero-regions {
+      margin-top: 1.1rem;
+      padding-top: 0.85rem;
+    }
+
+    .hero-regions > div {
+      gap: 0.5rem;
+    }
+
+    .hero-regions p {
+      font-size: 0.62rem;
+      letter-spacing: 0.16em;
+    }
+
+    .hero-rail {
+      margin-inline: -16px;
+      padding-inline: 16px;
+      scroll-padding-inline: 16px;
+    }
+  }
+
+  @media (max-width: 479px) {
+    .hero-copy h1 {
+      max-width: 10.5ch;
+    }
+
+    .hero-actions {
+      grid-template-columns: 1fr !important;
+    }
+
+    .hero-trust {
+      grid-template-columns: 1fr !important;
+    }
+
+    .hero-trust li {
+      align-items: center;
+    }
+
+    .hero-trust li > span:last-child {
+      -webkit-line-clamp: 1;
+      line-clamp: 1;
+    }
+  }
+
+  @media (min-width: 480px) and (max-width: 767px) {
+    .destinations-index-hero {
+      min-height: clamp(600px, 78svh, 780px);
+    }
+
+    .hero-shell {
+      width: calc(100vw - 48px);
+      max-width: none;
+      min-height: clamp(600px, 78svh, 780px);
+      padding-top: 5rem;
+      padding-bottom: 2.15rem;
+    }
+
+    .hero-copy {
+      max-width: 620px;
+    }
+
+    .hero-copy h1 {
+      max-width: 13ch;
+      font-size: clamp(3rem, 8vw, 4rem);
+    }
+
+    .hero-actions {
+      max-width: 430px;
+    }
+
+    .hero-trust {
+      max-width: 620px;
+    }
   }
 
   @keyframes hero-settle {

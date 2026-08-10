@@ -48,8 +48,8 @@
 </script>
 
 {#if destinations.length}
-  <section aria-label={title}>
-    <div class="flex items-end justify-between gap-4">
+  <section class="featured-destinations-rail" aria-label={title}>
+    <div class="featured-rail-head flex items-end justify-between gap-4">
       <p class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-ink/45">
         <span class="h-3 w-[3px] rounded-full bg-goldfinch-gold" aria-hidden="true"></span>
         {title}
@@ -85,14 +85,14 @@
     </div>
 
     <div
-      class="-mx-4 mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:px-0"
+      class="featured-rail-track -mx-4 mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:px-0"
       bind:this={rail}
       on:scroll={updateEdges}
     >
       {#each destinations as destination, index (destination.id)}
         {@const image = imageOf(destination)}
         <a
-          class="group relative block aspect-[4/5] w-[268px] shrink-0 snap-start overflow-hidden rounded-[10px] bg-forest shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(57,61,50,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 md:w-[300px]"
+          class="featured-rail-card group relative block aspect-[4/5] w-[268px] shrink-0 snap-start overflow-hidden rounded-[10px] bg-forest shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(57,61,50,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 md:w-[300px]"
           href={`/destinations/${destination.slug}`}
           data-sveltekit-preload-data="hover"
         >
@@ -147,3 +147,41 @@
     </div>
   </section>
 {/if}
+
+<style>
+  @media (max-width: 767px) {
+    .featured-rail-head {
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .featured-rail-head p {
+      font-size: 0.66rem;
+      letter-spacing: 0.14em;
+    }
+
+    .featured-rail-head a {
+      font-size: 0.72rem;
+      white-space: nowrap;
+    }
+
+    .featured-rail-track {
+      margin-top: 0.75rem;
+      margin-inline: -16px;
+      padding-inline: 16px;
+      scroll-padding-inline: 16px;
+      gap: 0.75rem;
+    }
+
+    .featured-rail-card {
+      width: min(72vw, 260px);
+      border-radius: 14px;
+    }
+  }
+
+  @media (min-width: 640px) and (max-width: 767px) {
+    .featured-rail-card {
+      width: min(38vw, 260px);
+    }
+  }
+</style>
