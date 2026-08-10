@@ -81,6 +81,14 @@
 
   let smoothScrollCleanup: (() => void) | undefined;
 
+  const runWhenIdle = (fn: () => void) => {
+    if (!browser) return;
+    const idle = (window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number })
+      .requestIdleCallback;
+    if (idle) idle(() => fn(), { timeout: 1800 });
+    else window.setTimeout(fn, 500);
+  };
+
   $: if (browser) {
     if (isAdmin && smoothScrollCleanup) {
       smoothScrollCleanup();
@@ -144,7 +152,7 @@
   });
 
   onMount(() => {
-    void setupGsap();
+    runWhenIdle(() => void setupGsap());
     void loadBranding();
     void loadPublicSettings();
     void initCurrency();

@@ -508,8 +508,8 @@
     {/if}
     <div class="absolute inset-0 bg-gradient-to-t from-deep-green/25 via-transparent to-deep-green/10" aria-hidden="true"></div>
 
-    <div class="relative mx-auto flex min-h-[560px] max-w-7xl flex-col justify-end px-4 pb-12 pt-20 md:min-h-[640px] md:px-6 md:pb-16 md:pt-24 lg:min-h-[680px] lg:pb-20">
-      <a href="/tours" class="absolute left-4 top-6 hidden items-center gap-1.5 text-[13px] font-medium text-white/90 transition hover:text-goldfinch-gold md:left-6 md:top-8 md:inline-flex">
+    <div class="container-shell relative flex min-h-[560px] flex-col justify-end pb-12 pt-20 md:min-h-[640px] md:pb-16 md:pt-24 lg:min-h-[680px] lg:pb-20">
+      <a href="/tours" class="absolute left-0 top-6 hidden items-center gap-1.5 text-[13px] font-medium text-white/90 transition hover:text-goldfinch-gold md:top-8 md:inline-flex">
         <ArrowLeft class="h-3.5 w-3.5" /> Back to tours
       </a>
 
@@ -570,7 +570,7 @@
   </section>
 
   <div class="sticky top-[70px] z-30 border-b border-ink/10 bg-surface/95 backdrop-blur">
-    <div class="mx-auto max-w-7xl px-4 md:px-6">
+    <div class="container-shell">
       <div class="no-scrollbar flex gap-6 overflow-x-auto py-3 text-[13.5px] font-semibold text-ink/60">
         {#each visibleTabs as tab}
           {@const active = activeTab === tab.id}
@@ -587,7 +587,7 @@
     </div>
   </div>
 
-  <div class="mx-auto max-w-7xl px-4 md:px-6">
+  <div class="container-shell">
     <div class="grid gap-10 py-10 md:py-14 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-14">
       <main class="min-w-0 space-y-14 md:space-y-16">
         <section id="overview" class="scroll-mt-32">

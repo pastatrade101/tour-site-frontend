@@ -75,6 +75,18 @@
   let tours: NavLink[] = [];
   let categories: NavLink[] = [];
   let lodges: NavLink[] = [];
+  let loadedDropdowns: Record<DropdownKey, boolean> = {
+    destinations: false,
+    tours: false,
+    safariStyles: false,
+    accommodation: false
+  };
+  let loadingDropdowns: Record<DropdownKey, boolean> = {
+    destinations: false,
+    tours: false,
+    safariStyles: false,
+    accommodation: false
+  };
 
   let menuOpen = false;
   let openDropdown: '' | DropdownKey = '';
@@ -90,7 +102,10 @@
   let ddTop = 120;
   const openDropdownAt = (key: DropdownKey | undefined, el: EventTarget | null) => {
     openDropdown = key ?? '';
-    if (key) preloadRoute(FEATURE[key].href);
+    if (key) {
+      preloadRoute(FEATURE[key].href);
+      void loadDropdown(key);
+    }
     if (el instanceof HTMLElement && typeof window !== 'undefined') {
       const rect = el.getBoundingClientRect();
       const w = Math.min(MEGA_W, window.innerWidth - 32);
@@ -169,7 +184,15 @@
   };
 
   const toggleDropdown = (key: DropdownKey) => {
-    openDropdown = openDropdown === key ? '' : key;
+    const next = openDropdown === key ? '' : key;
+    openDropdown = next;
+    if (next) void loadDropdown(next);
+  };
+
+  const toggleMobileDropdown = (key: DropdownKey) => {
+    const next = mobileAccordion === key ? '' : key;
+    mobileAccordion = next;
+    if (next) void loadDropdown(next);
   };
 
   // Always close the mobile drawer (and any open dropdowns) after a navigation,
@@ -180,41 +203,69 @@
     openDropdown = '';
   });
 
-  onMount(() => {
-    const loadNav = async () => {
-      const [destinationResult, tourResult, lodgeResult, categoryResult] = await Promise.allSettled([
-        api.destinations.list({ status: 'published', limit: 9 }),
-        api.tours.list({ status: 'published', limit: 9 }),
-        api.lodges.list({ status: 'published', limit: 9 }),
-        api.categories.list({ status: 'published', limit: 9 })
-      ]);
+  const setDropdownLoading = (key: DropdownKey, value: boolean) => {
+    loadingDropdowns = { ...loadingDropdowns, [key]: value };
+  };
 
-      if (destinationResult.status === 'fulfilled') {
-        const items = destinationResult.value.data.items ?? [];
-        if (items.length) destinations = items.map((d) => ({ label: String(d.name ?? d.slug), href: `/destinations/${d.slug}`, image: d.main_image_url || d.image_url || d.banner_image_url || undefined, description: toMetaText((d.short_description as string) || (d.description as string) || '', 120) || undefined, record: d as Record<string, any>, fields: ['main_image_url', 'image_url', 'banner_image_url'] }));
+  const setDropdownLoaded = (key: DropdownKey) => {
+    loadedDropdowns = { ...loadedDropdowns, [key]: true };
+  };
+
+  const loadDropdown = async (key: DropdownKey) => {
+    if (loadedDropdowns[key] || loadingDropdowns[key]) return;
+    setDropdownLoading(key, true);
+    try {
+      if (key === 'destinations') {
+        const response = await api.destinations.list({ status: 'published', limit: 9 });
+        destinations = (response.data.items ?? []).map((d) => ({
+          label: String(d.name ?? d.slug),
+          href: `/destinations/${d.slug}`,
+          image: d.main_image_url || d.image_url || d.banner_image_url || undefined,
+          description: toMetaText((d.short_description as string) || (d.description as string) || '', 120) || undefined,
+          record: d as Record<string, any>,
+          fields: ['main_image_url', 'image_url', 'banner_image_url']
+        }));
+      } else if (key === 'tours') {
+        const response = await api.tours.list({ status: 'published', limit: 9 });
+        tours = (response.data.items ?? []).map((t) => ({
+          label: String(t.title ?? t.slug),
+          href: `/tours/${t.slug}`,
+          image: t.main_image_url || t.banner_image_url || undefined,
+          description: toMetaText(t.short_description || t.full_description || '', 120) || undefined,
+          record: t as Record<string, any>,
+          fields: ['main_image_url', 'banner_image_url']
+        }));
+      } else if (key === 'accommodation') {
+        const response = await api.lodges.list({ status: 'published', limit: 9 });
+        lodges = (response.data.items ?? []).map((l) => ({
+          label: String(l.name ?? l.slug),
+          href: `/accommodation/${l.slug}`,
+          image: l.hero_image_url || l.image_url || undefined,
+          description: toMetaText(l.why_we_recommend || l.description || '', 120) || undefined,
+          record: l as Record<string, any>,
+          fields: ['hero_image_url', 'image_url']
+        }));
+      } else {
+        const response = await api.categories.list({ status: 'published', limit: 9 });
+        categories = (response.data.items ?? []).map((c) => ({
+          label: String(c.name ?? c.slug),
+          href: `/safari-styles/${c.slug}`,
+          image: c.image_url || c.icon_url || undefined,
+          description: toMetaText(c.description || c.who_its_for || '', 120) || undefined,
+          record: c as Record<string, any>,
+          fields: ['image_url', 'icon_url']
+        }));
       }
-      if (tourResult.status === 'fulfilled') {
-        const items = tourResult.value.data.items ?? [];
-        if (items.length) tours = items.map((t) => ({ label: String(t.title ?? t.slug), href: `/tours/${t.slug}`, image: t.main_image_url || t.banner_image_url || undefined, description: toMetaText(t.short_description || t.full_description || '', 120) || undefined, record: t as Record<string, any>, fields: ['main_image_url', 'banner_image_url'] }));
-      }
-      if (lodgeResult.status === 'fulfilled') {
-        const items = lodgeResult.value.data.items ?? [];
-        if (items.length)
-          lodges = items.map((l) => ({
-            label: String(l.name ?? l.slug),
-            href: `/accommodation/${l.slug}`,
-            image: l.hero_image_url || l.image_url || undefined,
-            description: toMetaText(l.why_we_recommend || l.description || '', 120) || undefined,
-            record: l as Record<string, any>,
-            fields: ['hero_image_url', 'image_url']
-          }));
-      }
-      if (categoryResult.status === 'fulfilled') {
-        const items = categoryResult.value.data.items ?? [];
-        if (items.length) categories = items.map((c) => ({ label: String(c.name ?? c.slug), href: `/safari-styles/${c.slug}`, image: c.image_url || c.icon_url || undefined, description: toMetaText(c.description || c.who_its_for || '', 120) || undefined, record: c as Record<string, any>, fields: ['image_url', 'icon_url'] }));
-      }
-    };
-    void loadNav();
+      setDropdownLoaded(key);
+    } catch {
+      // Leave it retryable; a transient nav fetch failure should not disable
+      // the menu for the rest of the session.
+    } finally {
+      setDropdownLoading(key, false);
+    }
+  };
+
+  onMount(() => {
 
     const onClick = (event: MouseEvent) => {
       if (!(event.target as HTMLElement)?.closest?.('.nav-dropdown')) openDropdown = '';
@@ -529,7 +580,7 @@
               <div class="rounded-[8px]">
                 <div class="flex items-center">
                   <a class={`flex-1 rounded-[8px] px-3 py-3 text-[17px] font-semibold transition ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink'}`} href={item.href} on:click={() => activateLink(item.href)} on:focus={() => preloadRoute(item.href)}>{item.label}</a>
-                  <button class="grid h-11 w-11 place-items-center rounded-[8px] text-ink/70 transition hover:bg-sand/50" type="button" aria-expanded={mobileAccordion === item.dropdown} aria-label={`Toggle ${item.label}`} on:click={() => (mobileAccordion = mobileAccordion === item.dropdown ? '' : (item.dropdown ?? ''))}>
+                  <button class="grid h-11 w-11 place-items-center rounded-[8px] text-ink/70 transition hover:bg-sand/50" type="button" aria-expanded={mobileAccordion === item.dropdown} aria-label={`Toggle ${item.label}`} on:click={() => item.dropdown && toggleMobileDropdown(item.dropdown)}>
                     <ChevronDown size={18} strokeWidth={2.6} class={`transition-transform ${mobileAccordion === item.dropdown ? 'rotate-180' : ''}`} />
                   </button>
                 </div>

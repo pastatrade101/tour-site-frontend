@@ -1,10 +1,10 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { ArrowRight, Check, MessageCircle } from '@lucide/svelte';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import type { GalleryCardItem } from '$lib/components/public/GalleryCard.svelte';
   import GalleryViewer from '$lib/components/public/GalleryViewer.svelte';
-  import { SAMPLE_GALLERY } from '$lib/data/sampleGallery';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import { faqLd } from '$lib/seo';
   import TopDestinations from '$lib/components/public/TopDestinations.svelte';
@@ -23,9 +23,12 @@
   import LeadCaptureForm from '$lib/components/public/LeadCaptureForm.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
-  import { imgUrl, srcsetFor, variantFromMap, variantSrc, type ImageVariantMap } from '$lib/img';
+  import { api } from '$lib/api/client';
+  import { API_URL } from '$lib/config/env';
+  import { cachedJson } from '$lib/cache';
+  import { attachResolvedVariantFields, imgUrl, srcsetFor, variantFromMap, variantSrc, type ImageVariantMap } from '$lib/img';
   import { toMetaText } from '$lib/richText';
-  import type { BlogPost, Destination, FAQ, MigrationEntry, Review, ReviewSummary, Testimonial, Tour } from '$lib/types';
+  import type { BlogPost, Destination, FAQ, MigrationEntry, Review, ReviewSummary, Tour } from '$lib/types';
   import type { PageData } from './$types';
 
   export let data: PageData;
@@ -42,13 +45,49 @@
     title?: string | null;
   };
 
-  // Real CMS content only — no fabricated placeholder fallbacks. Above-the-fold
-  // (tours, destinations, hero config) is SSR-loaded in +page.ts; below-the-fold
-  // lists are also SSR-loaded independently. Any empty list hides its section.
+  const deferredItems = <T,>(result: PromiseSettledResult<{ data?: { items?: T[] } }>) =>
+    result.status === 'fulfilled' ? result.value?.data?.items ?? [] : [];
+
+  const deferredValue = <T,>(result: PromiseSettledResult<{ data?: T }>) =>
+    result.status === 'fulfilled' ? result.value?.data ?? null : null;
+
+  const imageText = (value: unknown) => (typeof value === 'string' && value.trim() ? value.trim() : '');
+
+  const collectImageUrls = (urls: Set<string>, rows: Array<Record<string, unknown>>, fields: string[]) => {
+    for (const row of rows) {
+      for (const field of fields) {
+        const value = imageText(row[field]);
+        if (value) urls.add(value);
+      }
+    }
+  };
+
+  const deferUntilIdle = (fn: () => void) => {
+    if (typeof window === 'undefined') return;
+    const idle = (window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number })
+      .requestIdleCallback;
+    if (idle) idle(() => fn(), { timeout: 1200 });
+    else window.setTimeout(fn, 350);
+  };
+
+  const resolveDeferredImageVariants = async (urls: Set<string>): Promise<ImageVariantMap> => {
+    const list = [...urls].slice(0, 100);
+    if (!list.length) return {};
+    try {
+      const query = new URLSearchParams({ urls: list.join(',') });
+      const res = await cachedJson<{ data?: ImageVariantMap }>(`${API_URL}/public/image-variants?${query}`);
+      return res.data ?? {};
+    } catch {
+      return {};
+    }
+  };
+
+  // Real CMS content only — no fabricated placeholder fallbacks. Initial SSR is
+  // intentionally limited to the hero/homepage config and category chips; lower
+  // landing sections hydrate from cached client requests after first paint.
   let tours: Tour[] = data.tours ?? [];
   let destinations: Destination[] = data.destinations ?? [];
   let posts: BlogPost[] = data.posts ?? [];
-  let testimonials: Testimonial[] = data.testimonials ?? [];
   let faqs: FAQ[] = data.faqs ?? [];
   let reviewSummary: ReviewSummary | null = data.reviewSummary ?? null;
   let reviews: Review[] = data.reviews ?? [];
@@ -80,10 +119,6 @@
   $: heroPreloadSrcset = heroVariants ? srcsetFor(heroVariants, heroVariants.avif ? 'avif' : 'webp') : '';
   $: heroPreloadHref =
     variantSrc(heroVariants, 1800, heroVariants?.avif ? 'avif' : 'webp') || imgUrl(heroImageResolved, 1800, 72);
-  $: heroSlides = destinations
-    .map((d) => d.banner_image_url || d.main_image_url || d.image_url || '')
-    .filter(Boolean)
-    .slice(0, 5);
 
   const hexToRgba = (hex: string, alpha: number) => {
     const match = /^#?([0-9a-fA-F]{6})$/.exec(hex);
@@ -197,8 +232,9 @@
   $: blogCtaUrl = cms('blog_preview', 'button_url', '/blog');
   $: galleryCtaText = cms('gallery_preview', 'button_text', 'View gallery');
   $: galleryCtaUrl = cms('gallery_preview', 'button_url', '/gallery');
-  // Real published gallery images, or a sample set so the section never sits empty.
-  $: galleryDisplay = galleryItems.length ? (galleryItems as Record<string, unknown>[]) : SAMPLE_GALLERY;
+  // Real published gallery images only. Keeping this empty until the deferred
+  // CMS request returns avoids loading bundled sample imagery during first paint.
+  $: galleryDisplay = galleryItems.length ? (galleryItems as Record<string, unknown>[]) : [];
   $: ctaSecondaryText = cmsExtra('final_cta', 'secondary_cta_text', 'Talk to a Travel Advisor');
   $: ctaSecondaryUrl = cmsExtra('final_cta', 'secondary_cta_url', '/contact');
   $: homepageFaqRows = arr<Record<string, unknown>>(faqExtra.faqs)
@@ -209,6 +245,76 @@
     }))
     .filter((faq) => faq.question && faq.answer);
   $: homepageFaqs = homepageFaqRows.length ? homepageFaqRows : faqs;
+
+  const loadDeferredHomeSections = async () => {
+    const [
+      tourResult,
+      destinationResult,
+      postResult,
+      faqResult,
+      reviewSummaryResult,
+      featuredReviewResult,
+      allReviewResult,
+      migrationResult,
+      galleryResult
+    ] = await Promise.allSettled([
+      api.tours.list({ status: 'published', limit: 6 }),
+      api.destinations.list({ status: 'published', limit: 8 }),
+      api.blog.list({ limit: 3 }),
+      api.faqs.list({ limit: 5 }),
+      api.reviews.summary(),
+      api.reviews.list({ status: 'approved', is_featured: true, limit: 6 }),
+      api.reviews.list({ status: 'approved', limit: 6 }),
+      api.migrationCalendar.list({ is_published: true, limit: 24 }),
+      api.gallery.list({ status: 'published', media_type: 'image', limit: 7 })
+    ]);
+
+    const nextTours = deferredItems<Tour>(tourResult);
+    const nextDestinations = deferredItems<Destination>(destinationResult);
+    const nextPosts = deferredItems<BlogPost>(postResult);
+    const nextFaqs = deferredItems<FAQ>(faqResult);
+    const nextReviewSummary = deferredValue<ReviewSummary>(reviewSummaryResult);
+    const featuredReviews = deferredItems<Review>(featuredReviewResult);
+    const fallbackReviews = deferredItems<Review>(allReviewResult);
+    const nextMigrationEntries = deferredItems<MigrationEntry>(migrationResult);
+    const nextGalleryItems = deferredItems<Record<string, unknown>>(galleryResult);
+
+    const urls = new Set<string>();
+    collectImageUrls(urls, nextTours as Array<Record<string, unknown>>, ['main_image_url', 'banner_image_url', 'image_url']);
+    collectImageUrls(urls, nextDestinations as Array<Record<string, unknown>>, ['main_image_url', 'image_url', 'banner_image_url']);
+    collectImageUrls(urls, nextPosts as Array<Record<string, unknown>>, ['featured_image_url']);
+    collectImageUrls(urls, nextMigrationEntries as Array<Record<string, unknown>>, ['image_url']);
+    collectImageUrls(urls, nextGalleryItems, ['image_url']);
+
+    const variants = await resolveDeferredImageVariants(urls);
+    attachResolvedVariantFields(nextTours as Array<Record<string, any>>, variants, [
+      'main_image_url',
+      'banner_image_url',
+      'image_url'
+    ]);
+    attachResolvedVariantFields(nextDestinations as Array<Record<string, any>>, variants, [
+      'main_image_url',
+      'image_url',
+      'banner_image_url'
+    ]);
+    attachResolvedVariantFields(nextPosts as Array<Record<string, any>>, variants, ['featured_image_url']);
+    attachResolvedVariantFields(nextMigrationEntries as Array<Record<string, any>>, variants, ['image_url']);
+    attachResolvedVariantFields(nextGalleryItems as Array<Record<string, any>>, variants, ['image_url']);
+
+    imageVariants = { ...imageVariants, ...variants };
+    tours = nextTours;
+    destinations = nextDestinations;
+    posts = nextPosts;
+    faqs = nextFaqs;
+    reviewSummary = nextReviewSummary;
+    reviews = featuredReviews.length ? featuredReviews : fallbackReviews;
+    migrationEntries = nextMigrationEntries;
+    galleryItems = nextGalleryItems as GalleryCardItem[];
+  };
+
+  onMount(() => {
+    deferUntilIdle(() => void loadDeferredHomeSections());
+  });
 </script>
 
 <svelte:head>

@@ -730,8 +730,8 @@
       <div class="absolute inset-0 bg-deep-green"></div>
     {/if}
 
-    <div class="relative mx-auto flex min-h-[560px] max-w-7xl flex-col justify-end px-4 pb-12 pt-20 md:min-h-[640px] md:px-6 md:pb-16 md:pt-24 lg:min-h-[680px] lg:pb-20">
-      <a href="/destinations" class="absolute left-4 top-6 hidden items-center gap-1.5 text-[13px] font-medium text-white/90 transition hover:text-goldfinch-gold md:left-6 md:top-8 md:inline-flex">
+    <div class="container-shell relative flex min-h-[560px] flex-col justify-end pb-12 pt-20 md:min-h-[640px] md:pb-16 md:pt-24 lg:min-h-[680px] lg:pb-20">
+      <a href="/destinations" class="absolute left-0 top-6 hidden items-center gap-1.5 text-[13px] font-medium text-white/90 transition hover:text-goldfinch-gold md:top-8 md:inline-flex">
         <ArrowLeft class="h-3.5 w-3.5" /> Back to destinations
       </a>
 
@@ -783,7 +783,7 @@
 
   {#if quickFacts.length}
     <section class="bg-forest text-white">
-      <div class="mx-auto grid max-w-7xl gap-px bg-white/10 px-4 sm:grid-cols-2 md:px-6 lg:grid-cols-4">
+      <div class="container-shell grid gap-px bg-white/10 sm:grid-cols-2 lg:grid-cols-4">
         {#each quickFacts as fact}
           <div class="flex min-h-[92px] items-center gap-3 bg-forest px-4 py-5 lg:flex-1">
             <span class="grid h-10 w-10 shrink-0 place-items-center rounded-[8px] bg-goldfinch-gold text-heading">
@@ -801,7 +801,7 @@
 
   {#if visibleTabs.length > 1}
     <div class="sticky top-[70px] z-30 border-b border-ink/10 bg-surface/95 backdrop-blur">
-      <div class="mx-auto max-w-7xl px-4 md:px-6">
+      <div class="container-shell">
         <div class="no-scrollbar flex gap-6 overflow-x-auto py-3 text-[13.5px] font-semibold text-ink/60">
           {#each visibleTabs as tab}
             {@const active = activeTab === tab.id}
@@ -991,8 +991,8 @@
   {/if}
 
   {#if seasonalGuideBlocks.length}
-    <section id="best-time" class="scroll-mt-32 bg-surface px-5 py-14 md:px-6 md:py-20">
-      <div class="mx-auto max-w-[1180px]">
+    <section id="best-time" class="scroll-mt-32 bg-surface py-14 md:py-20">
+      <div class="container-shell">
         <div class="max-w-[820px]">
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Best Time to Visit</p>
           <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">When to visit {destination.name}</h2>
@@ -1069,7 +1069,7 @@
           </p>
         </div>
 
-        <div class="mx-auto mt-10 max-w-[1180px] rounded-[12px] border border-ink/10 bg-sand/45 p-6 shadow-[0_18px_45px_rgba(57,61,50,0.06)] md:mt-12 md:p-10 lg:p-12">
+        <div class="mt-10 rounded-[12px] border border-ink/10 bg-sand/45 p-6 shadow-[0_18px_45px_rgba(57,61,50,0.06)] md:mt-12 md:p-10 lg:p-12">
           <div class="grid items-stretch gap-7 md:gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
             <div class="flex flex-col">
               <div class="flex h-[64px] w-[64px] items-center justify-center rounded-full bg-clay/10 md:h-[72px] md:w-[72px]">
@@ -1284,7 +1284,7 @@
   {#if planningTabs.length && activePlanning}
     <section id="travel-tips" class="scroll-mt-32 bg-surface py-14 md:py-20">
       <div class="container-shell">
-        <div class="mx-auto max-w-[1180px]">
+        <div>
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Travel Tips</p>
           <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">Helpful details for {destination.name}</h2>
           <p class="mt-4 max-w-[820px] text-base leading-relaxed text-ink/65 md:text-lg">
@@ -1372,7 +1372,7 @@
 
   {#if faqs.length}
     <section id="good-to-know" class="scroll-mt-32 border-t border-ink/[0.06] bg-surface py-14 md:py-20">
-      <div class="mx-auto max-w-[1040px] px-4 md:px-6">
+      <div class="container-shell">
         <div class="max-w-3xl">
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">FAQ</p>
           <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">Questions about {destination.name}</h2>
@@ -1418,11 +1418,6 @@
 {/if}
 
 <style>
-  :global(.destination-page .container-shell) {
-    width: calc(100vw - 48px);
-    max-width: 1320px;
-  }
-
   .destination-hero-copy {
     isolation: isolate;
   }
@@ -1536,12 +1531,6 @@
     .destination-hero-copy::before {
       inset: -1.4rem -2rem -1.5rem -1.6rem;
       border-radius: 14px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    :global(.destination-page .container-shell) {
-      width: calc(100vw - 32px);
     }
   }
 
