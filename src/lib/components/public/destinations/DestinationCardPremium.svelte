@@ -74,7 +74,7 @@
   data-sveltekit-preload-data="hover"
 >
   <!-- Media band: identical 4/5 ratio with or without a photograph. -->
-  <div class="destination-card-media relative aspect-[4/5] w-full overflow-hidden bg-sand">
+  <div class="destination-card-media relative aspect-[1/0.96] w-full overflow-hidden bg-sand">
     {#if imageUrl}
       <!-- alt="" on purpose: the link itself already reads out the name, region
            and summary, so a repeated caption is noise for a screen reader. -->
@@ -313,6 +313,36 @@
 
   .destination-card-compact .destination-card-link {
     padding-top: 0.8rem;
+  }
+
+  @media (min-width: 768px) {
+    .destination-card-compact .destination-card-media {
+      aspect-ratio: 1 / 0.96;
+    }
+
+    .destination-card-compact .destination-card-body {
+      padding: 0.9rem 1rem 0.95rem;
+    }
+
+    .destination-card-compact .destination-card-title {
+      font-size: 1.1rem;
+    }
+
+    .destination-card-compact .destination-card-summary {
+      margin-top: 0.35rem;
+      line-height: 1.35;
+    }
+
+    .destination-card-compact .destination-card-facts {
+      max-height: 2rem;
+      margin-top: 0.65rem;
+      padding-top: 0.6rem;
+      overflow: hidden;
+    }
+
+    .destination-card-compact .destination-card-link {
+      padding-top: 0.65rem;
+    }
   }
 
   @media (max-width: 639px) {
