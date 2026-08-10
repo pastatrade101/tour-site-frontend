@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
+    ArrowLeft,
     ArrowRight,
+    BedDouble,
     CalendarDays,
-    Camera,
     CheckCircle2,
     Compass,
     FileCheck,
@@ -13,19 +14,17 @@
     MapPin,
     Phone,
     Plane,
-    Quote,
+    Route,
     Shield,
-    ShieldCheck,
-    Star
+    ShieldCheck
   } from '@lucide/svelte';
   import { trackEvent } from '$lib/analytics';
   import { fadeUpOnScroll, revealHeading, staggeredCardReveal } from '$lib/animations';
   import ActivityCard from '$lib/components/public/ActivityCard.svelte';
   import DestinationCard from '$lib/components/public/DestinationCard.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
-  import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
-  import LodgeCard from '$lib/components/public/LodgeCard.svelte';
+  import ReviewsWidget from '$lib/components/public/ReviewsWidget.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { currency, formatUsd } from '$lib/currency';
@@ -33,7 +32,7 @@
   import Img from '$lib/components/public/Img.svelte';
   import { hasRichContent, toMetaText } from '$lib/richText';
   import { breadcrumbLd } from '$lib/seo';
-  import type { Activity, Destination, FAQ, Lodge, Review, Tour, TourCategory, TripPoint } from '$lib/types';
+  import type { Activity, Destination, FAQ, Lodge, Tour, TourCategory, TripPoint } from '$lib/types';
   import type { DestinationGalleryImage } from './+page.server';
   import type { PageData } from './$types';
 
@@ -42,8 +41,37 @@
   type GuideBlock = Record<string, unknown>;
   type BlockItem = { title: string; body: string };
   type DisplayImage = { id: string; title: string; caption: string; alt: string; url: string; record?: Record<string, unknown>; fields: string[] };
-  type Fact = { icon: 'map' | 'compass' | 'calendar' | 'budget' | 'camera' | 'star'; label: string; value: string };
   type SafetyItem = { icon: 'shield' | 'health' | 'file' | 'phone' | 'security'; title: string; body: string };
+  type Icon = typeof MapPin;
+  type DestinationTab = { id: string; label: string };
+  type PlanningTab = {
+    id: string;
+    label: string;
+    icon: Icon;
+    title: string;
+    support: string;
+    items: BlockItem[];
+    tip?: string;
+  };
+  type HighlightCard = {
+    key: string;
+    title: string;
+    caption: string;
+    eyebrow: string;
+    image: string;
+    record?: Record<string, unknown>;
+    fields: string[];
+  };
+  type LodgeFeatureCard = {
+    key: string;
+    name: string;
+    href: string;
+    meta: string;
+    summary: string;
+    image: string;
+    record?: Record<string, unknown>;
+    fields: string[];
+  };
   type DestinationTourCategory = {
     id: string;
     name: string;
@@ -58,6 +86,37 @@
     maxDays: number | null;
   };
 
+  const DESTINATION_TABS = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'why-visit', label: 'Why Visit' },
+    { id: 'highlights', label: 'Highlights' },
+    { id: 'best-time', label: 'Best Time' },
+    { id: 'route-planning', label: 'Routes' },
+    { id: 'recommended-trips', label: 'Trips' },
+    { id: 'where-to-stay', label: 'Where to Stay' },
+    { id: 'travel-tips', label: 'Travel Tips' },
+    { id: 'good-to-know', label: 'Good to Know' }
+  ];
+
+  const LODGE_TYPES: Record<string, string> = {
+    tented_camp: 'Tented camp',
+    mobile_camp: 'Mobile camp',
+    lodge: 'Lodge',
+    hotel: 'Hotel',
+    treehouse: 'Treehouse'
+  };
+
+  const LODGE_LEVELS: Record<string, string> = {
+    budget: 'Budget',
+    mid_range: 'Mid-range',
+    luxury: 'Luxury',
+    ultra_luxury: 'Ultra-luxury'
+  };
+
+  let activeTab = DESTINATION_TABS[0].id;
+  let activeFaqIndex = -1;
+  let activePlanningTab = '';
+
   const isRecord = (value: unknown): value is Record<string, unknown> =>
     Boolean(value && typeof value === 'object' && !Array.isArray(value));
 
@@ -67,20 +126,22 @@
     return '';
   };
 
-  const firstParagraph = (value: unknown) => toMetaText(value, 230);
+  const normaliseLabel = (value: unknown): string =>
+    String(value ?? '')
+      .replace(/[_-]+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
 
-  const dateLabel = (value: unknown) => {
-    const raw = text(value);
-    if (!raw) return '';
-    const date = new Date(raw);
-    if (Number.isNaN(date.getTime())) return '';
-    return new Intl.DateTimeFormat('en', { month: 'short', year: 'numeric' }).format(date);
-  };
-
-  const scoreLabel = (value: unknown) => {
-    const score = Number(value);
-    if (!Number.isFinite(score) || score <= 0) return '';
-    return score <= 5 ? `${score.toFixed(score % 1 ? 1 : 0)}/5` : String(Math.round(score));
+  const unique = (items: Array<string | null | undefined>): string[] => {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const item of items) {
+      const value = String(item ?? '').trim();
+      if (!value || seen.has(value.toLowerCase())) continue;
+      seen.add(value.toLowerCase());
+      result.push(value);
+    }
+    return result;
   };
 
   const blockTitle = (block: GuideBlock) =>
@@ -168,34 +229,16 @@
     return images;
   };
 
-  const destinationFacts = (destination: Destination | null, currencyState: typeof $currency) => {
-    if (!destination) return [] as Fact[];
-    const facts: Fact[] = [];
-    const region = [destination.region, destination.country].filter(Boolean).join(', ') || destination.location || '';
-    const budget = destination.score_budget_from ? formatUsd(destination.score_budget_from, currencyState) : '';
-    const reviewed = dateLabel(destination.guide_reviewed_at);
-    const wildlife = scoreLabel(destination.score_wildlife);
-    const photography = scoreLabel(destination.score_photography);
-
-    if (destination.country) facts.push({ icon: 'map', label: 'Country', value: destination.country });
-    if (region) facts.push({ icon: 'compass', label: 'Area', value: region });
-    if (budget) facts.push({ icon: 'budget', label: 'Starting budget', value: budget });
-    if (wildlife) facts.push({ icon: 'star', label: 'Wildlife score', value: wildlife });
-    if (photography) facts.push({ icon: 'camera', label: 'Photography score', value: photography });
-    if (reviewed) facts.push({ icon: 'calendar', label: 'Guide reviewed', value: reviewed });
-
-    return facts.slice(0, 5);
-  };
-
   const safetyItemsFor = (destination: Destination | null) => {
     if (!destination) return [] as SafetyItem[];
-    return [
+    const items: SafetyItem[] = [
       { icon: 'shield', title: 'Safety overview', body: text(destination.safety_overview) },
       { icon: 'health', title: 'Health & vaccinations', body: text(destination.health_vaccinations) },
       { icon: 'security', title: 'Security advice', body: text(destination.security_advice) },
       { icon: 'file', title: 'Travel insurance', body: text(destination.travel_insurance_note) },
       { icon: 'phone', title: 'Emergency contacts', body: text(destination.emergency_contacts) }
-    ].filter((item) => toMetaText(item.body));
+    ];
+    return items.filter((item) => toMetaText(item.body));
   };
 
   const positiveNumber = (value: unknown) => {
@@ -204,6 +247,200 @@
   };
 
   const availableOnly = (tour: Tour) => tour.is_available !== false;
+
+  const tourDuration = (tour: Tour) => {
+    if (!tour.duration_days) return '';
+    const days = `${tour.duration_days} ${tour.duration_days === 1 ? 'day' : 'days'}`;
+    if (!tour.duration_nights) return days;
+    return `${days} / ${tour.duration_nights} ${tour.duration_nights === 1 ? 'night' : 'nights'}`;
+  };
+
+  const tourPrice = (tour: Tour, currencyState: typeof $currency) =>
+    tour.price_from ? `From ${formatUsd(tour.price_from, currencyState)}` : 'Price on request';
+
+  const destinationNamesForTour = (tour: Tour) => {
+    const linked = (tour.tour_destinations ?? [])
+      .slice()
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      .map((item) => item.destinations?.name)
+      .filter(Boolean) as string[];
+    return unique([...(linked.length ? linked : []), tour.destinations?.name]).slice(0, 4).join(' -> ');
+  };
+
+  const routeSummaryForTour = (tour: Tour) => {
+    if (tour.start_location && tour.end_location) return `${tour.start_location} -> ${tour.end_location}`;
+    return destinationNamesForTour(tour) || tour.start_location || tour.end_location || '';
+  };
+
+  const durationRangeFromTours = (tours: Tour[]) => {
+    const days = tours.map((tour) => positiveNumber(tour.duration_days)).filter((day): day is number => day !== null);
+    if (!days.length) return '';
+    const min = Math.min(...days);
+    const max = Math.max(...days);
+    if (min === max) return `${min} ${min === 1 ? 'day' : 'days'}`;
+    return `${min}-${max} days`;
+  };
+
+  const priceFloorFromTours = (tours: Tour[], currencyState: typeof $currency) => {
+    const prices = tours.map((tour) => positiveNumber(tour.price_from)).filter((price): price is number => price !== null);
+    return prices.length ? formatUsd(Math.min(...prices), currencyState) : '';
+  };
+
+  const blockSearchText = (block: GuideBlock) =>
+    [blockTitle(block), blockSubtitle(block), blockBody(block), ...blockItems(block).map((item) => `${item.title} ${item.body}`)]
+      .join(' ')
+      .toLowerCase();
+
+  const isSeasonGuideBlock = (block: GuideBlock) => {
+    const value = blockSearchText(block);
+    return /\b(best time|when to visit|season|months?|dry season|green season|migration|rain)\b/.test(value);
+  };
+
+  const guideBlockKey = (block: GuideBlock, index: number) =>
+    `${index}-${blockTitle(block) || blockSubtitle(block) || blockBody(block).slice(0, 30)}`;
+
+  const highlightCardsFor = (
+    destination: Destination | null,
+    activities: Activity[],
+    visualImages: DisplayImage[],
+    guideSections: GuideBlock[]
+  ) => {
+    if (!destination) return [] as HighlightCard[];
+    const cards: HighlightCard[] = [];
+    const add = (card: HighlightCard) => {
+      if (!card.title || cards.some((item) => item.title.toLowerCase() === card.title.toLowerCase())) return;
+      cards.push(card);
+    };
+
+    for (const activity of activities) {
+      const image = sourceFor(activity, 800, 'image_url', 'hero_image_url');
+      add({
+        key: `activity-${activity.id}`,
+        title: activity.name,
+        caption: toMetaText(activity.why_we_recommend || activity.description || '', 150),
+        eyebrow: normaliseLabel(activity.category),
+        image,
+        record: activity as unknown as Record<string, unknown>,
+        fields: ['image_url', 'hero_image_url']
+      });
+    }
+
+    for (const image of visualImages) {
+      add({
+        key: `image-${image.id}`,
+        title: image.title || destination.name,
+        caption: toMetaText(image.caption, 150),
+        eyebrow: 'Photo',
+        image: image.url,
+        record: image.record,
+        fields: image.fields
+      });
+    }
+
+    for (const block of guideSections) {
+      for (const item of blockItems(block)) {
+        add({
+          key: `guide-${cards.length}-${item.title}`,
+          title: item.title,
+          caption: toMetaText(item.body || blockBody(block), 150),
+          eyebrow: blockTitle(block) || 'Guide note',
+          image: imageFromBlock(block) || sourceFor(destination, 900, 'main_image_url', 'image_url', 'banner_image_url'),
+          fields: []
+        });
+      }
+    }
+
+    return cards.filter((card) => card.caption || card.image).slice(0, 6);
+  };
+
+  const lodgeFeatureCardsFor = (lodges: Lodge[]) =>
+    lodges.slice(0, 6).map((lodge) => {
+      const image = sourceFor(lodge, 900, 'image_url', 'hero_image_url');
+      const meta = unique([
+        LODGE_LEVELS[lodge.accommodation_level] ?? normaliseLabel(lodge.accommodation_level),
+        LODGE_TYPES[lodge.lodge_type] ?? normaliseLabel(lodge.lodge_type),
+        lodge.destinations?.name
+      ]).join(' / ');
+
+      return {
+        key: lodge.id,
+        name: lodge.name,
+        href: `/accommodation/${lodge.slug}`,
+        meta,
+        summary: toMetaText(lodge.why_we_recommend || lodge.description || '', 150),
+        image,
+        record: lodge as unknown as Record<string, unknown>,
+        fields: ['image_url', 'hero_image_url']
+      } satisfies LodgeFeatureCard;
+    });
+
+  const planningTabsFor = (destination: Destination | null, tripPoints: TripPoint[], safetyItems: SafetyItem[]) => {
+    if (!destination) return [] as PlanningTab[];
+    const tabs: PlanningTab[] = [];
+
+    if (tripPoints.length) {
+      tabs.push({
+        id: 'getting-there',
+        label: 'Getting There',
+        icon: Plane,
+        title: `Getting to ${destination.name}`,
+        support: 'Published gateway and transfer notes connected to this destination.',
+        items: tripPoints.map((point) => ({
+          title: [point.name, point.airport_code].filter(Boolean).join(' / '),
+          body: text(point.transfer_info) || text(point.description) || roleLabel(point.role)
+        }))
+      });
+    }
+
+    for (const item of safetyItems) {
+      const icon =
+        item.icon === 'health' ? HeartPulse : item.icon === 'file' ? FileCheck : item.icon === 'phone' ? Phone : item.icon === 'security' ? Shield : ShieldCheck;
+      tabs.push({
+        id: item.icon,
+        label: item.title.replace(/\s*&\s*/g, ' & '),
+        icon,
+        title: item.title,
+        support: 'This guidance is rendered from the published destination record.',
+        items: [{ title: item.title, body: item.body }]
+      });
+    }
+
+    return tabs;
+  };
+
+  const scrollToSection = (id: string) => {
+    if (typeof window === 'undefined') return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY - 96;
+    window.scrollTo({ top, behavior: 'smooth' });
+  };
+
+  const updateActiveDestinationTab = (tabs: DestinationTab[]) => {
+    if (typeof window === 'undefined' || !tabs.length) return;
+    const y = window.scrollY + 132;
+    let current = tabs[0].id;
+    for (const tab of tabs) {
+      const el = document.getElementById(tab.id);
+      if (el && el.offsetTop <= y) current = tab.id;
+    }
+    activeTab = current;
+  };
+
+  const updateFaqTimeline = () => {
+    if (typeof window === 'undefined') return;
+    const items = Array.from(document.querySelectorAll<HTMLElement>('[data-destination-faq-item]'));
+    if (!items.length) {
+      activeFaqIndex = -1;
+      return;
+    }
+    const threshold = window.innerHeight * 0.48;
+    let reached = -1;
+    for (const [index, item] of items.entries()) {
+      if (item.getBoundingClientRect().top <= threshold) reached = index;
+    }
+    activeFaqIndex = reached;
+  };
 
   const matchingDestinationCategories = (tours: Tour[], categories: TourCategory[]) => {
     const byId = new Map(categories.map((category) => [category.id, category]));
@@ -326,16 +563,6 @@
   const roleLabel = (role: TripPoint['role']) =>
     role === 'start' ? 'Trips start here' : role === 'end' ? 'Trips end here' : 'Start & end point';
 
-  const reviewInitials = (review: Review) =>
-    review.author_initials ||
-    review.author_name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join('') ||
-    '?';
-
   $: destination = data.destination as Destination | null;
   $: relatedTours = (data.relatedTours ?? []) as Tour[];
   $: tourCategories = (data.tourCategories ?? []) as TourCategory[];
@@ -345,7 +572,6 @@
   $: tripPoints = (data.tripPoints ?? []) as TripPoint[];
   $: galleryImages = (data.galleryImages ?? []) as DestinationGalleryImage[];
   $: faqs = (data.faqs ?? []) as FAQ[];
-  $: reviews = (data.reviews ?? []) as Review[];
   $: origin = data.origin ?? '';
 
   $: heroImage = destination ? sourceFor(destination, 2000, 'banner_image_url', 'main_image_url', 'image_url') : '';
@@ -369,20 +595,83 @@
   // interrupting the prose. Everything else reads top to bottom.
   $: guideFactsBlock = visibleGuideBlocks.find((block) => blockItems(block).length && !blockBody(block)) ?? null;
   $: guideSections = visibleGuideBlocks.filter((block) => block !== guideFactsBlock);
+  $: seasonalGuideBlocks = guideSections.filter(isSeasonGuideBlock);
+  $: narrativeGuideBlocks = guideSections.filter((block) => !isSeasonGuideBlock(block));
   $: guideFacts = guideFactsBlock ? blockItems(guideFactsBlock) : [];
   $: visualImages = destinationImageItems(destination, galleryImages, locationLabel);
-  $: facts = destinationFacts(destination, $currency);
   $: safetyItems = safetyItemsFor(destination);
   $: availableTours = relatedTours.filter(availableOnly);
   $: relevantTourCategories = matchingDestinationCategories(availableTours, tourCategories);
+  $: recommendedStay = durationRangeFromTours(availableTours);
+  $: tourPriceFloor = priceFloorFromTours(availableTours, $currency);
+  $: heroStats = ([
+    locationLabel ? { icon: MapPin, label: 'Destination', value: locationLabel } : null,
+    recommendedStay ? { icon: CalendarDays, label: 'Trip length', value: recommendedStay } : null,
+    availableTours.length ? { icon: Route, label: 'Available trips', value: `${availableTours.length} published ${availableTours.length === 1 ? 'trip' : 'trips'}` } : null,
+    destination?.score_budget_from || tourPriceFloor
+      ? { icon: Info, label: destination?.score_budget_from ? 'Starting budget' : 'Trips from', value: destination?.score_budget_from ? formatUsd(destination.score_budget_from, $currency) : tourPriceFloor }
+      : null
+  ].filter(Boolean) as Array<{ icon: Icon; label: string; value: string }>);
+  $: heroTags = destination
+    ? unique([
+        destination.country,
+        destination.region,
+        destination.is_featured ? 'Featured destination' : '',
+        relevantTourCategories[0]?.name,
+        recommendedStay
+      ]).slice(0, 5)
+    : [];
+  $: quickFacts = ([
+    locationLabel ? { icon: MapPin, label: 'Area', value: locationLabel } : null,
+    recommendedStay ? { icon: CalendarDays, label: 'Recommended stay', value: recommendedStay } : null,
+    availableTours.length ? { icon: Route, label: 'Works with', value: `${availableTours.length} matching ${availableTours.length === 1 ? 'tour' : 'tours'}` } : null,
+    relevantTourCategories.length ? { icon: Compass, label: 'Travel style', value: relevantTourCategories.slice(0, 2).map((item) => item.name).join(' / ') } : null
+  ].filter(Boolean) as Array<{ icon: Icon; label: string; value: string }>);
+  $: highlightCards = highlightCardsFor(destination, activities, visualImages, narrativeGuideBlocks);
+  $: lodgeFeatureCards = lodgeFeatureCardsFor(lodges);
+  $: planningTabs = planningTabsFor(destination, tripPoints, safetyItems);
+  $: if (planningTabs.length && !planningTabs.some((tab) => tab.id === activePlanningTab)) activePlanningTab = planningTabs[0].id;
+  $: activePlanning = planningTabs.find((tab) => tab.id === activePlanningTab) ?? planningTabs[0];
+  $: routeRows = availableTours.slice(0, 5).map((tour) => ({
+    id: tour.id,
+    title: tour.title,
+    route: routeSummaryForTour(tour),
+    best: unique([tour.tour_categories?.name, tour.experience_type ? normaliseLabel(tour.experience_type) : '', tour.budget_tier ? `${normaliseLabel(tour.budget_tier)} level` : '']).join(' / '),
+    href: `/tours/${tour.slug}`
+  }));
+  $: visibleTabs = DESTINATION_TABS.filter((tab) => {
+    if (tab.id === 'why-visit') return narrativeGuideBlocks.length;
+    if (tab.id === 'highlights') return highlightCards.length || visualImages.length;
+    if (tab.id === 'best-time') return seasonalGuideBlocks.length;
+    if (tab.id === 'route-planning') return routeRows.length || tripPoints.length;
+    if (tab.id === 'recommended-trips') return availableTours.length;
+    if (tab.id === 'where-to-stay') return lodgeFeatureCards.length;
+    if (tab.id === 'travel-tips') return planningTabs.length;
+    if (tab.id === 'good-to-know') return faqs.length;
+    return true;
+  });
   $: availableTourListSchema = tourItemListLd(origin, destination, availableTours);
   $: categoryListSchema = categoryItemListLd(origin, destination, relevantTourCategories);
-  $: hasPlanning = safetyItems.length > 0 || tripPoints.length > 0;
   $: title = destination?.meta_title || (destination ? `${destination.name} Travel Guide` : 'Destination');
   $: description = toMetaText(destination?.meta_description || summary || 'Explore this destination with Goldfinch Adventures.', 170);
 
   onMount(() => {
     if (destination) trackEvent('destination_page_view', { destination: destination.name });
+    const updateActive = () => updateActiveDestinationTab(visibleTabs);
+
+    window.addEventListener('scroll', updateActive, { passive: true });
+    window.addEventListener('scroll', updateFaqTimeline, { passive: true });
+    window.addEventListener('resize', updateActive);
+    window.addEventListener('resize', updateFaqTimeline);
+    updateActive();
+    updateFaqTimeline();
+
+    return () => {
+      window.removeEventListener('scroll', updateActive);
+      window.removeEventListener('scroll', updateFaqTimeline);
+      window.removeEventListener('resize', updateActive);
+      window.removeEventListener('resize', updateFaqTimeline);
+    };
   });
 </script>
 
@@ -410,7 +699,7 @@
     <ErrorState message="Destination not found." />
   </section>
 {:else}
-  <div class="destination-page overflow-x-hidden">
+  <div class="destination-page overflow-x-clip">
     <JsonLd
       data={breadcrumbLd(origin, [
         { name: 'Home', path: '/' },
@@ -425,7 +714,7 @@
       <JsonLd data={categoryListSchema} />
     {/if}
 
-  <section class="relative min-h-[560px] overflow-hidden bg-deep-green text-white md:min-h-[640px]">
+  <section data-hero class="relative isolate overflow-hidden bg-deep-green text-white">
     {#if heroImage}
       <Img
         record={destination}
@@ -436,71 +725,73 @@
         eager
         className="absolute inset-0 h-full w-full object-cover"
       />
-      <div class="absolute inset-0 bg-gradient-to-r from-deep-green via-deep-green/78 to-deep-green/20"></div>
-      <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-transparent to-black/25"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-deep-green/25 via-transparent to-deep-green/10" aria-hidden="true"></div>
     {:else}
       <div class="absolute inset-0 bg-deep-green"></div>
     {/if}
 
-    <div class="container-shell relative flex min-h-[560px] flex-col justify-end pb-10 pt-28 md:min-h-[640px] md:pb-14">
-      <nav class="mb-auto flex flex-wrap items-center gap-2 pt-4 text-sm font-medium text-white/70">
-        <a class="transition hover:text-white" href="/">Home</a>
-        <span class="text-white/35">/</span>
-        <a class="transition hover:text-white" href="/destinations">Destinations</a>
-        <span class="text-white/35">/</span>
-        <span class="text-white">{destination.name}</span>
-      </nav>
+    <div class="relative mx-auto flex min-h-[560px] max-w-7xl flex-col justify-end px-4 pb-12 pt-20 md:min-h-[640px] md:px-6 md:pb-16 md:pt-24 lg:min-h-[680px] lg:pb-20">
+      <a href="/destinations" class="absolute left-4 top-6 hidden items-center gap-1.5 text-[13px] font-medium text-white/90 transition hover:text-goldfinch-gold md:left-6 md:top-8 md:inline-flex">
+        <ArrowLeft class="h-3.5 w-3.5" /> Back to destinations
+      </a>
 
-      <div class="max-w-4xl min-w-0">
-        {#if locationLabel}
-          <p class="inline-flex items-center gap-2 rounded-[8px] border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold backdrop-blur">
-            <MapPin size={13} strokeWidth={2.5} />
-            {locationLabel}
-          </p>
+      <div class="destination-hero-copy relative max-w-3xl pb-2 [text-shadow:0_2px_18px_rgba(39,43,34,0.42)] md:pb-4">
+        {#if heroTags.length}
+          <div class="mb-5 flex flex-wrap gap-1.5">
+            {#each heroTags as tag}
+              <span class="inline-flex items-center rounded-full border border-white/30 bg-deep-green/35 px-2.5 py-0.5 text-[11px] font-medium text-white backdrop-blur">
+                {tag}
+              </span>
+            {/each}
+          </div>
         {/if}
-        <h1 class="mt-5 text-4xl font-extrabold leading-[1.02] tracking-normal md:text-6xl lg:text-7xl" use:revealHeading>
+        <span class="text-[11px] font-bold uppercase tracking-[0.18em] text-goldfinch-gold drop-shadow">Destination guide</span>
+        <h1 class="mt-3 font-serif text-3xl font-semibold leading-[1.05] tracking-normal text-white sm:text-4xl md:text-5xl lg:text-[54px]" use:revealHeading>
           {destination.name}
         </h1>
         {#if summary}
-          <p class="mt-5 max-w-2xl break-words text-base font-medium leading-8 text-white/84 md:text-lg">{summary}</p>
+          <p class="mt-4 max-w-2xl break-words text-[15px] font-medium leading-relaxed text-white md:text-base">{summary}</p>
         {/if}
         <div class="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <a class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-6 text-sm font-bold text-heading shadow-lg shadow-black/10 transition hover:brightness-105 sm:w-auto" href={`/plan-my-trip?destination=${destination.slug}`}>
+          <a class="inline-flex items-center justify-center gap-2 rounded-[6px] bg-goldfinch-gold px-5 py-3 text-sm font-bold text-heading transition hover:brightness-105" href={`/plan-my-trip?destination=${destination.slug}`} data-cta="destination-detail-hero-primary">
             Plan this destination <ArrowRight size={17} />
           </a>
           {#if availableTours.length}
-            <a class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] border border-white/35 bg-white/8 px-6 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15 sm:w-auto" href="#recommended-trips">
+            <button type="button" class="inline-flex items-center justify-center gap-2 rounded-[6px] border border-white/35 bg-deep-green/30 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-deep-green/45" on:click={() => scrollToSection('recommended-trips')}>
               See matching trips <ArrowRight size={17} />
-            </a>
+            </button>
           {/if}
         </div>
+        {#if heroStats.length}
+          <div class="mt-5 flex max-w-3xl flex-wrap gap-2">
+            {#each heroStats as stat}
+              <div class="hero-stat-chip inline-flex min-w-[156px] max-w-full flex-1 items-center gap-2 rounded-[9px] border border-white/18 bg-white/[0.13] px-3 py-2.5 text-white shadow-[0_10px_24px_rgba(15,23,42,0.16)] backdrop-blur-md sm:flex-none">
+                <span class="grid h-8 w-8 shrink-0 place-items-center rounded-[7px] bg-goldfinch-gold text-heading">
+                  <svelte:component this={stat.icon} size={16} strokeWidth={2.35} />
+                </span>
+                <span class="min-w-0">
+                  <span class="block text-[9.5px] font-bold uppercase tracking-[0.12em] text-white/68">{stat.label}</span>
+                  <span class="block text-[13px] font-bold leading-snug text-white md:text-[13.5px]">{stat.value}</span>
+                </span>
+              </div>
+            {/each}
+          </div>
+        {/if}
       </div>
     </div>
   </section>
 
-  {#if facts.length}
+  {#if quickFacts.length}
     <section class="bg-forest text-white">
-      <div class="container-shell grid gap-px bg-white/10 sm:grid-cols-2 lg:flex">
-        {#each facts as fact}
+      <div class="mx-auto grid max-w-7xl gap-px bg-white/10 px-4 sm:grid-cols-2 md:px-6 lg:grid-cols-4">
+        {#each quickFacts as fact}
           <div class="flex min-h-[92px] items-center gap-3 bg-forest px-4 py-5 lg:flex-1">
             <span class="grid h-10 w-10 shrink-0 place-items-center rounded-[8px] bg-goldfinch-gold text-heading">
-              {#if fact.icon === 'map'}
-                <MapPin size={18} />
-              {:else if fact.icon === 'compass'}
-                <Compass size={18} />
-              {:else if fact.icon === 'calendar'}
-                <CalendarDays size={18} />
-              {:else if fact.icon === 'budget'}
-                <Info size={18} />
-              {:else if fact.icon === 'camera'}
-                <Camera size={18} />
-              {:else}
-                <Star size={18} />
-              {/if}
+              <svelte:component this={fact.icon} size={18} />
             </span>
             <div class="min-w-0">
               <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-white/45">{fact.label}</p>
-              <p class="mt-1 truncate text-sm font-bold text-white">{fact.value}</p>
+              <p class="mt-1 text-sm font-bold leading-snug text-white">{fact.value}</p>
             </div>
           </div>
         {/each}
@@ -508,10 +799,30 @@
     </section>
   {/if}
 
-  <section class="bg-canvas py-14 md:py-20">
+  {#if visibleTabs.length > 1}
+    <div class="sticky top-[70px] z-30 border-b border-ink/10 bg-surface/95 backdrop-blur">
+      <div class="mx-auto max-w-7xl px-4 md:px-6">
+        <div class="no-scrollbar flex gap-6 overflow-x-auto py-3 text-[13.5px] font-semibold text-ink/60">
+          {#each visibleTabs as tab}
+            {@const active = activeTab === tab.id}
+            <button
+              type="button"
+              class={`relative whitespace-nowrap pb-1 transition ${active ? 'text-heading' : 'hover:text-heading'}`}
+              on:click={() => scrollToSection(tab.id)}
+            >
+              {tab.label}
+              <span class={`absolute -bottom-0.5 left-0 right-0 h-[2px] transition-opacity ${active ? 'bg-clay opacity-100' : 'opacity-0'}`}></span>
+            </button>
+          {/each}
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <section id="overview" class="scroll-mt-32 bg-canvas py-14 md:py-20">
     <div class="container-shell grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
       <aside class="lg:sticky lg:top-24" use:fadeUpOnScroll={{ y: 14 }}>
-        <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Destination guide</p>
+        <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Overview</p>
         <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[42px]">About {destination.name}</h2>
         {#if summary}
           <p class="mt-4 text-base leading-8 text-ink/70">{summary}</p>
@@ -551,9 +862,9 @@
           </article>
         {/if}
 
-        {#if guideSections.length}
-          <div class="space-y-10">
-            {#each guideSections as block, index}
+        {#if narrativeGuideBlocks.length}
+          <div id="why-visit" class="scroll-mt-32 space-y-10">
+            {#each narrativeGuideBlocks as block, index}
               <!-- Single measured column. The old layout split every section into
                    1fr + 300px for an image and alternated the side, but a guide
                    section rarely has its own image, so it mostly rendered prose
@@ -635,40 +946,181 @@
     </div>
   </section>
 
-  {#if visualImages.length}
-    <section class="bg-sand/45 py-14 md:py-20">
+  {#if highlightCards.length}
+    <section id="highlights" class="scroll-mt-32 bg-sand/45 py-14 md:py-20">
       <div class="container-shell">
         <div class="max-w-3xl" use:fadeUpOnScroll={{ y: 14 }}>
-          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Gallery</p>
-          <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">{destination.name} in pictures</h2>
-          <p class="mt-3 text-base leading-7 text-ink/65">Published images connected to this destination.</p>
+          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Highlights</p>
+          <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">Highlights of {destination.name}</h2>
+          <p class="mt-3 text-base leading-7 text-ink/65">Cards below are built from published activities, gallery records, and guide notes attached to this destination.</p>
         </div>
 
-        <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
-          {#each visualImages.slice(0, 6) as image, index (image.id)}
-            <a class={`group relative block overflow-hidden rounded-[8px] bg-forest shadow-card ring-1 ring-black/10 ${index === 0 ? 'lg:row-span-2' : ''}`} href="/gallery">
-              <Img
-                record={image.record}
-                fields={image.fields}
-                src={image.record ? '' : image.url}
-                alt={image.alt}
-                width={index === 0 ? 1100 : 760}
-                sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 31vw"
-                eager={index === 0}
-                className={`w-full object-cover transition duration-700 ease-out group-hover:scale-[1.06] ${index === 0 ? 'aspect-[4/5] lg:h-full' : 'aspect-[4/3]'}`}
-              />
-              <div class="absolute inset-0 bg-gradient-to-t from-black/82 via-black/18 to-transparent opacity-80 transition group-hover:opacity-95"></div>
-              <div class="absolute inset-x-0 bottom-0 p-4 text-white transition duration-300 group-hover:-translate-y-1">
-                <p class="inline-flex items-center gap-1.5 rounded-[6px] bg-black/45 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-white/80 backdrop-blur">
-                  <ImageIcon size={12} /> Photo
-                </p>
-                <h3 class="mt-3 text-lg font-bold leading-tight text-white">{image.title}</h3>
-                {#if image.caption}
-                  <p class="mt-2 line-clamp-2 max-h-0 text-sm leading-6 text-white/82 opacity-0 transition-all duration-300 group-hover:max-h-20 group-hover:opacity-100">{image.caption}</p>
+        <div class="mt-10 grid grid-cols-1 gap-[22px] md:grid-cols-2 md:gap-8 lg:grid-cols-3 lg:gap-9 lg:gap-y-11" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
+          {#each highlightCards as card (card.key)}
+            <article class="group relative h-[240px] overflow-hidden rounded-[8px] bg-forest shadow-[0_8px_22px_rgba(57,61,50,0.14)] md:h-[230px] lg:h-[240px]">
+              {#if card.image}
+                <Img
+                  record={card.record}
+                  fields={card.fields}
+                  src={card.record ? '' : card.image}
+                  alt={card.title}
+                  width={760}
+                  sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 31vw"
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                />
+              {:else}
+                <div class="absolute inset-0 grid place-items-center bg-forest/10 text-forest">
+                  <ImageIcon size={30} />
+                </div>
+              {/if}
+              <div class="absolute inset-0 bg-gradient-to-b from-deep-green/10 via-deep-green/28 to-deep-green/82 transition duration-300 group-hover:from-deep-green/30 group-hover:via-deep-green/55 group-hover:to-deep-green/92" aria-hidden="true"></div>
+              <div class="absolute left-5 right-5 bottom-6 text-center text-white transition-all duration-[280ms] ease-out md:left-6 md:right-6 md:bottom-8 md:group-hover:bottom-1/2 md:group-hover:translate-y-1/2">
+                <p class="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-goldfinch-gold drop-shadow">{card.eyebrow}</p>
+                <h3 class="text-[17px] font-bold leading-[1.15] text-white drop-shadow md:text-[19px]">{card.title}</h3>
+                {#if card.caption}
+                  <p class="mx-auto mt-1.5 max-w-[92%] overflow-hidden text-[13px] leading-[1.35] text-white opacity-100 transition-all duration-[280ms] ease-out md:mt-0 md:max-h-0 md:translate-y-2 md:text-[14px] md:opacity-0 md:group-hover:mt-[10px] md:group-hover:max-h-[120px] md:group-hover:translate-y-0 md:group-hover:opacity-100">
+                    {card.caption}
+                  </p>
                 {/if}
               </div>
-            </a>
+            </article>
           {/each}
+        </div>
+      </div>
+    </section>
+  {/if}
+
+  {#if seasonalGuideBlocks.length}
+    <section id="best-time" class="scroll-mt-32 bg-surface px-5 py-14 md:px-6 md:py-20">
+      <div class="mx-auto max-w-[1180px]">
+        <div class="max-w-[820px]">
+          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Best Time to Visit</p>
+          <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">When to visit {destination.name}</h2>
+          <p class="mt-4 max-w-[820px] text-base leading-relaxed text-ink/65 md:text-lg">
+            Seasonal guidance below is rendered from the published guide content for this destination.
+          </p>
+        </div>
+
+        <div class="mt-10 grid gap-6">
+          {#each seasonalGuideBlocks as block, index (guideBlockKey(block, index))}
+            <article class="overflow-hidden rounded-[10px] border border-ink/10 bg-canvas shadow-card">
+              <div class="grid gap-6 p-5 md:grid-cols-[0.42fr_0.58fr] md:p-7">
+                <div>
+                  {#if blockSubtitle(block)}
+                    <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">{blockSubtitle(block)}</p>
+                  {/if}
+                  <h3 class="mt-2 font-serif text-[22px] font-semibold leading-tight text-heading md:text-[28px]">{blockTitle(block) || 'Seasonal note'}</h3>
+                  {#if blockBody(block)}
+                    <RichText value={blockBody(block)} className="mt-4 text-[15px] leading-7 text-ink/70" />
+                  {/if}
+                </div>
+
+                <div class="min-w-0">
+                  {#if tableRows(block).length}
+                    <div class="-mx-5 overflow-x-auto md:mx-0">
+                      <table class="w-full min-w-[640px] border-collapse text-[14px]">
+                        {#if tableColumns(block).length}
+                          <thead>
+                            <tr class="bg-deep-green text-left text-white">
+                              {#each tableColumns(block) as column}
+                                <th class="px-4 py-3 font-semibold">{column}</th>
+                              {/each}
+                            </tr>
+                          </thead>
+                        {/if}
+                        <tbody>
+                          {#each tableRows(block) as row, rowIndex}
+                            <tr class={rowIndex % 2 === 0 ? 'bg-surface' : 'bg-sand/35'}>
+                              {#each row as cell}
+                                <td class="border-t border-ink/5 px-4 py-3 align-top text-ink/70">{cell}</td>
+                              {/each}
+                            </tr>
+                          {/each}
+                        </tbody>
+                      </table>
+                    </div>
+                  {:else if blockItems(block).length}
+                    <div class="grid gap-3 sm:grid-cols-2">
+                      {#each blockItems(block) as item}
+                        <div class="rounded-[9px] border border-ink/10 bg-surface p-4">
+                          <p class="font-bold text-heading">{item.title}</p>
+                          {#if item.body}<p class="mt-2 text-sm leading-6 text-ink/65">{item.body}</p>{/if}
+                        </div>
+                      {/each}
+                    </div>
+                  {/if}
+                </div>
+              </div>
+            </article>
+          {/each}
+        </div>
+      </div>
+    </section>
+  {/if}
+
+  {#if routeRows.length || tripPoints.length}
+    <section id="route-planning" class="scroll-mt-32 bg-canvas py-14 md:py-20">
+      <div class="container-shell">
+        <div class="max-w-[1180px]">
+          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Route Planning</p>
+          <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">How {destination.name} fits into a route</h2>
+          <p class="mt-4 max-w-[820px] text-base leading-relaxed text-ink/65 md:text-lg">
+            This section uses published trips and gateway records linked to {destination.name}.
+          </p>
+        </div>
+
+        <div class="mx-auto mt-10 max-w-[1180px] rounded-[12px] border border-ink/10 bg-sand/45 p-6 shadow-[0_18px_45px_rgba(57,61,50,0.06)] md:mt-12 md:p-10 lg:p-12">
+          <div class="grid items-stretch gap-7 md:gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+            <div class="flex flex-col">
+              <div class="flex h-[64px] w-[64px] items-center justify-center rounded-full bg-clay/10 md:h-[72px] md:w-[72px]">
+                <MapPin class="h-6 w-6 text-clay md:h-7 md:w-7" />
+              </div>
+              <h3 class="mb-6 mt-5 font-serif text-[22px] font-semibold leading-[1.12] text-heading md:mb-7 md:text-[28px]">
+                Match the destination to the right route flow.
+              </h3>
+              {#if tripPoints.length}
+                <div class="space-y-3">
+                  {#each tripPoints as point (point.id)}
+                    <div class="rounded-[8px] border border-ink/10 bg-surface p-4">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <p class="font-bold text-heading">{point.name}</p>
+                        {#if point.airport_code}
+                          <span class="rounded-[6px] bg-forest/10 px-2 py-0.5 font-mono text-[11px] font-bold text-forest">{point.airport_code}</span>
+                        {/if}
+                      </div>
+                      <p class="mt-1 text-[11px] font-bold uppercase tracking-[0.14em] text-clay">{roleLabel(point.role)}</p>
+                      {#if point.transfer_info || point.description}
+                        <p class="mt-2 text-sm leading-6 text-ink/68">{point.transfer_info || point.description}</p>
+                      {/if}
+                    </div>
+                  {/each}
+                </div>
+              {:else if summary}
+                <p class="text-[15.5px] leading-7 text-ink/70 md:text-[17px]">{summary}</p>
+              {/if}
+            </div>
+
+            {#if routeRows.length}
+              <div class="h-full rounded-[12px] border border-ink/10 bg-surface p-6 md:p-8">
+                <div class="mb-6 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-clay md:mb-7 md:text-[12px]">
+                  <Route class="h-3.5 w-3.5" />
+                  Published route ideas
+                </div>
+                <ol class="divide-y divide-ink/10">
+                  {#each routeRows as row, index (row.id)}
+                    <li class="grid grid-cols-[auto_minmax(0,1fr)] gap-4 py-[18px] first:pt-0 last:pb-0">
+                      <span class="text-[18px] font-bold leading-none text-clay md:text-[20px]">{index + 1}</span>
+                      <div class="min-w-0">
+                        <a class="text-[15px] font-bold text-heading transition hover:text-clay md:text-[16px]" href={row.href}>{row.title}</a>
+                        {#if row.route}<div class="mt-1 text-[13px] text-ink/65 md:text-[14px]">{row.route}</div>{/if}
+                        {#if row.best}<div class="mt-1 text-[13px] text-ink/60 md:text-[14px]"><span class="font-bold text-heading">Style: </span>{row.best}</div>{/if}
+                      </div>
+                    </li>
+                  {/each}
+                </ol>
+              </div>
+            {/if}
+          </div>
         </div>
       </div>
     </section>
@@ -757,7 +1209,7 @@
     </section>
   {/if}
 
-  {#if activities.length || lodges.length}
+  {#if activities.length || lodgeFeatureCards.length}
     <section class="border-y border-ink/[0.06] bg-sand/35 py-14 md:py-20">
       <div class="container-shell grid gap-12">
         {#if activities.length}
@@ -775,16 +1227,52 @@
           </div>
         {/if}
 
-        {#if lodges.length}
-          <div>
+        {#if lodgeFeatureCards.length}
+          <div id="where-to-stay" class="scroll-mt-32">
             <div class="max-w-3xl">
               <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Where to stay</p>
               <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[38px]">Lodges & camps in {destination.name}</h2>
               <p class="mt-3 text-base leading-7 text-ink/65">Published accommodation linked to this destination.</p>
             </div>
-            <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
-              {#each lodges as lodge (lodge.id)}
-                <LodgeCard {lodge} />
+            <div class="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
+              {#each lodgeFeatureCards as lodge (lodge.key)}
+                <article class="group relative aspect-square overflow-hidden rounded-[12px] border border-ink/10 bg-deep-green shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(39,43,34,0.18)] focus-within:-translate-y-0.5 focus-within:shadow-[0_18px_38px_rgba(39,43,34,0.18)]">
+                  {#if lodge.image}
+                    <Img
+                      src={lodge.record ? '' : lodge.image}
+                      record={lodge.record}
+                      fields={lodge.fields}
+                      alt={lodge.name}
+                      width={720}
+                      sizes="(max-width: 768px) 92vw, 360px"
+                      className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.035] group-focus-within:scale-[1.035]"
+                    />
+                  {:else}
+                    <div class="absolute inset-0 grid place-items-center bg-gradient-to-br from-sand to-forest/25 text-forest">
+                      <BedDouble size={30} />
+                    </div>
+                  {/if}
+
+                  <div class="absolute inset-0 bg-gradient-to-b from-deep-green/22 via-deep-green/22 to-deep-green/96 transition duration-300 group-hover:from-deep-green/35 group-hover:via-deep-green/45 group-hover:to-deep-green/98 group-focus-within:from-deep-green/35 group-focus-within:via-deep-green/45 group-focus-within:to-deep-green/98" aria-hidden="true"></div>
+                  <div class="absolute inset-x-0 bottom-0 h-[68%] bg-gradient-to-t from-deep-green via-deep-green/88 to-transparent" aria-hidden="true"></div>
+                  <div class="relative flex h-full flex-col justify-end p-4 text-white md:p-5">
+                    {#if lodge.meta}
+                      <span class="mb-auto w-fit rounded-full border border-white/25 bg-deep-green/82 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-[0_8px_18px_rgba(15,23,42,0.24)] backdrop-blur">
+                        {lodge.meta}
+                      </span>
+                    {/if}
+                    <div>
+                      <h3 class="destination-accommodation-title font-serif text-[20px] font-semibold leading-snug text-white drop-shadow md:text-[21px]">{lodge.name}</h3>
+                      {#if lodge.summary}<p class="destination-accommodation-summary mt-1 text-[13px] font-semibold leading-5 text-white/90 drop-shadow">{lodge.summary}</p>{/if}
+                    </div>
+                    <div class="destination-accommodation-extra mt-4 overflow-hidden text-white md:max-h-0 md:opacity-0 md:transition-all md:duration-300 md:group-hover:max-h-32 md:group-hover:opacity-100 md:group-focus-within:max-h-32 md:group-focus-within:opacity-100">
+                      <span class="inline-flex items-center gap-1 text-[13px] font-bold text-goldfinch-gold">
+                        View accommodation <ArrowRight size={14} />
+                      </span>
+                    </div>
+                    <a class="absolute inset-0 z-10 rounded-[12px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-goldfinch-gold" href={lodge.href} aria-label={`View accommodation ${lodge.name}`} data-sveltekit-preload-data="hover"></a>
+                  </div>
+                </article>
               {/each}
             </div>
           </div>
@@ -793,117 +1281,72 @@
     </section>
   {/if}
 
-  {#if hasPlanning}
-    <section class="bg-canvas py-14 md:py-20">
-      <div class="container-shell grid gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
-        <div use:fadeUpOnScroll={{ y: 14 }}>
-          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Planning details</p>
-          <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">Useful details for {destination.name}</h2>
-          <p class="mt-4 text-base leading-8 text-ink/68">This section renders practical destination fields from the CMS.</p>
-          <a class="mt-6 inline-flex h-11 items-center gap-2 rounded-[8px] border border-ink/10 bg-surface px-5 text-sm font-bold text-forest shadow-sm transition hover:border-forest/25 hover:text-heading" href="/safety">
-            Full safety guide <ArrowRight size={15} />
-          </a>
-        </div>
+  {#if planningTabs.length && activePlanning}
+    <section id="travel-tips" class="scroll-mt-32 bg-surface py-14 md:py-20">
+      <div class="container-shell">
+        <div class="mx-auto max-w-[1180px]">
+          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Travel Tips</p>
+          <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">Helpful details for {destination.name}</h2>
+          <p class="mt-4 max-w-[820px] text-base leading-relaxed text-ink/65 md:text-lg">
+            These tabs are generated from published gateway and safety fields on the destination record.
+          </p>
 
-        <div class="grid gap-5">
-          {#if tripPoints.length}
-            <div class="rounded-[8px] border border-ink/10 bg-surface p-5 shadow-card">
-              <div class="flex items-center gap-3">
-                <span class="grid h-10 w-10 place-items-center rounded-[8px] bg-forest/10 text-forest"><Plane size={18} /></span>
-                <h3 class="text-xl font-bold text-heading">Getting there</h3>
-              </div>
-              <div class="mt-5 grid gap-3">
-                {#each tripPoints as point (point.id)}
-                  <div class="rounded-[8px] bg-sand/35 p-4">
-                    <div class="flex flex-wrap items-center gap-2">
-                      <p class="font-bold text-heading">{point.name}</p>
-                      {#if point.airport_code}
-                        <span class="rounded-[6px] bg-forest/10 px-2 py-0.5 font-mono text-[11px] font-bold text-forest">{point.airport_code}</span>
-                      {/if}
-                    </div>
-                    <p class="mt-1 text-[11px] font-bold uppercase tracking-[0.14em] text-clay">{roleLabel(point.role)}</p>
-                    {#if point.transfer_info}
-                      <p class="mt-2 text-sm leading-6 text-ink/68">{point.transfer_info}</p>
-                    {:else if point.description}
-                      <p class="mt-2 text-sm leading-6 text-ink/68">{point.description}</p>
-                    {/if}
-                  </div>
-                {/each}
-              </div>
-            </div>
-          {/if}
-
-          {#if safetyItems.length}
-            <div class="grid gap-3 sm:grid-cols-2">
-              {#each safetyItems as item}
-                <div class="rounded-[8px] border border-ink/10 bg-surface p-5 shadow-card">
-                  <span class="grid h-10 w-10 place-items-center rounded-[8px] bg-sand/70 text-forest">
-                    {#if item.icon === 'shield'}
-                      <ShieldCheck size={18} />
-                    {:else if item.icon === 'health'}
-                      <HeartPulse size={18} />
-                    {:else if item.icon === 'file'}
-                      <FileCheck size={18} />
-                    {:else if item.icon === 'phone'}
-                      <Phone size={18} />
-                    {:else}
-                      <Shield size={18} />
-                    {/if}
-                  </span>
-                  <h3 class="mt-4 text-lg font-bold text-heading">{item.title}</h3>
-                  <RichText value={item.body} className="mt-2 text-sm leading-6 text-ink/68" />
-                </div>
+          <div class="mt-8 overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-card md:mt-12 md:rounded-[12px]">
+            <div class="flex overflow-x-auto border-b border-ink/10 bg-sand/55 md:grid md:grid-cols-3 md:overflow-visible">
+              {#each planningTabs as tab, index}
+                {@const isActive = tab.id === activePlanningTab}
+                <button
+                  type="button"
+                  class={`flex shrink-0 items-center justify-center gap-3 whitespace-nowrap px-5 py-4 text-[15px] font-semibold transition-all duration-200 md:px-7 md:py-6 md:text-[17px] ${index < planningTabs.length - 1 ? 'border-r border-ink/10' : ''} ${isActive ? 'border-b-[3px] border-b-clay bg-surface/75 text-clay' : 'text-heading/90 hover:bg-surface/45 hover:text-clay'}`}
+                  on:click={() => (activePlanningTab = tab.id)}
+                >
+                  <svelte:component this={tab.icon} class="h-[22px] w-[22px] md:h-[26px] md:w-[26px]" strokeWidth={1.75} />
+                  <span>{tab.label}</span>
+                </button>
               {/each}
             </div>
-          {/if}
-        </div>
-      </div>
-    </section>
-  {/if}
 
-  {#if reviews.length}
-    <section class="border-y border-ink/[0.06] bg-sand/35 py-14 md:py-20">
-      <div class="container-shell">
-        <div class="max-w-3xl">
-          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Traveller reviews</p>
-          <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">What travellers say</h2>
-          <p class="mt-3 text-base leading-7 text-ink/65">Featured approved reviews from the CMS.</p>
-        </div>
-
-        <div class="mt-8 grid gap-5 md:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.05 }}>
-          {#each reviews as review (review.id)}
-            <article class="relative flex h-full flex-col rounded-[8px] border border-ink/10 bg-surface p-5 shadow-card">
-              <Quote size={30} class="absolute right-5 top-5 text-sand" />
-              <div class="flex items-center gap-3">
-                {#if review.author_photo_url}
-                  <Img
-                    record={review}
-                    fields={['author_photo_url']}
-                    alt={review.author_name}
-                    width={120}
-                    height={120}
-                    className="h-11 w-11 rounded-[8px] object-cover"
-                  />
-                {:else}
-                  <span class="grid h-11 w-11 place-items-center rounded-[8px] bg-forest/10 text-sm font-bold text-forest">{reviewInitials(review)}</span>
-                {/if}
-                <div class="min-w-0">
-                  <p class="truncate font-bold text-heading">{review.author_name}</p>
-                  <p class="truncate text-xs text-ink/55">{[review.country, review.platform].filter(Boolean).join(' · ')}</p>
+            <div class="p-6 md:p-12 lg:p-14">
+              <div class="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
+                <div class="flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-full bg-clay/10 md:h-[86px] md:w-[86px]">
+                  <svelte:component this={activePlanning.icon} class="h-8 w-8 text-clay md:h-10 md:w-10" strokeWidth={1.6} />
+                </div>
+                <div class="flex-1">
+                  <h3 class="font-serif text-[24px] font-semibold leading-[1.15] text-heading md:text-[30px]">{activePlanning.title}</h3>
+                  <p class="mt-2 max-w-[620px] text-[15px] leading-[1.55] text-ink/65 md:text-[17px]">{activePlanning.support}</p>
                 </div>
               </div>
-              <div class="mt-4 flex items-center gap-1 text-goldfinch-gold">
-                {#each Array(5) as _, i}
-                  <Star size={15} fill={i < Math.round(review.rating) ? 'currentColor' : 'none'} class={i < Math.round(review.rating) ? 'text-goldfinch-gold' : 'text-ink/20'} />
+
+              <ul class="mt-8 grid grid-cols-1 gap-y-3.5 md:mt-9 md:grid-cols-2 md:gap-x-16">
+                {#each activePlanning.items as item}
+                  <li class="flex gap-3 text-[15px] leading-[1.55] text-heading md:text-[16px]">
+                    <span aria-hidden="true" class="mt-[9px] h-[6px] w-[6px] shrink-0 rounded-full bg-clay"></span>
+                    <span>
+                      <span class="font-bold">{item.title}</span>
+                      {#if item.body}<span class="text-ink/70"> - {item.body}</span>{/if}
+                    </span>
+                  </li>
                 {/each}
+              </ul>
+
+              <div class="mt-9 flex items-start gap-3 rounded-[8px] border border-ink/10 bg-sand/70 px-5 py-4 md:px-6">
+                <Info class="mt-[2px] h-[18px] w-[18px] shrink-0 text-clay" strokeWidth={1.75} />
+                <p class="text-[14.5px] leading-[1.5] text-heading md:text-[15.5px]">
+                  For broader preparation details, read the full safety guide or ask the team in your trip request.
+                </p>
               </div>
-              <p class="mt-4 flex-1 text-sm leading-7 text-ink/70">"{review.message}"</p>
-            </article>
-          {/each}
+            </div>
+          </div>
         </div>
       </div>
     </section>
   {/if}
+
+  <ReviewsWidget
+    eyebrow="Traveller stories"
+    title="Travellers Who Planned Tanzania With Us"
+    subtitle="Real approved reviews from Goldfinch travellers."
+  />
 
   {#if otherDestinations.length}
     <section class="bg-canvas py-14 md:py-20">
@@ -928,14 +1371,28 @@
   {/if}
 
   {#if faqs.length}
-    <section class="border-t border-ink/[0.06] bg-sand/35 py-14 md:py-20">
-      <div class="container-shell grid gap-8 lg:grid-cols-[0.7fr_1.3fr]">
-        <div>
+    <section id="good-to-know" class="scroll-mt-32 border-t border-ink/[0.06] bg-surface py-14 md:py-20">
+      <div class="mx-auto max-w-[1040px] px-4 md:px-6">
+        <div class="max-w-3xl">
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">FAQ</p>
           <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">Questions about {destination.name}</h2>
           <p class="mt-4 text-base leading-8 text-ink/68">Destination-specific FAQs from the CMS.</p>
         </div>
-        <FAQAccordion {faqs} />
+        <ol class="relative mt-10 md:mt-12">
+          {#each faqs as item, index (item.id)}
+            {@const faqState = index === activeFaqIndex ? 'is-active' : index < activeFaqIndex ? 'is-complete' : 'is-upcoming'}
+            <li data-destination-faq-item class={`faq-timeline-item ${faqState} relative pb-12 pl-14 last:pb-0 md:pl-20`}>
+              {#if index < faqs.length - 1}
+                <span class="faq-connector pointer-events-none absolute left-4 top-10 bottom-0 w-px md:left-5" aria-hidden="true"></span>
+              {/if}
+              <span class="faq-number absolute left-0 top-0 inline-flex h-9 w-9 items-center justify-center rounded-full font-serif text-[14px] font-semibold md:h-10 md:w-10 md:text-[15px]">
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <h3 class="font-serif text-[19px] font-semibold leading-snug text-heading md:text-[22px]">{item.question}</h3>
+              <RichText value={item.answer} className="mt-3 text-[15px] leading-relaxed text-heading/85 md:text-[17px]" />
+            </li>
+          {/each}
+        </ol>
       </div>
     </section>
   {/if}
@@ -966,9 +1423,133 @@
     max-width: 1320px;
   }
 
+  .destination-hero-copy {
+    isolation: isolate;
+  }
+
+  .destination-hero-copy::before {
+    content: '';
+    position: absolute;
+    inset: -1rem -1.1rem -1.15rem -1.1rem;
+    z-index: -1;
+    border-radius: 12px;
+    background:
+      linear-gradient(90deg, rgb(var(--c-deep-green) / 0.9), rgb(var(--c-forest) / 0.64) 64%, transparent),
+      linear-gradient(180deg, rgb(var(--c-deep-green) / 0.5), rgb(var(--c-deep-green) / 0.84));
+    box-shadow: 0 18px 48px rgb(15 23 42 / 0.2);
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .faq-number {
+    color: rgb(var(--c-heading));
+    background: rgb(var(--c-surface));
+    box-shadow: 0 0 0 1px rgb(149 144 125 / 0.35);
+    transform: scale(1);
+    transition:
+      background-color 220ms ease,
+      color 220ms ease,
+      transform 220ms ease,
+      box-shadow 220ms ease;
+  }
+
+  .faq-connector {
+    overflow: hidden;
+    background: rgb(149 144 125 / 0.3);
+  }
+
+  .faq-connector::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgb(var(--c-clay));
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform 420ms ease;
+  }
+
+  .faq-timeline-item.is-complete .faq-number,
+  .faq-timeline-item.is-active .faq-number {
+    color: white;
+    background: rgb(var(--c-clay));
+  }
+
+  .faq-timeline-item.is-complete .faq-number {
+    box-shadow: 0 0 0 1px rgb(var(--c-clay) / 0.86);
+  }
+
+  .faq-timeline-item.is-active .faq-number {
+    transform: scale(1.08);
+    box-shadow:
+      0 12px 26px rgb(170 61 29 / 0.24),
+      0 0 0 1px rgb(var(--c-clay)),
+      0 0 0 6px rgb(228 169 46 / 0.14);
+    animation: faq-number-pop 420ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  }
+
+  .faq-timeline-item.is-complete .faq-connector::before {
+    transform: scaleY(1);
+  }
+
+  .faq-timeline-item.is-active .faq-connector::before {
+    transform: scaleY(0.45);
+  }
+
+  @keyframes faq-number-pop {
+    0% {
+      transform: scale(0.92);
+    }
+
+    60% {
+      transform: scale(1.14);
+    }
+
+    100% {
+      transform: scale(1.08);
+    }
+  }
+
+  .destination-accommodation-title,
+  .destination-accommodation-summary {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .destination-accommodation-title {
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+  }
+
+  .destination-accommodation-summary {
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+  }
+
+  @media (min-width: 768px) {
+    .destination-hero-copy::before {
+      inset: -1.4rem -2rem -1.5rem -1.6rem;
+      border-radius: 14px;
+    }
+  }
+
   @media (max-width: 480px) {
     :global(.destination-page .container-shell) {
       width: calc(100vw - 32px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .faq-number,
+    .faq-connector::before {
+      transition: none;
+      animation: none;
     }
   }
 </style>
