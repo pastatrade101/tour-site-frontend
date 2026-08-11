@@ -247,11 +247,25 @@
     }
 
     .hero-planner-select {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
       height: 2.625rem;
       border-radius: 0.65rem;
       padding-inline: 0.65rem 1.85rem;
       font-size: 0.8125rem;
       line-height: 1.1;
+    }
+
+    input.hero-planner-select[type='date'] {
+      padding-right: 0.45rem;
+    }
+
+    input.hero-planner-select[type='date']::-webkit-date-and-time-value {
+      min-width: 0;
+      text-align: left;
     }
 
     .hero-planner-submit {
