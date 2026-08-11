@@ -325,8 +325,6 @@
     : [];
   $: tripFacts = tour
     ? ([
-        durationLabel ? { icon: CalendarDays, label: 'Duration', value: durationLabel } : null,
-        destinationLabel ? { icon: MapPin, label: 'Destinations', value: destinationLabel } : null,
         routeLabel ? { icon: Route, label: 'Start / End', value: routeLabel } : null,
         groupSize ? { icon: Users, label: 'Group size', value: groupSize } : null,
         tour.difficulty_level ? { icon: Compass, label: 'Difficulty', value: normaliseLabel(tour.difficulty_level) } : null,
@@ -1043,7 +1041,21 @@
             Rates are shown only from the published tour data. Your final quote is confirmed after dates and availability are checked.
           </p>
 
-          <div class="tour-rates-table mt-6 overflow-hidden rounded-t-[10px] border border-ink/10">
+          <div class="tour-rates-mobile mt-5 grid gap-2.5 md:hidden">
+            {#each priceRows as row}
+              <article class="rounded-[8px] border border-ink/10 bg-surface p-4">
+                <div class="flex min-w-0 items-start justify-between gap-4">
+                  <h3 class="min-w-0 text-[13px] font-semibold leading-snug text-heading">{row.label}</h3>
+                  <p class="max-w-[58%] break-words text-right text-[14px] font-extrabold leading-snug text-forest">{row.value}</p>
+                </div>
+                {#if row.note}
+                  <p class="mt-2 border-t border-ink/8 pt-2 text-[11.5px] leading-5 text-ink/60">{row.note}</p>
+                {/if}
+              </article>
+            {/each}
+          </div>
+
+          <div class="tour-rates-table mt-6 hidden overflow-hidden rounded-t-[10px] border border-ink/10 md:block">
             <table class="w-full border-collapse text-[14px]">
               <thead>
                 <tr class="bg-deep-green text-left text-white">
@@ -1299,7 +1311,8 @@
 
   @media (max-width: 1023px) {
     .tour-planner-sheet {
-      max-height: min(92dvh, var(--booking-viewport-height, 100dvh));
+      height: min(92dvh, var(--booking-viewport-height, 100dvh));
+      max-height: var(--booking-viewport-height, 100dvh);
     }
   }
 
@@ -1712,15 +1725,6 @@
 
     .accommodation-card-extra {
       display: none;
-    }
-
-    .tour-rates-table {
-      margin-inline: -0.25rem;
-      overflow-x: auto;
-    }
-
-    .tour-rates-table table {
-      min-width: 520px;
     }
 
     .tour-media-strip {

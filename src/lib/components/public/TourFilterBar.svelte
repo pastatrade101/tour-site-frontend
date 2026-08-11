@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
+  import { fly } from 'svelte/transition';
   import { Check, ChevronDown, Search, SlidersHorizontal, X } from '@lucide/svelte';
   import RangeSlider from './RangeSlider.svelte';
 
@@ -54,17 +55,20 @@
   let destQuery = '';
   let rootEl: HTMLDivElement;
   let mobileOpen = false;
+  let reduceMotion = false;
 
   const toggle = (key: typeof open) => (open = open === key ? '' : key);
   const close = () => (open = '');
   const closeMobile = () => {
     mobileOpen = false;
     document.body.style.overflow = '';
+    document.body.classList.remove('tour-filter-open');
   };
   const openMobile = () => {
     close();
     mobileOpen = true;
     document.body.style.overflow = 'hidden';
+    document.body.classList.add('tour-filter-open');
   };
 
   $: destLabel = destSlug ? (destinationOptions.find((d) => d.slug === destSlug)?.name ?? 'Destination') : 'All destinations';
@@ -89,6 +93,7 @@
   ].filter((s) => s.hi >= s.lo);
 
   onMount(() => {
+    reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const onClick = (e: MouseEvent) => {
       if (rootEl && !rootEl.contains(e.target as Node)) close();
     };
@@ -101,6 +106,7 @@
       document.removeEventListener('click', onClick);
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
+      document.body.classList.remove('tour-filter-open');
     };
   });
 
@@ -112,13 +118,13 @@
 
 <div class="relative" bind:this={rootEl}>
   <!-- Mobile: one trigger; all controls live in the full-page drawer. -->
-  <button type="button" class="inline-flex h-9 w-auto shrink-0 items-center justify-between gap-2 rounded-[8px] border border-ink/12 bg-surface px-3 text-left shadow-sm md:hidden" on:click={openMobile}>
+  <button type="button" class="inline-flex h-9 w-auto shrink-0 items-center justify-between gap-2 rounded-[8px] border border-ink/12 bg-surface px-3 text-left shadow-sm md:hidden" aria-haspopup="dialog" aria-expanded={mobileOpen} on:click|stopPropagation={openMobile}>
     <span class="inline-flex items-center gap-1.5 text-xs font-bold text-heading"><SlidersHorizontal size={15} /> Filter</span>
     {#if activeCount}<span class="grid h-6 min-w-6 place-items-center rounded-full bg-clay px-1.5 text-xs font-bold text-white">{activeCount}</span>{/if}
   </button>
 
   {#if mobileOpen}
-    <div class="fixed inset-0 z-[100] flex flex-col bg-canvas md:hidden" role="dialog" aria-modal="true" aria-label="Filter tours">
+    <div class="fixed inset-0 z-[100] flex flex-col bg-canvas md:hidden" role="dialog" aria-modal="true" aria-label="Filter tours" in:fly={{ x: reduceMotion ? 0 : 96, duration: reduceMotion ? 0 : 420 }}>
       <header class="flex h-16 shrink-0 items-center justify-between border-b border-ink/10 bg-surface px-4">
         <div>
           <p class="font-serif text-xl font-semibold text-heading">Filter tours</p>

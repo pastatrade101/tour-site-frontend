@@ -779,5 +779,10 @@
       -webkit-overflow-scrolling: touch;
       touch-action: pan-y;
     }
+
+    :global(.planning-form .gf-input),
+    :global(.planning-form .gf-textarea) {
+      font-size: 1rem;
+    }
   }
 </style>

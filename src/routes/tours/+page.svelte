@@ -613,6 +613,15 @@
   .results-filter-slot { margin-bottom: 1rem; }
 
   @media (max-width: 767px) {
+    :global(body.tour-filter-open) .results-panel {
+      position: static;
+      z-index: auto;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+
+  @media (max-width: 767px) {
     .results-panel { position: sticky; }
     .results-filter-slot {
       position: absolute;

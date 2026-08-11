@@ -155,12 +155,12 @@
       {/if}
 
       {#if lodge?.best_for?.length}
-        <div class="mt-8 border-t border-white/15 pt-6">
-          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">Best for</p>
-          <ul class="mt-3 flex flex-wrap gap-2.5">
+        <div class="mt-5 border-t border-white/15 pt-4 md:mt-6 md:pt-5">
+          <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-white/55">Best for</p>
+          <ul class="mt-2 flex flex-wrap gap-1.5 md:gap-2">
             {#each lodge.best_for as item}
-              <li class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-2 text-sm font-semibold text-white backdrop-blur-sm">
-                <svelte:component this={bestForIcon(item)} size={15} class="shrink-0 text-goldfinch-gold" aria-hidden="true" />
+              <li class="inline-flex min-h-7 items-center gap-1.5 rounded-full border border-white/20 bg-black/20 px-2.5 py-1 text-[11px] font-semibold leading-none text-white backdrop-blur-sm md:px-3 md:text-xs">
+                <svelte:component this={bestForIcon(item)} size={13} class="shrink-0 text-goldfinch-gold" aria-hidden="true" />
                 {item}
               </li>
             {/each}
@@ -175,9 +175,9 @@
 {#if facts.length}
   <section class="border-b border-ink/10 bg-canvas">
     <div class="container-shell">
-      <div class="flex flex-wrap items-center gap-x-8 gap-y-2 py-5 text-sm">
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 py-3 text-xs md:gap-x-5 md:py-3.5 md:text-[13px]">
         {#each facts as fact, index}
-          {#if index > 0}<span class="hidden h-4 w-px bg-ink/15 sm:block" aria-hidden="true"></span>{/if}
+          {#if index > 0}<span class="hidden h-3.5 w-px bg-ink/15 sm:block" aria-hidden="true"></span>{/if}
           <span class="font-semibold text-ink/70">{fact}</span>
         {/each}
       </div>

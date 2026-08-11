@@ -260,7 +260,11 @@
     }
 
     input.hero-planner-select[type='date'] {
+      -webkit-appearance: none;
+      appearance: none;
+      overflow: hidden;
       padding-right: 0.45rem;
+      color-scheme: light;
     }
 
     input.hero-planner-select[type='date']::-webkit-date-and-time-value {
@@ -297,11 +301,11 @@
       order: 1;
     }
 
-    .hero-planner-field-duration {
+    .hero-planner-field-focus {
       order: 2;
     }
 
-    .hero-planner-field-focus {
+    .hero-planner-field-duration {
       order: 3;
       grid-column: 1 / -1;
     }
@@ -358,26 +362,42 @@
       order: 1;
     }
 
-    .hero-planner-field-duration {
+    .hero-planner-field-focus {
       order: 2;
     }
 
-    .hero-planner-field-focus {
+    .hero-planner-field-duration {
       order: 3;
+      grid-column: 1 / -1;
     }
 
     .hero-planner-submit {
       order: 4;
+      grid-column: 1 / -1;
     }
   }
 
   @media (min-width: 600px) and (max-width: 767px) {
     .hero-planner-grid {
-      grid-template-columns:
-        minmax(112px, 0.95fr)
-        minmax(150px, 1.35fr)
-        minmax(112px, 0.95fr)
-        minmax(105px, auto);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .hero-planner-field-origin {
+      order: 1;
+    }
+
+    .hero-planner-field-focus {
+      order: 2;
+    }
+
+    .hero-planner-field-duration {
+      order: 3;
+      grid-column: 1 / -1;
+    }
+
+    .hero-planner-submit {
+      order: 4;
+      grid-column: 1 / -1;
     }
   }
 </style>

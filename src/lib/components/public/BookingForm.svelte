@@ -594,7 +594,13 @@
   @media (max-width: 1023px) {
     .booking-form {
       width: 100%;
-      max-height: calc(var(--booking-viewport-height, 100dvh) - 0.75rem);
+      height: 100%;
+      max-height: 100%;
+    }
+
+    :global(.booking-form .gf-input),
+    :global(.booking-form .gf-textarea) {
+      font-size: 1rem;
     }
   }
 

@@ -146,17 +146,17 @@
         {description}
       </p>
       {#if heroStats.length}
-        <dl class="mt-9 flex flex-wrap items-center gap-x-10 gap-y-5 border-t border-white/15 pt-6">
+        <dl class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2.5 border-t border-white/15 pt-4 md:mt-6 md:gap-x-7 md:pt-5">
           {#each heroStats as stat}
-            <div class="flex items-center gap-3">
-              <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-goldfinch-gold ring-1 ring-white/15" aria-hidden="true">
-                <svelte:component this={stat.icon} size={17} />
+            <div class="flex items-center gap-2">
+              <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-black/20 text-goldfinch-gold ring-1 ring-white/15 md:h-8 md:w-8" aria-hidden="true">
+                <svelte:component this={stat.icon} size={13} />
               </span>
               <div>
                 <dt class="sr-only">{stat.label}</dt>
                 <dd>
-                  <span class="block font-serif text-2xl font-semibold leading-none text-white">{stat.value}</span>
-                  <span class="mt-1 block text-[11px] font-bold uppercase tracking-[0.14em] text-white/55">{stat.label}</span>
+                  <span class="block font-serif text-lg font-semibold leading-none text-white md:text-xl">{stat.value}</span>
+                  <span class="mt-0.5 block text-[9px] font-bold uppercase tracking-[0.11em] text-white/60 md:text-[10px]">{stat.label}</span>
                 </dd>
               </div>
             </div>

@@ -297,7 +297,7 @@
   });
 </script>
 
-<header class={`sticky top-0 z-40 border-b bg-surface transition-[box-shadow,border-color] duration-[400ms] ease-out ${scrolled ? 'border-transparent shadow-[0_8px_28px_rgba(57,61,50,0.10)]' : 'border-ink/10'}`} use:navbarEntrance>
+<header class={`mobile-nav-header sticky top-0 z-40 border-b bg-surface transition-[box-shadow,border-color] duration-[400ms] ease-out ${scrolled ? 'border-transparent shadow-[0_8px_28px_rgba(57,61,50,0.10)]' : 'border-ink/10'}`} use:navbarEntrance>
   <!-- ── mobile top bar ─────────────────────────────────────────────────── -->
   <div class="grid h-[70px] grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-3 px-4 sm:px-5 lg:hidden">
     <button class="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 bg-surface text-ink" type="button" aria-label="Toggle menu" aria-expanded={menuOpen} on:click={() => (menuOpen = !menuOpen)}>
@@ -368,7 +368,7 @@
          the right edge; Accommodation carries a dropdown chevron that Expert
          Advice did not, which was enough to overflow at 1280. -->
     <div class="mx-auto flex w-full max-w-[1500px] items-stretch justify-between gap-2 px-4">
-      <nav class="flex min-w-0 flex-1 items-center justify-end gap-1" aria-label="Primary" data-sveltekit-preload-code="hover" data-sveltekit-preload-data="hover">
+      <nav class={`flex min-w-0 flex-1 items-center gap-1 ${scrolled ? 'justify-end' : 'justify-start'}`} aria-label="Primary" data-sveltekit-preload-code="hover" data-sveltekit-preload-data="hover">
         {#if scrolled}
           <a href="/" class="mr-auto flex shrink-0 items-center gap-2" aria-label="Goldfinch Adventures home" on:click={() => activateLink('/')} transition:fly={{ x: -14, duration: 320 }}>
             <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-9 w-9 shrink-0 object-contain" />
@@ -525,7 +525,7 @@
 
         <!-- Plan My Trip CTA -->
         <a
-          class={`ml-3 inline-flex h-10 shrink-0 items-center gap-1.5 self-center whitespace-nowrap rounded-full px-5 text-[14px] font-bold tracking-tight shadow-[0_2px_10px_rgba(212,175,55,0.35)] transition duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/60 focus-visible:ring-offset-2 ${isActive(path, '/plan-my-trip') ? 'bg-deep-green text-white shadow-none' : 'bg-goldfinch-gold text-heading hover:shadow-[0_6px_18px_rgba(212,175,55,0.45)]'}`}
+          class={`${scrolled ? 'ml-3' : 'ml-auto'} inline-flex h-10 shrink-0 items-center gap-1.5 self-center whitespace-nowrap rounded-full px-5 text-[14px] font-bold tracking-tight shadow-[0_2px_10px_rgba(212,175,55,0.35)] transition duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/60 focus-visible:ring-offset-2 ${isActive(path, '/plan-my-trip') ? 'bg-deep-green text-white shadow-none' : 'bg-goldfinch-gold text-heading hover:shadow-[0_6px_18px_rgba(212,175,55,0.45)]'}`}
           href="/plan-my-trip"
           aria-current={isActive(path, '/plan-my-trip') ? 'page' : undefined}
           on:click={() => activateLink('/plan-my-trip')}
@@ -660,8 +660,18 @@
     </div>
   {/if}
 </header>
+<div class="h-[70px] lg:hidden" aria-hidden="true"></div>
 
 <style>
+  @media (max-width: 1023px) {
+    .mobile-nav-header {
+      position: fixed;
+      inset: 0 0 auto;
+      width: 100%;
+      z-index: 100;
+    }
+  }
+
   .mega-menu-subtitle {
     display: -webkit-box;
     -webkit-box-orient: vertical;
