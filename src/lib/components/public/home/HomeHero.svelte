@@ -20,27 +20,32 @@
   // Quick planner. `experiences` are REAL published tour categories, so the
   // Experience select filters the tours page by an actual category slug.
   export let experiences: { label: string; slug: string }[] = [];
-  export let originOptions: string[] = ['Kilimanjaro', 'Dar es Salaam', 'Zanzibar', 'Arusha', 'International'];
-  export let durationOptions: string[] = ['3–4 days', '5–7 days', '8–10 days', '11+ days'];
+  export let travellerOptions: { label: string; value: string }[] = [
+    { label: 'Solo traveller', value: 'solo' },
+    { label: 'Couple', value: 'couple' },
+    { label: 'Family', value: 'family' },
+    { label: 'Friends / group', value: 'group' },
+    { label: 'Honeymoon', value: 'honeymoon' }
+  ];
 
-  let origin = '';
+  let traveller = '';
   let focus = '';
-  let duration = '';
+  let travelDate = '';
+  const today = new Date().toISOString().slice(0, 10);
 
-  // Every control feeds the destination URL: the chosen experience filters the
-  // tours list, and the starting point / length are carried into the planner
-  // brief so nothing the traveller picks is thrown away.
+  // Every quick-planner value is carried into the complete planning form.
   const findOptions = () => {
-    trackEvent('cta_click', { cta_name: 'Find my best options', cta_location: 'hero_quick_planner' });
-    const context = [origin ? `starting from ${origin}` : '', duration].filter(Boolean).join(', ');
-    if (focus && !context) {
-      void goto(`/tours?category=${encodeURIComponent(focus)}`);
-      return;
-    }
+    trackEvent('cta_click', {
+      cta_name: 'Plan My Trip',
+      cta_location: 'hero_quick_planner',
+      traveller_type: traveller,
+      experience_type: focus
+    });
     const params = new URLSearchParams();
+    if (traveller) params.set('persona', traveller);
     if (focus) params.set('experience', focus);
-    if (context) params.set('topic', `Safari ${context}`);
-    void goto(params.toString() ? `/plan-my-trip?${params}` : '/tours');
+    if (travelDate) params.set('date', travelDate);
+    void goto(params.toString() ? `/plan-my-trip?${params}` : '/plan-my-trip');
   };
   export let note = "No commitment. We'll simply help you understand what fits best.";
 
@@ -119,13 +124,13 @@
         >
           <div class="hero-planner-grid grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end md:gap-3">
             <label class="hero-planner-field hero-planner-field-origin block">
-              <span class="hero-planner-label mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">Starting From</span>
+              <span class="hero-planner-label mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">Who is travelling?</span>
               <select
-                bind:value={origin}
+                bind:value={traveller}
                 class="hero-planner-select h-11 w-full rounded-[8px] border border-white/20 bg-surface/95 px-3 text-[14px] text-heading focus:outline-none focus:ring-2 focus:ring-goldfinch-gold"
               >
-                <option value="">Add a city</option>
-                {#each originOptions as city}<option value={city}>{city}</option>{/each}
+                <option value="">Select travellers</option>
+                {#each travellerOptions as option}<option value={option.value}>{option.label}</option>{/each}
               </select>
             </label>
 
@@ -136,19 +141,18 @@
                 class="hero-planner-select h-11 w-full rounded-[8px] border border-white/20 bg-surface/95 px-3 text-[14px] text-heading focus:outline-none focus:ring-2 focus:ring-goldfinch-gold"
               >
                 <option value="">Pick a focus</option>
-                {#each experiences as e}<option value={e.slug}>{e.label}</option>{/each}
+                {#each experiences as e}<option value={e.label}>{e.label}</option>{/each}
               </select>
             </label>
 
             <label class="hero-planner-field hero-planner-field-duration block">
-              <span class="hero-planner-label mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">Days</span>
-              <select
-                bind:value={duration}
+              <span class="hero-planner-label mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">When?</span>
+              <input
+                bind:value={travelDate}
+                type="date"
+                min={today}
                 class="hero-planner-select h-11 w-full rounded-[8px] border border-white/20 bg-surface/95 px-3 text-[14px] text-heading focus:outline-none focus:ring-2 focus:ring-goldfinch-gold"
-              >
-                <option value="">How many?</option>
-                {#each durationOptions as d}<option value={d}>{d}</option>{/each}
-              </select>
+              />
             </label>
 
             <button

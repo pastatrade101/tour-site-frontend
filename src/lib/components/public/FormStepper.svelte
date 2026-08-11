@@ -11,6 +11,8 @@
   export let onStep: ((index: number) => void) | null = null;
   /** `dark` sits on the deep-green panel; `light` on a surface card. */
   export let tone: 'dark' | 'light' = 'dark';
+  /** Condensed presentation for constrained sticky panels and sheets. */
+  export let compact = false;
 
   $: mutedText = tone === 'dark' ? 'text-white/55' : 'text-ink/45';
   $: activeText = tone === 'dark' ? 'text-white' : 'text-heading';
@@ -18,7 +20,7 @@
   $: currentLabel = steps[current]?.label ?? '';
 </script>
 
-<div class="gf-stepper-shell min-w-0 w-full" data-tone={tone}>
+<div class="gf-stepper-shell min-w-0 w-full" data-tone={tone} data-compact={compact}>
   <div class="gf-stepper-content">
     <div class="gf-stepper-current mb-3 flex items-center justify-between gap-3 sm:hidden" data-tone={tone} aria-live="polite">
       <span class={`text-[11px] font-bold uppercase tracking-[0.16em] ${mutedText}`}>
@@ -124,6 +126,73 @@
     background: rgb(255 255 255 / 0.7);
   }
 
+  .gf-stepper-shell[data-compact='true'] {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .gf-stepper-shell[data-compact='true']::before,
+  .gf-stepper-shell[data-compact='true'] .gf-stepper-current {
+    display: none;
+  }
+
+  .gf-stepper-shell[data-compact='true'] .gf-stepper-scroll {
+    margin: 0;
+    width: 100%;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .gf-stepper-shell[data-compact='true'] ol {
+    width: 100%;
+    min-width: 0;
+    gap: 0;
+  }
+
+  .gf-stepper-shell[data-compact='true'] ol > li {
+    min-width: 0;
+    flex: 1 1 0%;
+  }
+
+  .gf-stepper-shell[data-compact='true'] ol > li:last-child {
+    flex: 0 0 auto;
+  }
+
+  .gf-stepper-shell[data-compact='true'] .gf-step-button {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-width: 1px;
+    font-size: 0.625rem;
+  }
+
+  .gf-stepper-shell[data-compact='true'] .gf-stepper-line {
+    width: auto;
+    min-width: 0.5rem;
+    flex: 1 1 auto;
+    margin: 0.72rem 0.3rem 0;
+  }
+
+  .gf-stepper-shell[data-compact='true'] ol > li > div {
+    gap: 0.25rem;
+  }
+
+  .gf-stepper-shell[data-compact='true'] ol > li > div > span {
+    display: block;
+    max-width: 4.5rem;
+    font-size: 0.5rem;
+    line-height: 1.1;
+    letter-spacing: 0.06em;
+  }
+
+  .gf-stepper-shell[data-compact='true'] .gf-step-button[data-active='true'] {
+    box-shadow: 0 0 0 2px rgb(212 175 55 / 0.14);
+    animation: none;
+  }
+
   .gf-stepper-scroll {
     scrollbar-width: none;
   }
@@ -196,6 +265,8 @@
     .gf-stepper-shell {
       padding: 1rem;
     }
+
+    .gf-stepper-shell[data-compact='true'] { padding: 0; }
   }
 
   @media (prefers-reduced-motion: reduce) {

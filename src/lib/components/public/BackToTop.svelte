@@ -1,13 +1,36 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import { fly } from 'svelte/transition';
   import { ArrowUp } from '@lucide/svelte';
 
   // Show once the visitor has scrolled well past the hero.
   const THRESHOLD = 600;
+  const IDLE_DELAY = 2200;
   let visible = false;
-  const onScroll = () => (visible = window.scrollY > THRESHOLD);
+  let hideTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const cancelHide = () => {
+    if (hideTimer) clearTimeout(hideTimer);
+    hideTimer = undefined;
+  };
+
+  const scheduleHide = () => {
+    cancelHide();
+    hideTimer = setTimeout(() => (visible = false), IDLE_DELAY);
+  };
+
+  const onScroll = () => {
+    if (window.scrollY <= THRESHOLD) {
+      visible = false;
+      cancelHide();
+      return;
+    }
+    visible = true;
+    scheduleHide();
+  };
 
   const toTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  onDestroy(cancelHide);
 </script>
 
 <svelte:window on:scroll={onScroll} />
@@ -20,10 +43,12 @@
     aria-label="Back to top"
     title="Back to top"
     transition:fly={{ y: 14, duration: 180 }}
+    on:pointerenter={cancelHide}
+    on:pointerleave={scheduleHide}
+    on:focus={cancelHide}
+    on:blur={scheduleHide}
     on:click={toTop}
   >
-    <!-- blinking pulse ring (disabled for reduced-motion users) -->
-    <span class="pointer-events-none absolute inset-0 rounded-full bg-goldfinch-gold/60 motion-safe:animate-ping" aria-hidden="true"></span>
     <span class="relative grid h-full w-full place-items-center rounded-full bg-goldfinch-gold">
       <ArrowUp size={20} strokeWidth={2.8} class="transition-transform group-hover:-translate-y-0.5" />
     </span>

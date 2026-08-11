@@ -6,9 +6,9 @@
   import { getAttribution, trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
   import { brand } from '$lib/brand';
-  import { defaultSpecialist } from '$lib/data/specialists';
   import { publicSettings, settingText } from '$lib/settings';
   import { shortlist } from '$lib/shortlist';
+  import type { Specialist, Tour } from '$lib/types';
   import Button from './Button.svelte';
   import FormStepper from './FormStepper.svelte';
   import CategoryPicker from './CategoryPicker.svelte';
@@ -48,7 +48,6 @@
   let experience_interests: string[] = [];
   let travel_month = '';  // derived from exact_start_date
   let exact_start_date = '';
-  let exact_end_date = '';
   let date_flexibility = '';
   let budget_per_person = '';
   let traveller_type = '';
@@ -68,6 +67,7 @@
   let referrerTopic = ''; // free-form topic from a referring page (e.g. a /compare CTA)
   let errors: Record<string, string> = {};
   let bodyEl: HTMLDivElement;
+  let selectedSpecialist: Specialist | null = null;
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -77,7 +77,6 @@
   $: travel_month = exact_start_date
     ? new Date(`${exact_start_date}T00:00:00`).toLocaleString('en', { month: 'long' })
     : '';
-  $: wantsExactDates = Boolean(exact_start_date);
   $: sent = submitted;
 
   const inputBase = 'gf-input';
@@ -134,7 +133,7 @@
 
     if (persona && personaMap[persona.toLowerCase()]) traveller_type = personaMap[persona.toLowerCase()];
     if (experience) {
-      const e = expMap[experience.toLowerCase()] || matchOption(experienceOptions, experience);
+      const e = expMap[experience.toLowerCase()] || matchOption(experienceOptions, experience) || experience.trim();
       if (e && !experience_interests.includes(e)) experience_interests = [...experience_interests, e];
     }
     if (destination) {
@@ -153,19 +152,25 @@
       if (!message.trim()) message = `I'm interested in: ${place}.`;
     }
     if (monthParam) {
-      let m = monthParam;
-      if (/^\d{4}-\d{2}/.test(monthParam)) {
-        const iso = monthParam.length === 7 ? `${monthParam}-01` : monthParam;
-        m = new Date(iso).toLocaleString('en', { month: 'long' });
+      if (/^\d{4}-\d{2}-\d{2}$/.test(monthParam)) {
+        exact_start_date = monthParam;
+      } else {
+        let m = monthParam;
+        if (/^\d{4}-\d{2}$/.test(monthParam)) {
+          const iso = monthParam.length === 7 ? `${monthParam}-01` : monthParam;
+          m = new Date(iso).toLocaleString('en', { month: 'long' });
+        }
+        const mm = matchOption(monthOptions, m);
+        if (mm) travel_month = mm;
       }
-      const mm = matchOption(monthOptions, m);
-      if (mm) travel_month = mm;
     }
     if (tourSlug) {
       try {
         const res = await api.tours.get(tourSlug);
         const t = res.data as Record<string, unknown>;
         tripContext = String(t.title ?? '');
+        const assignedSpecialist = t.specialist as Specialist | null | undefined;
+        selectedSpecialist = assignedSpecialist?.name && assignedSpecialist.status === 'published' ? assignedSpecialist : null;
         const dName = (t.destinations as Record<string, unknown> | undefined)?.name;
         const cName = (t.tour_categories as Record<string, unknown> | undefined)?.name;
         if (dName) {
@@ -173,7 +178,7 @@
           if (d) destination_interest = d;
         }
         if (cName) {
-          const e = matchOption(experienceOptions, cName);
+          const e = matchOption(experienceOptions, cName) || String(cName).trim();
           if (e && !experience_interests.includes(e)) experience_interests = [...experience_interests, e];
         }
       } catch {
@@ -198,6 +203,24 @@
     }
   });
 
+  onMount(() => {
+    const viewport = window.visualViewport;
+    const updateViewportHeight = () => {
+      document.documentElement.style.setProperty('--planning-viewport-height', `${viewport?.height ?? window.innerHeight}px`);
+    };
+    updateViewportHeight();
+    viewport?.addEventListener('resize', updateViewportHeight);
+    viewport?.addEventListener('scroll', updateViewportHeight);
+    window.addEventListener('resize', updateViewportHeight);
+
+    return () => {
+      viewport?.removeEventListener('resize', updateViewportHeight);
+      viewport?.removeEventListener('scroll', updateViewportHeight);
+      window.removeEventListener('resize', updateViewportHeight);
+      document.documentElement.style.removeProperty('--planning-viewport-height');
+    };
+  });
+
   // ── Stepper ────────────────────────────────────────────────────────────────
   const STEPS = [
     { key: 'trip', label: 'Trip details' },
@@ -210,7 +233,7 @@
 
   // Which fields belong to which step, so we can validate one step at a time.
   const STEP_FIELDS: string[][] = [
-    ['experience_interests', 'exact_start_date', 'exact_end_date'],
+    ['experience_interests', 'exact_start_date'],
     ['budget_per_person', 'traveller_type', 'number_of_adults', 'number_of_children'],
     ['full_name', 'email', 'phone']
   ];
@@ -230,7 +253,7 @@
     add('Phone / WhatsApp', phone);
     add('Destination', destination_interest);
     add('Experiences', experience_interests.join(', '));
-    add('When', wantsExactDates && exact_start_date ? `${exact_start_date}${exact_end_date ? ` → ${exact_end_date}` : ''}` : travel_month);
+    add('When', exact_start_date || travel_month);
     add('Dates flexible', date_flexibility);
     add('Duration', trip_duration);
     add('Travellers', `${paxLabel}${traveller_type ? ` · ${traveller_type}` : ''}`);
@@ -265,6 +288,13 @@
     bodyEl?.scrollIntoView({ block: 'start', behavior: 'smooth' });
   };
 
+  const keepFocusedFieldVisible = (event: FocusEvent) => {
+    if (!window.matchMedia('(max-width: 1023px)').matches) return;
+    const target = event.target as HTMLElement | null;
+    if (!target?.matches('input, select, textarea')) return;
+    window.setTimeout(() => target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 180);
+  };
+
   const next = async () => {
     if (!(await validateStep(step))) return;
     if (step < LAST) step += 1;
@@ -294,14 +324,31 @@
     if (experience_interests.length === 0) e.experience_interests = 'Pick at least one experience.';
     if (!exact_start_date) e.exact_start_date = 'Please pick your travel date.';
     else if (exact_start_date < todayStr) e.exact_start_date = "Travel date can't be in the past.";
-    if (exact_end_date && exact_start_date && exact_end_date <= exact_start_date)
-      e.exact_end_date = 'End date must be after the start date.';
     if (!budget_per_person) e.budget_per_person = 'Choose a budget range.';
     if (!traveller_type) e.traveller_type = 'Who is travelling?';
     if (Number(number_of_adults) < 1) e.number_of_adults = 'At least one adult is required.';
     if (number_of_children === '' || Number(number_of_children) < 0) e.number_of_children = "Can't be negative.";
     errors = e;
     return Object.keys(e).length === 0;
+  };
+
+  const resolveSelectedStyleSpecialist = async (): Promise<Specialist | null> => {
+    if (selectedSpecialist?.name && selectedSpecialist.status === 'published') return selectedSpecialist;
+    const selectedStyles = new Set(experience_interests.map((value) => value.trim().toLowerCase()).filter(Boolean));
+    if (!selectedStyles.size) return null;
+
+    try {
+      const response = await api.tours.list({ status: 'published', limit: 100 });
+      const matchingTour = response.data.items.find((tour: Tour) => {
+        const styleValues = [tour.tour_categories?.name, tour.tour_categories?.slug, tour.experience_type]
+          .map((value) => String(value ?? '').trim().toLowerCase())
+          .filter(Boolean);
+        return styleValues.some((value) => selectedStyles.has(value)) && tour.specialist?.status === 'published' && Boolean(tour.specialist.name);
+      });
+      return matchingTour?.specialist ?? null;
+    } catch {
+      return null;
+    }
   };
 
   const submit = async () => {
@@ -340,9 +387,8 @@
       submitted_at: new Date().toISOString(),
       lead_source: 'Website Plan My Trip'
     };
-    if (wantsExactDates) {
+    if (exact_start_date) {
       lead_context.exact_start_date = exact_start_date;
-      lead_context.exact_end_date = exact_end_date;
     }
     if (date_flexibility) lead_context.date_flexibility = date_flexibility;
     if (trip_duration) lead_context.trip_duration = trip_duration;
@@ -352,13 +398,14 @@
     lead_context.attribution = getAttribution(); // first-touch source/campaign + session id
 
     submitting = true;
+    const specialistPromise = resolveSelectedStyleSpecialist();
     try {
       const res = await api.bookings.create({
         full_name: full_name.trim(),
         email: email.trim(),
         phone: phone.trim() || null,
         country: country.trim() || null,
-        travel_date: wantsExactDates ? exact_start_date || null : null,
+        travel_date: exact_start_date || null,
         number_of_adults: Number(number_of_adults) || 1,
         number_of_children: Number(number_of_children) || 0,
         message: message.trim() || null,
@@ -367,6 +414,7 @@
         hp_company // honeypot — backend inspects then drops it
       });
       bookingCode = String((res.data as Record<string, unknown>)?.booking_code ?? '');
+      selectedSpecialist = await specialistPromise;
       submitted = true;
       trackEvent('plan_my_trip_submitted', {
         destination: destination_interest,
@@ -441,7 +489,9 @@
       </ol>
     </div>
 
-    <SpecialistCard specialist={defaultSpecialist} heading="Who will be in touch" />
+    {#if selectedSpecialist}
+      <SpecialistCard specialist={selectedSpecialist} heading="Who will be in touch" />
+    {/if}
 
     <div class="flex flex-col gap-3 sm:flex-row">
       {#if bookCallUrl}
@@ -454,8 +504,8 @@
     <p class="text-center text-xs text-ink/70">A confirmation email is on its way to the address you provided.</p>
   </div>
 {:else}
-  <form class="gf-panel-dark relative min-w-0 overflow-hidden rounded-[14px] border border-white/10 p-4 shadow-soft sm:p-5 md:p-6" on:submit|preventDefault={submit} novalidate>
-    <div>
+  <form class="planning-form gf-panel-dark relative flex min-w-0 flex-col overflow-hidden rounded-[14px] border border-white/10 p-4 shadow-soft sm:p-5 md:p-6" on:focusin={keepFocusedFieldVisible} on:submit|preventDefault={submit} novalidate>
+    <div class="shrink-0">
       <p class="text-sm font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">Plan My Trip</p>
       <h3 class="mt-1 font-serif text-2xl font-semibold tracking-normal text-white">Tell us about your dream trip</h3>
       {#if tripContext}
@@ -466,29 +516,28 @@
     </div>
 
     {#if tripContext}
-      <div class="gf-trip-chip mt-4">
-        <MapPin size={16} class="shrink-0 text-goldfinch-gold" />
-        <span class="shrink-0 text-[10px] font-bold uppercase tracking-[0.14em] text-goldfinch-gold/80">Planning</span>
-        <span class="truncate text-sm font-bold text-goldfinch-gold">{tripContext}</span>
+      <div class="planning-trip-context mt-2" title={tripContext}>
+        <MapPin size={13} class="shrink-0 text-goldfinch-gold" />
+        <span class="truncate text-xs font-semibold text-white/85">{tripContext}</span>
       </div>
     {/if}
 
     {#if referrerTopic}
-      <div class="mt-4 flex items-center gap-2 rounded-xl border border-goldfinch-gold/30 bg-goldfinch-gold/[0.08] px-3.5 py-2.5 text-sm font-semibold text-clay">
-        <Scale size={16} class="shrink-0" />
+      <div class="mt-2 flex items-center gap-2 rounded-[8px] border border-goldfinch-gold/25 bg-goldfinch-gold/[0.06] px-2.5 py-2 text-xs font-semibold text-white/80">
+        <Scale size={14} class="shrink-0 text-goldfinch-gold" />
         You're planning around: {referrerTopic}
       </div>
     {/if}
 
-    <div class="mt-5">
-      <FormStepper {steps} current={step} tone="dark" onStep={goStep} />
+    <div class="mt-3 shrink-0">
+      <FormStepper {steps} current={step} tone="dark" compact onStep={goStep} />
     </div>
 
-    <div class="mt-5 grid gap-5" bind:this={bodyEl}>
+    <div class="planning-form-body mt-3 grid min-h-0 flex-1 gap-3 overflow-y-auto overscroll-contain" bind:this={bodyEl}>
       <!-- ── Contact details ───────────────────────────────────────────────── -->
-      <fieldset class="grid gap-4" class:hidden={step !== 2}>
+      <fieldset class="grid gap-3" class:hidden={step !== 2}>
         <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Contact details</legend>
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="planning-field-grid">
           <label class="grid gap-1.5">
             <span class="gf-label">Full name</span>
             <input class={cls('full_name')} bind:value={full_name} on:input={() => clearErr('full_name')} placeholder="Your name" autocomplete="name" aria-invalid={Boolean(errors.full_name)} aria-describedby={errors.full_name ? 'pmt-full_name-err' : undefined} />
@@ -500,7 +549,7 @@
             {#if errors.email}<span id="pmt-email-err" data-error class="text-xs text-red-600">{errors.email}</span>{/if}
           </label>
         </div>
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="planning-field-grid">
           <label class="grid gap-1.5">
             <span class="gf-label">Phone / WhatsApp</span>
             <input class={cls('phone')} type="tel" bind:value={phone} on:input={() => clearErr('phone')} placeholder="+255 ..." autocomplete="tel" aria-invalid={Boolean(errors.phone)} aria-describedby={errors.phone ? 'pmt-phone-err' : undefined} />
@@ -510,7 +559,7 @@
       </fieldset>
 
       <!-- ── Trip idea ─────────────────────────────────────────────────────── -->
-      <fieldset class="grid gap-4" class:hidden={step !== 0}>
+      <fieldset class="grid gap-3" class:hidden={step !== 0}>
         <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Trip idea</legend>
         <div class="grid gap-2">
           <span class="gf-label">What would you love to do? <span class="gf-hint">(select any)</span></span>
@@ -518,12 +567,13 @@
             selected={experience_interests}
             fallbackOptions={experienceOptions}
             tone="dark"
+            compact
             onToggle={toggleExperience}
           />
           {#if errors.experience_interests}<span data-error class="text-xs text-red-600">{errors.experience_interests}</span>{/if}
         </div>
 
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="planning-field-grid">
           <label class="grid gap-1.5">
             <span class="gf-label">Travel date <span class="gf-req">*</span></span>
             <input
@@ -545,26 +595,12 @@
           </label>
         </div>
 
-        {#if wantsExactDates}
-          <div class="grid gap-4 rounded-xl border border-forest/15 bg-forest/[0.03] p-3 md:grid-cols-2">
-            <label class="grid gap-1.5">
-              <span class="gf-label">Start date</span>
-              <input class={cls('exact_start_date')} type="date" min={todayStr} bind:value={exact_start_date} on:input={() => clearErr('exact_start_date')} aria-invalid={Boolean(errors.exact_start_date)} />
-              {#if errors.exact_start_date}<span data-error class="text-xs text-red-600">{errors.exact_start_date}</span>{/if}
-            </label>
-            <label class="grid gap-1.5">
-              <span class="gf-label">End date</span>
-              <input class={cls('exact_end_date')} type="date" min={exact_start_date || todayStr} bind:value={exact_end_date} on:input={() => clearErr('exact_end_date')} aria-invalid={Boolean(errors.exact_end_date)} />
-              {#if errors.exact_end_date}<span data-error class="text-xs text-red-600">{errors.exact_end_date}</span>{/if}
-            </label>
-          </div>
-        {/if}
       </fieldset>
 
       <!-- ── Travel preferences ────────────────────────────────────────────── -->
-      <fieldset class="grid gap-4" class:hidden={step !== 1}>
+      <fieldset class="grid gap-3" class:hidden={step !== 1}>
         <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Travel preferences</legend>
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="planning-field-grid">
           <label class="grid gap-1.5">
             <span class="gf-label">Are your dates flexible?</span>
             <select class={cls('date_flexibility')} bind:value={date_flexibility}>
@@ -581,7 +617,7 @@
             {#if errors.budget_per_person}<span data-error class="text-xs text-red-600">{errors.budget_per_person}</span>{/if}
           </label>
         </div>
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="planning-field-grid">
           <label class="grid gap-1.5">
             <span class="gf-label">Who is travelling?</span>
             <select class={cls('traveller_type')} bind:value={traveller_type} on:change={() => clearErr('traveller_type')} aria-invalid={Boolean(errors.traveller_type)}>
@@ -598,7 +634,7 @@
             </select>
           </label>
         </div>
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="planning-count-grid">
           <label class="grid gap-1.5">
             <span class="gf-label">Adults</span>
             <input class={cls('number_of_adults')} type="number" min="1" bind:value={number_of_adults} on:input={() => clearErr('number_of_adults')} aria-invalid={Boolean(errors.number_of_adults)} />
@@ -613,12 +649,12 @@
       </fieldset>
 
       <!-- ── Notes ─────────────────────────────────────────────────────────── -->
-      <fieldset class="grid gap-4" class:hidden={step !== 1}>
+      <fieldset class="grid gap-3" class:hidden={step !== 1}>
         <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Notes</legend>
         <label class="grid gap-1.5">
           <span class="gf-label">Trip notes</span>
           <textarea
-            class={inputBase + ' border-ink/15 focus:border-forest focus:ring-forest/15'}
+            class="gf-textarea planning-textarea"
             rows={3}
             bind:value={message}
             placeholder="Tell us anything important: must-see places, special occasions, dietary needs, accessibility needs, preferred pace, room preferences…"
@@ -634,36 +670,114 @@
     </div>
 
     {#if errorMessage}
-      <div class="mt-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+      <div class="mt-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-700" role="alert">
         <AlertCircle size={18} class="mt-0.5 shrink-0" />
         <span>{errorMessage}</span>
       </div>
     {/if}
 
-    <div class="mt-5">
-      <div class="grid grid-cols-2 gap-3 sm:flex sm:items-center">
-        <span class="mr-auto hidden text-[11px] font-bold uppercase tracking-[0.14em] text-white/45 sm:block">
-          Step {step + 1} of {STEPS.length}
-        </span>
+    <div class="mt-3 shrink-0">
+      <div class:single-action={step === 0} class="planning-form-nav">
         {#if step > 0}
-          <button type="button" class="gf-btn-ghost w-full justify-center px-3 sm:w-auto sm:px-5" on:click={back}>
+          <button type="button" class="gf-btn-ghost planning-nav-back" on:click={back}>
             <ArrowLeft size={16} /> Back
           </button>
         {/if}
         {#if step < LAST}
-          <button type="button" class={`gf-btn-primary w-full justify-center px-4 sm:ml-auto sm:w-auto sm:px-6 ${step === 0 ? 'col-span-2' : ''}`} on:click={next}>
+          <button type="button" class="gf-btn-primary planning-nav-primary" on:click={next}>
             Continue <ArrowRight size={16} strokeWidth={2.6} />
           </button>
         {:else}
-          <button type="submit" class="gf-btn-primary w-full justify-center px-4 sm:ml-auto sm:w-auto sm:px-6" disabled={submitting}>
+          <button type="submit" class="gf-btn-primary planning-nav-primary" disabled={submitting}>
             {submitting ? 'Sending…' : 'Send My Trip Request'}
           </button>
         {/if}
       </div>
-      <p class="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-white/60">
+      <p class="mt-2 flex items-center justify-center gap-1.5 text-center text-[11px] text-white/60">
         <ShieldCheck size={13} class="text-forest" />
         Your details are kept private and used only to plan your trip.
       </p>
     </div>
   </form>
 {/if}
+
+<style>
+  .planning-form {
+    container-type: inline-size;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  .planning-trip-context {
+    display: flex;
+    min-width: 0;
+    height: 1.875rem;
+    align-items: center;
+    gap: 0.4rem;
+    border-left: 2px solid rgb(212 175 55 / 0.8);
+    padding: 0 0.55rem;
+    background: rgb(255 255 255 / 0.045);
+  }
+
+  .planning-field-grid,
+  .planning-count-grid {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .planning-count-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  :global(.planning-form .gf-input) {
+    height: 2.5rem;
+    min-height: 2.5rem;
+    font-size: 0.8125rem;
+  }
+
+  :global(.planning-form .gf-label) {
+    font-size: 0.5625rem;
+    letter-spacing: 0.1em;
+  }
+
+  .planning-textarea {
+    min-height: 4.5rem;
+    resize: vertical;
+  }
+
+  .planning-form-nav {
+    display: grid;
+    grid-template-columns: minmax(5.5rem, 0.42fr) minmax(0, 1fr);
+    gap: 0.625rem;
+  }
+
+  .planning-form-nav.single-action {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  :global(.planning-form .planning-nav-back),
+  :global(.planning-form .planning-nav-primary) {
+    width: 100%;
+    height: 2.625rem;
+    padding-inline: 0.875rem;
+  }
+
+  @container (min-width: 520px) {
+    .planning-field-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .planning-form {
+      width: 100%;
+      height: calc(var(--planning-viewport-height, 100dvh) - 1rem);
+      max-height: calc(var(--planning-viewport-height, 100dvh) - 1rem);
+    }
+
+    .planning-form-body {
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+    }
+  }
+</style>

@@ -14,7 +14,25 @@
 
   export let tour: Tour | null = null;
 
-  onMount(() => trackEvent('request_trip_opened', { tour_id: tour?.id, tour_title: tour?.title }));
+  onMount(() => {
+    trackEvent('request_trip_opened', { tour_id: tour?.id, tour_title: tour?.title });
+
+    const viewport = window.visualViewport;
+    const updateViewportHeight = () => {
+      document.documentElement.style.setProperty('--booking-viewport-height', `${viewport?.height ?? window.innerHeight}px`);
+    };
+    updateViewportHeight();
+    viewport?.addEventListener('resize', updateViewportHeight);
+    viewport?.addEventListener('scroll', updateViewportHeight);
+    window.addEventListener('resize', updateViewportHeight);
+
+    return () => {
+      viewport?.removeEventListener('resize', updateViewportHeight);
+      viewport?.removeEventListener('scroll', updateViewportHeight);
+      window.removeEventListener('resize', updateViewportHeight);
+      document.documentElement.style.removeProperty('--booking-viewport-height');
+    };
+  });
 
   // ── Options ────────────────────────────────────────────────────────────────
   const BUDGET_OPTIONS = ['Budget', 'Mid-range', 'Luxury', 'Not sure yet'];
@@ -138,6 +156,13 @@
   const scrollBodyTop = async () => {
     await tick();
     bodyEl?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const keepFocusedFieldVisible = (event: FocusEvent) => {
+    if (!window.matchMedia('(max-width: 1023px)').matches) return;
+    const target = event.target as HTMLElement | null;
+    if (!target?.matches('input, select, textarea')) return;
+    window.setTimeout(() => target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 180);
   };
 
   // ── Derived summary used by the review step, the PDF and WhatsApp ────────────
@@ -370,30 +395,29 @@
     <Button type="button" variant="secondary" on:click={resetForm}>Submit another request</Button>
   </div>
 {:else}
-  <form class="gf-panel-dark relative flex max-h-[88svh] min-h-0 min-w-0 flex-col overflow-hidden rounded-[14px] border border-white/10 shadow-soft sm:max-h-[88vh] sm:rounded-2xl" on:submit|preventDefault={submit} novalidate>
+  <form class="booking-form gf-panel-dark relative flex max-h-[88svh] min-h-0 min-w-0 flex-col overflow-hidden rounded-[14px] border border-white/10 shadow-soft sm:max-h-[88vh] sm:rounded-2xl" on:focusin={keepFocusedFieldVisible} on:submit|preventDefault={submit} novalidate>
     <!-- Header + progress -->
-    <div class="shrink-0 border-b border-white/10 px-4 py-4 sm:px-5 md:px-6">
+    <div class="shrink-0 border-b border-white/10 px-4 py-3 sm:px-5 md:px-6">
       <p class="text-xs font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">Booking request</p>
       <h3 class="mt-0.5 font-serif text-xl font-semibold tracking-normal text-white">Request this trip with confidence</h3>
       {#if tour}
-        <div class="gf-trip-chip mt-3">
-          <MapPin size={16} class="shrink-0 text-goldfinch-gold" />
-          <span class="shrink-0 text-[10px] font-bold uppercase tracking-[0.14em] text-goldfinch-gold/80">Trip</span>
-          <span class="truncate text-sm font-bold text-goldfinch-gold">{tour.title}</span>
+        <div class="booking-trip-context mt-2" title={tour.title}>
+          <MapPin size={13} class="shrink-0 text-goldfinch-gold" />
+          <span class="truncate text-xs font-semibold text-white/85">{tour.title}</span>
         </div>
       {/if}
 
-      <div class="mt-4">
-        <FormStepper steps={STEPS} current={step} tone="dark" onStep={goStep} />
+      <div class="mt-2">
+        <FormStepper steps={STEPS} current={step} tone="dark" compact onStep={goStep} />
       </div>
     </div>
 
     <!-- Body (scrolls) -->
-    <div class="grid min-h-0 flex-1 gap-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5 md:px-6" bind:this={bodyEl}>
+    <div class="grid min-h-0 flex-1 gap-3 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5 md:px-6" bind:this={bodyEl}>
       {#if step === 0}
-        <fieldset class="grid gap-4">
+        <fieldset class="grid gap-3">
           <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Contact details</legend>
-          <div class="grid gap-4 md:grid-cols-2">
+          <div class="booking-field-grid">
             <label class="grid gap-1.5">
               <span class="gf-label">Full name</span>
               <input class={cls('full_name')} bind:value={full_name} on:input={() => clearErr('full_name')} placeholder="Your name" autocomplete="name" />
@@ -405,7 +429,7 @@
               {#if errors.email}<span class="text-xs text-red-600">{errors.email}</span>{/if}
             </label>
           </div>
-          <div class="grid gap-4 md:grid-cols-2">
+          <div class="booking-field-grid">
             <label class="grid gap-1.5">
               <span class="gf-label">Phone / WhatsApp</span>
               <input class={cls('phone')} type="tel" bind:value={phone} on:input={() => clearErr('phone')} placeholder="+255 ..." autocomplete="tel" />
@@ -414,9 +438,9 @@
           </div>
         </fieldset>
       {:else if step === 1}
-        <fieldset class="grid gap-4">
+        <fieldset class="grid gap-3">
           <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Trip details</legend>
-          <div class="grid gap-4 md:grid-cols-2">
+          <div class="booking-field-grid">
             <label class="grid gap-1.5">
               <span class="gf-label">Preferred travel date</span>
               <input class={cls('travel_date')} type="date" min={todayStr} bind:value={travel_date} on:input={() => clearErr('travel_date')} />
@@ -431,7 +455,7 @@
               {#if errors.date_flexibility}<span class="text-xs text-red-600">{errors.date_flexibility}</span>{/if}
             </label>
           </div>
-          <div class="grid gap-4 md:grid-cols-2">
+          <div class="booking-field-grid">
             <label class="grid gap-1.5">
               <span class="gf-label">Trip duration</span>
               <input class={cls('trip_duration')} bind:value={trip_duration} placeholder="e.g. 5 days / 4 nights" />
@@ -445,7 +469,7 @@
               {#if errors.budget_range}<span class="text-xs text-red-600">{errors.budget_range}</span>{/if}
             </label>
           </div>
-          <div class="grid gap-4 md:grid-cols-2">
+          <div class="booking-count-grid">
             <label class="grid gap-1.5">
               <span class="gf-label">Adults</span>
               <input class={cls('number_of_adults')} type="number" min="1" bind:value={number_of_adults} on:input={() => clearErr('number_of_adults')} />
@@ -459,7 +483,7 @@
           </div>
         </fieldset>
       {:else if step === 2}
-        <fieldset class="grid gap-4">
+        <fieldset class="grid gap-3">
           <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Preferences</legend>
           <div class="grid gap-2">
             <span class="gf-label">What are you interested in? <span class="gf-hint">(select any)</span></span>
@@ -479,11 +503,11 @@
           </label>
           <label class="grid gap-1.5">
             <span class="gf-label">Special requests</span>
-            <textarea class={inputBase + ' border-ink/15 focus:border-forest focus:ring-forest/15'} rows={2} bind:value={special_requests} placeholder="Dietary needs, accessibility, celebrations, room preferences..."></textarea>
+            <textarea class="gf-textarea booking-textarea-short" rows={2} bind:value={special_requests} placeholder="Dietary needs, accessibility, celebrations, room preferences..."></textarea>
           </label>
           <label class="grid gap-1.5">
             <span class="gf-label">Anything else we should know?</span>
-            <textarea class={inputBase + ' border-ink/15 focus:border-forest focus:ring-forest/15'} rows={3} bind:value={message} placeholder="Must-see places, special occasions, group details..."></textarea>
+            <textarea class="gf-textarea booking-textarea" rows={3} bind:value={message} placeholder="Must-see places, special occasions, group details..."></textarea>
           </label>
         </fieldset>
       {:else}
@@ -537,18 +561,18 @@
         </div>
       {/if}
 
-      <div class="grid grid-cols-2 gap-3 sm:flex sm:items-center">
+      <div class:single-action={step === 0} class="booking-form-nav">
         {#if step > 0}
-          <button type="button" class="gf-btn-ghost w-full justify-center px-3 sm:w-auto sm:px-5" on:click={back}>
+          <button type="button" class="gf-btn-ghost booking-nav-back" on:click={back}>
             <ArrowLeft size={16} /> Back
           </button>
         {/if}
         {#if step < LAST}
-          <button type="button" class={`gf-btn-primary w-full justify-center px-4 sm:ml-auto sm:w-auto sm:px-6 ${step === 0 ? 'col-span-2' : ''}`} on:click={next}>
+          <button type="button" class="gf-btn-primary booking-nav-primary" on:click={next}>
             Continue <ArrowRight size={16} strokeWidth={2.6} />
           </button>
         {:else}
-          <button type="submit" class="gf-btn-primary w-full justify-center px-4 sm:ml-auto sm:w-auto sm:px-6" disabled={submitting}>
+          <button type="submit" class="gf-btn-primary booking-nav-primary" disabled={submitting}>
             {submitting ? 'Sending…' : 'Submit Booking Request'}
           </button>
         {/if}
@@ -561,3 +585,81 @@
     </div>
   </form>
 {/if}
+
+<style>
+  .booking-form {
+    container-type: inline-size;
+  }
+
+  @media (max-width: 1023px) {
+    .booking-form {
+      width: 100%;
+      max-height: calc(var(--booking-viewport-height, 100dvh) - 0.75rem);
+    }
+  }
+
+  .booking-trip-context {
+    display: flex;
+    min-width: 0;
+    height: 1.875rem;
+    align-items: center;
+    gap: 0.4rem;
+    border-left: 2px solid rgb(212 175 55 / 0.8);
+    padding: 0 0.55rem;
+    background: rgb(255 255 255 / 0.045);
+  }
+
+  .booking-field-grid,
+  .booking-count-grid {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .booking-count-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  :global(.booking-form .gf-input) {
+    height: 2.5rem;
+    min-height: 2.5rem;
+    font-size: 0.8125rem;
+  }
+
+  :global(.booking-form .gf-label) {
+    font-size: 0.5625rem;
+    letter-spacing: 0.1em;
+  }
+
+  .booking-textarea-short {
+    min-height: 3.75rem;
+    resize: vertical;
+  }
+
+  .booking-textarea {
+    min-height: 4.5rem;
+    resize: vertical;
+  }
+
+  .booking-form-nav {
+    display: grid;
+    grid-template-columns: minmax(5.5rem, 0.42fr) minmax(0, 1fr);
+    gap: 0.625rem;
+  }
+
+  .booking-form-nav.single-action {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  :global(.booking-form .booking-nav-back),
+  :global(.booking-form .booking-nav-primary) {
+    width: 100%;
+    height: 2.625rem;
+    padding-inline: 0.875rem;
+  }
+
+  @container (min-width: 520px) {
+    .booking-field-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

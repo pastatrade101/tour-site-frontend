@@ -11,6 +11,7 @@
   export let selected: string[] = [];
   export let fallbackOptions: string[] = [];
   export let tone: 'dark' | 'light' = 'dark';
+  export let compact = false;
   export let onToggle: (value: string) => void = () => {};
 
   type Card = { name: string; description: string; image: string; record?: Record<string, unknown> };
@@ -46,7 +47,7 @@
 
 {#if cards.length}
   <!-- inline, horizontally scrollable row — compact and tappable -->
-  <div class="gf-scroll -mx-1 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-1 pb-1">
+  <div class:gf-compact={compact} class="gf-scroll -mx-1 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-1 pb-1">
     {#each cards as c (c.name)}
       {@const on = isOn(c.name)}
       <button
@@ -57,7 +58,7 @@
         aria-pressed={on}
         on:click={() => onToggle(c.name)}
       >
-        <div class="relative aspect-[4/3] w-full overflow-hidden bg-forest">
+        <div class="gf-card-media relative aspect-[4/3] w-full overflow-hidden bg-forest">
           {#if c.image}
             <Img
               record={c.record}
@@ -83,7 +84,7 @@
   </div>
 {:else if loaded && fallbackOptions.length}
   <!-- categories unavailable — keep the field usable as simple chips -->
-  <div class="gf-scroll -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+  <div class:gf-compact={compact} class="gf-scroll -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
     {#each fallbackOptions as opt (opt)}
       <button
         type="button"
@@ -106,5 +107,48 @@
   }
   .gf-scroll::-webkit-scrollbar {
     display: none;
+  }
+
+  .gf-card-media :global(picture),
+  .gf-card-media :global(img) {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .gf-compact {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.45rem;
+    margin-inline: 0;
+    overflow: visible;
+    padding: 0;
+    scroll-snap-type: none;
+  }
+
+  .gf-compact > :global(button) {
+    width: auto;
+    min-width: 0;
+  }
+
+  .gf-compact .gf-card-media {
+    aspect-ratio: 16 / 10;
+  }
+
+  .gf-compact > :global(button > p) {
+    overflow: hidden;
+    padding: 0.4rem 0.45rem;
+    font-size: 0.65rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  @media (min-width: 520px) {
+    .gf-compact {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
   }
 </style>

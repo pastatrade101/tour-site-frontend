@@ -312,11 +312,6 @@
   $: tourDescription = tour?.full_description || tour?.short_description || '';
   $: metaDescription = tour ? shortText(tour.meta_description || tour.short_description || tour.full_description, 170) : '';
   $: categoryLabel = tour?.tour_categories?.name || normaliseLabel(tour?.experience_type);
-  $: heroTags = unique([
-    ...destinations.slice(0, 3).map((destination) => destination.name),
-    categoryLabel,
-    durationLabel
-  ]).slice(0, 5);
   $: attachedTravelStyles = travelStyles.filter((style) =>
     (tour?.persona_tags ?? []).map(personaKey).includes(personaKey(style.persona))
   );
@@ -579,35 +574,23 @@
         className="tour-detail-hero-image absolute inset-0 h-full w-full object-cover"
       />
     {/if}
-    <div class="tour-detail-hero-overlay absolute inset-0 bg-gradient-to-t from-deep-green/25 via-transparent to-deep-green/10" aria-hidden="true"></div>
+    <div class="tour-detail-hero-overlay absolute inset-0 bg-deep-green/45" aria-hidden="true"></div>
+    <div class="absolute inset-0 bg-[linear-gradient(90deg,rgba(26,54,48,0.92)_0%,rgba(26,54,48,0.68)_50%,rgba(26,54,48,0.18)_100%)]" aria-hidden="true"></div>
+    <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-deep-green/65 to-transparent" aria-hidden="true"></div>
 
-    <div class="tour-detail-hero-shell container-shell relative flex min-h-[560px] flex-col justify-end pb-12 pt-20 md:min-h-[640px] md:pb-16 md:pt-24 lg:min-h-[680px] lg:pb-20">
+    <div class="tour-detail-hero-shell container-shell relative flex min-h-[390px] flex-col justify-end pb-8 pt-16 md:min-h-[460px] md:pb-12 md:pt-20 lg:pb-14">
       <a href="/tours" class="absolute left-0 top-6 hidden items-center gap-1.5 text-[13px] font-medium text-white/90 transition hover:text-goldfinch-gold md:top-8 md:inline-flex">
         <ArrowLeft class="h-3.5 w-3.5" /> Back to tours
       </a>
 
-      <div class="tour-hero-copy relative max-w-3xl pb-2 [text-shadow:0_2px_18px_rgba(39,43,34,0.42)] md:pb-4">
-        {#if heroTags.length}
-          <div class="tour-hero-tags mb-5 flex flex-wrap gap-1.5">
-            {#each heroTags as tag}
-              <span class="inline-flex items-center rounded-full border border-white/30 bg-deep-green/35 px-2.5 py-0.5 text-[11px] font-medium text-white backdrop-blur">
-                {tag}
-              </span>
-            {/each}
-          </div>
-        {/if}
+      <div class="tour-hero-copy relative w-full max-w-4xl [text-shadow:0_2px_18px_rgba(39,43,34,0.42)]">
         {#if categoryLabel}
           <span class="text-[11px] font-bold uppercase tracking-[0.18em] text-goldfinch-gold drop-shadow">{categoryLabel}</span>
         {/if}
-        <h1 class="mt-3 font-serif text-3xl font-semibold leading-[1.05] tracking-normal text-white sm:text-4xl md:text-5xl lg:text-[54px]">
+        <h1 class="mt-3 w-full max-w-none font-serif text-3xl font-semibold leading-[1.05] tracking-normal text-white sm:text-4xl md:text-5xl lg:text-[54px]">
           {tour.title}
         </h1>
-        {#if tour.short_description || tour.full_description}
-          <p class="mt-4 max-w-2xl text-[15px] font-medium leading-relaxed text-white md:text-base">
-            {shortText(tour.short_description || tour.full_description, 230)}
-          </p>
-        {/if}
-        <div class="tour-hero-actions mt-7 flex flex-col gap-3 sm:flex-row">
+        <div class="tour-hero-actions mt-6 flex">
           <button
             type="button"
             class="inline-flex items-center justify-center rounded-[6px] bg-goldfinch-gold px-5 py-3 text-sm font-bold text-heading transition hover:brightness-105"
@@ -615,24 +598,17 @@
           >
             Plan This Trip
           </button>
-          <button
-            type="button"
-            class="inline-flex items-center justify-center rounded-[6px] border border-white/35 bg-deep-green/30 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-deep-green/45"
-            on:click={() => scrollToSection('day-by-day')}
-          >
-            View Day by Day
-          </button>
         </div>
         {#if heroStats.length}
-          <div class="tour-hero-stats mt-5 flex max-w-3xl flex-wrap gap-2">
+          <div class="tour-hero-stats mt-5 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
             {#each heroStats as stat}
-              <div class="hero-stat-chip inline-flex min-w-[156px] max-w-full flex-1 items-center gap-2 rounded-[9px] border border-white/18 bg-white/[0.13] px-3 py-2.5 text-white shadow-[0_10px_24px_rgba(15,23,42,0.16)] backdrop-blur-md sm:flex-none">
-                <span class="grid h-8 w-8 shrink-0 place-items-center rounded-[7px] bg-goldfinch-gold text-heading">
+              <div class="hero-stat-chip flex min-w-0 items-center gap-2.5 border-l-2 border-goldfinch-gold/70 bg-deep-green/45 px-3 py-2.5 text-white backdrop-blur-md">
+                <span class="grid h-8 w-8 shrink-0 place-items-center text-goldfinch-gold">
                   <svelte:component this={stat.icon} size={16} strokeWidth={2.35} />
                 </span>
                 <span class="min-w-0">
-                  <span class="block text-[9.5px] font-bold uppercase tracking-[0.12em] text-white/68">{stat.label}</span>
-                  <span class="block text-[13px] font-bold leading-snug text-white md:text-[13.5px]">{stat.value}</span>
+                  <span class="block text-[9.5px] font-bold uppercase tracking-[0.12em] text-white/80">{stat.label}</span>
+                  <span class="block text-[13px] font-extrabold leading-snug text-white md:text-[13.5px]">{stat.value}</span>
                 </span>
               </div>
             {/each}
@@ -705,7 +681,7 @@
               <table class="w-full border-collapse text-[14px]">
                 <thead>
                   <tr class="bg-deep-green text-left text-white">
-                    <th class="px-4 py-3 font-semibold">Day</th>
+                    <th class="w-[92px] min-w-[92px] whitespace-nowrap px-4 py-3 font-semibold">Day</th>
                     <th class="px-4 py-3 font-semibold">Place</th>
                     <th class="px-4 py-3 font-semibold">Highlights</th>
                     <th class="px-4 py-3 font-semibold">Hotel Options</th>
@@ -714,7 +690,7 @@
                 <tbody>
                   {#each snapshotRows as row, index}
                     <tr class={index % 2 === 0 ? 'bg-surface' : 'bg-sand/35'}>
-                      <td class="border-t border-ink/5 px-4 py-3 align-top font-semibold text-heading">{row.day}</td>
+                      <td class="w-[92px] min-w-[92px] whitespace-nowrap border-t border-ink/5 px-4 py-3 align-top font-semibold text-heading">{row.day}</td>
                       <td class="border-t border-ink/5 px-4 py-3 align-top font-semibold text-clay">{row.place}</td>
                       <td class="border-t border-ink/5 px-4 py-3 align-top text-ink/70">{row.highlights || 'Published details on request'}</td>
                       <td class="border-t border-ink/5 px-4 py-3 align-top text-ink/70">{row.hotel || 'Confirmed when quoted'}</td>
@@ -1198,7 +1174,7 @@
       </main>
 
       <aside id="plan-this-trip" class="hidden transition lg:block">
-        <div class="lg:sticky lg:top-[110px]">
+        <div class="tour-planner-sticky">
           <BookingForm {tour} />
           {#if tourSpecialist}
             <div class="mt-6">
@@ -1271,7 +1247,7 @@
   {#if sheetOpen}
     <div class="fixed inset-0 z-[80] lg:hidden" role="dialog" aria-modal="true">
       <button class="absolute inset-0 cursor-default bg-black/60" type="button" aria-label="Close planner" on:click={closeSheet}></button>
-      <div class="absolute inset-x-0 bottom-0 flex max-h-[92dvh] flex-col overflow-hidden rounded-t-[16px] bg-deep-green">
+      <div class="tour-planner-sheet absolute inset-x-0 bottom-0 flex max-h-[92dvh] flex-col overflow-hidden rounded-t-[16px] bg-deep-green">
         <button
           type="button"
           on:click={closeSheet}
@@ -1298,6 +1274,33 @@
 <style>
   .tour-hero-copy {
     isolation: isolate;
+  }
+
+  @media (min-width: 1024px) {
+    .tour-planner-sticky {
+      position: sticky;
+      z-index: 40;
+      top: calc(50vh + 55px);
+      max-height: calc(100vh - 150px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-right: 0.35rem;
+      transform: translateY(-50%);
+      scrollbar-width: thin;
+      scrollbar-color: rgb(var(--c-ink) / 0.18) transparent;
+    }
+
+    .tour-planner-sticky::-webkit-scrollbar { width: 5px; }
+    .tour-planner-sticky::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: rgb(var(--c-ink) / 0.18);
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .tour-planner-sheet {
+      max-height: min(92dvh, var(--booking-viewport-height, 100dvh));
+    }
   }
 
   .tour-hero-copy::before {
@@ -1496,13 +1499,6 @@
       font-size: clamp(2.25rem, 10.4vw, 3.35rem);
       line-height: 0.98;
       text-wrap: balance;
-    }
-
-    .tour-hero-copy p {
-      max-width: 100%;
-      font-size: 0.95rem;
-      line-height: 1.55;
-      text-wrap: pretty;
     }
 
     .tour-hero-actions {
@@ -1754,14 +1750,6 @@
       max-width: 10.5ch;
     }
 
-    .tour-hero-copy p {
-      display: -webkit-box;
-      overflow: hidden;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 3;
-      line-clamp: 3;
-    }
-
     .tour-hero-stats {
       grid-template-columns: 1fr;
     }
@@ -1831,8 +1819,92 @@
 
   @media (min-width: 768px) {
     .tour-hero-copy::before {
-      inset: -1.4rem -2rem -1.5rem -1.6rem;
-      border-radius: 14px;
+      display: none;
+    }
+  }
+
+  .tour-hero-copy::before { display: none; }
+
+  @media (max-width: 767px) {
+    .tour-detail-hero,
+    .tour-detail-hero-shell {
+      min-height: 430px;
+    }
+
+    .tour-detail-hero { max-width: 100%; }
+    .tour-detail-hero::after { display: none; }
+
+    .tour-detail-hero-overlay {
+      background: rgb(var(--c-deep-green) / 0.45);
+    }
+
+    .tour-detail-hero-shell {
+      width: min(100% - 32px, 1180px);
+      max-width: none;
+      padding-top: 4.5rem;
+      padding-bottom: 1.75rem;
+    }
+
+    .tour-hero-copy,
+    .tour-hero-copy h1 {
+      width: 100%;
+      max-width: none;
+    }
+
+    .tour-hero-copy h1 {
+      font-size: clamp(2rem, 8.6vw, 3rem);
+      line-height: 1.04;
+      text-wrap: pretty;
+    }
+
+    .tour-hero-actions {
+      display: flex;
+      margin-top: 1rem;
+    }
+
+    .tour-hero-actions :global(button) {
+      width: auto;
+      min-height: 2.65rem;
+      padding: 0.65rem 1rem;
+    }
+
+    .tour-hero-stats {
+      display: grid;
+      max-width: 100%;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.4rem;
+      margin-top: 0.875rem;
+    }
+
+    .hero-stat-chip {
+      min-width: 0;
+      min-height: 4.4rem;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.35rem;
+      border-top: 2px solid rgb(var(--c-goldfinch-gold) / 0.72);
+      border-left: 0;
+      border-radius: 0;
+      padding: 0.5rem;
+    }
+
+    .hero-stat-chip > span:first-child {
+      display: block;
+      width: auto;
+      height: auto;
+      background: transparent;
+      color: rgb(var(--c-goldfinch-gold));
+    }
+
+    .hero-stat-chip span span:first-child { font-size: 0.5rem; }
+    .hero-stat-chip span span:last-child {
+      display: -webkit-box;
+      overflow: hidden;
+      font-size: 0.68rem;
+      line-height: 1.12;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
     }
   }
 
