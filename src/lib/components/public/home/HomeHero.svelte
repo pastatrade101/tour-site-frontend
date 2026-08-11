@@ -1,11 +1,14 @@
 <script lang="ts">
+  import { onDestroy, onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { ChevronDown } from '@lucide/svelte';
   import { trackEvent } from '$lib/analytics';
   import Img from '../Img.svelte';
   import type { ImageVariantMap } from '$lib/img';
 
   type Cta = { label: string; href: string };
   type QuickLink = { label: string; href: string };
+  type HeroSlide = { imageUrl: string; label?: string; href?: string };
 
   export let eyebrow = '';
   export let title = 'Plan your African safari,';
@@ -15,6 +18,7 @@
   export let secondaryCta: Cta = { label: 'Explore Tanzania →', href: '#experiences' };
   export let imageUrl = '';
   export let imageVariants: ImageVariantMap = {};
+  export let slides: HeroSlide[] = [];
   export let trustPoints: string[] = [];
   export let quickLinks: QuickLink[] = [];
   // Quick planner. `experiences` are REAL published tour categories, so the
@@ -31,7 +35,59 @@
   let traveller = '';
   let focus = '';
   let travelDate = '';
+  let activeSlide = 0;
+  let slideTimer: ReturnType<typeof setInterval> | undefined;
+  let mounted = false;
   const today = new Date().toISOString().slice(0, 10);
+
+  $: displaySlides = (slides.length ? slides : [{ imageUrl }]).filter((slide) => slide.imageUrl).slice(0, 3);
+  $: slideKey = displaySlides.map((slide) => slide.imageUrl).join('|');
+  $: if (displaySlides.length && activeSlide >= displaySlides.length) activeSlide = 0;
+  $: if (mounted && slideKey) restartSlider();
+
+  const selectSlide = (index: number) => {
+    activeSlide = index;
+    restartSlider();
+  };
+
+  const restartSlider = () => {
+    if (slideTimer) clearInterval(slideTimer);
+    if (displaySlides.length < 2 || (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+    slideTimer = setInterval(() => (activeSlide = (activeSlide + 1) % displaySlides.length), 6500);
+  };
+
+  const scrollToExplore = (event: MouseEvent) => {
+    event.preventDefault();
+    const target = document.getElementById('experiences');
+    if (!target) return;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const start = window.scrollY;
+    const navbarOffset = window.innerWidth < 1024 ? 70 : 56;
+    const destination = target.getBoundingClientRect().top + start - navbarOffset;
+    const distance = destination - start;
+    const duration = 950;
+    const startedAt = performance.now();
+    const easeInOutCubic = (progress: number) =>
+      progress < 0.5 ? 4 * progress ** 3 : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+    if (reduceMotion) {
+      window.scrollTo(0, destination);
+      return;
+    }
+
+    const frame = (now: number) => {
+      const progress = Math.min((now - startedAt) / duration, 1);
+      window.scrollTo(0, start + distance * easeInOutCubic(progress));
+      if (progress < 1) requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  };
+
+  onMount(() => {
+    mounted = true;
+    restartSlider();
+  });
+  onDestroy(() => slideTimer && clearInterval(slideTimer));
 
   // Every quick-planner value is carried into the complete planning form.
   const findOptions = () => {
@@ -55,27 +111,31 @@
 </script>
 
 <section data-hero class="home-hero relative isolate overflow-hidden">
-  {#if imageUrl}
-    <Img
-      src={imageUrl}
-      variantsMap={imageVariants}
-      alt=""
-      width={1920}
-      height={1200}
-      sizes="100vw"
-      eager
-      className="absolute inset-0 h-full w-full object-cover"
-      imgStyle="filter: saturate(1.1) contrast(1.05) brightness(1.02)"
-    />
-  {/if}
+  <div class="absolute inset-0 bg-deep-green" aria-hidden="true">
+    {#each displaySlides as slide, index (slide.imageUrl)}
+      <div class:active={index === activeSlide} class="hero-slide absolute inset-0">
+        <Img
+          src={slide.imageUrl}
+          variantsMap={imageVariants}
+          alt=""
+          width={1920}
+          height={1200}
+          sizes="100vw"
+          eager={index === 0}
+          className="hero-slide-image absolute inset-0 h-full w-full object-cover"
+          imgStyle="filter: saturate(1.08) contrast(1.04) brightness(0.98)"
+        />
+      </div>
+    {/each}
+  </div>
   <div
     aria-hidden="true"
-    class="absolute inset-0"
+    class="hero-main-overlay absolute inset-0"
     style="background: linear-gradient(100deg, rgba(57,61,50,0.80) 0%, rgba(57,61,50,0.48) 32%, rgba(57,61,50,0.12) 58%, rgba(57,61,50,0) 72%)"
   ></div>
   <div
     aria-hidden="true"
-    class="absolute inset-x-0 bottom-0 h-40"
+    class="hero-bottom-overlay absolute inset-x-0 bottom-0 h-40"
     style="background: linear-gradient(to top, rgba(57,61,50,0.62), transparent)"
   ></div>
 
@@ -178,18 +238,121 @@
       {/if}
     </div>
   {/if}
+
+  <div class="hero-controls absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-2 md:bottom-5">
+    {#if displaySlides.length > 1}
+      <div class="flex items-center gap-2" aria-label="Hero slides">
+        {#each displaySlides as slide, index}
+          <button
+            type="button"
+            class:active={index === activeSlide}
+            class="hero-slide-dot"
+            aria-label={`Show ${slide.label || `slide ${index + 1}`}`}
+            aria-current={index === activeSlide ? 'true' : undefined}
+            on:click={() => selectSlide(index)}
+          ></button>
+        {/each}
+      </div>
+    {/if}
+    <a href="#experiences" class="hero-scroll-cue" aria-label="Scroll to explore" on:click={scrollToExplore}>
+      <span>Explore</span>
+      <ChevronDown size={18} strokeWidth={2.2} />
+    </a>
+  </div>
 </section>
 
 <style>
+  .home-hero {
+    display: flex;
+    min-height: calc(100svh - 134px);
+    flex-direction: column;
+    justify-content: flex-end;
+    background: rgb(var(--c-deep-green));
+  }
+
+  .hero-slide {
+    opacity: 0;
+    transition: opacity 1.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hero-slide.active {
+    opacity: 1;
+  }
+
+  .hero-slide :global(.hero-slide-image) {
+    transform: scale(1.035);
+    transition: transform 8s cubic-bezier(0.2, 0.65, 0.3, 1);
+  }
+
+  .hero-slide.active :global(.hero-slide-image) {
+    transform: scale(1);
+  }
+
+  .hero-slide-dot {
+    width: 1.65rem;
+    height: 2px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.38);
+    transition: width 300ms ease, background-color 300ms ease;
+  }
+
+  .hero-slide-dot.active {
+    width: 2.75rem;
+    background: rgb(var(--c-goldfinch-gold));
+  }
+
+  .hero-scroll-cue {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: rgb(255 255 255 / 0.82);
+    gap: 0.1rem;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    line-height: 1;
+    text-transform: uppercase;
+    text-shadow: 0 1px 10px rgb(0 0 0 / 0.45);
+    transition: color 350ms cubic-bezier(0.22, 1, 0.36, 1), transform 350ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .hero-scroll-cue:hover,
+  .hero-scroll-cue:focus-visible {
+    color: white;
+    transform: translateY(2px);
+  }
+
+  .hero-scroll-cue :global(svg) {
+    animation: scroll-cue 2.4s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+    color: rgb(var(--c-goldfinch-gold));
+  }
+
+  @keyframes scroll-cue {
+    0%, 100% { opacity: 0.6; transform: translateY(0); }
+    45% { opacity: 1; transform: translateY(5px); }
+    70% { opacity: 0.8; transform: translateY(2px); }
+  }
+
   @media (max-width: 767px) {
     .home-hero {
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      min-height: clamp(520px, calc(78svh - 20px), 700px);
+      min-height: calc(100svh - 70px);
       max-width: 100vw;
       overflow-x: clip;
       background: rgb(var(--c-deep-green));
+    }
+
+    .hero-main-overlay {
+      background: linear-gradient(180deg, rgba(26,54,48,0.24) 0%, rgba(26,54,48,0.46) 43%, rgba(26,54,48,0.9) 100%) !important;
+    }
+
+    .hero-bottom-overlay {
+      height: 58%;
+      background: linear-gradient(to top, rgba(26,54,48,0.82), transparent) !important;
+    }
+
+    .hero-slide :global(.hero-slide-image) {
+      object-position: center center;
     }
 
     .home-hero :global(*) {
@@ -219,12 +382,13 @@
     }
 
     .hero-planner-shell {
-      padding-bottom: 1.1rem;
+      padding-bottom: 4.5rem;
     }
 
     .hero-planner-card {
       border-radius: 16px;
       padding: 0.6rem;
+      box-shadow: 0 18px 50px rgb(0 0 0 / 0.2);
     }
 
     .hero-planner-grid {
@@ -286,6 +450,10 @@
       line-height: 1.45;
       text-shadow: 0 1px 12px rgb(0 0 0 / 0.35);
     }
+
+    .hero-controls {
+      width: min(100%, 18rem);
+    }
   }
 
   @media (max-width: 479px) {
@@ -318,7 +486,7 @@
 
   @media (min-width: 480px) and (max-width: 767px) {
     .home-hero {
-      min-height: clamp(500px, 72svh, 650px);
+      min-height: calc(100svh - 70px);
     }
 
     .home-hero :global(.container-shell) {
@@ -339,7 +507,7 @@
     }
 
     .hero-planner-shell {
-      padding-bottom: 1.4rem;
+      padding-bottom: 4.5rem;
     }
 
     .hero-planner-card {
@@ -398,6 +566,17 @@
     .hero-planner-submit {
       order: 4;
       grid-column: 1 / -1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-slide,
+    .hero-slide :global(.hero-slide-image) {
+      transition: none;
+    }
+
+    .hero-scroll-cue :global(svg) {
+      animation: none;
     }
   }
 </style>

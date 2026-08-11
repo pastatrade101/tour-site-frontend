@@ -118,6 +118,24 @@
   $: heroPreloadSrcset = heroVariants ? srcsetFor(heroVariants, heroVariants.avif ? 'avif' : 'webp') : '';
   $: heroPreloadHref =
     variantSrc(heroVariants, 1800, heroVariants?.avif ? 'avif' : 'webp') || imgUrl(heroImageResolved, 1800, 72);
+  $: heroSlides = (() => {
+    const candidates = [
+      ...tours.slice(0, 2).map((tour) => ({
+        imageUrl: tour.banner_image_url || tour.main_image_url || '',
+        label: tour.title,
+        href: `/tours/${tour.slug}`
+      })),
+      ...destinations.slice(0, 2).map((destination) => ({
+        imageUrl: destination.banner_image_url || destination.main_image_url || destination.image_url || '',
+        label: destination.name,
+        href: `/destinations/${destination.slug}`
+      })),
+      { imageUrl: heroImageResolved, label: 'Goldfinch Adventures', href: '/tours' }
+    ];
+    return candidates.filter((slide, index, all) =>
+      Boolean(slide.imageUrl) && all.findIndex((candidate) => candidate.imageUrl === slide.imageUrl) === index
+    ).slice(0, 3);
+  })();
 
   const hexToRgba = (hex: string, alpha: number) => {
     const match = /^#?([0-9a-fA-F]{6})$/.exec(hex);
@@ -341,6 +359,7 @@
     highlight={typeof heroExtra.title_highlight === 'string' ? heroExtra.title_highlight : 'your way.'}
     description={cms('hero', 'subtitle', 'Great Migration river crossings, honest safari, Kilimanjaro and Zanzibar advice — planned around you by Tanzanian local experts.')}
     imageUrl={heroImageResolved}
+    slides={heroSlides}
     primaryCta={{ label: cms('hero', 'button_text', 'Plan My Trip'), href: cms('hero', 'button_url', '/plan-my-trip') }}
     secondaryCta={{
       label: typeof heroExtra.secondary_cta_text === 'string' ? heroExtra.secondary_cta_text : 'Talk to a Travel Advisor',
