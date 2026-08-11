@@ -203,17 +203,24 @@
     }
 
     .package-grid {
+      --package-card-width: min(88vw, 390px);
       display: flex;
       margin-inline: calc(var(--container-pad, 1.25rem) * -1);
       overflow-x: auto;
       scroll-snap-type: x mandatory;
-      padding-inline: var(--container-pad, 1.25rem);
+      scroll-padding-inline: calc((100vw - var(--package-card-width)) / 2);
+      padding-inline: max(var(--container-pad, 1.25rem), calc((100vw - var(--package-card-width)) / 2));
       padding-bottom: 0.75rem;
       scrollbar-width: none;
     }
 
     .package-grid::-webkit-scrollbar { display: none; }
-    .package-card { width: min(88vw, 390px); flex: 0 0 auto; scroll-snap-align: start; }
+    .package-card {
+      width: var(--package-card-width);
+      flex: 0 0 auto;
+      scroll-snap-align: center;
+      scroll-snap-stop: always;
+    }
   }
 
   @media (max-width: 639px) {
