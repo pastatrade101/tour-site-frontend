@@ -39,7 +39,7 @@
 </script>
 
 {#if list.length}
-  <section class="home-itineraries py-14 md:py-[64px]">
+  <section id="featured-itineraries" class="home-itineraries scroll-mt-20 py-14 md:py-[64px]">
     <div class="container-shell">
       <div class="home-itineraries-head max-w-[1180px]">
         {#if eyebrow}

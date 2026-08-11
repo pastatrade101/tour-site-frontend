@@ -126,7 +126,7 @@
 />
 
 <!-- ── hero ─────────────────────────────────────────────────────────────── -->
-<section class="relative flex min-h-[64vh] items-end overflow-hidden bg-deep-green text-white md:min-h-[78vh]">
+<section data-hero class="relative flex min-h-[64vh] items-end overflow-hidden bg-deep-green text-white md:min-h-[78vh]">
   {#if heroImage}
     <Img
       record={heroRecord}

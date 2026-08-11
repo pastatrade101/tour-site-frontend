@@ -76,7 +76,7 @@
   }
 </script>
 
-<section bind:this={sectionEl} class="relative flex min-h-[620px] items-end overflow-hidden bg-deep-green dark:bg-[#0b100e]" style={`min-height:${heroMinH}`}>
+<section data-hero bind:this={sectionEl} class="relative flex min-h-[620px] items-end overflow-hidden bg-deep-green dark:bg-[#0b100e]" style={`min-height:${heroMinH}`}>
   <!-- rotating background images -->
   {#each images as src, i (src)}
     <div class={`absolute inset-0 transition-opacity duration-[1200ms] ease-out ${i === index ? 'opacity-100' : 'opacity-0'}`} aria-hidden={i === index ? undefined : 'true'}>

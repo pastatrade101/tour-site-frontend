@@ -64,7 +64,7 @@
   {/if}
 </svelte:head>
 
-<section class="destinations-index-hero relative isolate overflow-hidden bg-deep-green text-white">
+<section data-hero class="destinations-index-hero relative isolate overflow-hidden bg-deep-green text-white">
   <!-- Background layer: photograph + scrim when we have one, otherwise a lit
        green field. Both paths end in the same top wash and vignette, so the
        typography sits on identical values either way. -->
@@ -286,8 +286,9 @@
 
     .hero-copy h1 {
       margin-top: 1rem;
-      max-width: 11.5ch;
-      font-size: clamp(2.55rem, 11vw, 3.45rem);
+      width: 100%;
+      max-width: 100%;
+      font-size: clamp(2.25rem, 10vw, 3.25rem);
       line-height: 0.98;
       letter-spacing: 0;
       text-wrap: balance;
@@ -382,7 +383,8 @@
 
   @media (max-width: 479px) {
     .hero-copy h1 {
-      max-width: 10.5ch;
+      width: 100%;
+      max-width: 100%;
     }
 
     .hero-actions {
@@ -421,8 +423,9 @@
     }
 
     .hero-copy h1 {
-      max-width: 13ch;
-      font-size: clamp(3rem, 8vw, 4rem);
+      width: 100%;
+      max-width: 100%;
+      font-size: clamp(2.7rem, 7.6vw, 3.6rem);
     }
 
     .hero-actions {

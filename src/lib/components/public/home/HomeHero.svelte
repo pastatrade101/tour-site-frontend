@@ -179,7 +179,10 @@
 <style>
   @media (max-width: 767px) {
     .home-hero {
-      min-height: clamp(620px, calc(100svh - 70px), 860px);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      min-height: clamp(520px, calc(78svh - 20px), 700px);
       max-width: 100vw;
       overflow-x: clip;
       background: rgb(var(--c-deep-green));
@@ -190,18 +193,21 @@
     }
 
     .hero-copy {
-      padding-top: clamp(4rem, 14svh, 6rem);
-      padding-bottom: 1rem;
+      padding-top: clamp(2.8rem, 8svh, 4rem);
+      padding-bottom: 0.65rem;
     }
 
     .home-hero h1 {
-      max-width: 10.5ch;
-      font-size: clamp(2.45rem, 11vw, 3.35rem);
+      margin-top: 0.9rem;
+      width: 100%;
+      max-width: 100%;
+      font-size: clamp(2.15rem, 9.8vw, 3rem);
       line-height: 0.98;
       text-wrap: balance;
     }
 
     .home-hero p {
+      margin-top: 0.8rem;
       max-width: 100%;
       white-space: normal;
       overflow-wrap: break-word;
@@ -209,12 +215,12 @@
     }
 
     .hero-planner-shell {
-      padding-bottom: 2rem;
+      padding-bottom: 1.1rem;
     }
 
     .hero-planner-card {
       border-radius: 16px;
-      padding: 0.75rem;
+      padding: 0.6rem;
     }
 
     .hero-planner-grid {
@@ -253,6 +259,7 @@
     }
 
     .hero-note {
+      margin-top: 0.65rem;
       font-size: 0.78rem;
       line-height: 1.45;
       text-shadow: 0 1px 12px rgb(0 0 0 / 0.35);
@@ -289,7 +296,7 @@
 
   @media (min-width: 480px) and (max-width: 767px) {
     .home-hero {
-      min-height: clamp(560px, 76svh, 760px);
+      min-height: clamp(500px, 72svh, 650px);
     }
 
     .home-hero :global(.container-shell) {
@@ -298,18 +305,19 @@
     }
 
     .hero-copy {
-      padding-top: clamp(4.5rem, 10svh, 6rem);
-      padding-bottom: 1.25rem;
+      padding-top: clamp(3.5rem, 8svh, 4.75rem);
+      padding-bottom: 0.85rem;
     }
 
     .home-hero h1 {
-      max-width: 13ch;
-      font-size: clamp(3.15rem, 8.2vw, 4rem);
+      width: 100%;
+      max-width: 100%;
+      font-size: clamp(2.7rem, 7.6vw, 3.6rem);
       line-height: 0.98;
     }
 
     .hero-planner-shell {
-      padding-bottom: 2.5rem;
+      padding-bottom: 1.4rem;
     }
 
     .hero-planner-card {

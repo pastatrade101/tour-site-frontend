@@ -264,7 +264,7 @@
   <meta name="description" content="Browse and filter East Africa safari and tour packages by destination, experience, length, price and comfort level." />
 </svelte:head>
 
-<section class="overflow-hidden bg-deep-green text-savanna">
+<section data-hero class="overflow-hidden bg-deep-green text-savanna">
   <div class="tour-shell grid min-w-0 gap-6 py-8 md:py-10 lg:grid-cols-[minmax(0,1fr)_430px] lg:items-end">
     <div class="min-w-0">
       <p class="font-serif text-xl italic text-goldfinch-gold">{personaCfg ? `For ${personaCfg.label}` : 'Safari & Tours'}</p>

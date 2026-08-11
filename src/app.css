@@ -44,6 +44,35 @@ h4 {
   font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
   letter-spacing: -0.01em;
 }
+
+/* Keep public hero titles on the usable mobile content width. Individual
+   heroes can still choose their desktop max-width, but narrow character-count
+   caps make titles break awkwardly on phones. */
+@media (max-width: 767px) {
+  [data-hero] h1 {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
+    text-wrap: balance;
+  }
+
+  [data-hero] .max-w-3xl,
+  [data-hero] .max-w-4xl,
+  [data-hero] .max-w-2xl {
+    max-width: 100%;
+  }
+
+  .home-hero .hero-copy > div {
+    max-width: 100%;
+  }
+
+  .destinations-index-hero .hero-copy h1 {
+    max-width: 100%;
+  }
+}
 .admin-shell h1,
 .admin-shell h2,
 .admin-shell h3,

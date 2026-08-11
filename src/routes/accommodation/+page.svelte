@@ -119,7 +119,7 @@
 </svelte:head>
 
 <!-- ── cinematic hero ───────────────────────────────────────────────────── -->
-<section class="relative flex min-h-[62vh] items-end overflow-hidden bg-deep-green text-white md:min-h-[74vh]">
+<section data-hero class="relative flex min-h-[62vh] items-end overflow-hidden bg-deep-green text-white md:min-h-[74vh]">
   {#if heroImage}
     <Img
       record={heroLodge}
