@@ -103,12 +103,12 @@
 {#if open}
   <!-- Dimmed page behind. Clicking it closes; it is not a focus target. -->
   <div
-    class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-[2px]"
+    class="fixed inset-0 z-[200] bg-black/60 backdrop-blur-[2px]"
     aria-hidden="true"
     on:click={close}
   ></div>
 
-  <div class="pointer-events-none fixed inset-0 z-[101] flex items-end justify-center p-0 sm:items-center sm:p-4">
+  <div class="pointer-events-none fixed inset-0 z-[201] flex items-end justify-center p-0 sm:items-center sm:p-4">
     <div
       class="pointer-events-auto flex max-h-[94svh] w-full max-w-[680px] flex-col overflow-hidden rounded-t-[18px] bg-deep-green text-white shadow-[0_30px_90px_rgba(0,0,0,0.45)] outline-none sm:max-h-[92svh] sm:rounded-[18px]"
       role="dialog"

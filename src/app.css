@@ -187,7 +187,9 @@ select {
   html,
   body {
     max-width: 100%;
-    overflow-x: hidden;
+    /* `hidden` creates a scroll container and prevents descendant sticky
+       navigation from tracking the viewport in mobile Chromium/Safari. */
+    overflow-x: clip;
     background-color: rgb(var(--c-canvas));
   }
 

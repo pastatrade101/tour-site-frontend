@@ -616,7 +616,7 @@
     </div>
   </section>
 
-  <div class="tour-detail-tabs sticky top-[70px] z-30 border-b border-ink/10 bg-surface/95 backdrop-blur">
+  <div class="tour-detail-tabs border-b border-ink/10 bg-surface/95 backdrop-blur">
     <div class="container-shell">
       <div class="tour-detail-tablist no-scrollbar flex gap-6 overflow-x-auto py-3 text-[13.5px] font-semibold text-ink/60">
         {#each visibleTabs as tab}
@@ -854,8 +854,9 @@
                       {day.day_number}
                     </span>
                     <span class="min-w-0 flex-1">
-                      <span class="block font-serif text-[16.5px] font-semibold leading-snug text-heading md:text-[18px]">Day {day.day_number}: {day.title}</span>
-                      <span class="block text-[12.5px] text-ink/60">
+                      <span class="block text-[10.5px] font-bold uppercase tracking-[0.14em] text-clay/80">Day {day.day_number}</span>
+                      <span class="mt-0.5 block font-serif text-[16.5px] font-bold leading-snug text-heading md:text-[18px]">{day.title}</span>
+                      <span class="mt-0.5 block text-[12.5px] text-ink/55">
                         {[day.lodge?.name || day.accommodation || '', day.meals || ''].filter(Boolean).join(' / ')}
                       </span>
                     </span>
@@ -876,10 +877,6 @@
                           className="tour-day-image mb-6 h-[220px] w-full rounded-[12px] object-cover sm:h-[280px] md:mb-8 md:h-[380px]"
                         />
                       {/if}
-
-                      <h3 class="mb-[14px] font-serif text-[20px] font-semibold leading-[1.18] tracking-normal text-heading md:mb-4 md:text-[26px] md:leading-[1.15]">
-                        Day {day.day_number}: {day.title}
-                      </h3>
 
                       {#if day.description}
                         <RichText value={day.description} className="space-y-4 text-[14.5px] leading-[1.65] text-ink/70 md:text-[16px]" />
@@ -1284,11 +1281,22 @@
 {#if breadcrumbLd}<JsonLd data={breadcrumbLd} />{/if}
 
 <style>
+  .tour-detail-tabs {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 70px;
+    z-index: 45;
+  }
+
   .tour-hero-copy {
     isolation: isolate;
   }
 
   @media (min-width: 1024px) {
+    .tour-detail-tabs {
+      z-index: 30;
+    }
+
     .tour-planner-sticky {
       position: sticky;
       z-index: 40;
@@ -1568,10 +1576,6 @@
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
       line-clamp: 2;
-    }
-
-    .tour-detail-tabs {
-      top: 70px;
     }
 
     .tour-detail-tablist {

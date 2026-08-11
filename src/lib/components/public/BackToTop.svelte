@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
+  import { page } from '$app/stores';
   import { fly } from 'svelte/transition';
   import { ArrowUp } from '@lucide/svelte';
 
@@ -8,6 +9,7 @@
   const IDLE_DELAY = 2200;
   let visible = false;
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
+  $: isTourDetail = /^\/tours\/[^/]+\/?$/.test($page.url.pathname);
 
   const cancelHide = () => {
     if (hideTimer) clearTimeout(hideTimer);
@@ -38,7 +40,7 @@
 {#if visible}
   <button
     type="button"
-    class="group fixed bottom-5 right-4 z-50 grid h-12 w-12 place-items-center rounded-full bg-goldfinch-gold text-heading shadow-[0_12px_34px_rgba(57,61,50,0.30)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/40 md:bottom-6 md:right-6"
+    class={`group fixed right-4 z-50 grid h-12 w-12 place-items-center rounded-full bg-goldfinch-gold text-heading shadow-[0_12px_34px_rgba(57,61,50,0.30)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/40 md:bottom-6 md:right-6 ${isTourDetail ? 'bottom-[5.75rem]' : 'bottom-5'}`}
     style="margin-bottom: env(safe-area-inset-bottom);"
     aria-label="Back to top"
     title="Back to top"
