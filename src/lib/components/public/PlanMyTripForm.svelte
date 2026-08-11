@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { get } from 'svelte/store';
-  import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, Copy, MapPin, MessageCircle, Scale, ShieldCheck } from '@lucide/svelte';
+  import { AlertCircle, ArrowLeft, ArrowRight, CalendarDays, Check, CheckCircle2, Copy, MapPin, MessageCircle, Scale, ShieldCheck } from '@lucide/svelte';
   import { page } from '$app/stores';
   import { getAttribution, trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
@@ -576,14 +576,17 @@
         <div class="planning-field-grid">
           <label class="grid gap-1.5">
             <span class="gf-label">Travel date <span class="gf-req">*</span></span>
-            <input
-              class={cls('exact_start_date')}
-              type="date"
-              min={todayStr}
-              bind:value={exact_start_date}
-              on:input={() => clearErr('exact_start_date')}
-              aria-invalid={Boolean(errors.exact_start_date)}
-            />
+            <span class="planning-date-field">
+              <input
+                class={`${cls('exact_start_date')} planning-date-input`}
+                type="date"
+                min={todayStr}
+                bind:value={exact_start_date}
+                on:input={() => clearErr('exact_start_date')}
+                aria-invalid={Boolean(errors.exact_start_date)}
+              />
+              <CalendarDays class="planning-date-icon" size={18} strokeWidth={2.2} aria-hidden="true" />
+            </span>
             {#if errors.exact_start_date}<span data-error class="text-xs text-red-600">{errors.exact_start_date}</span>{/if}
           </label>
           <label class="grid gap-1.5">
@@ -725,6 +728,11 @@
     gap: 0.75rem;
   }
 
+  .planning-field-grid > :global(label),
+  .planning-count-grid > :global(label) {
+    min-width: 0;
+  }
+
   .planning-count-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -732,7 +740,39 @@
   :global(.planning-form .gf-input) {
     height: 2.5rem;
     min-height: 2.5rem;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
     font-size: 0.8125rem;
+  }
+
+  :global(.planning-form input[type='date']) {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .planning-date-field {
+    position: relative;
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  :global(.planning-form .planning-date-input) {
+    padding-right: 2.75rem;
+  }
+
+  :global(.planning-date-icon) {
+    position: absolute;
+    top: 50%;
+    right: 0.875rem;
+    pointer-events: none;
+    color: rgb(var(--c-goldfinch-gold));
+    transform: translateY(-50%);
   }
 
   :global(.planning-form .gf-label) {
