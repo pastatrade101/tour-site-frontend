@@ -251,6 +251,7 @@
     if (!String(form.title ?? '').trim()) return 'Title is required.';
     if (String(form.price ?? '').trim() === '') return 'Price is required.';
     if (Number(form.price) < 0) return 'Price must be zero or positive.';
+    if (!/^[A-Za-z]{3}$/.test(String(form.currency ?? '').trim())) return 'Currency must be a three-letter code such as USD.';
     if (String(form.sort_order ?? '').trim() && !Number.isInteger(Number(form.sort_order))) return 'Sort order must be a whole number.';
     return '';
   };

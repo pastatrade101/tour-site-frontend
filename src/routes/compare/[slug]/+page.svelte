@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { ArrowRight, Check, Sparkles } from '@lucide/svelte';
+  import { ArrowRight, Sparkles } from '@lucide/svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
   import { revealHeading } from '$lib/animations';
   import { COMPARISONS, getComparison } from '$lib/data/comparisons';
   import Img from '$lib/components/public/Img.svelte';
+  import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
   import { breadcrumbLd, faqLd } from '$lib/seo';
@@ -139,15 +140,8 @@
     {#if cmp.faqs?.length}
       <div class="mt-10">
         <h2 class="text-2xl font-bold text-heading">Common questions</h2>
-        <div class="mt-4 grid gap-3">
-          {#each cmp.faqs as faq}
-            <div class="rounded-2xl border border-ink/10 bg-surface p-5">
-              <p class="flex items-start gap-2 font-semibold text-ink">
-                <Check size={16} class="mt-1 shrink-0 text-forest" />{faq.q}
-              </p>
-              <p class="mt-1.5 pl-6 text-sm leading-6 text-ink/65">{faq.a}</p>
-            </div>
-          {/each}
+        <div class="mt-8">
+          <FAQAccordion faqs={cmp.faqs.map((faq, index) => ({ id: `comparison-faq-${index}`, question: faq.q, answer: faq.a }))} />
         </div>
       </div>
     {/if}

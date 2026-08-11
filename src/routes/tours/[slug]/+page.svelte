@@ -35,7 +35,7 @@
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { toMetaText } from '$lib/richText';
   import { getTourDestinationLabel, getTourDestinations } from '$lib/tourDestinations';
-  import type { BlogPost, FAQ, ItineraryDay, Tour } from '$lib/types';
+  import type { BlogPost, FAQ, ItineraryDay, Tour, TravelStyle } from '$lib/types';
 
   type Icon = typeof CalendarDays;
   type FactCard = { icon: Icon; label: string; value: string };
@@ -73,6 +73,28 @@
     treehouse: 'Treehouse'
   };
 
+  const PRICE_TYPE_LABELS: Record<string, string> = {
+    per_person: 'Per person',
+    per_group: 'Per group',
+    per_child: 'Per child',
+    single_supplement: 'Single supplement',
+    upgrade: 'Upgrade',
+    discount: 'Discount'
+  };
+
+  const formatPublishedRate = (amount: number, currencyCode: string): string => {
+    const code = String(currencyCode || 'USD').trim().toUpperCase();
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: code,
+        maximumFractionDigits: Number.isInteger(amount) ? 0 : 2
+      }).format(amount);
+    } catch {
+      return `${code} ${Number(amount).toLocaleString()}`;
+    }
+  };
+
   let tour: Tour | null = null;
   let loading = true;
   let error = '';
@@ -80,11 +102,11 @@
   let sheetOpen = false;
   let activeTab = TABS[0].id;
   let activeFaqIndex = -1;
-  let openDays: Record<number, boolean> = {};
 
   let relatedTours: Tour[] = [];
   let recentPosts: BlogPost[] = [];
   let faqs: FAQ[] = [];
+  let travelStyles: TravelStyle[] = [];
   let lodgeMedia: Record<string, MediaImage[]> = {};
 
   const normaliseLabel = (value: string | null | undefined): string =>
@@ -92,6 +114,13 @@
       .replace(/[_-]+/g, ' ')
       .trim()
       .replace(/\b\w/g, (char) => char.toUpperCase());
+
+  const personaKey = (value: string | null | undefined): string =>
+    String(value ?? '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
 
   const unique = (items: Array<string | null | undefined>): string[] => {
     const seen = new Set<string>();
@@ -185,20 +214,47 @@
     ].filter(Boolean) as FactCard[];
   };
 
-  const isDayOpen = (day: ItineraryDay, index: number): boolean =>
-    openDays[day.day_number] ?? index === 0;
-
-  const toggleDay = (day: ItineraryDay, index: number) => {
-    const currentlyOpen = isDayOpen(day, index);
-    openDays = { ...openDays, [day.day_number]: !currentlyOpen };
-  };
-
   const scrollToSection = (id: string) => {
     if (!browser) return;
     const el = document.getElementById(id);
     if (!el) return;
     const top = el.getBoundingClientRect().top + window.scrollY - 96;
     window.scrollTo({ top, behavior: 'smooth' });
+  };
+
+  const animateDayDisclosure = async (event: MouseEvent) => {
+    const summary = event.currentTarget as HTMLElement;
+    const details = summary.closest('details');
+    if (!details || details.dataset.animating === 'true') return;
+
+    event.preventDefault();
+    const wasOpen = details.open;
+    if (!wasOpen) details.open = true;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      details.open = !wasOpen;
+      return;
+    }
+
+    const startHeight = wasOpen ? details.offsetHeight : summary.offsetHeight;
+    const endHeight = wasOpen ? summary.offsetHeight : details.scrollHeight;
+    details.dataset.animating = 'true';
+    details.style.overflow = 'hidden';
+
+    const animation = details.animate(
+      [{ height: `${startHeight}px` }, { height: `${endHeight}px` }],
+      { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+    );
+
+    try {
+      await animation.finished;
+    } catch {
+      // A cancelled animation should still leave the disclosure usable.
+    }
+
+    if (wasOpen) details.open = false;
+    details.style.removeProperty('overflow');
+    delete details.dataset.animating;
   };
 
   const openPlanner = (location: string) => {
@@ -261,6 +317,9 @@
     categoryLabel,
     durationLabel
   ]).slice(0, 5);
+  $: attachedTravelStyles = travelStyles.filter((style) =>
+    (tour?.persona_tags ?? []).map(personaKey).includes(personaKey(style.persona))
+  );
   $: bestFor = tour
     ? unique([
         ...(tour.persona_tags ?? []).map(normaliseLabel),
@@ -318,12 +377,24 @@
     return blocks;
   })();
   $: visibleTabs = TABS.filter((tab) => tab.id !== 'accommodation' || accommodationBlocks.length);
-  $: priceRows = [
-    { label: 'Starting price', value: priceFromLabel, note: tour?.price_from ? 'Final pricing depends on dates, party size and confirmed availability.' : 'Your specialist will quote this from live availability.' },
-    durationLabel ? { label: 'Duration', value: durationLabel, note: 'Taken from the published itinerary.' } : null,
-    groupSize ? { label: 'Group size', value: groupSize, note: 'Based on the published trip settings.' } : null,
-    routeLabel ? { label: 'Route', value: routeLabel, note: 'Start and end points from this tour.' } : null
-  ].filter(Boolean) as Array<{ label: string; value: string; note: string }>;
+  $: publishedPriceOptions = [...(tour?.tour_price_options ?? [])].sort(
+    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+  );
+  $: priceRows = publishedPriceOptions.length
+    ? publishedPriceOptions.map((option) => ({
+        label: option.title || option.label || PRICE_TYPE_LABELS[option.price_type] || 'Rate',
+        value: formatPublishedRate(option.price, option.currency || tour?.currency || 'USD'),
+        note: [PRICE_TYPE_LABELS[option.price_type] || normaliseLabel(option.price_type), option.description]
+          .filter(Boolean)
+          .join(' - ')
+      }))
+    : [{
+        label: 'Starting price',
+        value: priceFromLabel,
+        note: tour?.price_from
+          ? 'Final pricing depends on dates and confirmed availability.'
+          : 'Your specialist will quote this from live availability.'
+      }];
   $: mediaImages = (() => {
     if (!tour) return [] as MediaImage[];
     const images: MediaImage[] = [];
@@ -420,14 +491,16 @@
     relatedTours = [];
     recentPosts = [];
     faqs = [];
+    travelStyles = [];
     lodgeMedia = {};
     activeFaqIndex = -1;
-    openDays = {};
     sheetOpen = false;
 
     try {
+      const stylesRequest = api.travelStyles.list({ status: 'published', limit: 100 }).catch(() => null);
       const response = await api.tours.get(nextSlug);
       tour = response.data;
+      travelStyles = (await stylesRequest)?.data.items ?? [];
       void loadRelated(response.data);
       void loadLodgeMedia(response.data);
       trackEvent('tour_page_view', {
@@ -678,45 +751,102 @@
           </section>
         {/if}
 
-        {#if bestFor.length || tripFacts.length}
+        {#if attachedTravelStyles.length || bestFor.length || tripFacts.length}
           <section class="tour-section">
             <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Is This Safari Right for You?</h2>
-            <div class="tour-two-col-grid mt-6 grid gap-4 md:grid-cols-2">
-              {#if bestFor.length}
-                <div class="rounded-[12px] border border-ink/10 bg-surface p-5">
-                  <h3 class="font-serif text-[18px] font-semibold text-heading">Best for</h3>
+            {#if attachedTravelStyles.length}
+              <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {#each attachedTravelStyles as style}
+                  <article class="flex min-w-0 flex-col rounded-[12px] border border-ink/10 bg-surface p-5 shadow-[0_10px_28px_rgba(57,61,50,0.05)]">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-clay">Best for</p>
+                    <h3 class="mt-1.5 font-serif text-[19px] font-semibold leading-snug text-heading">{style.name}</h3>
+                    {#if style.emotional_promise}
+                      {@const promises = style.emotional_promise.split('\n').map((promise) => promise.trim()).filter(Boolean)}
+                      {#if promises[0]}
+                        <p class="mt-2 text-[13.5px] font-semibold leading-relaxed text-clay">{promises[0]}</p>
+                      {/if}
+                      {#if promises.length > 1}
+                        <ul class="mt-3 space-y-2 border-t border-ink/10 pt-3">
+                          {#each promises.slice(1) as promise}
+                            <li class="flex items-start gap-2 text-[12.5px] leading-relaxed text-ink/65">
+                              <span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-goldfinch-gold"></span>
+                              <span>{promise}</span>
+                            </li>
+                          {/each}
+                        </ul>
+                      {/if}
+                    {/if}
+                    {#if style.desires?.length}
+                      <ul class="mt-4 space-y-2 border-t border-ink/10 pt-4">
+                        {#each style.desires as desire}
+                          <li class="flex items-start gap-2 text-[13.5px] leading-relaxed text-heading">
+                            <Check class="mt-0.5 h-4 w-4 shrink-0 text-clay" />
+                            <span>{desire}</span>
+                          </li>
+                        {/each}
+                      </ul>
+                    {/if}
+                    {#if style.concerns?.length}
+                      <div class="mt-4 rounded-[8px] bg-sand/55 p-3">
+                        <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-ink/50">We plan around</p>
+                        <p class="mt-1.5 text-[12.5px] leading-relaxed text-ink/65">{style.concerns.join(' · ')}</p>
+                      </div>
+                    {/if}
+                  </article>
+                {/each}
+              </div>
+            {:else}
+              <div class="tour-two-col-grid mt-6 grid gap-4 md:grid-cols-2">
+                {#if bestFor.length}
+                  <div class="rounded-[12px] border border-ink/10 bg-surface p-5">
+                    <h3 class="font-serif text-[18px] font-semibold text-heading">Best for</h3>
+                    <ul class="mt-3 space-y-2">
+                      {#each bestFor as item}
+                        <li class="flex items-start gap-2 text-[14.5px] text-heading">
+                          <Check class="mt-0.5 h-4 w-4 shrink-0 text-clay" />
+                          <span>{item}</span>
+                        </li>
+                      {/each}
+                    </ul>
+                  </div>
+                {/if}
+                <div class="rounded-[12px] border border-ink/10 bg-sand/45 p-5">
+                  <h3 class="font-serif text-[18px] font-semibold text-heading">Planning notes</h3>
                   <ul class="mt-3 space-y-2">
-                    {#each bestFor as item}
-                      <li class="flex items-start gap-2 text-[14.5px] text-heading">
-                        <Check class="mt-0.5 h-4 w-4 shrink-0 text-clay" />
-                        <span>{item}</span>
+                    {#each tripFacts as fact}
+                      <li class="flex items-start gap-2 text-[14.5px] text-ink/70">
+                        <Minus class="mt-0.5 h-4 w-4 shrink-0 text-ink/45" />
+                        <span><span class="font-semibold text-heading">{fact.label}:</span> {fact.value}</span>
                       </li>
                     {/each}
                   </ul>
                 </div>
-              {/if}
-              <div class="rounded-[12px] border border-ink/10 bg-sand/45 p-5">
+              </div>
+            {/if}
+            {#if attachedTravelStyles.length && tripFacts.length}
+              <div class="mt-4 rounded-[12px] border border-ink/10 bg-sand/45 p-5">
                 <h3 class="font-serif text-[18px] font-semibold text-heading">Planning notes</h3>
-                <ul class="mt-3 space-y-2">
+                <ul class="mt-3 grid gap-2 sm:grid-cols-2">
                   {#each tripFacts as fact}
-                    <li class="flex items-start gap-2 text-[14.5px] text-ink/70">
+                    <li class="flex items-start gap-2 text-[14px] text-ink/70">
                       <Minus class="mt-0.5 h-4 w-4 shrink-0 text-ink/45" />
                       <span><span class="font-semibold text-heading">{fact.label}:</span> {fact.value}</span>
                     </li>
                   {/each}
                 </ul>
               </div>
-            </div>
+            {/if}
           </section>
         {/if}
 
-        <section class="tour-section">
-          <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Ways to Customize This Trip</h2>
-          <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">
-            Use the request form to ask the team to adjust the dates, party size, accommodation preference, interests, special requests or route notes.
-          </p>
+        {#if tour.customization_options?.length}
+          <section class="tour-section">
+            <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Ways to Customize This Trip</h2>
+            {#if tour.customization_intro}
+              <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">{tour.customization_intro}</p>
+            {/if}
           <ul class="tour-customize-list mt-6 grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
-            {#each ['Preferred travel date', 'Adults and children', 'Accommodation preference', 'Travel interests', 'Special requests', 'Route notes'] as item}
+            {#each tour.customization_options as item}
               <li class="flex items-start gap-2 text-[14.5px] text-heading">
                 <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-goldfinch-gold"></span>
                 <span>{item}</span>
@@ -730,7 +860,8 @@
           >
             Customize This Trip <ArrowRight size={15} />
           </button>
-        </section>
+          </section>
+        {/if}
 
         <section id="day-by-day" class="tour-section scroll-mt-32">
           <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Day by Day</h2>
@@ -741,16 +872,10 @@
           {#if itineraryDays.length}
             <div class="tour-day-list mt-6 space-y-2.5">
               {#each itineraryDays as day, index (day.day_number)}
-                {@const open = isDayOpen(day, index)}
                 {@const image = dayImage(day)}
                 {@const details = detailsForDay(day)}
-                <article id={`day-${day.day_number}`} class="tour-day-card overflow-hidden rounded-[12px] border border-ink/10 bg-surface">
-                  <button
-                    type="button"
-                    class="tour-day-toggle flex w-full items-center gap-4 px-4 py-4 text-left md:px-5"
-                    aria-expanded={open}
-                    on:click={() => toggleDay(day, index)}
-                  >
+                <details id={`day-${day.day_number}`} class="tour-day-card group overflow-hidden rounded-[12px] border border-ink/10 bg-surface" open={index === 0}>
+                  <summary class="tour-day-toggle flex w-full cursor-pointer list-none items-center gap-4 px-4 py-4 text-left marker:content-none md:px-5 [&::-webkit-details-marker]:hidden" on:click={animateDayDisclosure}>
                     <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-deep-green text-[13px] font-bold text-white">
                       {day.day_number}
                     </span>
@@ -760,10 +885,11 @@
                         {[day.lodge?.name || day.accommodation || '', day.meals || ''].filter(Boolean).join(' / ')}
                       </span>
                     </span>
-                    <ChevronDown class={`h-5 w-5 shrink-0 text-ink/60 transition-transform ${open ? 'rotate-180' : ''}`} />
-                  </button>
+                    <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full text-ink/60 transition-transform duration-200 group-open:rotate-180">
+                      <ChevronDown class="h-5 w-5" />
+                    </span>
+                  </summary>
 
-                  {#if open}
                     <div class="tour-day-body border-t border-ink/10 px-4 pb-8 pt-6 md:px-8 md:pt-8">
                       {#if image}
                         <Img
@@ -855,8 +981,7 @@
                         </div>
                       {/if}
                     </div>
-                  {/if}
-                </article>
+                </details>
               {/each}
             </div>
           {:else}

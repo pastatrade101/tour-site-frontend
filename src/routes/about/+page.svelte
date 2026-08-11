@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    ArrowRight, BadgeCheck, CalendarCheck, Camera, Car, ChevronDown, ChevronLeft, ChevronRight,
+    ArrowRight, BadgeCheck, CalendarCheck, Camera, Car, ChevronLeft, ChevronRight,
     Clock, Compass, CreditCard, ExternalLink, Flag, Headphones, Leaf, MapPin, Mountain, Plane, Quote, ShieldCheck,
     Sparkles, Star, Tent, Users
   } from '@lucide/svelte';
@@ -8,7 +8,7 @@
   import { publicSettings, settingText } from '$lib/settings';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
   import Img from '$lib/components/public/Img.svelte';
-  import RichText from '$lib/components/public/RichText.svelte';
+  import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import type { Specialist } from '$lib/types';
   import type { PageData } from './$types';
 
@@ -337,16 +337,8 @@
       <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Frequently Asked Questions</p>
       <h2 class="mt-3 font-serif text-3xl font-semibold text-heading md:text-[38px]">Everything You Need to Know</h2>
     </div>
-    <div class="mx-auto mt-10 grid max-w-5xl gap-3 md:grid-cols-2">
-      {#each faqs as f}
-        <details class="group rounded-[10px] border border-ink/10 bg-surface px-5 shadow-sm">
-          <summary class="flex cursor-pointer list-none items-center justify-between gap-3 py-4 text-[15px] font-semibold text-heading">
-            {f.question}
-            <ChevronDown size={18} class="shrink-0 text-ink/40 transition-transform group-open:rotate-180" />
-          </summary>
-          <RichText value={f.answer} className="pb-4 text-sm leading-7 text-ink/70" />
-        </details>
-      {/each}
+    <div class="mx-auto mt-12 max-w-4xl md:mt-14">
+      <FAQAccordion {faqs} />
     </div>
   </div>
 </section>

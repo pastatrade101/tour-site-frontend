@@ -14,7 +14,7 @@
   type NormStyle = {
     slug: string;
     name: string;
-    emotionalPromise: string;
+    emotionalPromises: string[];
     description: string;
     desires: string[];
     concerns: string[];
@@ -28,10 +28,12 @@
   let featured: Tour[] = [];
   let loaded = false;
 
+  const promises = (value: string | null | undefined) => String(value ?? '').split('\n').map((item) => item.trim()).filter(Boolean);
+
   const fromApi = (s: TravelStyle): NormStyle => ({
     slug: s.slug,
     name: s.name,
-    emotionalPromise: s.emotional_promise ?? '',
+    emotionalPromises: promises(s.emotional_promise),
     description: s.description ?? '',
     desires: s.desires ?? [],
     concerns: s.concerns ?? [],
@@ -50,7 +52,7 @@
       // fall back to static config
       const cfg = getTravelStyle(slug);
       style = cfg
-        ? { slug: cfg.slug, name: cfg.name, emotionalPromise: cfg.emotionalPromise, description: cfg.description, desires: cfg.desires, concerns: cfg.concerns, persona: cfg.persona }
+        ? { slug: cfg.slug, name: cfg.name, emotionalPromises: [cfg.emotionalPromise], description: cfg.description, desires: cfg.desires, concerns: cfg.concerns, persona: cfg.persona }
         : null;
     }
     try {
@@ -89,8 +91,18 @@
         <span class="font-medium text-white">{style.name}</span>
       </nav>
       <p class="font-serif text-xl italic text-savanna">{style.name}</p>
-      <h1 class="mt-2 max-w-3xl text-3xl font-extrabold leading-[1.08] tracking-tight md:text-5xl">{style.emotionalPromise}</h1>
+      <h1 class="mt-2 max-w-3xl text-3xl font-extrabold leading-[1.08] tracking-tight md:text-5xl">{style.emotionalPromises[0] || style.name}</h1>
       <RichText value={style.description} className="rich-on-dark mt-4 max-w-2xl text-[15px] leading-7 text-white/85 md:text-base" />
+      {#if style.emotionalPromises.length > 1}
+        <div class="mt-5 grid max-w-3xl gap-2 sm:grid-cols-2">
+          {#each style.emotionalPromises.slice(1) as promise}
+            <div class="flex items-start gap-2 text-sm font-medium leading-6 text-white/85">
+              <span class="mt-1 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-goldfinch-gold text-heading"><Check size={10} strokeWidth={3} /></span>
+              <span>{promise}</span>
+            </div>
+          {/each}
+        </div>
+      {/if}
       <div class="mt-6 flex flex-wrap gap-3">
         <a class="inline-flex h-12 items-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-heading transition hover:brightness-105" href={planHref}>
           <Sparkles size={18} /> Plan a {style.name.toLowerCase()} trip

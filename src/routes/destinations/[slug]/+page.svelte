@@ -853,7 +853,7 @@
         eager
         className="absolute inset-0 h-full w-full object-cover"
       />
-      <div class="absolute inset-0 bg-gradient-to-t from-deep-green/25 via-transparent to-deep-green/10" aria-hidden="true"></div>
+      <div class="destination-hero-scrim absolute inset-0" aria-hidden="true"></div>
     {:else}
       <div class="absolute inset-0 bg-deep-green"></div>
     {/if}
@@ -1546,20 +1546,33 @@
 {/if}
 
 <style>
-  .destination-hero-copy {
-    isolation: isolate;
+  .destination-hero-scrim {
+    background:
+      linear-gradient(
+        to top,
+        rgb(var(--c-deep-green) / 0.9) 0%,
+        rgb(var(--c-deep-green) / 0.68) 34%,
+        rgb(var(--c-deep-green) / 0.3) 68%,
+        rgb(var(--c-deep-green) / 0.12) 100%
+      );
   }
 
-  .destination-hero-copy::before {
-    content: '';
-    position: absolute;
-    inset: -1rem -1.1rem -1.15rem -1.1rem;
-    z-index: -1;
-    border-radius: 12px;
-    background:
-      linear-gradient(90deg, rgb(var(--c-deep-green) / 0.9), rgb(var(--c-forest) / 0.64) 64%, transparent),
-      linear-gradient(180deg, rgb(var(--c-deep-green) / 0.5), rgb(var(--c-deep-green) / 0.84));
-    box-shadow: 0 18px 48px rgb(15 23 42 / 0.2);
+  @media (min-width: 768px) {
+    .destination-hero-scrim {
+      background:
+        linear-gradient(
+          to right,
+          rgb(var(--c-deep-green) / 0.92) 0%,
+          rgb(var(--c-deep-green) / 0.6) 44%,
+          rgb(var(--c-deep-green) / 0.04) 80%
+        ),
+        linear-gradient(
+          to top,
+          rgb(var(--c-deep-green) / 0.82) 0%,
+          rgb(var(--c-deep-green) / 0.18) 55%,
+          transparent 100%
+        );
+    }
   }
 
   .no-scrollbar {
@@ -1653,13 +1666,6 @@
   .destination-accommodation-summary {
     line-clamp: 2;
     -webkit-line-clamp: 2;
-  }
-
-  @media (min-width: 768px) {
-    .destination-hero-copy::before {
-      inset: -1.4rem -2rem -1.5rem -1.6rem;
-      border-radius: 14px;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {

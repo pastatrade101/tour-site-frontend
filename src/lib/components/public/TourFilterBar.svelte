@@ -51,12 +51,21 @@
   }>();
 
   let open: '' | 'dest' | 'len' | 'price' | 'comfort' | 'type' | 'more' = '';
-  let sheetOpen = false;
   let destQuery = '';
   let rootEl: HTMLDivElement;
+  let mobileOpen = false;
 
   const toggle = (key: typeof open) => (open = open === key ? '' : key);
   const close = () => (open = '');
+  const closeMobile = () => {
+    mobileOpen = false;
+    document.body.style.overflow = '';
+  };
+  const openMobile = () => {
+    close();
+    mobileOpen = true;
+    document.body.style.overflow = 'hidden';
+  };
 
   $: destLabel = destSlug ? (destinationOptions.find((d) => d.slug === destSlug)?.name ?? 'Destination') : 'All destinations';
   $: lengthActive = lengthLo > lenMin || lengthHi < lenMax;
@@ -84,16 +93,14 @@
       if (rootEl && !rootEl.contains(e.target as Node)) close();
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        close();
-        sheetOpen = false;
-      }
+      if (e.key === 'Escape') mobileOpen ? closeMobile() : close();
     };
     document.addEventListener('click', onClick);
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('click', onClick);
       document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
     };
   });
 
@@ -104,9 +111,101 @@
 </script>
 
 <div class="relative" bind:this={rootEl}>
+  <!-- Mobile: one trigger; all controls live in the full-page drawer. -->
+  <button type="button" class="inline-flex h-9 w-auto shrink-0 items-center justify-between gap-2 rounded-[8px] border border-ink/12 bg-surface px-3 text-left shadow-sm md:hidden" on:click={openMobile}>
+    <span class="inline-flex items-center gap-1.5 text-xs font-bold text-heading"><SlidersHorizontal size={15} /> Filter</span>
+    {#if activeCount}<span class="grid h-6 min-w-6 place-items-center rounded-full bg-clay px-1.5 text-xs font-bold text-white">{activeCount}</span>{/if}
+  </button>
+
+  {#if mobileOpen}
+    <div class="fixed inset-0 z-[100] flex flex-col bg-canvas md:hidden" role="dialog" aria-modal="true" aria-label="Filter tours">
+      <header class="flex h-16 shrink-0 items-center justify-between border-b border-ink/10 bg-surface px-4">
+        <div>
+          <p class="font-serif text-xl font-semibold text-heading">Filter tours</p>
+          <p class="text-xs text-ink/55">Choose what matters for your trip</p>
+        </div>
+        <button type="button" class="grid h-10 w-10 place-items-center rounded-[8px] border border-ink/12 text-heading" on:click={closeMobile} aria-label="Close filters"><X size={19} /></button>
+      </header>
+
+      <div class="mobile-filter-body flex-1 overflow-y-auto px-4 py-5">
+        <div class="mx-auto grid max-w-xl gap-6">
+          <section class="filter-group">
+            <label class="filter-title" for="mobile-tour-destination">Destination</label>
+            <select id="mobile-tour-destination" class="mobile-select" value={destSlug} on:change={(e) => dispatch('destination', e.currentTarget.value)}>
+              <option value="">All destinations</option>
+              {#each destinationOptions as d (d.slug)}<option value={d.slug}>{d.name}</option>{/each}
+            </select>
+          </section>
+
+          {#if rangesReady}
+            <section class="filter-group">
+              <div class="filter-title">Duration</div>
+              <RangeSlider min={lenMin} max={lenMax} bind:lo={lengthLo} bind:hi={lengthHi} format={days} />
+              <div class="mt-3 flex flex-wrap gap-2">
+                {#each shortcuts as sc (sc.label)}
+                  <button type="button" class="mobile-chip" on:click={() => dispatch('length', { lo: sc.lo, hi: sc.hi })}>{sc.label}</button>
+                {/each}
+              </div>
+            </section>
+
+            <section class="filter-group">
+              <div class="filter-title">Budget per person</div>
+              <RangeSlider min={priceMin} max={priceMax} step={50} bind:lo={priceLo} bind:hi={priceHi} format={money} />
+            </section>
+          {/if}
+
+          <section class="filter-group">
+            <div class="filter-title">Comfort</div>
+            <div class="grid grid-cols-2 gap-2">
+              {#each tiers as t (t.key)}
+                <label class:option-active={selectedTiers.includes(t.key)} class="mobile-option">
+                  <input class="sr-only" type="checkbox" checked={selectedTiers.includes(t.key)} on:change={() => dispatch('tier', t.key)} />
+                  <span>{t.label}</span><span class="text-xs opacity-55">{tierCount(t.key)}</span>
+                </label>
+              {/each}
+            </div>
+          </section>
+
+          <section class="filter-group">
+            <div class="filter-title">Safari type</div>
+            <div class="grid gap-2">
+              {#each categoryOptions as c (c.slug)}
+                <label class:option-active={selectedCategories.includes(c.slug)} class="mobile-option">
+                  <input class="sr-only" type="checkbox" checked={selectedCategories.includes(c.slug)} on:change={() => dispatch('category', c.slug)} />
+                  <span>{c.name}</span><span class="text-xs opacity-55">{catCount(c.slug)}</span>
+                </label>
+              {/each}
+            </div>
+          </section>
+
+          {#if personas.length}
+            <section class="filter-group">
+              <div class="filter-title">Travel style</div>
+              <div class="flex flex-wrap gap-2">
+                {#each personas as p (p.key)}
+                  <button type="button" class:option-active={persona === p.key} class="mobile-chip" on:click={() => dispatch('persona', p.key)}>{p.label}</button>
+                {/each}
+              </div>
+            </section>
+          {/if}
+
+          <label class:option-active={popularOnly} class="mobile-option">
+            <input class="sr-only" type="checkbox" checked={popularOnly} on:change={() => dispatch('popular', !popularOnly)} />
+            <span>Best sellers only</span>{#if popularOnly}<Check size={16} />{/if}
+          </label>
+        </div>
+      </div>
+
+      <footer class="grid shrink-0 grid-cols-[auto_minmax(0,1fr)] gap-3 border-t border-ink/10 bg-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <button type="button" class="h-12 px-3 text-sm font-bold text-forest disabled:opacity-40" disabled={!activeCount} on:click={() => dispatch('clear')}>Clear</button>
+        <button type="button" class="h-12 rounded-[9px] bg-deep-green px-5 text-sm font-bold text-white" on:click={() => { closeMobile(); dispatch('apply'); }}>Apply filters</button>
+      </footer>
+    </div>
+  {/if}
+
   <!-- ── desktop / tablet bar ─────────────────────────────────────────────── -->
-  <div class="hidden rounded-[14px] border border-ink/10 bg-surface p-2 shadow-[0_10px_30px_rgba(57,61,50,0.08)] md:block">
-    <div class="flex items-stretch gap-1">
+  <div class="tour-filter-controls hidden rounded-[14px] border border-ink/10 bg-surface p-2 shadow-[0_10px_30px_rgba(57,61,50,0.08)] md:block">
+    <div class="tour-filter-scroll flex items-stretch gap-1">
       <!-- Destination -->
       <div class="relative flex min-w-0 flex-1">
         <button type="button" class={trigger} aria-expanded={open === 'dest'} on:click|stopPropagation={() => toggle('dest')}>
@@ -254,7 +353,7 @@
       </div>
 
       <!-- Actions -->
-      <div class="flex shrink-0 items-center gap-2 pl-1">
+      <div class="tour-filter-actions flex shrink-0 items-center gap-2 pl-1">
         {#if activeCount}
           <button type="button" class="whitespace-nowrap px-2 text-sm font-bold text-forest underline-offset-2 hover:underline" on:click={() => dispatch('clear')}>Clear all</button>
         {/if}
@@ -265,23 +364,9 @@
     </div>
   </div>
 
-  <!-- ── mobile bar ───────────────────────────────────────────────────────── -->
-  <div class="grid gap-2 md:hidden">
-    <button type="button" class="flex h-12 items-center justify-between rounded-[10px] border border-ink/15 bg-surface px-3.5 text-sm" on:click={() => (sheetOpen = true)}>
-      <span class="truncate font-bold text-heading">{destLabel}</span>
-      <ChevronDown size={16} class="text-ink/40" />
-    </button>
-    <div class="grid grid-cols-2 gap-2">
-      <button type="button" class="inline-flex h-12 items-center justify-center gap-2 rounded-[10px] border border-ink/15 bg-surface text-sm font-bold text-ink" on:click={() => (sheetOpen = true)}>
-        <SlidersHorizontal size={15} /> Filters{#if activeCount}<span class="rounded-full bg-forest px-1.5 text-xs text-white">{activeCount}</span>{/if}
-      </button>
-      <button type="button" class="gf-btn-primary" on:click={() => dispatch('apply')}>View {resultCount}</button>
-    </div>
-  </div>
-
   <!-- active chips -->
   {#if activeCount}
-    <div class="mt-3 flex flex-wrap items-center gap-2">
+    <div class="mt-3 hidden flex-wrap items-center gap-2 md:flex">
       {#if destSlug}
         <button class="chip" type="button" on:click={() => dispatch('destination', '')}>{destLabel} <X size={13} /></button>
       {/if}
@@ -309,77 +394,68 @@
   {/if}
 </div>
 
-<!-- ── mobile bottom sheet ─────────────────────────────────────────────────── -->
-{#if sheetOpen}
-  <button class="fixed inset-0 z-[60] bg-ink/45 backdrop-blur-sm md:hidden" type="button" aria-label="Close filters" on:click={() => (sheetOpen = false)}></button>
-  <div class="fixed inset-x-0 bottom-0 z-[61] flex max-h-[88dvh] flex-col rounded-t-[16px] border border-ink/10 bg-surface md:hidden">
-    <div class="flex items-center justify-between border-b border-ink/10 px-4 py-3">
-      <p class="text-sm font-extrabold text-heading">Filters</p>
-      <button class="grid h-9 w-9 place-items-center rounded-full border border-ink/10 text-ink/70" type="button" aria-label="Close" on:click={() => (sheetOpen = false)}><X size={17} /></button>
-    </div>
+<style>
+  .filter-group {
+    border-bottom: 1px solid rgb(var(--c-ink) / 0.1);
+    padding-bottom: 1.5rem;
+  }
 
-    <div class="flex-1 overflow-y-auto overscroll-contain px-4 py-3">
-      <details open class="border-b border-ink/10 py-3">
-        <summary class="cursor-pointer text-sm font-bold text-heading">Destination</summary>
-        <div class="mt-2 max-h-56 overflow-y-auto">
-          <button type="button" class="block w-full rounded-[8px] px-2 py-2 text-left text-sm hover:bg-sand/60" on:click={() => dispatch('destination', '')}>All destinations</button>
-          {#each destinationOptions as d (d.slug)}
-            <button type="button" class={`block w-full rounded-[8px] px-2 py-2 text-left text-sm hover:bg-sand/60 ${destSlug === d.slug ? 'font-bold text-forest' : ''}`} on:click={() => dispatch('destination', d.slug)}>{d.name}</button>
-          {/each}
-        </div>
-      </details>
+  .filter-title {
+    display: block;
+    margin-bottom: 0.75rem;
+    color: rgb(var(--c-heading));
+    font-size: 0.875rem;
+    font-weight: 800;
+  }
 
-      {#if rangesReady}
-        <details class="border-b border-ink/10 py-3">
-          <summary class="cursor-pointer text-sm font-bold text-heading">Duration · {lenLabel}</summary>
-          <div class="mt-3"><RangeSlider min={lenMin} max={lenMax} bind:lo={lengthLo} bind:hi={lengthHi} format={days} /></div>
-        </details>
-        <details class="border-b border-ink/10 py-3">
-          <summary class="cursor-pointer text-sm font-bold text-heading">Budget · {priceLabel}</summary>
-          <div class="mt-3"><RangeSlider min={priceMin} max={priceMax} step={50} bind:lo={priceLo} bind:hi={priceHi} format={money} /></div>
-        </details>
-      {/if}
+  .mobile-select {
+    width: 100%;
+    min-height: 3rem;
+    border: 1px solid rgb(var(--c-ink) / 0.14);
+    border-radius: 9px;
+    background: rgb(var(--c-surface));
+    padding-inline: 0.875rem;
+    color: rgb(var(--c-heading));
+    font-size: 0.875rem;
+    font-weight: 650;
+  }
 
-      <details class="border-b border-ink/10 py-3">
-        <summary class="cursor-pointer text-sm font-bold text-heading">Comfort</summary>
-        <div class="mt-2">
-          {#each tiers as t (t.key)}
-            <label class="flex items-center justify-between py-2 text-sm">
-              <span class="flex items-center gap-2.5"><input type="checkbox" class="h-4 w-4 accent-forest" checked={selectedTiers.includes(t.key)} on:change={() => dispatch('tier', t.key)} /> {t.label}</span>
-              <span class="text-xs text-ink/45">({tierCount(t.key)})</span>
-            </label>
-          {/each}
-        </div>
-      </details>
+  .mobile-option {
+    display: flex;
+    min-height: 2.875rem;
+    cursor: pointer;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border: 1px solid rgb(var(--c-ink) / 0.12);
+    border-radius: 9px;
+    background: rgb(var(--c-surface));
+    padding: 0.65rem 0.875rem;
+    color: rgb(var(--c-heading));
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
 
-      <details class="border-b border-ink/10 py-3">
-        <summary class="cursor-pointer text-sm font-bold text-heading">Safari type</summary>
-        <div class="mt-2">
-          {#each categoryOptions as c (c.slug)}
-            <label class="flex items-center justify-between py-2 text-sm">
-              <span class="flex min-w-0 items-center gap-2.5"><input type="checkbox" class="h-4 w-4 shrink-0 accent-forest" checked={selectedCategories.includes(c.slug)} on:change={() => dispatch('category', c.slug)} /> <span class="truncate">{c.name}</span></span>
-              <span class="shrink-0 text-xs text-ink/45">({catCount(c.slug)})</span>
-            </label>
-          {/each}
-        </div>
-      </details>
+  .mobile-chip {
+    min-height: 2.5rem;
+    border: 1px solid rgb(var(--c-ink) / 0.14);
+    border-radius: 9px;
+    background: rgb(var(--c-surface));
+    padding: 0.5rem 0.75rem;
+    color: rgb(var(--c-heading) / 0.76);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
 
-      <details class="py-3">
-        <summary class="cursor-pointer text-sm font-bold text-heading">Travel type</summary>
-        <div class="mt-2 flex flex-wrap gap-1.5">
-          {#each personas as p (p.key)}
-            <button type="button" class={`rounded-full border px-3 py-1.5 text-xs font-semibold ${persona === p.key ? 'border-forest bg-forest text-white' : 'border-ink/15 text-ink/70'}`} on:click={() => dispatch('persona', p.key)}>{p.label}</button>
-          {/each}
-        </div>
-        <label class="mt-3 flex items-center gap-2.5 text-sm">
-          <input type="checkbox" class="h-4 w-4 accent-forest" checked={popularOnly} on:change={() => dispatch('popular', !popularOnly)} /> Best sellers only
-        </label>
-      </details>
-    </div>
+  .mobile-option.option-active,
+  .mobile-chip.option-active {
+    border-color: rgb(var(--c-forest));
+    background: rgb(var(--c-forest) / 0.08);
+    color: rgb(var(--c-forest));
+    box-shadow: inset 0 0 0 1px rgb(var(--c-forest) / 0.12);
+  }
 
-    <div class="flex items-center gap-3 border-t border-ink/10 p-3" style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom));">
-      <button type="button" class="gf-btn-ghost flex-1" on:click={() => dispatch('clear')}>Clear all</button>
-      <button type="button" class="gf-btn-primary flex-1" on:click={() => (sheetOpen = false)}>Show {resultCount} tour{resultCount === 1 ? '' : 's'}</button>
-    </div>
-  </div>
-{/if}
+  @media (max-width: 767px) {
+    .mobile-filter-body { overscroll-behavior: contain; }
+  }
+</style>

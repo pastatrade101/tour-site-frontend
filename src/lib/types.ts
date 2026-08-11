@@ -91,6 +91,9 @@ export type Tour = {
   main_image_url?: string;
   banner_image_url?: string;
   highlights?: string[];
+  customization_intro?: string | null;
+  customization_options?: string[];
+  tour_price_options?: TourPriceOption[];
   difficulty_level?: string | null;
   group_size?: string;
   group_size_min?: number | null;
@@ -106,6 +109,18 @@ export type Tour = {
   seats_remaining?: number | null;
   is_featured?: boolean;
   is_popular?: boolean;
+};
+
+export type TourPriceOption = {
+  id: string;
+  tour_id: string;
+  title: string;
+  label?: string | null;
+  price: number;
+  currency?: string | null;
+  price_type: 'per_person' | 'per_group' | 'per_child' | 'single_supplement' | 'upgrade' | 'discount';
+  description?: string | null;
+  sort_order?: number | null;
 };
 
 export type TourCategory = {

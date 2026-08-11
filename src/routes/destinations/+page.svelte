@@ -161,15 +161,14 @@
 <DestinationsHero {heroImage} heroRecord={heroDestination} total={destinations.length} {regions} />
 
 <!-- Sits below the hero on its own ground rather than straddling the seam. -->
-<section class="destinations-filter-section bg-canvas pt-8 md:pt-10">
-  <div class="container-shell">
+<section class="destinations-filter-section bg-canvas pt-5 md:pt-10">
+  <div class="container-shell flex justify-end md:block">
     <DestinationSearchBar
       bind:value={search}
       {groups}
       {activeGroup}
       {activeFacet}
       resultCount={filtered.length}
-      {popular}
       on:facet={onFacetPair}
       on:clear={clearAll}
     />
@@ -207,14 +206,14 @@
 
 <section id="all-destinations" class="destinations-all-section scroll-mt-28 mt-6 bg-sand/35 py-10 md:mt-8 md:py-14">
   <div class="destinations-all-shell container-shell">
-    <div class="destinations-all-heading flex flex-wrap items-end justify-between gap-4" use:fadeUpOnScroll={{ y: 14 }}>
-      <div class="max-w-2xl">
+    <div class="destinations-all-heading flex flex-wrap items-end justify-between gap-3 md:gap-4">
+      <div class="min-w-0 flex-1 md:max-w-2xl">
         <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Every destination</p>
-        <h2 class="mt-3 font-serif text-3xl font-bold leading-tight text-heading md:text-[42px]">
+        <h2 class="mt-2 font-serif text-[26px] font-bold leading-[1.08] text-heading sm:text-3xl md:mt-3 md:text-[42px]">
           {isFiltering ? 'Matching destinations' : 'Choose where your trip begins'}
         </h2>
       </div>
-      <p class="destinations-result-count text-sm font-semibold text-ink/50" aria-live="polite">
+      <p class="destinations-result-count w-full text-sm font-semibold text-ink/50 md:w-auto" aria-live="polite">
         {filtered.length} of {destinations.length}
       </p>
     </div>

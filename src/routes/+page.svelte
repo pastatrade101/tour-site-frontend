@@ -7,7 +7,6 @@
   import GalleryViewer from '$lib/components/public/GalleryViewer.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import { faqLd } from '$lib/seo';
-  import TopDestinations from '$lib/components/public/TopDestinations.svelte';
   import HomeHero from '$lib/components/public/home/HomeHero.svelte';
   import HomeExperiences from '$lib/components/public/home/HomeExperiences.svelte';
   import HomeDestinationsCarousel from '$lib/components/public/home/HomeDestinationsCarousel.svelte';
@@ -437,16 +436,6 @@
 <!-- ── Goldfinch-only sections (not in the reference layout) — each stays
      CMS-toggleable so they can be switched off for a pure reference flow. ── -->
 
-<!-- 8b · Top destinations mosaic -->
-{#if isSectionActive('top_destinations') && destinations.length}
-  <TopDestinations
-    {destinations}
-    eyebrow={cmsExtra('top_destinations', 'eyebrow', 'Where travellers go')}
-    title={cms('top_destinations', 'title', 'Top Destinations')}
-    subtitle={cms('top_destinations', 'subtitle', 'The parks, peaks and coastlines our guests ask for most — each one a trip we can shape around you.')}
-  />
-{/if}
-
 <!-- 8c · Best times to visit -->
 {#if isSectionActive('seasons')}
   <SeasonsBand {...seasonsProps} />
@@ -464,30 +453,27 @@
 
 <!-- 10b · Gallery preview -->
 {#if isSectionActive('gallery_preview') && galleryDisplay.length}
-<section class="relative overflow-hidden bg-deep-green py-14 text-white md:py-20" use:sectionReveal>
-  <div class="pointer-events-none absolute inset-0 opacity-[0.07]" style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1.5px); background-size: 30px 30px;" aria-hidden="true"></div>
-  <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-goldfinch-gold/45 to-transparent" aria-hidden="true"></div>
-  <div class="container-shell relative">
-    <div class="grid gap-7 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
-      <div class="max-w-xl" use:fadeUpOnScroll={{ y: 14 }}>
-        <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">{cmsExtra('gallery_preview', 'eyebrow', 'Field notes in frames')}</p>
-        <h2 class="mt-3 text-3xl font-semibold leading-tight text-white md:text-[42px]">
+<section class="border-y border-ink/10 bg-sand/35 py-14 md:py-20" use:sectionReveal>
+  <div class="container-shell">
+    <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between md:gap-10">
+      <div class="max-w-2xl" use:fadeUpOnScroll={{ y: 14 }}>
+        <p class="text-xs font-bold uppercase tracking-[0.16em] text-clay">{cmsExtra('gallery_preview', 'eyebrow', 'Field notes in frames')}</p>
+        <h2 class="mt-3 max-w-xl font-serif text-[2rem] font-semibold leading-[1.08] text-heading sm:text-4xl md:text-[42px]">
           {cms('gallery_preview', 'title', 'See the journeys before you choose')}
         </h2>
-        <p class="mt-4 text-[15px] leading-8 text-white/75 md:text-lg">
+        <p class="mt-4 max-w-xl text-[15px] leading-7 text-ink/65 md:text-base">
           {cms('gallery_preview', 'subtitle', 'Real published gallery moments from safaris, climbs, coast stays and the places our team knows well.')}
         </p>
       </div>
-      <div class="flex flex-wrap items-center gap-3 lg:justify-end" use:fadeUpOnScroll={{ y: 14, delay: 0.08 }}>
-        <span class="inline-flex items-center gap-2 rounded-[8px] bg-white/15 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/25 backdrop-blur"><span class="h-1.5 w-1.5 rounded-full bg-goldfinch-gold"></span>{galleryDisplay.length} featured image{galleryDisplay.length === 1 ? '' : 's'}</span>
-        <a class="inline-flex h-11 items-center gap-2 rounded-[8px] bg-goldfinch-gold px-5 text-sm font-extrabold text-heading shadow-sm transition hover:brightness-105" href={galleryCtaUrl}>
+      <div class="shrink-0" use:fadeUpOnScroll={{ y: 14, delay: 0.08 }}>
+        <a class="group inline-flex min-h-11 items-center gap-2 border-b border-clay/35 text-sm font-bold text-clay transition hover:border-clay hover:text-heading" href={galleryCtaUrl}>
           {galleryCtaText} <ArrowRight size={16} strokeWidth={2.6} />
         </a>
       </div>
     </div>
 
-    <div class="mt-9">
-      <GalleryViewer images={galleryDisplay.slice(0, 8)} dark mosaic {imageVariants} />
+    <div class="mt-8 md:mt-10">
+      <GalleryViewer images={galleryDisplay.slice(0, 8)} mosaic minimal {imageVariants} />
     </div>
   </div>
 </section>

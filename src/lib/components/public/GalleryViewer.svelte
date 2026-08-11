@@ -10,6 +10,7 @@
   export let showFilters = false;
   export let dark = false; // dark section (homepage) vs light page
   export let mosaic = false; // varied bento tiles vs uniform squares
+  export let minimal = false; // reduced overlays for compact editorial previews
   export let imageVariants: ImageVariantMap = {};
 
   // Bento span pattern (applied md+), cycling every 8 tiles for visual rhythm.
@@ -72,7 +73,7 @@
 {/if}
 
 {#key activeDest}
-  <div class={`grid grid-cols-2 gap-3 ${mosaic ? 'md:grid-cols-4 md:auto-rows-[190px] md:grid-flow-dense' : 'sm:grid-cols-3 lg:grid-cols-4'}`} use:staggeredCardReveal>
+  <div class={`gallery-grid grid grid-cols-2 gap-2.5 ${mosaic ? 'md:grid-cols-4 md:auto-rows-[180px] md:grid-flow-dense md:gap-3' : 'sm:grid-cols-3 lg:grid-cols-4'}`} class:minimal use:staggeredCardReveal>
     {#each filtered as im, i (im.id ?? i)}
       {@const c = cap(im)}
       {@const d = destOf(im)}
@@ -93,15 +94,17 @@
           alt={String(im.alt_text ?? im.title ?? 'Safari gallery image')}
           className="absolute inset-0 h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-110"
         />
-        <span class="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_42%,rgba(15,26,24,0.86))] opacity-85 transition group-hover:opacity-100"></span>
-        {#if d?.name}
+        {#if !minimal || c}
+          <span class={`pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_48%,rgba(15,26,24,0.8))] transition-opacity ${minimal ? 'opacity-45 group-hover:opacity-90' : 'opacity-85 group-hover:opacity-100'}`}></span>
+        {/if}
+        {#if d?.name && !minimal}
           <span class="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-[6px] bg-black/45 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.1em] text-white ring-1 ring-white/15 backdrop-blur">
             <MapPin size={9} strokeWidth={2.6} /> {d.name}
           </span>
         {/if}
-        <div class="absolute inset-x-0 bottom-0 p-3 text-left">
+        <div class={`absolute inset-x-0 bottom-0 p-3 text-left ${minimal ? 'md:translate-y-2 md:opacity-0 md:transition-all md:duration-300 md:group-hover:translate-y-0 md:group-hover:opacity-100' : ''}`}>
           {#if c}<p class="line-clamp-2 text-[13px] font-bold leading-tight text-white [text-shadow:0_1px_8px_rgba(0,0,0,0.55)]">{c}</p>{/if}
-          {#if t?.title}<span class="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-goldfinch-gold opacity-0 transition-opacity duration-300 group-hover:opacity-100"><Route size={11} strokeWidth={2.4} /> <span class="truncate">{t.title}</span></span>{/if}
+          {#if t?.title && !minimal}<span class="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-goldfinch-gold opacity-0 transition-opacity duration-300 group-hover:opacity-100"><Route size={11} strokeWidth={2.4} /> <span class="truncate">{t.title}</span></span>{/if}
         </div>
       </button>
     {/each}
@@ -161,4 +164,15 @@
 <style>
   .hide-scroll { scrollbar-width: none; -ms-overflow-style: none; }
   .hide-scroll::-webkit-scrollbar { display: none; }
+
+  @media (max-width: 639px) {
+    .gallery-grid.minimal > :global(button) {
+      border-radius: 8px;
+    }
+
+    .gallery-grid.minimal > :global(button:first-child) {
+      grid-column: 1 / -1;
+      aspect-ratio: 16 / 10;
+    }
+  }
 </style>

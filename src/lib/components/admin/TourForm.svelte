@@ -16,6 +16,7 @@
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import ToastStack from '$lib/components/admin/ToastStack.svelte';
+  import type { TravelStyle } from '$lib/types';
 
   type Option = {
     label: string;
@@ -64,6 +65,7 @@
   let destinationOptions: Option[] = [{ label: 'No destination', value: '' }];
   let categoryOptions: Option[] = [{ label: 'No category', value: '' }];
   let specialistOptions: Option[] = [{ label: 'No specialist', value: '' }];
+  let travelStyleOptions: Option[] = [];
   let mediaItems: MediaItem[] = [];
 
   let form = {
@@ -71,6 +73,8 @@
     budget_tier: '',
     category_id: '',
     currency: 'USD',
+    customization_intro: '',
+    customization_options: [''] as string[],
     destination_ids: [] as string[],
     difficulty_level: '',
     duration_days: '1',
@@ -168,6 +172,16 @@
     form.destination_ids = form.destination_ids.filter((current) => current !== id);
   };
 
+  const selectedPersonaKeys = () => stringList(form.persona_tags);
+  const isTravelStyleSelected = (key: string) => selectedPersonaKeys().includes(key);
+  const toggleTravelStyle = (key: string) => {
+    const current = selectedPersonaKeys();
+    form.persona_tags = (current.includes(key)
+      ? current.filter((value) => value !== key)
+      : [...current, key]
+    ).join(', ');
+  };
+
   const addHighlight = () => {
     form.highlights = [...form.highlights, ''];
   };
@@ -175,6 +189,15 @@
   const removeHighlight = (index: number) => {
     const next = form.highlights.filter((_, currentIndex) => currentIndex !== index);
     form.highlights = next.length ? next : [''];
+  };
+
+  const addCustomizationOption = () => {
+    form.customization_options = [...form.customization_options, ''];
+  };
+
+  const removeCustomizationOption = (index: number) => {
+    const next = form.customization_options.filter((_, currentIndex) => currentIndex !== index);
+    form.customization_options = next.length ? next : [''];
   };
 
   const nullableNumber = (value: unknown) => {
@@ -190,11 +213,12 @@
     loadingOptions = true;
 
     try {
-      const [destinations, categories, specialists, media] = await Promise.all([
+      const [destinations, categories, specialists, media, travelStyles] = await Promise.all([
         api.destinations.list({ limit: 100, status: 'all' }),
         api.categories.list({ limit: 100, status: 'all' }),
         api.specialists.list({ limit: 100, status: 'all' }),
-        api.media.list({ file_type: 'image', limit: 100 })
+        api.media.list({ file_type: 'image', limit: 100 }),
+        api.travelStyles.list({ limit: 100, status: 'all' })
       ]);
 
       destinationOptions = [
@@ -223,6 +247,14 @@
           };
         })
       ];
+
+      travelStyleOptions = (travelStyles.data.items as TravelStyle[])
+        .filter((style) => style.persona?.trim() && style.status !== 'archived')
+        .map((style) => ({
+          label: style.name,
+          value: slugify(style.persona)
+        }))
+        .filter((option, index, options) => option.value && options.findIndex((item) => item.value === option.value) === index);
 
       mediaItems = media.data.items as MediaItem[];
     } catch (requestError) {
@@ -253,6 +285,10 @@
         budget_tier: String(tour.budget_tier ?? ''),
         category_id: String(tour.category_id ?? ''),
         currency: String(tour.currency ?? 'USD'),
+        customization_intro: String(tour.customization_intro ?? ''),
+        customization_options: Array.isArray(tour.customization_options) && tour.customization_options.length
+          ? tour.customization_options.map(String)
+          : [''],
         destination_ids: [...new Set([...tourDestinationIds, primaryDestinationId].filter(Boolean))],
         difficulty_level: String(tour.difficulty_level ?? ''),
         duration_days: String(tour.duration_days ?? '1'),
@@ -294,6 +330,8 @@
     budget_tier: form.budget_tier || null,
     category_id: form.category_id || null,
     currency: String(form.currency ?? '').trim().toUpperCase() || 'USD',
+    customization_intro: form.customization_intro.trim() || null,
+    customization_options: form.customization_options.map((option) => option.trim()).filter(Boolean),
     destination_id: form.destination_ids[0] || null,
     destination_ids: form.destination_ids,
     difficulty_level: form.difficulty_level || null,
@@ -476,6 +514,39 @@
       </section>
 
       <section class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
+        <div class="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Trip customization</p>
+            <h2 class="mt-1 text-lg font-bold text-ink">Ways travellers can customize this tour</h2>
+          </div>
+          <button class="inline-flex h-9 items-center gap-1.5 rounded-md border border-forest/25 bg-forest/5 px-3 text-xs font-bold text-forest transition hover:bg-forest hover:text-white" type="button" on:click={addCustomizationOption}>
+            <Plus size={14} /> Add option
+          </button>
+        </div>
+
+        <div class="mt-5">
+          <AdminTextArea label="Introduction" name="customization_intro" bind:value={form.customization_intro} rows={3} placeholder="Explain how this specific tour can be adjusted." />
+        </div>
+
+        <div class="mt-4 grid gap-2.5 sm:grid-cols-2">
+          {#each form.customization_options as _option, index}
+            <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_40px] items-end gap-2">
+              <AdminFormInput label={`Option ${index + 1}`} name={`customization_option_${index}`} bind:value={form.customization_options[index]} placeholder="Add a Zanzibar extension" />
+              <button
+                class="grid h-11 w-10 place-items-center rounded-md border border-ink/10 bg-surface text-ink/45 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-35"
+                type="button"
+                aria-label={`Remove customization option ${index + 1}`}
+                disabled={form.customization_options.length === 1}
+                on:click={() => removeCustomizationOption(index)}
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          {/each}
+        </div>
+      </section>
+
+      <section class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
         <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Pricing and logistics</p>
         <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <AdminFormInput label="Duration days" name="duration_days" type="number" bind:value={form.duration_days} required />
@@ -499,10 +570,41 @@
 
       <section class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
         <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">AI matching</p>
-        <div class="mt-5 grid gap-4 md:grid-cols-3">
+        <div class="mt-5 grid gap-4 md:grid-cols-2">
           <AdminFormInput label="Experience type" name="experience_type" bind:value={form.experience_type} placeholder="safari, beach, trekking" />
           <AdminSelect label="Budget tier" name="budget_tier" bind:value={form.budget_tier} options={budgetTierOptions} />
-          <AdminFormInput label="Persona tags" name="persona_tags" bind:value={form.persona_tags} placeholder="family, luxury, adventure" />
+        </div>
+
+        <div class="mt-4 grid gap-2">
+          <div>
+            <span class="text-[13px] font-semibold text-ink/65">Travel styles</span>
+            <p class="mt-0.5 text-xs text-ink/45">Attach this tour to one or more persona-enabled Travel Styles.</p>
+          </div>
+          {#if loadingOptions}
+            <div class="h-11 animate-pulse rounded-md bg-sand/70"></div>
+          {:else if travelStyleOptions.length}
+            <div class="flex flex-wrap gap-2" role="group" aria-label="Travel styles">
+              {#each travelStyleOptions as style}
+                <button
+                  type="button"
+                  aria-pressed={isTravelStyleSelected(style.value)}
+                  class={`inline-flex min-h-10 items-center rounded-md border px-3.5 py-2 text-sm font-semibold transition ${isTravelStyleSelected(style.value) ? 'border-forest bg-forest text-white shadow-sm' : 'border-ink/15 bg-black/[0.02] text-ink hover:border-forest/40 hover:bg-sand/60'}`}
+                  on:click={() => toggleTravelStyle(style.value)}
+                >
+                  {style.label}
+                </button>
+              {/each}
+            </div>
+          {:else}
+            <p class="rounded-md border border-dashed border-ink/15 bg-sand/35 px-3.5 py-3 text-sm text-ink/55">
+              No persona-enabled Travel Styles are available. Add a Persona key on the Travel Styles page first.
+            </p>
+          {/if}
+          {#if selectedPersonaKeys().some((key) => !travelStyleOptions.some((style) => style.value === key))}
+            <p class="text-xs leading-5 text-amber-700">
+              Existing unmatched keys are preserved: {selectedPersonaKeys().filter((key) => !travelStyleOptions.some((style) => style.value === key)).join(', ')}
+            </p>
+          {/if}
         </div>
 
         <div class="mt-4 grid gap-1.5">

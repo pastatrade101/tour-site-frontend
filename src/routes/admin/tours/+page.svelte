@@ -274,7 +274,7 @@
 
 <ToastStack {toasts} on:dismiss={dismissToast} />
 
-<div class="mx-auto grid w-full max-w-[1500px] gap-6">
+<div class="mx-auto grid w-full min-w-0 max-w-[1500px] gap-6 overflow-x-hidden">
   <AdminPageHeader
     eyebrow="Tour Management"
     title="Tours"
@@ -286,7 +286,7 @@
     on:secondary={() => goto('/admin/tours/import')}
   />
 
-  <AdminToolbar className="grid gap-3 xl:grid-cols-[1fr_170px_190px_170px_150px_150px_150px_auto] xl:items-end">
+  <AdminToolbar className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-[minmax(220px,1fr)_150px_minmax(160px,190px)_minmax(150px,170px)_130px_130px_130px_auto] 2xl:items-end">
     <label class="grid gap-2 text-sm font-medium text-ink">
       <span>Search</span>
       <span class="flex h-11 items-center gap-2 rounded-2xl border border-ink/10 bg-surface px-3 shadow-sm transition focus-within:border-forest/45 focus-within:ring-2 focus-within:ring-forest/10">
@@ -350,8 +350,8 @@
       </div>
     {/if}
 
-    <div class="overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
-      <div class="overflow-x-auto">
+    <div class="min-w-0 max-w-full overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
+      <div class="max-w-full overflow-x-auto overscroll-x-contain" data-lenis-prevent>
         <table class="w-full min-w-[1180px] text-start text-sm">
           <thead class="bg-sand/70 text-xs uppercase tracking-[0.08em] text-ink/60">
             <tr>

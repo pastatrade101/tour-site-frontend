@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { onDestroy, onMount } from 'svelte';
-  import { ArrowLeft, ArrowRight, Check, ChevronDown, Clock, Compass, MapPin, Search, SlidersHorizontal, Sparkles, Star, X } from '@lucide/svelte';
+  import { onMount } from 'svelte';
+  import { ArrowLeft, ArrowRight, CalendarDays, Check, Compass, MapPin, X } from '@lucide/svelte';
   import { trackEvent } from '$lib/analytics';
   import { staggeredCardReveal } from '$lib/animations';
   import { currency, formatUsd } from '$lib/currency';
-  import { EXPERIENCE_TO_CATEGORY, PERSONA_ORDER, PERSONAS } from '$lib/data/personas';
+  import { EXPERIENCE_TO_CATEGORY, PERSONA_ORDER, PERSONAS, type Persona } from '$lib/data/personas';
+  import { toMetaText } from '$lib/richText';
   import EmptyState from '$lib/components/public/EmptyState.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
-  import RangeSlider from '$lib/components/public/RangeSlider.svelte';
+  import Img from '$lib/components/public/Img.svelte';
   import TourCardRich from '$lib/components/public/TourCardRich.svelte';
   import TourFilterBar from '$lib/components/public/TourFilterBar.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
@@ -22,7 +22,7 @@
   import HomeTravellerStories from '$lib/components/public/home/HomeTravellerStories.svelte';
   import HomePlanningBand from '$lib/components/public/home/HomePlanningBand.svelte';
   import { getTourDestinationNames, getTourDestinations, matchesTourDestinationSlug } from '$lib/tourDestinations';
-  import type { Tour } from '$lib/types';
+  import type { Tour, TravelStyle } from '$lib/types';
   import type { PageData } from './$types';
 
   const TIERS = [
@@ -42,6 +42,28 @@
 
   export let data: PageData;
   let allTours: Tour[] = data.tours ?? [];
+  let heroIndex = 0;
+  $: heroSlides = allTours
+    .filter((tour) => (tour.is_featured || tour.is_popular) && (tour.banner_image_url || tour.main_image_url))
+    .slice(0, 5);
+  $: if (heroSlides.length && heroIndex >= heroSlides.length) heroIndex = 0;
+  const personaKey = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const cmsPersonaStyles = (data.travelStyles ?? []).filter(
+    (style: TravelStyle) => Boolean(style.persona?.trim())
+  );
+  const cmsPersonas = cmsPersonaStyles.reduce<Record<string, Persona>>((personas, style) => {
+    const key = personaKey(style.persona ?? '');
+    if (!key || personas[key]) return personas;
+    personas[key] = {
+      label: style.name,
+      headline: style.emotional_promise?.split('\n').map((item) => item.trim()).find(Boolean) || style.name,
+      sub: toMetaText(style.description, 240),
+      concerns: style.concerns ?? []
+    };
+    return personas;
+  }, {});
+  const personaMap: Record<string, Persona> = cmsPersonaStyles.length ? cmsPersonas : PERSONAS;
+  const personaKeys = cmsPersonaStyles.length ? Object.keys(cmsPersonas) : [...PERSONA_ORDER];
   // Supporting content rendered under the grid. Each block self-hides when its
   // list is empty, so a missing endpoint just removes that section.
   $: parkDestinations = data.destinations ?? [];
@@ -66,7 +88,6 @@
   let priceHi = 10000;
   let rangesReady = false;
   let sort = 'recommended';
-  let filtersOpen = false;
 
   $: params = $page.url.searchParams;
   $: searchTerm = params.get('search')?.trim() ?? '';
@@ -79,7 +100,7 @@
     if (experience && EXPERIENCE_TO_CATEGORY[experience]) set.add(EXPERIENCE_TO_CATEGORY[experience]);
     return set;
   })();
-  $: personaCfg = persona ? PERSONAS[persona] : null;
+  $: personaCfg = persona ? personaMap[persona] ?? null : null;
 
   const initRanges = () => {
     const prices = allTours.map((t) => t.price_from ?? 0).filter((n) => n > 0);
@@ -97,14 +118,14 @@
     rangesReady = true;
   };
 
-  onMount(initRanges);
-  onDestroy(() => {
-    if (browser) document.documentElement.classList.remove('tour-filters-open');
+  onMount(() => {
+    initRanges();
+    if (heroSlides.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const timer = window.setInterval(() => {
+      heroIndex = (heroIndex + 1) % heroSlides.length;
+    }, 6500);
+    return () => window.clearInterval(timer);
   });
-
-  $: if (browser) {
-    document.documentElement.classList.toggle('tour-filters-open', filtersOpen);
-  }
 
   const distinctBy = <T,>(arr: T[], key: (x: T) => string | undefined) => {
     const seen = new Map<string, T>();
@@ -121,7 +142,10 @@
   $: categoryOptions = distinctBy(allTours, (t) => t.tour_categories?.slug)
     .map((t) => ({ slug: t.tour_categories!.slug as string, name: t.tour_categories!.name as string }))
     .sort((a, b) => a.name.localeCompare(b.name));
-  $: popularCategories = categoryOptions.slice(0, 6);
+  $: tourDurations = allTours.map((tour) => Number(tour.duration_days)).filter((duration) => Number.isFinite(duration) && duration > 0);
+  $: durationMeta = tourDurations.length
+    ? `${Math.min(...tourDurations)}–${Math.max(...tourDurations)} days`
+    : 'Flexible length';
 
   const matchSearch = (t: Tour, q: string) => {
     const hay = `${t.title} ${t.short_description ?? ''} ${getTourDestinationNames(t)}`.toLowerCase();
@@ -194,11 +218,6 @@
     writeUrl({ category: next.size ? [...next].join(',') : null, experience: null });
   };
   const setDestination = (slug: string) => writeUrl({ destination: slug || null });
-  const submitSearch = (e: Event) => {
-    e.preventDefault();
-    const v = (new FormData(e.currentTarget as HTMLFormElement).get('q') as string)?.trim();
-    writeUrl({ search: v || null });
-  };
   const toggleTier = (key: string) => {
     selectedTiers = selectedTiers.includes(key) ? selectedTiers.filter((k) => k !== key) : [...selectedTiers, key];
   };
@@ -222,41 +241,14 @@
     priceLo = priceMin;
     priceHi = priceMax;
     sort = 'recommended';
-    filtersOpen = false;
     void goto('/tours', { replaceState: true, noScroll: true });
-  };
-
-  const setShortTrips = () => {
-    if (!rangesReady) return;
-    lengthLo = lenMin;
-    lengthHi = Math.min(lenMax, Math.max(lenMin, 5));
-  };
-  const setClassicTrips = () => {
-    if (!rangesReady) return;
-    lengthLo = Math.min(Math.max(lenMin, 6), lenMax);
-    lengthHi = Math.max(lengthLo, Math.min(lenMax, 10));
-  };
-  const setValueTrips = () => {
-    if (!rangesReady) return;
-    priceLo = priceMin;
-    priceHi = Math.min(priceMax, Math.max(priceMin, 3000));
   };
 
   $: moneyFormatter = (n: number) => formatUsd(n, $currency);
   const days = (n: number) => `${n} day${n === 1 ? '' : 's'}`;
   $: catName = (slug: string) => categoryOptions.find((c) => c.slug === slug)?.name ?? slug;
   $: destName = destinationOptions.find((d) => d.slug === destSlug)?.name ?? destSlug;
-  $: selectedDestinationLabel = destSlug ? destName : 'All destinations';
-  $: cheapestVisible = sorted.map((t) => t.price_from ?? 0).filter((n) => n > 0).sort((a, b) => a - b)[0] ?? 0;
-  $: shortestVisible = sorted.map((t) => t.duration_days ?? 0).filter((n) => n > 0).sort((a, b) => a - b)[0] ?? 0;
   $: featuredVisible = sorted.filter((t) => t.is_featured || t.is_popular).length;
-  $: shortTripsHi = rangesReady ? Math.min(lenMax, Math.max(lenMin, 5)) : 5;
-  $: classicTripsLo = rangesReady ? Math.min(Math.max(lenMin, 6), lenMax) : 6;
-  $: classicTripsHi = rangesReady ? Math.max(classicTripsLo, Math.min(lenMax, 10)) : 10;
-  $: valueTripsHi = rangesReady ? Math.min(priceMax, Math.max(priceMin, 3000)) : 3000;
-  $: shortTripsActive = rangesReady && lengthLo === lenMin && lengthHi === shortTripsHi && lengthActive;
-  $: classicTripsActive = rangesReady && lengthLo === classicTripsLo && lengthHi === classicTripsHi && lengthActive;
-  $: valueTripsActive = rangesReady && priceLo === priceMin && priceHi === valueTripsHi && priceActive;
 </script>
 
 <svelte:head>
@@ -264,8 +256,27 @@
   <meta name="description" content="Browse and filter East Africa safari and tour packages by destination, experience, length, price and comfort level." />
 </svelte:head>
 
-<section data-hero class="overflow-hidden bg-deep-green text-savanna">
-  <div class="tour-shell grid min-w-0 gap-6 py-8 md:py-10 lg:grid-cols-[minmax(0,1fr)_430px] lg:items-end">
+<section data-hero class="relative isolate min-h-[390px] overflow-hidden bg-deep-green text-savanna md:min-h-[460px]">
+  {#if heroSlides.length}
+    {#key heroIndex}
+      {@const heroTour = heroSlides[heroIndex]}
+      <div class="hero-slide absolute inset-0" aria-hidden="true">
+        <Img
+          record={heroTour}
+          fields={['banner_image_url', 'main_image_url']}
+          alt=""
+          width={1800}
+          sizes="100vw"
+          className="h-full w-full object-cover"
+        />
+      </div>
+    {/key}
+    <div class="absolute inset-0 bg-deep-green/45" aria-hidden="true"></div>
+    <div class="absolute inset-0 bg-[linear-gradient(90deg,rgba(26,54,48,0.92)_0%,rgba(26,54,48,0.7)_48%,rgba(26,54,48,0.2)_100%)]" aria-hidden="true"></div>
+    <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-deep-green/65 to-transparent" aria-hidden="true"></div>
+  {/if}
+
+  <div class="tour-shell relative z-10 flex min-h-[390px] min-w-0 items-end py-8 md:min-h-[460px] md:py-12 lg:py-14">
     <div class="min-w-0">
       <p class="font-serif text-xl italic text-goldfinch-gold">{personaCfg ? `For ${personaCfg.label}` : 'Safari & Tours'}</p>
       {#key personaCfg?.headline ?? 'default'}
@@ -288,111 +299,85 @@
         </div>
       {/if}
 
-      <div class="mt-6 flex max-w-full gap-2 overflow-x-auto pb-1">
-        <span class="shrink-0 self-center text-sm font-semibold text-savanna/75">Travel type</span>
-        {#each PERSONA_ORDER as key}
-          <a
-            class={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-bold transition ${persona === key ? 'border-goldfinch-gold bg-goldfinch-gold text-heading' : 'border-savanna/20 bg-white/6 text-savanna hover:bg-white/10'}`}
-            href={withParams({ persona: persona === key ? null : key })}
-          >
-            {PERSONAS[key].label}
-          </a>
-        {/each}
+      <div class="mt-6 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3" aria-label="Tour collection details">
+        <div class="hero-meta">
+          <Compass size={18} class="shrink-0 text-goldfinch-gold" />
+          <div><span>{allTours.length}</span><small>itineraries</small></div>
+        </div>
+        <div class="hero-meta">
+          <MapPin size={18} class="shrink-0 text-goldfinch-gold" />
+          <div><span>{destinationOptions.length}</span><small>destinations</small></div>
+        </div>
+        <div class="hero-meta">
+          <CalendarDays size={18} class="shrink-0 text-goldfinch-gold" />
+          <div><span>{durationMeta}</span><small>trip duration</small></div>
+        </div>
       </div>
+
+      {#if heroSlides.length > 1}
+        <div class="mt-6 flex items-center gap-2" aria-label="Featured tour images">
+          {#each heroSlides as slide, index (slide.id)}
+            <button
+              type="button"
+              class={`h-1.5 rounded-full transition-all ${index === heroIndex ? 'w-8 bg-goldfinch-gold' : 'w-2 bg-white/45 hover:bg-white/75'}`}
+              aria-label={`Show image ${index + 1}: ${slide.title}`}
+              aria-current={index === heroIndex ? 'true' : undefined}
+              on:click={() => (heroIndex = index)}
+            ></button>
+          {/each}
+        </div>
+      {/if}
     </div>
 
-    <form class="finder-panel grid w-full min-w-0 max-w-full gap-3 rounded-[8px] bg-surface p-4 text-ink shadow-[0_24px_70px_rgba(0,0,0,0.22)] lg:justify-self-end" on:submit={submitSearch} role="search">
-      <div>
-        <p class="text-sm font-extrabold text-heading">Start your search</p>
-        <p class="mt-1 text-xs font-medium text-ink/60">Three fields are enough to narrow the list.</p>
-      </div>
-
-      <label class="grid gap-1.5 text-sm font-bold text-ink/75">
-        <span class="inline-flex items-center gap-1.5"><MapPin size={15} /> Destination</span>
-        <select
-          class="h-12 min-w-0 rounded-[8px] border border-ink/15 bg-surface px-3 text-sm font-semibold text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
-          value={destSlug}
-          on:change={(e) => setDestination(e.currentTarget.value)}
-        >
-          <option value="">All destinations</option>
-          {#each destinationOptions as d}
-            <option value={d.slug}>{d.name}</option>
-          {/each}
-        </select>
-      </label>
-
-      <label class="grid gap-1.5 text-sm font-bold text-ink/75">
-        <span class="inline-flex items-center gap-1.5"><Search size={15} /> Keyword</span>
-        <span class="flex h-12 min-w-0 items-center gap-2 rounded-[8px] border border-ink/15 bg-surface px-3 transition focus-within:border-forest focus-within:ring-2 focus-within:ring-forest/15">
-          <input name="q" value={searchTerm} placeholder="Migration, gorilla, Kilimanjaro..." class="min-w-0 flex-1 bg-transparent text-sm font-semibold text-ink outline-none placeholder:text-ink/35" />
-        </span>
-      </label>
-
-      <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
-        <button type="submit" class="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-[8px] bg-deep-green px-3 text-sm font-bold text-white transition hover:bg-forest">
-          <Search size={16} />
-          <span class="truncate">Search</span>
-        </button>
-        <button
-          type="button"
-          class="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-[8px] border border-ink/15 bg-surface px-3 text-sm font-bold text-ink transition hover:border-forest/35 hover:bg-sand/50 lg:hidden"
-          aria-expanded={filtersOpen}
-          on:click={() => (filtersOpen = true)}
-        >
-          <SlidersHorizontal size={16} />
-          <span class="truncate">Filters</span>
-          {#if activeCount}<span class="rounded-full bg-forest px-2 py-0.5 text-xs text-white">{activeCount}</span>{/if}
-        </button>
-      </div>
-    </form>
   </div>
 </section>
 
 <section class="tour-shell min-w-0 pb-12">
-  <div class="relative z-10 -mt-5">
-    <TourFilterBar
-      {destinationOptions}
-      {categoryOptions}
-      tiers={TIERS}
-      personas={PERSONA_ORDER.map((k) => ({ key: k, label: PERSONAS[k].label }))}
-      {destSlug}
-      selectedCategories={[...urlCategories]}
-      {selectedTiers}
-      {persona}
-      {popularOnly}
-      {lenMin}
-      {lenMax}
-      bind:lengthLo
-      bind:lengthHi
-      {priceMin}
-      {priceMax}
-      bind:priceLo
-      bind:priceHi
-      {rangesReady}
-      resultCount={sorted.length}
-      {activeCount}
-      {catCount}
-      {tierCount}
-      {days}
-      money={moneyFormatter}
-      currencyKey={$currency.selectedCurrency}
-      on:destination={(e) => setDestination(e.detail)}
-      on:category={(e) => toggleCategory(e.detail)}
-      on:tier={(e) => toggleTier(e.detail)}
-      on:persona={(e) => writeUrl({ persona: persona === e.detail ? null : e.detail })}
-      on:popular={(e) => (popularOnly = e.detail)}
-      on:length={(e) => { lengthLo = e.detail.lo; lengthHi = e.detail.hi; }}
-      on:price={(e) => { priceLo = e.detail.lo; priceHi = e.detail.hi; }}
-      on:clear={clearAll}
-      on:apply={() => document.querySelector('[data-results-top]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-    />
-  </div>
+
 
   <div class="mt-6 grid min-w-0 gap-6">
 
     <div class="min-w-0">
-      <div class="sticky top-[70px] z-20 -mx-3 border-y border-ink/10 bg-canvas/95 px-3 py-3 backdrop-blur lg:static lg:mx-0 lg:rounded-[8px] lg:border lg:bg-surface lg:p-4">
-        <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="results-panel sticky top-[70px] z-20 -mx-3 border-y border-ink/10 bg-canvas/95 px-3 py-3 backdrop-blur lg:static lg:mx-0 lg:rounded-[8px] lg:border lg:bg-surface lg:p-4">
+        <div class="results-filter-slot">
+          <TourFilterBar
+                {destinationOptions}
+                {categoryOptions}
+                tiers={TIERS}
+                personas={personaKeys.map((key) => ({ key, label: personaMap[key].label }))}
+                {destSlug}
+                selectedCategories={[...urlCategories]}
+                {selectedTiers}
+                {persona}
+                {popularOnly}
+                {lenMin}
+                {lenMax}
+                bind:lengthLo
+                bind:lengthHi
+                {priceMin}
+                {priceMax}
+                bind:priceLo
+                bind:priceHi
+                {rangesReady}
+                resultCount={sorted.length}
+                {activeCount}
+                {catCount}
+                {tierCount}
+                {days}
+                money={moneyFormatter}
+                currencyKey={$currency.selectedCurrency}
+                on:destination={(e) => setDestination(e.detail)}
+                on:category={(e) => toggleCategory(e.detail)}
+                on:tier={(e) => toggleTier(e.detail)}
+                on:persona={(e) => writeUrl({ persona: persona === e.detail ? null : e.detail })}
+                on:popular={(e) => (popularOnly = e.detail)}
+                on:length={(e) => { lengthLo = e.detail.lo; lengthHi = e.detail.hi; }}
+                on:price={(e) => { priceLo = e.detail.lo; priceHi = e.detail.hi; }}
+                on:clear={clearAll}
+                on:apply={() => document.querySelector('[data-results-top]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              />
+        </div>
+        <div class="results-summary flex flex-wrap items-center justify-between gap-3">
           <div class="min-w-0">
             <p class="text-base font-extrabold text-heading">
               {#if searchTerm}
@@ -409,15 +394,6 @@
           </div>
 
           <div class="flex w-full items-center gap-2 sm:w-auto">
-            <button
-              type="button"
-              class="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-[8px] border border-ink/15 bg-surface px-3 text-sm font-bold text-ink lg:hidden"
-              on:click={() => (filtersOpen = true)}
-            >
-              <SlidersHorizontal size={15} />
-              Filters
-              {#if activeCount}<span class="rounded-full bg-forest px-1.5 text-xs text-white">{activeCount}</span>{/if}
-            </button>
             <label class="flex h-10 flex-1 items-center gap-2 rounded-[8px] border border-ink/15 bg-surface px-3 text-sm text-ink/70 sm:flex-none">
               Sort
               <select class="min-w-0 flex-1 bg-transparent text-sm font-semibold text-ink outline-none" bind:value={sort} aria-label="Sort tours">
@@ -590,9 +566,66 @@
 </HomePlanningBand>
 
 <style>
+  .hero-meta {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.625rem;
+    border-left: 2px solid rgb(var(--c-goldfinch-gold) / 0.72);
+    background: rgb(var(--c-deep-green) / 0.48);
+    padding: 0.625rem 0.75rem;
+    backdrop-filter: blur(8px);
+  }
+
+  .hero-meta div { display: grid; min-width: 0; }
+  .hero-meta span { color: white; font-size: 0.875rem; font-weight: 800; line-height: 1.15; }
+  .hero-meta small { margin-top: 0.125rem; color: rgb(255 255 255 / 0.64); font-size: 0.625rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+
+  @media (max-width: 639px) {
+    .hero-meta {
+      min-height: 4.5rem;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.4rem;
+      border-left: 0;
+      border-top: 2px solid rgb(var(--c-goldfinch-gold) / 0.72);
+      padding: 0.625rem;
+    }
+    .hero-meta span { font-size: 0.75rem; overflow-wrap: anywhere; }
+    .hero-meta small { font-size: 0.54rem; }
+  }
+
+  .hero-slide { animation: hero-slide-enter 900ms ease-out both; }
+
+  @keyframes hero-slide-enter {
+    from { opacity: 0.25; transform: scale(1.025); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-slide { animation: none; }
+  }
+
   :global(body) {
     overflow-x: hidden;
   }
+
+  .results-filter-slot { margin-bottom: 1rem; }
+
+  @media (max-width: 767px) {
+    .results-panel { position: sticky; }
+    .results-filter-slot {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      margin: 0;
+    }
+    .results-summary > :first-child {
+      width: 100%;
+      padding-right: 5rem;
+    }
+  }
+
   .tour-shell {
     width: min(1320px, calc(100% - 32px));
     margin-inline: auto;
@@ -750,10 +783,5 @@
   }
   .filter-scroll::-webkit-scrollbar {
     display: none;
-  }
-  @media (max-width: 1023px) {
-    :global(html.tour-filters-open) {
-      overflow: hidden;
-    }
   }
 </style>

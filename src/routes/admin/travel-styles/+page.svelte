@@ -45,18 +45,10 @@
     { label: 'Published', value: 'published' },
     { label: 'Archived', value: 'archived' }
   ];
-  const personaOptions = [
-    { label: 'None', value: '' },
-    { label: 'Family', value: 'family' },
-    { label: 'Couple', value: 'couple' },
-    { label: 'Group', value: 'group' },
-    { label: 'Solo', value: 'solo' }
-  ];
-
   const emptyForm = () => ({
     name: '',
     slug: '',
-    emotional_promise: '',
+    emotional_promise: [''] as string[],
     description: '',
     desires: '',
     concerns: '',
@@ -86,6 +78,15 @@
   let toasts: Toast[] = [];
 
   const slugify = (v: string) => v.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const promiseList = (value: unknown) => {
+    const items = String(value ?? '').split('\n').map((item) => item.trim()).filter(Boolean);
+    return items.length ? items : [''];
+  };
+  const addPromise = () => { form.emotional_promise = [...form.emotional_promise, '']; };
+  const removePromise = (index: number) => {
+    const next = form.emotional_promise.filter((_, currentIndex) => currentIndex !== index);
+    form.emotional_promise = next.length ? next : [''];
+  };
   $: if (modalOpen && !slugManuallyEdited) form.slug = slugify(form.name);
 
   const showToast = (message: string, type: Toast['type'] = 'success') => {
@@ -115,7 +116,7 @@
     form = {
       name: s.name,
       slug: s.slug,
-      emotional_promise: s.emotional_promise ?? '',
+      emotional_promise: promiseList(s.emotional_promise),
       description: s.description ?? '',
       desires: (s.desires ?? []).join('\n'),
       concerns: (s.concerns ?? []).join('\n'),
@@ -142,11 +143,11 @@
     const payload = {
       name: form.name.trim(),
       slug: form.slug.trim(),
-      emotional_promise: form.emotional_promise.trim() || null,
+      emotional_promise: form.emotional_promise.map((item) => item.trim()).filter(Boolean).join('\n') || null,
       description: form.description.trim() || null,
       desires: lines(form.desires),
       concerns: lines(form.concerns),
-      persona: form.persona || null,
+      persona: slugify(form.persona) || null,
       hero_image_url: form.hero_image_url.trim() || null,
       image_url: form.image_url.trim() || null,
       status: form.status,
@@ -286,7 +287,28 @@
           </label>
         </div>
 
-        <AdminFormInput label="Emotional promise" name="emotional_promise" bind:value={form.emotional_promise} placeholder="The most romantic start to forever" />
+        <div class="grid gap-2.5">
+          <div class="flex items-center justify-between gap-3">
+            <span class="text-[13px] font-semibold text-ink/65">Emotional promises</span>
+            <button type="button" class="inline-flex h-9 items-center gap-1.5 rounded-md border border-forest/25 bg-forest/5 px-3 text-xs font-bold text-forest transition hover:bg-forest hover:text-white" on:click={addPromise}>
+              <Plus size={14} /> Add promise
+            </button>
+          </div>
+          {#each form.emotional_promise as _promise, index}
+            <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_40px] items-end gap-2">
+              <AdminFormInput label={`Promise ${index + 1}`} name={`emotional_promise_${index}`} bind:value={form.emotional_promise[index]} placeholder="The most romantic start to forever" />
+              <button
+                type="button"
+                class="grid h-11 w-10 place-items-center rounded-md border border-ink/10 bg-surface text-ink/45 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-35"
+                aria-label={`Remove promise ${index + 1}`}
+                disabled={form.emotional_promise.length === 1}
+                on:click={() => removePromise(index)}
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          {/each}
+        </div>
         <AdminRichText label="Description" name="description" bind:value={form.description} rows={7} />
 
         <div class="grid gap-4 sm:grid-cols-2">
@@ -295,7 +317,12 @@
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2">
-          <AdminSelect label="Linked persona" name="persona" bind:value={form.persona} options={personaOptions} />
+          <div class="grid gap-1.5">
+            <AdminFormInput label="Persona key" name="persona" bind:value={form.persona} placeholder="family, couple, solo-traveller" />
+            <p class="text-xs leading-5 text-ink/55">
+              Optional. Published styles with a persona key appear as travel-type filters on the Tours page. Keep the key stable because tour persona tags use it for matching.
+            </p>
+          </div>
           <MediaPicker label="Hero image" uploadFolder="travel-styles" bind:value={form.hero_image_url} />
         </div>
 

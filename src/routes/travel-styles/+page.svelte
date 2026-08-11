@@ -7,13 +7,14 @@
   import { toMetaText } from '$lib/richText';
   import type { TravelStyle } from '$lib/types';
 
-  type Card = { slug: string; name: string; emotionalPromise: string; description: string };
+  type Card = { slug: string; name: string; emotionalPromises: string[]; description: string };
+  const promises = (value: string | null | undefined) => String(value ?? '').split('\n').map((item) => item.trim()).filter(Boolean);
 
   // Static config as the immediate fallback; replaced by CMS data when available.
   let styles: Card[] = TRAVEL_STYLES.map((s) => ({
     slug: s.slug,
     name: s.name,
-    emotionalPromise: s.emotionalPromise,
+    emotionalPromises: [s.emotionalPromise],
     description: s.description
   }));
 
@@ -25,7 +26,7 @@
         styles = items.map((s) => ({
           slug: s.slug,
           name: s.name,
-          emotionalPromise: s.emotional_promise ?? '',
+          emotionalPromises: promises(s.emotional_promise),
           description: toMetaText(s.description ?? '', 170)
         }));
       }
@@ -51,7 +52,19 @@
     {#each styles as style (style.slug)}
       <a class="group flex flex-col rounded-[12px] border border-ink/10 bg-surface p-6 shadow-[0_14px_40px_rgba(57,61,50,0.07)] transition-shadow duration-300 hover:border-goldfinch-gold/40 hover:shadow-[0_26px_60px_rgba(57,61,50,0.16)]" href={`/travel-styles/${style.slug}`} use:tilt={{ max: 5 }}>
         <h2 class="text-xl font-extrabold text-heading">{style.name}</h2>
-        <p class="mt-1 text-sm font-semibold text-clay">{style.emotionalPromise}</p>
+        {#if style.emotionalPromises[0]}
+          <p class="mt-1 text-sm font-semibold leading-5 text-clay">{style.emotionalPromises[0]}</p>
+        {/if}
+        {#if style.emotionalPromises.length > 1}
+          <ul class="mt-3 space-y-1.5 border-t border-ink/8 pt-3">
+            {#each style.emotionalPromises.slice(1, 3) as promise}
+              <li class="flex items-start gap-2 text-xs leading-5 text-ink/60">
+                <span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-goldfinch-gold"></span>
+                <span>{promise}</span>
+              </li>
+            {/each}
+          </ul>
+        {/if}
         <p class="mt-2 flex-1 text-sm leading-6 text-ink/65">{style.description}</p>
         <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition group-hover:text-heading">Explore {style.name} <ArrowRight size={15} /></span>
       </a>

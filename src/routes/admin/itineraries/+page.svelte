@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
-  import { Edit, Image as ImageIcon, Plus, Route, Save, Search, Sparkles, Trash2, X } from '@lucide/svelte';
+  import { BedDouble, CalendarDays, Edit, Image as ImageIcon, ListChecks, Plus, Route, Save, Search, Sparkles, Trash2, Utensils, X } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
@@ -10,7 +10,6 @@
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminRichText from '$lib/components/admin/AdminRichText.svelte';
-  import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
   import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
   import StatusBadge from '$lib/components/admin/StatusBadge.svelte';
@@ -18,9 +17,11 @@
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import { toMetaText } from '$lib/richText';
+  import type { Lodge } from '$lib/types';
 
   type ItineraryDay = {
     accommodation?: string | null;
+    accommodation_id?: string | null;
     activities?: string | null;
     created_at?: string;
     day_number: number;
@@ -30,6 +31,7 @@
     meals?: string | null;
     title: string;
     tour_id: string;
+    lodge?: Pick<Lodge, 'id' | 'name' | 'slug'> | null;
     updated_at?: string;
   };
 
@@ -72,6 +74,7 @@
   let selectedTourId = '';
   let tours: TourSummary[] = [];
   let tourOptions: Option[] = [{ label: 'Select a tour', value: '' }];
+  let accommodationOptions: Option[] = [{ label: 'No linked accommodation', value: '' }];
   let days: ItineraryDay[] = [];
   let mediaItems: MediaItem[] = [];
   let modalOpen = false;
@@ -81,7 +84,8 @@
   let toasts: Toast[] = [];
   let form = {
     accommodation: '',
-    activities: '',
+    accommodation_id: '',
+    activities: [''] as string[],
     day_number: '1',
     description: '',
     image_url: '',
@@ -122,8 +126,26 @@
     return `${daysValue} days / ${nightsValue} nights`;
   };
 
+  const activityList = (value: unknown): string[] => {
+    const text = String(value ?? '').trim();
+    if (!text) return [''];
+    const parts = text.includes('\n') ? text.split('\n') : text.split(/,\s*/);
+    const items = parts.map((item) => item.trim()).filter(Boolean);
+    return items.length ? items : [''];
+  };
+
+  const addActivity = () => {
+    form.activities = [...form.activities, ''];
+  };
+
+  const removeActivity = (index: number) => {
+    const next = form.activities.filter((_, currentIndex) => currentIndex !== index);
+    form.activities = next.length ? next : [''];
+  };
+
   const normalizeDay = (value: Record<string, unknown>): ItineraryDay => ({
     accommodation: String(value.accommodation ?? ''),
+    accommodation_id: String(value.accommodation_id ?? ''),
     activities: String(value.activities ?? ''),
     created_at: String(value.created_at ?? ''),
     day_number: Number(value.day_number ?? 0),
@@ -132,7 +154,8 @@
     image_url: String(value.image_url ?? ''),
     meals: String(value.meals ?? ''),
     title: String(value.title ?? 'Untitled day'),
-    tour_id: String(value.tour_id ?? '')
+    tour_id: String(value.tour_id ?? ''),
+    lodge: value.lodge && typeof value.lodge === 'object' ? value.lodge as ItineraryDay['lodge'] : null
   });
 
   const loadTours = async () => {
@@ -157,6 +180,30 @@
       loadingTours = false;
     }
   };
+
+  const loadAccommodations = async () => {
+    try {
+      const response = await api.lodges.list({ limit: 100, status: 'all' });
+      accommodationOptions = [
+        { label: 'No linked accommodation', value: '' },
+        ...response.data.items
+          .filter((lodge) => lodge.id && lodge.status !== 'archived')
+          .map((lodge) => {
+            const destination = lodge.destinations?.name?.trim();
+            const level = String(lodge.accommodation_level ?? '').replace(/_/g, ' ');
+            const detail = [destination, level].filter(Boolean).join(' - ');
+            return { label: detail ? `${lodge.name} (${detail})` : lodge.name, value: lodge.id };
+          })
+      ];
+    } catch (requestError) {
+      showToast(requestError instanceof Error ? requestError.message : 'Unable to load accommodations.', 'error');
+    }
+  };
+
+  $: if (form.accommodation_id) {
+    const selectedAccommodation = accommodationOptions.find((option) => option.value === form.accommodation_id);
+    if (selectedAccommodation) form.accommodation = selectedAccommodation.label.replace(/\s+\([^)]*\)$/, '');
+  }
 
   const loadMedia = async () => {
     if (mediaItems.length || loadingMedia) return;
@@ -211,7 +258,8 @@
   const resetForm = () => {
     form = {
       accommodation: '',
-      activities: '',
+      accommodation_id: '',
+      activities: [''],
       day_number: nextDayNumber(),
       description: '',
       image_url: '',
@@ -237,7 +285,8 @@
     editingDay = day;
     form = {
       accommodation: day.accommodation ?? '',
-      activities: day.activities ?? '',
+      accommodation_id: day.accommodation_id ?? day.lodge?.id ?? '',
+      activities: activityList(day.activities),
       day_number: String(day.day_number),
       description: day.description ?? '',
       image_url: day.image_url ?? '',
@@ -262,7 +311,8 @@
 
   const payload = () => ({
     accommodation: form.accommodation.trim() || null,
-    activities: form.activities.trim() || null,
+    accommodation_id: form.accommodation_id || null,
+    activities: form.activities.map((activity) => activity.trim()).filter(Boolean).join('\n') || null,
     day_number: Number(form.day_number),
     description: form.description.trim() || null,
     image_url: form.image_url.trim() || null,
@@ -380,7 +430,9 @@
     }
   };
 
-  onMount(loadTours);
+  onMount(async () => {
+    await Promise.all([loadTours(), loadAccommodations()]);
+  });
 </script>
 
 <ToastStack {toasts} on:dismiss={dismissToast} />
@@ -505,7 +557,7 @@
               <div class="mt-4 grid gap-3 md:grid-cols-3">
                 <div class="rounded-2xl bg-sand/35 p-3">
                   <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-forest/70">Accommodation</p>
-                  <p class="mt-1 text-sm text-ink/70">{day.accommodation || 'Not specified'}</p>
+                  <p class="mt-1 text-sm text-ink/70">{day.lodge?.name || day.accommodation || 'Not specified'}</p>
                 </div>
                 <div class="rounded-2xl bg-sand/35 p-3">
                   <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-forest/70">Meals</p>
@@ -546,45 +598,107 @@
 </div>
 
 {#if modalOpen}
-  <div class="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4 backdrop-blur-sm" transition:fade={{ duration: 140 }}>
-    <form class="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_24px_80px_rgba(57,61,50,0.18)] sm:p-6" transition:scale={{ duration: 160, start: 0.98 }} on:submit|preventDefault={saveDay}>
-      <div class="flex items-start justify-between gap-4">
+  <div class="fixed inset-0 z-50 grid place-items-center bg-black/45 p-0 backdrop-blur-sm sm:p-4" transition:fade={{ duration: 140 }}>
+    <form class="flex h-full max-h-full w-full max-w-5xl flex-col overflow-hidden bg-surface shadow-[0_24px_80px_rgba(57,61,50,0.18)] sm:h-auto sm:max-h-[94vh] sm:rounded-[10px] sm:border sm:border-ink/10" transition:scale={{ duration: 160, start: 0.98 }} on:submit|preventDefault={saveDay}>
+      <header class="flex shrink-0 items-start justify-between gap-4 border-b border-ink/10 bg-surface px-4 py-4 sm:px-6 sm:py-5">
         <div>
           <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">{editingDay ? 'Edit itinerary day' : 'New itinerary day'}</p>
-          <h2 class="mt-1 text-2xl font-bold text-ink">{editingDay ? `Day ${editingDay.day_number}` : 'Add day plan'}</h2>
-          <p class="mt-2 text-sm leading-6 text-ink/60">Save the day-by-day plan for {selectedTour?.title ?? 'the selected tour'}.</p>
+          <h2 class="mt-1 text-xl font-bold leading-tight text-ink sm:text-2xl">{editingDay ? `Day ${editingDay.day_number}` : 'Add day plan'}</h2>
+          <p class="mt-1 line-clamp-1 text-sm text-ink/55">{selectedTour?.title ?? 'Selected tour'}</p>
         </div>
-        <button class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-ink/10 bg-surface text-ink shadow-sm transition hover:bg-sand" type="button" aria-label="Close itinerary form" on:click={closeModal}>
+        <button class="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-ink/10 bg-surface text-ink transition hover:bg-sand" type="button" aria-label="Close itinerary form" on:click={closeModal}>
           <X size={18} />
         </button>
+      </header>
+
+      <div class="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
+        <section>
+          <div class="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">
+            <CalendarDays size={15} /> Day details
+          </div>
+          <div class="grid min-w-0 gap-4 sm:grid-cols-[140px_minmax(0,1fr)]">
+            <AdminFormInput label="Day number" name="day_number" type="number" bind:value={form.day_number} required />
+            <AdminFormInput label="Day title" name="title" bind:value={form.title} placeholder="Arrival in Arusha" required />
+          </div>
+        </section>
+
+        <div class="mt-6 grid min-w-0 gap-7 border-t border-ink/10 pt-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] lg:gap-8">
+          <section class="min-w-0">
+            <div class="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">
+              <ListChecks size={15} /> Day narrative
+            </div>
+            <AdminRichText label="Description" name="description" bind:value={form.description} rows={9} placeholder="Describe what happens on this day..." />
+
+            <div class="mt-5 grid gap-3">
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-[13px] font-semibold text-ink/65">Activities</span>
+                <button type="button" class="inline-flex h-9 items-center gap-1.5 rounded-md border border-forest/25 bg-forest/5 px-3 text-xs font-bold text-forest transition hover:bg-forest hover:text-white" on:click={addActivity}>
+                  <Plus size={14} /> Add activity
+                </button>
+              </div>
+              <div class="grid gap-2.5">
+                {#each form.activities as _activity, index}
+                  <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_40px] items-end gap-2">
+                    <AdminFormInput label={`Activity ${index + 1}`} name={`activity_${index}`} bind:value={form.activities[index]} placeholder="Game drive" />
+                    <button
+                      type="button"
+                      class="grid h-11 w-10 place-items-center rounded-md border border-ink/10 bg-surface text-ink/45 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-35"
+                      aria-label={`Remove activity ${index + 1}`}
+                      disabled={form.activities.length === 1}
+                      on:click={() => removeActivity(index)}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          </section>
+
+          <div class="min-w-0 space-y-7">
+            <section class="min-w-0">
+              <div class="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">
+                <BedDouble size={15} /> Stay
+              </div>
+              <div class="grid min-w-0 gap-4">
+                <AdminSelect label="Available accommodation" name="accommodation_id" bind:value={form.accommodation_id} options={accommodationOptions} />
+                {#if form.accommodation_id}
+                  <div class="grid gap-1.5">
+                    <span class="text-[13px] font-semibold text-ink/65">Display name</span>
+                    <div class="flex min-h-11 items-center rounded-md border border-ink/10 bg-sand/35 px-3.5 text-sm font-semibold text-ink/70">
+                      {form.accommodation}
+                    </div>
+                  </div>
+                {:else}
+                  <AdminFormInput label="Custom accommodation name" name="accommodation" bind:value={form.accommodation} placeholder="Only for stays not in CMS" />
+                {/if}
+              </div>
+            </section>
+
+            <section class="border-t border-ink/10 pt-6">
+              <div class="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">
+                <Utensils size={15} /> Meals
+              </div>
+              <AdminFormInput label="Meals included" name="meals" bind:value={form.meals} placeholder="Breakfast, lunch, dinner" />
+            </section>
+
+            <section class="border-t border-ink/10 pt-6">
+              <div class="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">
+                <ImageIcon size={15} /> Day image
+              </div>
+              <MediaPicker label="Image" media={mediaItems} uploadFolder="itineraries" bind:value={form.image_url} />
+            </section>
+          </div>
+        </div>
       </div>
 
-      <div class="mt-6 grid gap-4 sm:grid-cols-[160px_1fr]">
-        <AdminFormInput label="Day number" name="day_number" type="number" bind:value={form.day_number} required />
-        <AdminFormInput label="Day title" name="title" bind:value={form.title} placeholder="Arrival in Arusha" required />
-      </div>
-
-      <div class="mt-4 grid gap-4">
-        <AdminRichText label="Description" name="description" bind:value={form.description} rows={8} placeholder="Describe what happens on this day..." />
-      </div>
-
-      <div class="mt-4 grid gap-4 md:grid-cols-3">
-        <AdminFormInput label="Accommodation" name="accommodation" bind:value={form.accommodation} placeholder="Safari lodge, hotel..." />
-        <AdminFormInput label="Meals" name="meals" bind:value={form.meals} placeholder="Breakfast, lunch, dinner" />
-        <AdminTextArea label="Activities" name="activities" bind:value={form.activities} rows={3} placeholder="Game drive, transfer..." />
-      </div>
-
-      <div class="mt-5 rounded-[8px] border border-ink/10 bg-sand/25 p-4">
-        <MediaPicker label="Day image" media={mediaItems} uploadFolder="itineraries" bind:value={form.image_url} />
-      </div>
-
-      <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <footer class="flex shrink-0 items-center justify-end gap-3 border-t border-ink/10 bg-surface px-4 py-3 shadow-[0_-8px_24px_rgba(57,61,50,0.04)] sm:px-6 sm:py-4">
         <AdminButton variant="secondary" type="button" on:click={closeModal}>Cancel</AdminButton>
         <AdminButton type="submit" disabled={saving}>
           <Save size={16} />
           {saving ? 'Saving...' : editingDay ? 'Save Changes' : 'Add Day'}
         </AdminButton>
-      </div>
+      </footer>
     </form>
   </div>
 {/if}

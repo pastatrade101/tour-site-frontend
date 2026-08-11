@@ -299,7 +299,7 @@
 
 <header class={`sticky top-0 z-40 border-b bg-surface transition-[box-shadow,border-color] duration-[400ms] ease-out ${scrolled ? 'border-transparent shadow-[0_8px_28px_rgba(57,61,50,0.10)]' : 'border-ink/10'}`} use:navbarEntrance>
   <!-- ── mobile top bar ─────────────────────────────────────────────────── -->
-  <div class="grid h-[70px] grid-cols-[44px_minmax(0,1fr)_112px] items-center gap-3 px-4 sm:px-5 lg:hidden">
+  <div class="grid h-[70px] grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-3 px-4 sm:px-5 lg:hidden">
     <button class="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 bg-surface text-ink" type="button" aria-label="Toggle menu" aria-expanded={menuOpen} on:click={() => (menuOpen = !menuOpen)}>
       <Menu size={24} strokeWidth={2.4} />
     </button>
@@ -312,9 +312,16 @@
       </div>
     </a>
 
-    <div class="justify-self-end">
-      <CurrencySelector compact />
-    </div>
+    <a
+      class="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 bg-surface text-[#25D366] transition hover:border-[#25D366]/45 hover:bg-[#25D366]/5"
+      href={waHref}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`${waButtonText} ${waNumber}`}
+      on:click={() => trackEvent('whatsapp_click', { cta_location: 'mobile_navbar' })}
+    >
+      <MessageCircle size={21} strokeWidth={2.6} />
+    </a>
   </div>
 
   <!-- ── desktop top row (collapses smoothly on scroll) ──────────────────── -->
@@ -632,6 +639,9 @@
         </nav>
 
         <div class="mt-6 grid gap-2.5 border-t border-ink/10 pt-5">
+          <div class="rounded-[10px] border border-ink/10 bg-canvas p-3">
+            <CurrencySelector mobile />
+          </div>
           {#if $canInstall}
             <button type="button" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-forest px-4 py-3 text-sm font-bold text-white transition hover:bg-deep-green" on:click={() => { void promptInstall(); menuOpen = false; }}>
               <ArrowDownToLine size={18} strokeWidth={2.6} /> Install app

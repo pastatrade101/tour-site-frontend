@@ -6,8 +6,8 @@
    * horizontally-scrolling row rather than opening a filter sheet — so nothing
    * is hidden behind a popup and the bar stays one tap deep.
    */
-  import { createEventDispatcher } from 'svelte';
-  import { ChevronDown, Search, X } from '@lucide/svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
+  import { ChevronDown, Search, SlidersHorizontal, X } from '@lucide/svelte';
   import type { FacetGroup } from '$lib/destinationFacets';
 
   export let value = '';
@@ -15,10 +15,28 @@
   export let activeGroup = '';
   export let activeFacet = '';
   export let resultCount = 0;
-  export let popular: { label: string; href: string }[] = [];
   export let placeholder = 'Search destinations, parks, islands or wildlife…';
 
   const dispatch = createEventDispatcher<{ facet: { group: string; facet: string }; clear: void }>();
+  let mobileOpen = false;
+
+  const openMobile = () => {
+    mobileOpen = true;
+    document.body.style.overflow = 'hidden';
+  };
+  const closeMobile = () => {
+    mobileOpen = false;
+    document.body.style.overflow = '';
+  };
+
+  onMount(() => {
+    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && mobileOpen && closeMobile();
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  });
 
   // "All experience" reads wrong, and naive pluralisation gives "All wildlifes".
   // Group labels are a known, small set, so they are spelled out.
@@ -52,7 +70,58 @@
   $: hasFilter = Boolean(activeFacet || value.trim());
 </script>
 
-<div class="destination-search-card rounded-[14px] border border-ink/10 bg-surface p-2 shadow-[0_10px_30px_rgba(57,61,50,0.08)]">
+<button type="button" class="inline-flex h-9 items-center gap-1.5 rounded-[8px] border border-ink/12 bg-surface px-3 text-xs font-bold text-heading shadow-sm md:hidden" on:click={openMobile}>
+  <SlidersHorizontal size={15} /> Filter
+  {#if hasFilter}<span class="h-1.5 w-1.5 rounded-full bg-clay" aria-hidden="true"></span>{/if}
+</button>
+
+{#if mobileOpen}
+  <div class="fixed inset-0 z-[100] bg-black/45 md:hidden" role="presentation">
+    <button type="button" class="absolute inset-0" aria-label="Close filters" on:click={closeMobile}></button>
+    <div class="destination-filter-drawer absolute inset-y-0 right-0 flex w-[min(92vw,420px)] flex-col bg-canvas shadow-[-18px_0_50px_rgba(15,23,42,0.2)]" role="dialog" aria-modal="true" aria-label="Filter destinations">
+    <header class="flex h-16 shrink-0 items-center justify-between border-b border-ink/10 bg-surface px-4">
+      <div>
+        <p class="font-serif text-xl font-semibold text-heading">Filter destinations</p>
+        <p class="text-xs text-ink/55">Find places that fit your trip</p>
+      </div>
+      <button type="button" class="grid h-10 w-10 place-items-center rounded-[8px] border border-ink/12 text-heading" on:click={closeMobile} aria-label="Close filters"><X size={19} /></button>
+    </header>
+
+    <div class="flex-1 overflow-y-auto px-4 py-5">
+      <div class="mx-auto grid max-w-xl gap-6">
+        <section class="mobile-filter-group">
+          <label class="mobile-filter-title" for="mobile-destination-search">Search</label>
+          <div class="flex h-12 items-center gap-2.5 rounded-[9px] border border-ink/14 bg-surface px-3.5">
+            <Search size={17} class="text-ink/40" />
+            <input id="mobile-destination-search" type="search" class="min-w-0 flex-1 bg-transparent text-sm font-semibold text-heading outline-none" {placeholder} bind:value />
+            {#if value.trim()}<button type="button" class="grid h-8 w-8 place-items-center text-ink/45" on:click={() => (value = '')} aria-label="Clear search"><X size={15} /></button>{/if}
+          </div>
+        </section>
+
+        {#each shown as { group, current } (group.key)}
+          <section class="mobile-filter-group">
+            <label class="mobile-filter-title" for={`mobile-facet-${group.key}`}>{group.label}</label>
+            <div class="relative">
+              <select id={`mobile-facet-${group.key}`} class="mobile-filter-select" value={current} on:change={(event) => onSelect(group, event)}>
+                <option value="">{allLabel(group)}</option>
+                {#each group.facets as facet (facet.key)}<option value={facet.key}>{facet.label}</option>{/each}
+              </select>
+              <ChevronDown size={16} class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink/40" />
+            </div>
+          </section>
+        {/each}
+      </div>
+    </div>
+
+    <footer class="grid shrink-0 grid-cols-[auto_minmax(0,1fr)] gap-3 border-t border-ink/10 bg-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <button type="button" class="h-12 px-3 text-sm font-bold text-forest disabled:opacity-40" disabled={!hasFilter} on:click={() => dispatch('clear')}>Clear</button>
+      <button type="button" class="h-12 rounded-[9px] bg-deep-green px-5 text-sm font-bold text-white" on:click={() => { closeMobile(); jumpToResults(); }}>Apply filters</button>
+    </footer>
+    </div>
+  </div>
+{/if}
+
+<div class="destination-search-card hidden rounded-[14px] border border-ink/10 bg-surface p-2 shadow-[0_10px_30px_rgba(57,61,50,0.08)] md:block">
   <!-- single row from md up; on mobile the selects drop to their own scroll row -->
   <div class="destination-search-row gap-2 md:flex md:items-center md:gap-1">
     <!-- search -->
@@ -103,47 +172,53 @@
       {/each}
     </div>
 
-    <button
-      type="button"
-      class="destination-filter-submit inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-6 text-sm font-extrabold text-heading transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold md:h-14 md:px-8"
-      on:click={jumpToResults}
-    >
-      <Search size={17} aria-hidden="true" />
-      <span class="md:hidden">Show {resultCount}</span>
-      <span class="hidden md:inline">Search</span>
-    </button>
-  </div>
-
-  <!-- popular shortcuts; scrolls rather than wrapping to three rows on mobile -->
-  <div class="destination-popular-row mt-2 flex items-center gap-2 border-t border-ink/8 px-2 pb-0.5 pt-2.5">
-    <span class="shrink-0 text-[10px] font-bold uppercase tracking-[0.14em] text-ink/40">Popular</span>
-    <div class="flex min-w-0 flex-1 gap-2 overflow-x-auto [scrollbar-width:none] md:flex-wrap [&::-webkit-scrollbar]:hidden">
-      {#each popular as item (item.href)}
-        <a
-          class="shrink-0 whitespace-nowrap rounded-full bg-sand/60 px-3 py-1.5 text-xs font-semibold text-ink/70 transition hover:bg-sand hover:text-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
-          href={item.href}
-          data-sveltekit-preload-data="hover"
-        >
-          {item.label}
-        </a>
-      {/each}
-    </div>
     {#if hasFilter}
-      <button
-        type="button"
-        class="shrink-0 whitespace-nowrap text-xs font-bold text-clay underline-offset-2 transition hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
-        on:click={() => dispatch('clear')}
-      >
-        Clear
-      </button>
+      <button type="button" class="h-12 shrink-0 px-3 text-sm font-bold text-forest md:h-14" on:click={() => dispatch('clear')}>Clear</button>
     {/if}
-    <span class="hidden shrink-0 text-xs font-semibold text-ink/45 md:inline" aria-live="polite">
-      {resultCount} {resultCount === 1 ? 'destination' : 'destinations'}
-    </span>
+    <button type="button" class="destination-filter-submit inline-flex h-12 shrink-0 items-center justify-center rounded-[10px] bg-deep-green px-5 text-sm font-extrabold text-white transition hover:bg-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold md:h-14" on:click={jumpToResults}>
+      View {resultCount}
+    </button>
   </div>
 </div>
 
 <style>
+  .mobile-filter-group {
+    border-bottom: 1px solid rgb(var(--c-ink) / 0.1);
+    padding-bottom: 1.5rem;
+  }
+
+  .mobile-filter-title {
+    display: block;
+    margin-bottom: 0.75rem;
+    color: rgb(var(--c-heading));
+    font-size: 0.875rem;
+    font-weight: 800;
+  }
+
+  .mobile-filter-select {
+    width: 100%;
+    min-height: 3rem;
+    appearance: none;
+    border: 1px solid rgb(var(--c-ink) / 0.14);
+    border-radius: 9px;
+    background: rgb(var(--c-surface));
+    padding: 0 2.5rem 0 0.875rem;
+    color: rgb(var(--c-heading));
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .destination-filter-drawer { animation: destination-drawer-in 240ms ease-out both; }
+
+  @keyframes destination-drawer-in {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .destination-filter-drawer { animation: none; }
+  }
+
   @media (max-width: 767px) {
     .destination-search-card {
       border: 0;

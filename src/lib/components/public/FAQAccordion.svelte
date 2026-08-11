@@ -1,27 +1,100 @@
 <script lang="ts">
-  import { ChevronDown } from '@lucide/svelte';
-  import type { FAQ } from '$lib/types';
+  import { onMount } from 'svelte';
   import RichText from './RichText.svelte';
-  import { slide } from 'svelte/transition';
 
-  export let faqs: FAQ[] = [];
-  let openId = '';
+  type FAQItem = { id?: string; question: string; answer: string };
+
+  export let faqs: FAQItem[] = [];
+
+  let root: HTMLElement;
+  let activeIndex = 0;
+
+  onMount(() => {
+    const compute = () => {
+      if (!root) return;
+      const threshold = window.innerHeight * 0.45;
+      const items = root.querySelectorAll<HTMLElement>('[data-faq-item]');
+      let reached = -1;
+      items.forEach((item, index) => {
+        if (item.getBoundingClientRect().top <= threshold) reached = index;
+      });
+      activeIndex = Math.max(0, reached);
+    };
+
+    compute();
+    window.addEventListener('scroll', compute, { passive: true });
+    window.addEventListener('resize', compute);
+    return () => {
+      window.removeEventListener('scroll', compute);
+      window.removeEventListener('resize', compute);
+    };
+  });
 </script>
 
-<div class="grid gap-3">
-  {#each faqs as faq}
-    <div class="overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-card">
-      <button class="flex w-full items-center justify-between gap-4 px-5 py-4 text-start font-semibold text-ink transition hover:bg-canvas" type="button" on:click={() => (openId = openId === faq.id ? '' : faq.id)}>
-        <span>{faq.question}</span>
-        <span class={`grid h-8 w-8 shrink-0 place-items-center rounded-[6px] bg-forest/10 text-forest transition ${openId === faq.id ? 'rotate-180' : ''}`}>
-          <ChevronDown size={16} strokeWidth={2.6} />
-        </span>
-      </button>
-      {#if openId === faq.id}
-        <div class="border-t border-ink/10 px-5 pb-5 pt-4" transition:slide={{ duration: 180 }}>
-          <RichText value={faq.answer} className="text-sm leading-6 text-ink/70" />
-        </div>
+<ol class="faq-timeline relative" bind:this={root}>
+  {#each faqs as faq, index (faq.id ?? `${faq.question}-${index}`)}
+    {@const state = index === activeIndex ? 'is-active' : index < activeIndex ? 'is-complete' : 'is-upcoming'}
+    <li data-faq-item class={`faq-item ${state} relative pb-10 pl-14 last:pb-0 md:pb-12 md:pl-20`}>
+      {#if index < faqs.length - 1}
+        <span class="faq-connector pointer-events-none absolute left-4 top-10 bottom-0 w-px md:left-5" aria-hidden="true"></span>
       {/if}
-    </div>
+      <span class="faq-number absolute left-0 top-0 inline-flex h-9 w-9 items-center justify-center rounded-full font-serif text-[13px] font-semibold md:h-10 md:w-10 md:text-[15px]" aria-hidden="true">
+        {String(index + 1).padStart(2, '0')}
+      </span>
+      <h3 class="font-serif text-[18px] font-semibold leading-snug text-heading md:text-[21px]">{faq.question}</h3>
+      <RichText value={faq.answer} className="mt-3 text-[15px] leading-7 text-ink/75 md:text-base md:leading-7" />
+    </li>
   {/each}
-</div>
+</ol>
+
+<style>
+  .faq-number {
+    border: 1px solid rgb(var(--c-ink) / 0.2);
+    background: rgb(var(--c-surface));
+    color: rgb(var(--c-heading));
+    transition: color 240ms ease, background-color 240ms ease, border-color 240ms ease, box-shadow 240ms ease, transform 240ms ease;
+  }
+
+  .faq-connector {
+    overflow: hidden;
+    background: rgb(var(--c-ink) / 0.18);
+  }
+
+  .faq-connector::before {
+    position: absolute;
+    inset: 0;
+    content: '';
+    background: rgb(var(--c-clay));
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .faq-item.is-complete .faq-number,
+  .faq-item.is-active .faq-number {
+    border-color: rgb(var(--c-clay));
+    background: rgb(var(--c-clay));
+    color: white;
+  }
+
+  .faq-item.is-complete .faq-connector::before { transform: scaleY(1); }
+  .faq-item.is-active .faq-connector::before { transform: scaleY(0.45); }
+
+  .faq-item.is-active .faq-number {
+    box-shadow: 0 8px 20px rgb(var(--c-clay) / 0.22), 0 0 0 4px rgb(var(--c-clay) / 0.09);
+    animation: faq-number-pop 420ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  }
+
+  .faq-item.is-upcoming { opacity: 0.72; }
+  .faq-item { transition: opacity 240ms ease; }
+
+  @keyframes faq-number-pop {
+    0% { transform: scale(0.86); }
+    65% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .faq-number, .faq-connector::before, .faq-item { animation: none; transition: none; }
+  }
+</style>
