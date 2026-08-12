@@ -227,7 +227,10 @@
 
 <!-- library picker modal -->
 {#if open}
-  <div use:portal class="fixed inset-0 z-[70] grid place-items-center p-3 sm:p-4" role="dialog" aria-modal="true">
+  <!-- Must sit above the full-screen accommodation editor (z-180). The portal
+       moves this node to body, but z-index still decides whether the dialog is
+       visible above the editor overlay. -->
+  <div use:portal class="fixed inset-0 z-[240] grid place-items-center p-3 sm:p-4" role="dialog" aria-modal="true">
     <button class="absolute inset-0 cursor-default bg-ink/55 backdrop-blur-sm" type="button" aria-label="Close" on:click={() => (open = false)}></button>
     <div class="relative flex h-[88vh] max-h-[920px] w-full max-w-7xl flex-col overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-[0_28px_90px_rgba(57,61,50,0.22)]">
       <div class="flex flex-col gap-4 border-b border-ink/10 bg-sand/25 p-4 lg:flex-row lg:items-center">
