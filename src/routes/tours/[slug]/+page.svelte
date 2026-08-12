@@ -102,6 +102,8 @@
   let specialistOpen = false;
   let activeTab = TABS[0].id;
   let activeFaqIndex = -1;
+  let tabsAnchor: HTMLDivElement;
+  let tabsPinned = false;
 
   let relatedTours: Tour[] = [];
   let recentPosts: BlogPost[] = [];
@@ -535,6 +537,10 @@
   $: if (browser) document.body.style.overflow = sheetOpen || specialistOpen ? 'hidden' : '';
 
   onMount(() => {
+    const updateTabsPinned = () => {
+      tabsPinned = window.innerWidth < 1024 && Boolean(tabsAnchor) && tabsAnchor.getBoundingClientRect().top <= 70;
+    };
+
     const updateActiveTab = () => {
       const y = window.scrollY + 130;
       let current = visibleTabs[0]?.id ?? TABS[0].id;
@@ -546,16 +552,21 @@
     };
 
     window.addEventListener('scroll', updateActiveTab, { passive: true });
+    window.addEventListener('scroll', updateTabsPinned, { passive: true });
     window.addEventListener('scroll', updateFaqTimeline, { passive: true });
     window.addEventListener('resize', updateActiveTab);
+    window.addEventListener('resize', updateTabsPinned);
     window.addEventListener('resize', updateFaqTimeline);
     updateActiveTab();
+    updateTabsPinned();
     updateFaqTimeline();
 
     return () => {
       window.removeEventListener('scroll', updateActiveTab);
+      window.removeEventListener('scroll', updateTabsPinned);
       window.removeEventListener('scroll', updateFaqTimeline);
       window.removeEventListener('resize', updateActiveTab);
+      window.removeEventListener('resize', updateTabsPinned);
       window.removeEventListener('resize', updateFaqTimeline);
       document.body.style.overflow = '';
     };
@@ -636,7 +647,9 @@
   </section>
 
   <div class="tour-page-canvas bg-[#fbfaf6]">
-  <div class="tour-detail-tabs border-b border-ink/10 bg-[#fbfaf6]/95 backdrop-blur">
+  <div bind:this={tabsAnchor} class="h-px" aria-hidden="true"></div>
+  {#if tabsPinned}<div class="h-[49px] lg:hidden" aria-hidden="true"></div>{/if}
+  <div class:tour-detail-tabs-pinned={tabsPinned} class="tour-detail-tabs border-b border-ink/10 bg-[#fbfaf6]/95 backdrop-blur">
     <div class="container-shell">
       <div class="tour-detail-tablist no-scrollbar flex gap-6 overflow-x-auto py-3 text-[13.5px] font-semibold text-ink/60">
         {#each visibleTabs as tab}
@@ -1203,6 +1216,15 @@
     position: sticky;
     top: 70px;
     z-index: 45;
+  }
+
+  @media (max-width: 1023px) {
+    .tour-detail-tabs-pinned {
+      position: fixed;
+      inset: 70px 0 auto;
+      width: 100%;
+      z-index: 90;
+    }
   }
 
   .tour-hero-copy {
