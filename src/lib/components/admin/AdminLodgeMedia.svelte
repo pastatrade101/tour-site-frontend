@@ -229,6 +229,7 @@
     label="Add a photo to the gallery"
     uploadFolder="lodges"
     aspect="aspect-[3/1]"
+    multiple
     bind:value={picked}
     on:select={(event) => addPicked(event.detail.file_url, event.detail)}
     on:change={(event) => addPicked(event.detail)}

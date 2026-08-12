@@ -24,6 +24,8 @@
   export let aspect = 'aspect-[16/9]';
   export let uploadFolder = 'uploads';
   export let fit = 'object-cover'; // use 'object-contain' for logos/favicons
+  /** Keep the library open and emit one select event per picked image. */
+  export let multiple = false;
 
   // `change` stays a bare URL so the 18 existing call sites are untouched.
   // `select` is additive: it carries the whole library record for consumers that
@@ -41,6 +43,7 @@
   let libraryError = '';
   let libraryPage = 1;
   let uploading = false;
+  let selectedUrls = new Set<string>();
   let uploadError = '';
   let fileInput: HTMLInputElement;
   const fileInputId = `media-upload-${Math.random().toString(36).slice(2)}`;
@@ -121,6 +124,7 @@
 
   const openLibrary = () => {
     open = true;
+    selectedUrls = new Set();
     if (!libraryLoaded) void loadLibraryPage(1);
   };
 
@@ -148,30 +152,40 @@
 
   const select = (url: string, item?: MediaItem) => {
     value = url;
-    open = false;
     dispatch('change', url);
     if (item) dispatch('select', item);
+    if (multiple) {
+      selectedUrls = new Set([...selectedUrls, url]);
+    } else {
+      open = false;
+    }
   };
   const clear = () => { value = ''; urlMode = false; dispatch('change', ''); };
 
   const onFileChange = async (event: Event) => {
-    const file = (event.currentTarget as HTMLInputElement).files?.[0];
-    if (!file) return;
+    const files = Array.from((event.currentTarget as HTMLInputElement).files ?? []);
+    if (!files.length) return;
     uploading = true;
     uploadError = '';
+    const errors: string[] = [];
     try {
-      const res = await api.upload.image(file, uploadFolder);
-      const data = res.data as { url: string; media?: { id?: string; thumbnail_url?: string | null } };
-      const item: MediaItem = {
-        id: data.media?.id ?? data.url,
-        file_name: file.name,
-        file_url: data.url,
-        thumbnail_url: data.media?.thumbnail_url ?? null
-      };
-      uploaded = [item, ...uploaded];
-      select(data.url, item);
-    } catch (err) {
-      uploadError = err instanceof Error ? err.message : 'Upload failed.';
+      for (const file of files) {
+        try {
+          const res = await api.upload.image(file, uploadFolder);
+          const data = res.data as { url: string; media?: { id?: string; thumbnail_url?: string | null } };
+          const item: MediaItem = {
+            id: data.media?.id ?? data.url,
+            file_name: file.name,
+            file_url: data.url,
+            thumbnail_url: data.media?.thumbnail_url ?? null
+          };
+          uploaded = [item, ...uploaded];
+          select(data.url, item);
+        } catch (err) {
+          errors.push(`${file.name}: ${err instanceof Error ? err.message : 'Upload failed.'}`);
+        }
+      }
+      uploadError = errors.join(' · ');
     } finally {
       uploading = false;
       if (fileInput) fileInput.value = '';
@@ -268,9 +282,9 @@
             class:pointer-events-none={uploading}
             class:opacity-60={uploading}
           >
-            <Upload size={15} /> {uploading ? 'Uploading...' : 'Upload'}
+            <Upload size={15} /> {uploading ? 'Uploading...' : multiple ? 'Upload images' : 'Upload'}
           </label>
-          <input id={fileInputId} class="sr-only" type="file" accept="image/png,image/jpeg,image/webp,image/avif" bind:this={fileInput} on:change={onFileChange} />
+          <input id={fileInputId} class="sr-only" type="file" accept="image/png,image/jpeg,image/webp,image/avif" multiple={multiple} bind:this={fileInput} on:change={onFileChange} />
           <button type="button" class="grid h-11 w-11 shrink-0 place-items-center rounded-[8px] border border-ink/10 bg-surface text-ink shadow-sm transition hover:bg-sand" on:click={() => (open = false)} aria-label="Close"><X size={18} /></button>
         </div>
       </div>
@@ -305,7 +319,7 @@
             {#each filtered as m (m.id)}
               <button
                 type="button"
-                class={`group overflow-hidden rounded-[10px] border bg-surface text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(57,61,50,0.11)] ${value === m.file_url ? 'border-goldfinch-gold ring-2 ring-goldfinch-gold/45' : 'border-ink/10 hover:border-forest/35'}`}
+                class={`group overflow-hidden rounded-[10px] border bg-surface text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(57,61,50,0.11)] ${(multiple ? selectedUrls.has(m.file_url) : value === m.file_url) ? 'border-goldfinch-gold ring-2 ring-goldfinch-gold/45' : 'border-ink/10 hover:border-forest/35'}`}
                 on:click={() => select(m.file_url, m)}
               >
                 <span class="relative block aspect-[4/3] w-full overflow-hidden bg-sand/35">
@@ -317,7 +331,7 @@
                     decoding="async"
                     on:load={(e) => ((e.currentTarget as HTMLImageElement).style.opacity = '1')}
                   />
-                  {#if value === m.file_url}
+                  {#if multiple ? selectedUrls.has(m.file_url) : value === m.file_url}
                     <span class="absolute right-2 top-2 rounded-[8px] bg-goldfinch-gold px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-heading shadow-sm">Selected</span>
                   {/if}
                 </span>
@@ -355,6 +369,9 @@
           >
             Next <ChevronRight size={14} />
           </button>
+          {#if multiple}
+            <button type="button" class="inline-flex h-9 items-center rounded-[8px] bg-forest px-4 text-xs font-bold text-white shadow-sm transition hover:bg-deep-green" on:click={() => (open = false)}>Done</button>
+          {/if}
         </div>
       </div>
     </div>
