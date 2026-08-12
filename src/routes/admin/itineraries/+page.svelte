@@ -163,7 +163,7 @@
     error = '';
 
     try {
-      const response = await api.tours.list({ limit: 100, status: 'all' });
+      const response = await api.tours.list({ limit: 100, status: 'all', view: 'summary' });
       tours = response.data.items.map((tour) => ({
         destination: relationText((tour as Record<string, unknown>).destinations, 'name'),
         duration_days: tour.duration_days,

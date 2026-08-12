@@ -12,8 +12,9 @@
   import { ArrowDown, ArrowUp, ImagePlus, Star, Trash2 } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import MediaPicker from './MediaPicker.svelte';
+  import { GALLERY_CATEGORIES, enumLabel } from '$lib/accommodationEnums';
 
-  type GalleryImage = { image_url: string; alt_text: string; caption: string; is_cover: boolean };
+  type GalleryImage = { image_url: string; alt_text: string; caption: string; category: string; is_featured: boolean; is_cover: boolean };
   type Amenity = { id: string; name: string; icon_key?: string | null };
 
   let images: GalleryImage[] = [];
@@ -22,7 +23,7 @@
   let loading = false;
   let error = '';
 
-  const blank = (url: string): GalleryImage => ({ image_url: url, alt_text: '', caption: '', is_cover: false });
+  const blank = (url: string): GalleryImage => ({ image_url: url, alt_text: '', caption: '', category: 'EXTERIOR', is_featured: false, is_cover: false });
 
   export const load = async (id: string | null) => {
     images = [];
@@ -48,6 +49,8 @@
         image_url: String(image.image_url ?? ''),
         alt_text: String(image.alt_text ?? ''),
         caption: String(image.caption ?? ''),
+        category: String(image.category ?? 'EXTERIOR').toUpperCase(),
+        is_featured: image.is_featured === true,
         is_cover: image.is_cover === true
       }));
       amenities = (data.amenities ?? []) as Amenity[];
@@ -160,6 +163,12 @@
                 aria-label={`Caption for photo ${index + 1}`}
                 bind:value={image.caption}
               />
+              <div class="grid grid-cols-[1fr_auto] gap-2">
+                <select class="h-9 rounded-md border border-ink/15 bg-black/[0.02] px-2 text-[12px]" bind:value={image.category} aria-label={`Category for photo ${index + 1}`}>
+                  {#each GALLERY_CATEGORIES as category}<option value={category}>{enumLabel(category)}</option>{/each}
+                </select>
+                <label class="flex items-center gap-1.5 text-[11px] font-semibold text-ink/60"><input type="checkbox" bind:checked={image.is_featured}/> Featured</label>
+              </div>
             </div>
 
             <div class="flex items-center gap-1 sm:flex-col sm:items-end">

@@ -1,0 +1,13 @@
+import { chromium } from 'playwright';
+const browser = await chromium.connectOverCDP('http://127.0.0.1:9223');
+const page = browser.contexts()[0].pages()[0];
+await page.goto('https://goldfinch.makutano.co.tz/admin/itineraries', { waitUntil: 'networkidle' });
+const select = page.locator('select').filter({ has: page.locator('option') }).last();
+const options = await select.locator('option').evaluateAll((nodes) => nodes.map((n) => ({ text: n.textContent.trim(), value: n.value })).filter((n) => n.value));
+await select.selectOption(options[0].value);
+await page.waitForTimeout(1200);
+console.log('OPTION', options[0]);
+console.log((await page.locator('main').innerText()).slice(0, 20000));
+console.log('FIELDS', await page.locator('input, textarea, select, [contenteditable="true"]').evaluateAll((fields) => fields.map((field) => ({ tag: field.tagName, type: field.type, name: field.name, value: field.value ?? field.innerText, placeholder: field.placeholder, aria: field.getAttribute('aria-label') }))));
+console.log('BUTTONS', await page.locator('button').evaluateAll((buttons) => buttons.map((b) => b.innerText.trim()).filter(Boolean)));
+await browser.close();

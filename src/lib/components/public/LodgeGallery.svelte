@@ -55,6 +55,14 @@
     if (event.key === 'ArrowLeft') { event.preventDefault(); step(-1); }
   };
 
+  // The gallery sits inside scroll-reveal sections that use transforms. A fixed
+  // child of a transformed element is no longer viewport-fixed, so mount the
+  // lightbox at document.body where it cannot be clipped by the page layout.
+  const portal = (node: HTMLElement) => {
+    document.body.appendChild(node);
+    return { destroy: () => node.remove() };
+  };
+
   $: if (typeof document !== 'undefined') document.body.style.overflow = open ? 'hidden' : '';
   onDestroy(() => {
     if (typeof document !== 'undefined') document.body.style.overflow = '';
@@ -128,28 +136,29 @@
 {/if}
 
 {#if open}
-  <div class="fixed inset-0 z-[120] bg-black/90" aria-hidden="true" on:click={close}></div>
-  <div
-    class="fixed inset-0 z-[121] flex flex-col p-3 outline-none sm:p-6"
-    role="dialog"
-    aria-modal="true"
-    aria-label={`${propertyName} photos`}
-    tabindex="-1"
-    bind:this={dialog}
-  >
-    <div class="flex shrink-0 items-center justify-between text-white">
-      <p class="text-[13px] font-semibold" aria-live="polite">{index + 1} / {ordered.length}</p>
+  <div use:portal class="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-6" role="presentation">
+    <button type="button" class="absolute inset-0 cursor-default" aria-label="Close gallery" on:click={close}></button>
+    <div
+      class="relative z-10 flex max-h-[calc(100dvh-1.5rem)] min-h-0 w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/15 bg-[#111713] p-3 shadow-[0_30px_100px_rgba(0,0,0,0.55)] outline-none sm:max-h-[calc(100dvh-3rem)] sm:p-5"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${propertyName} photos`}
+      tabindex="-1"
+      bind:this={dialog}
+    >
+    <div class="flex shrink-0 items-center justify-between border-b border-white/10 pb-3 text-white">
+      <div><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">Property gallery</p><p class="mt-0.5 text-[13px] font-semibold" aria-live="polite">Photo {index + 1} of {ordered.length}</p></div>
       <button
         type="button"
-        class="grid h-11 w-11 place-items-center rounded-full border border-white/25 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
+        class="inline-flex h-10 items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3 text-xs font-bold text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
         aria-label="Close photos"
         on:click={close}
       >
-        <X size={20} />
+        <X size={17} /> Close
       </button>
     </div>
 
-    <div class="flex min-h-0 flex-1 items-center gap-2 sm:gap-4">
+    <div class="flex min-h-0 flex-1 items-center gap-2 py-3 sm:gap-4 sm:py-5">
       {#if ordered.length > 1}
         <button
           type="button"
@@ -161,7 +170,7 @@
         </button>
       {/if}
 
-      <figure class="flex min-h-0 flex-1 flex-col items-center justify-center">
+      <figure class="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden">
         <!-- Only the visible photo is ever requested at full size. -->
         <Img
           record={ordered[index]}
@@ -169,7 +178,7 @@
           alt={alt(ordered[index], index)}
           width={1600}
           sizes="100vw"
-          className="max-h-full min-h-0 w-auto max-w-full rounded-[10px] object-contain"
+          className="max-h-[calc(100dvh-10rem)] min-h-0 w-auto max-w-full rounded-xl object-contain sm:max-h-[calc(100dvh-12rem)]"
         />
         {#if ordered[index].caption}
           <figcaption class="mt-3 max-w-2xl text-center text-[13px] leading-6 text-white/70">
@@ -188,6 +197,7 @@
           <ChevronRight size={20} />
         </button>
       {/if}
+    </div>
     </div>
   </div>
 {/if}

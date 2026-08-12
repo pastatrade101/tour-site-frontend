@@ -6,6 +6,7 @@
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminLodgeMedia from '$lib/components/admin/AdminLodgeMedia.svelte';
+  import AdminAccommodationEditor from '$lib/components/admin/AdminAccommodationEditor.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
@@ -25,8 +26,8 @@
     slug: string;
     destination_id?: string | null;
     destinations?: { name: string; slug: string } | null;
-    accommodation_level: 'budget' | 'mid_range' | 'luxury' | 'ultra_luxury';
-    lodge_type: 'tented_camp' | 'lodge' | 'hotel' | 'mobile_camp' | 'treehouse';
+    accommodation_level: 'BUDGET' | 'MID_RANGE' | 'LUXURY' | 'PREMIUM_LUXURY';
+    lodge_type: 'HOTEL'|'SAFARI_LODGE'|'TENTED_CAMP'|'MOBILE_CAMP'|'BEACH_RESORT'|'VILLA'|'GUEST_HOUSE'|'ECO_LODGE'|'BOUTIQUE_HOTEL';
     description?: string | null;
     why_we_recommend?: string | null;
     hero_image_url?: string | null;
@@ -37,7 +38,7 @@
     romantic_rating?: number | null;
     family_rating?: number | null;
     website_url?: string | null;
-    status: 'archived' | 'draft' | 'published';
+    status: 'archived' | 'draft' | 'hidden' | 'published';
     is_featured?: boolean;
     seo_title?: string | null;
     meta_description?: string | null;
@@ -50,15 +51,18 @@
   const statusOptions = [
     { label: 'Draft', value: 'draft' },
     { label: 'Published', value: 'published' },
+    { label: 'Hidden', value: 'hidden' },
     { label: 'Archived', value: 'archived' }
   ];
   const levelOptions = [
+    { label: 'Budget', value: 'BUDGET' }, { label: 'Mid-range', value: 'MID_RANGE' }, { label: 'Luxury', value: 'LUXURY' }, { label: 'Premium luxury', value: 'PREMIUM_LUXURY' },
     { label: 'Budget', value: 'budget' },
     { label: 'Mid-range', value: 'mid_range' },
     { label: 'Luxury', value: 'luxury' },
     { label: 'Ultra-luxury', value: 'ultra_luxury' }
   ];
   const typeOptions = [
+    { label: 'Hotel', value: 'HOTEL' }, { label: 'Safari lodge', value: 'SAFARI_LODGE' }, { label: 'Tented camp', value: 'TENTED_CAMP' }, { label: 'Mobile camp', value: 'MOBILE_CAMP' }, { label: 'Beach resort', value: 'BEACH_RESORT' }, { label: 'Villa', value: 'VILLA' }, { label: 'Guest house', value: 'GUEST_HOUSE' }, { label: 'Eco lodge', value: 'ECO_LODGE' }, { label: 'Boutique hotel', value: 'BOUTIQUE_HOTEL' },
     { label: 'Tented camp', value: 'tented_camp' },
     { label: 'Lodge', value: 'lodge' },
     { label: 'Hotel', value: 'hotel' },
@@ -72,8 +76,8 @@
     name: '',
     slug: '',
     destination_id: '',
-    accommodation_level: 'mid_range' as Lodge['accommodation_level'],
-    lodge_type: 'lodge' as Lodge['lodge_type'],
+    accommodation_level: 'MID_RANGE' as Lodge['accommodation_level'],
+    lodge_type: 'SAFARI_LODGE' as Lodge['lodge_type'],
     description: '',
     why_we_recommend: '',
     hero_image_url: '',
@@ -104,7 +108,7 @@
   let editing: Lodge | null = null;
   // Gallery + amenities live in their own component but save through here, so a
   // brand-new property has an id to attach them to.
-  let mediaEditor: AdminLodgeMedia;
+  let mediaEditor: AdminLodgeMedia | undefined;
   let toDelete: Lodge | null = null;
   let form = emptyForm();
   let toasts: Toast[] = [];
@@ -449,85 +453,12 @@
 </div>
 
 {#if modalOpen}
-  <div class="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4 backdrop-blur-sm" transition:fade={{ duration: 140 }}>
-    <form
-      class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[10px] border border-ink/10 bg-surface p-6 shadow-[0_24px_80px_rgba(57,61,50,0.18)]"
-      transition:scale={{ duration: 160, start: 0.98 }}
-      on:submit|preventDefault={save}
-    >
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">{editing ? 'Edit lodge' : 'New lodge'}</p>
-          <h2 class="mt-1 text-2xl font-bold text-ink">{editing ? editing.name : 'Create Lodge'}</h2>
-        </div>
-        <button class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-ink/10 bg-surface text-ink shadow-sm transition hover:bg-sand" type="button" aria-label="Close" on:click={closeModal}>
-          <X size={18} />
-        </button>
-      </div>
-
-      <div class="mt-6 grid gap-4">
-        <div class="grid gap-4 sm:grid-cols-2">
-          <AdminFormInput label="Name" name="name" bind:value={form.name} required />
-          <label class="grid gap-2 text-sm font-medium text-ink">
-            <span>Slug</span>
-            <input class="h-11 rounded-2xl border border-ink/10 bg-surface px-3 font-mono text-sm shadow-sm outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" name="slug" bind:value={form.slug} required on:input={() => (slugManuallyEdited = true)} />
-          </label>
-        </div>
-
-        <AdminSelect label="Destination" name="destination_id" bind:value={form.destination_id} options={destinationOptions} />
-
-        <div class="grid gap-4 sm:grid-cols-2">
-          <AdminSelect label="Accommodation level" name="accommodation_level" bind:value={form.accommodation_level} options={levelOptions} />
-          <AdminSelect label="Lodge type" name="lodge_type" bind:value={form.lodge_type} options={typeOptions} />
-        </div>
-
-        <AdminRichText label="Description" name="description" bind:value={form.description} rows={8} placeholder="What this lodge is like." />
-        <AdminRichText label="Why we recommend it" name="why_we_recommend" bind:value={form.why_we_recommend} rows={4} placeholder="Our honest take for travellers." />
-
-        <div class="grid gap-4 sm:grid-cols-2">
-          <MediaPicker label="Hero image" uploadFolder="lodges" bind:value={form.hero_image_url} />
-          <MediaPicker label="Card image" uploadFolder="lodges" aspect="aspect-[4/3]" bind:value={form.image_url} />
-        </div>
-
-        <!-- Gallery + amenities: same screen as the copy, not a separate page. -->
-        <div class="rounded-2xl border border-ink/10 bg-sand/15 p-4">
-          <AdminLodgeMedia bind:this={mediaEditor} />
-        </div>
-
-        <div class="grid gap-4 sm:grid-cols-3">
-          <AdminFormInput label="Price/night from" name="price_per_night_from" type="number" bind:value={form.price_per_night_from} placeholder="650" />
-          <AdminFormInput label="Currency" name="currency" bind:value={form.currency} placeholder="USD" />
-          <AdminFormInput label="Best for (comma-separated)" name="best_for" bind:value={form.best_for} placeholder="Couples, Families" />
-        </div>
-
-        <div class="grid gap-4 sm:grid-cols-3">
-          <AdminFormInput label="Romantic rating (0-10)" name="romantic_rating" type="number" bind:value={form.romantic_rating} placeholder="9" />
-          <AdminFormInput label="Family rating (0-10)" name="family_rating" type="number" bind:value={form.family_rating} placeholder="7" />
-          <AdminFormInput label="Website URL" name="website_url" bind:value={form.website_url} placeholder="https://..." />
-        </div>
-
-        <div class="grid gap-4 sm:grid-cols-2">
-          <AdminSelect label="Status" name="status" bind:value={form.status} options={statusOptions} />
-          <label class="flex cursor-pointer items-center gap-3 self-end rounded-2xl border border-ink/10 bg-surface p-3">
-            <input class="h-4 w-4 accent-forest" type="checkbox" bind:checked={form.is_featured} />
-            <span class="text-sm font-semibold text-ink">Featured lodge</span>
-          </label>
-        </div>
-
-        <div class="grid gap-4 sm:grid-cols-2">
-          <AdminFormInput label="SEO title" name="seo_title" bind:value={form.seo_title} />
-          <AdminFormInput label="Meta description" name="meta_description" bind:value={form.meta_description} />
-        </div>
-      </div>
-
-      <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <AdminButton variant="secondary" type="button" on:click={closeModal}>Cancel</AdminButton>
-        <AdminButton type="submit" disabled={saving}>
-          {saving ? 'Saving...' : editing ? 'Save Changes' : 'Create Lodge'}
-        </AdminButton>
-      </div>
-    </form>
-  </div>
+  <AdminAccommodationEditor
+    {editing}
+    destinations={destinationOptions}
+    on:close={closeModal}
+    on:saved={() => { showToast(editing ? 'Property updated.' : 'Property created.'); void load(); }}
+  />
 {/if}
 
 <ConfirmModal

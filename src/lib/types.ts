@@ -94,6 +94,7 @@ export type Tour = {
   customization_intro?: string | null;
   customization_options?: string[];
   tour_price_options?: TourPriceOption[];
+  tour_pricing_seasons?: TourPricingSeason[];
   difficulty_level?: string | null;
   group_size?: string;
   group_size_min?: number | null;
@@ -121,6 +122,30 @@ export type TourPriceOption = {
   price_type: 'per_person' | 'per_group' | 'per_child' | 'single_supplement' | 'upgrade' | 'discount';
   description?: string | null;
   sort_order?: number | null;
+};
+
+export type TourGroupPrice = {
+  id?: string;
+  minimum_travelers: number;
+  maximum_travelers?: number | null;
+  room_count: number;
+  price?: number | null;
+  price_status: 'FIXED_PRICE' | 'ON_REQUEST' | 'NOT_AVAILABLE';
+  sort_order?: number;
+};
+
+export type TourPricingSeason = {
+  id?: string;
+  tour_id?: string;
+  season_type: 'STANDARD_SEASON' | 'PEAK_SEASON' | 'CUSTOM';
+  season_name: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  currency: string;
+  pricing_basis: 'PER_PERSON' | 'PER_GROUP';
+  status: 'ACTIVE' | 'INACTIVE';
+  sort_order?: number;
+  group_prices: TourGroupPrice[];
 };
 
 export type TourCategory = {
@@ -226,6 +251,8 @@ export type LodgeImage = {
   caption?: string | null;
   sort_order?: number;
   is_cover?: boolean;
+  category?: string;
+  is_featured?: boolean;
 };
 
 export type Amenity = {
@@ -241,13 +268,25 @@ export type Lodge = {
   amenities?: Amenity[];
   /** Tours whose itinerary genuinely stays here — never a same-area guess. */
   featured_in_tours?: Tour[];
+  highlights?: Array<{ id?: string; title: string; sort_order?: number }>;
+  rooms?: Array<{ id:string; name:string; room_type?:string; short_description?:string; max_adults?:number; max_children?:number; max_guests?:number; bed_types?:string[]; bed_configuration?:string; unit_count?:number; views?:string[]; view?:string; amenities?:string[]; lodge_room_images?:LodgeImage[] }>;
+  rates?: Array<{season_name:string;valid_from:string;valid_until:string;currency:string;rack_rate?:number;single_rate?:number;double_rate?:number;triple_rate?:number;child_rate?:number;single_supplement?:number;pricing_basis:string;meal_plan:string}>;
+  inclusions?: Array<{title:string;is_included:boolean;sort_order?:number}>;
+  experiences?: Array<{id:string;name:string;slug:string}>;
+  related_destinations?: Array<{id:string;name:string;slug:string;country?:string}>;
+  alternatives?: Lodge[];
   id: string;
   name: string;
   slug: string;
   destination_id?: string | null;
   destinations?: { name: string; slug: string } | null;
-  accommodation_level: 'budget' | 'mid_range' | 'luxury' | 'ultra_luxury';
-  lodge_type: 'tented_camp' | 'lodge' | 'hotel' | 'mobile_camp' | 'treehouse';
+  accommodation_level: 'BUDGET' | 'MID_RANGE' | 'LUXURY' | 'PREMIUM_LUXURY';
+  lodge_type: 'HOTEL'|'SAFARI_LODGE'|'TENTED_CAMP'|'MOBILE_CAMP'|'BEACH_RESORT'|'VILLA'|'GUEST_HOUSE'|'ECO_LODGE'|'BOUTIQUE_HOTEL';
+  short_description?: string;
+  country?: string; region?: string; park_area?: string; settings?: string[]; recommended_nights?: number; best_months?: string[];
+  google_maps_url?: string; latitude?: number; longitude?: number; nearest_airport?: string; transfer_time?: string; distance_airstrip?: string; distance_park_gate?: string; road_accessibility?: string; fly_in_available?: boolean; transfer_available?: boolean;
+  mobile_hero_image_url?: string; social_image_url?: string; indexable?: boolean;
+  children_allowed?: boolean; minimum_child_age?: number; family_friendly?: boolean; honeymoon_friendly?: boolean; accessibility?: string; electricity_availability?: string; wifi_availability?: string; mobile_networks?: string[]; wheelchair_accessible?:boolean; show_rates_publicly?:boolean; show_property_publicly?:boolean; arrival_instructions?: string; traveler_notes?: string;
   description?: string;
   why_we_recommend?: string;
   hero_image_url?: string;

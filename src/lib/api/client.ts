@@ -248,6 +248,9 @@ export const api = {
     list: (params?: Record<string, QueryValue>) =>
       apiRequest<Paginated<Record<string, unknown>>>(`/pricing-options${queryString(params)}`),
     byTour: (tourId: string) => apiRequest<Record<string, unknown>[]>(`/tours/${tourId}/pricing-options`),
+    seasons: (tourId: string) => apiRequest<Record<string, unknown>[]>(`/pricing-options/seasons/${tourId}`),
+    saveSeasons: (tourId: string, body: Record<string, unknown>) =>
+      apiRequest<Record<string, unknown>[]>(`/pricing-options/seasons/${tourId}`, { method: 'PUT', body }),
     get: (id: string) => apiRequest<Record<string, unknown>>(`/pricing-options/${id}`),
     create: (body: Record<string, unknown>) =>
       apiRequest<Record<string, unknown>>('/pricing-options', { method: 'POST', body }),
@@ -293,6 +296,7 @@ export const api = {
     remove: (id: string) => apiRequest(`/destinations/${id}`, { method: 'DELETE' })
   },
   lodges: {
+    accommodationMeta: () => apiRequest<{ experiences: Record<string, unknown>[]; suppliers: Record<string, unknown>[] }>('/lodges/meta/accommodation'),
     list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Lodge>>(`/lodges${queryString(params)}`),
     get: (slug: string) => apiRequest<Lodge>(`/lodges/${slug}`),
     bulkRemove: (ids: string[]) =>
@@ -308,6 +312,9 @@ export const api = {
       apiRequest<{ images: Record<string, unknown>[]; amenity_ids: string[]; amenities: Record<string, unknown>[] }>(
         `/lodges/${id}/media`
       ),
+    details: (id: string) => apiRequest<Record<string, unknown>>(`/lodges/${id}/details`),
+    saveDetails: (id: string, details: Record<string, unknown>) =>
+      apiRequest<{ id: string }>(`/lodges/${id}/details`, { method: 'PUT', body: details }),
     saveImages: (id: string, images: Record<string, unknown>[]) =>
       apiRequest<{ count: number }>(`/lodges/${id}/images`, { method: 'PUT', body: { images } }),
     saveAmenities: (id: string, amenityIds: string[]) =>

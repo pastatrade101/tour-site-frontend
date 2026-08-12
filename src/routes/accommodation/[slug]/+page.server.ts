@@ -55,7 +55,7 @@ export const load: PageServerLoad = async ({ fetch, params, url }) => {
   // or broken list never takes the detail page down with it.
   let related: Lodge[] = [];
   try {
-    const res = await fetch(`${base}/lodges?status=published&limit=100`);
+    const res = await fetch(`${base}/lodges?status=published&show_property_publicly=true&limit=100`);
     if (res.ok) {
       const all = ((await res.json()) as PaginatedBody<Lodge>).data?.items ?? [];
       related = all.filter((item) => item.slug !== lodge!.slug);

@@ -5,7 +5,7 @@
    * it does have — why we recommend the place — and omits any section whose
    * field is empty rather than showing a heading over nothing.
    */
-  import { ArrowRight, ArrowUpRight, Binoculars, Gem, Heart, Plane, Sparkles, Users } from '@lucide/svelte';
+  import { ArrowRight, ArrowUpRight, Award, Binoculars, Building2, CalendarDays, ChevronRight, Gem, Heart, MapPin, Plane, Sparkles, Users } from '@lucide/svelte';
   import { page } from '$app/stores';
   import { fadeUpOnScroll, staggeredCardReveal } from '$lib/animations';
   import { imgUrl, sourceFor, srcsetFor, variantSrc, variantsOf } from '$lib/img';
@@ -19,6 +19,7 @@
   import { breadcrumbLd } from '$lib/seo';
   import type { Amenity, Lodge, LodgeImage, Tour } from '$lib/types';
   import type { PageData } from './$types';
+  import { enumLabel } from '$lib/accommodationEnums';
 
   export let data: PageData;
 
@@ -45,12 +46,14 @@
   $: suggestionsTitle = samePlace.length ? `More places to stay in ${place}` : 'Other places to stay';
 
   const LEVEL: Record<string, string> = {
+    BUDGET: 'Budget', MID_RANGE: 'Mid-range', LUXURY: 'Luxury', PREMIUM_LUXURY: 'Premium luxury',
     budget: 'Budget',
     mid_range: 'Mid-range',
     luxury: 'Luxury',
     ultra_luxury: 'Ultra luxury'
   };
   const TYPE: Record<string, string> = {
+    HOTEL:'Hotel', SAFARI_LODGE:'Safari lodge', TENTED_CAMP:'Tented camp', MOBILE_CAMP:'Mobile camp', BEACH_RESORT:'Beach resort', VILLA:'Villa', GUEST_HOUSE:'Guest house', ECO_LODGE:'Eco lodge', BOUTIQUE_HOTEL:'Boutique hotel',
     tented_camp: 'Tented camp',
     mobile_camp: 'Mobile camp',
     lodge: 'Lodge',
@@ -91,18 +94,45 @@
     'image_url'
   );
   $: place = lodge?.destinations?.name ?? '';
-  $: facts = [LEVEL[String(lodge?.accommodation_level)], TYPE[String(lodge?.lodge_type)], place].filter(Boolean);
+  $: facts = [
+    place ? { icon: MapPin, label: 'Destination', value: place } : null,
+    lodge?.lodge_type ? { icon: Building2, label: 'Property type', value: TYPE[String(lodge.lodge_type)] ?? enumLabel(lodge.lodge_type) } : null,
+    lodge?.accommodation_level ? { icon: Award, label: 'Travel style', value: LEVEL[String(lodge.accommodation_level)] ?? enumLabel(lodge.accommodation_level) } : null,
+    lodge?.recommended_nights ? { icon: CalendarDays, label: 'Recommended stay', value: `${lodge.recommended_nights} night${lodge.recommended_nights === 1 ? '' : 's'}` } : null
+  ].filter(Boolean) as { icon: typeof MapPin; label: string; value: string }[];
+  $: logistics = [
+    ['Setting', lodge?.settings?.length ? lodge.settings.map((x) => x.replaceAll('_', ' ').toLowerCase()).join(', ') : ''],
+    ['Recommended stay', lodge?.recommended_nights ? `${lodge.recommended_nights} night${lodge.recommended_nights === 1 ? '' : 's'}` : ''],
+    ['Nearest airstrip', lodge?.nearest_airport || ''], ['Transfer time', lodge?.transfer_time || ''],
+    ['From airstrip', lodge?.distance_airstrip || ''], ['From park gate', lodge?.distance_park_gate || '']
+  ].filter((row) => row[1]);
+  $: included = (lodge?.inclusions ?? []).filter((item) => item.is_included);
+  $: excluded = (lodge?.inclusions ?? []).filter((item) => !item.is_included);
+  $: travelInfo = [
+    ['Children', lodge?.children_allowed === false ? 'Adults only' : lodge?.minimum_child_age != null ? `Allowed from age ${lodge.minimum_child_age}` : ''],
+    ['Accessibility', lodge?.accessibility || ''], ['Electricity', lodge?.electricity_availability || ''],
+    ['Wi-Fi', lodge?.wifi_availability?.replaceAll('_',' ').toLowerCase() || ''], ['Mobile network', lodge?.mobile_networks?.map((x)=>x.replaceAll('_',' ').toLowerCase()).join(', ') || ''],
+    ['Road access', lodge?.road_accessibility || '']
+  ].filter((row) => row[1]);
 
   $: origin = $page.url.origin;
   $: title = lodge?.seo_title || lodge?.meta_title || lodge?.name || 'Stay';
   $: description = toMetaText(lodge?.meta_description || lodge?.why_we_recommend || lodge?.description || '', 170);
   $: whySnippet = toMetaText(lodge?.why_we_recommend || '', 240);
+  $: planHref = `/plan-my-trip?${new URLSearchParams({
+    stay: lodge?.slug ?? '',
+    stay_name: lodge?.name ?? '',
+    stay_id: lodge?.id ?? '',
+    stay_type: lodge?.lodge_type ?? '',
+    ...(place ? { place } : {})
+  }).toString()}`;
 </script>
 
 <svelte:head>
   <title>{title} | Goldfinch Adventures</title>
   {#if description}<meta name="description" content={description} />{/if}
   <link rel="canonical" href={`${origin}/accommodation/${lodge?.slug ?? ''}`} />
+  {#if lodge?.indexable === false}<meta name="robots" content="noindex, nofollow" />{/if}
   {#if heroImage}
     <meta property="og:image" content={imgUrl(heroImage, 1200, 72)} />
     <link
@@ -126,7 +156,7 @@
 />
 
 <!-- ── hero ─────────────────────────────────────────────────────────────── -->
-<section data-hero class="relative flex min-h-[64vh] items-end overflow-hidden bg-deep-green text-white md:min-h-[78vh]">
+<section data-hero class="relative flex min-h-[70svh] items-end overflow-hidden bg-deep-green text-white md:min-h-[78vh]">
   {#if heroImage}
     <Img
       record={heroRecord}
@@ -145,11 +175,13 @@
   <span class="pointer-events-none absolute inset-0 shadow-[inset_0_0_180px_60px_rgba(0,0,0,0.55)]" aria-hidden="true"></span>
 
   <div class="container-shell relative z-10 pb-14 pt-28 md:pb-20">
+    <nav class="mb-8 hidden flex-wrap items-center gap-1.5 text-xs font-semibold text-white/65 sm:flex md:mb-12" aria-label="Breadcrumb">
+      <a href="/" class="transition hover:text-goldfinch-gold">Home</a><ChevronRight size={13}/><a href="/accommodation" class="transition hover:text-goldfinch-gold">Accommodation</a><ChevronRight size={13}/><span class="text-white/90">{lodge?.name}</span>
+    </nav>
     <div class="max-w-3xl" use:fadeUpOnScroll={{ y: 16 }}>
-      {#if place}
-        <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-goldfinch-gold">{place}</p>
-      {/if}
+      <div class="flex flex-wrap items-center gap-2">{#if lodge?.is_featured}<span class="inline-flex items-center gap-1 bg-goldfinch-gold px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.1em] text-heading"><Sparkles size={11}/> Goldfinch recommended</span>{/if}{#if lodge?.lodge_type}<span class="border border-white/25 bg-black/20 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white backdrop-blur">{TYPE[String(lodge.lodge_type)] ?? enumLabel(lodge.lodge_type)}</span>{/if}</div>
       <h1 class="mt-4 font-serif text-4xl font-semibold leading-[1.05] md:text-[62px]">{lodge?.name}</h1>
+      {#if place}<p class="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-white/80"><MapPin size={15} class="text-goldfinch-gold"/>{place}{#if lodge?.accommodation_level}<span> · {LEVEL[String(lodge.accommodation_level)] ?? enumLabel(lodge.accommodation_level)}</span>{/if}</p>{/if}
       {#if whySnippet}
         <p class="mt-5 max-w-2xl text-base leading-8 text-white/80 md:text-lg">{whySnippet}</p>
       {/if}
@@ -157,32 +189,31 @@
       {#if lodge?.best_for?.length}
         <div class="mt-5 border-t border-white/15 pt-4 md:mt-6 md:pt-5">
           <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-white/55">Best for</p>
-          <ul class="mt-2 flex flex-wrap gap-1.5 md:gap-2">
+          <ul class="mt-2 flex flex-wrap divide-x divide-white/20 text-xs font-semibold text-white/85">
             {#each lodge.best_for as item}
-              <li class="inline-flex min-h-7 items-center gap-1.5 rounded-full border border-white/20 bg-black/20 px-2.5 py-1 text-[11px] font-semibold leading-none text-white backdrop-blur-sm md:px-3 md:text-xs">
+              <li class="inline-flex items-center gap-1.5 px-2.5 py-1 first:pl-0">
                 <svelte:component this={bestForIcon(item)} size={13} class="shrink-0 text-goldfinch-gold" aria-hidden="true" />
-                {item}
+                {enumLabel(item)}
               </li>
             {/each}
           </ul>
         </div>
       {/if}
+      <div class="mt-7 flex flex-col gap-3 sm:flex-row">
+        {#if tourList.length}
+          <a class="inline-flex h-12 w-full items-center justify-center gap-2 bg-goldfinch-gold px-7 text-sm font-extrabold text-heading transition hover:brightness-95 sm:w-auto" href="#safari-itineraries">See safari itineraries <ArrowRight size={16}/></a>
+        {:else}
+          <a class="inline-flex h-12 w-full items-center justify-center gap-2 bg-goldfinch-gold px-7 text-sm font-extrabold text-heading transition hover:brightness-95 sm:w-auto" href="/tours">Explore safari itineraries <ArrowRight size={16}/></a>
+        {/if}
+        <a class="inline-flex h-12 w-full items-center justify-center border border-white/30 px-7 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/10 sm:w-auto" href={planHref}>Build a trip around this stay</a>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- ── fact strip: text on hairlines, not badges ─────────────────────────── -->
 {#if facts.length}
-  <section class="border-b border-ink/10 bg-canvas">
-    <div class="container-shell">
-      <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 py-3 text-xs md:gap-x-5 md:py-3.5 md:text-[13px]">
-        {#each facts as fact, index}
-          {#if index > 0}<span class="hidden h-3.5 w-px bg-ink/15 sm:block" aria-hidden="true"></span>{/if}
-          <span class="font-semibold text-ink/70">{fact}</span>
-        {/each}
-      </div>
-    </div>
-  </section>
+  <section class="border-b border-ink/10 bg-sand/35"><div class="container-shell grid grid-cols-2 gap-5 py-7 md:flex md:flex-wrap md:justify-between md:py-8">{#each facts as fact}<div class="flex min-w-0 items-center gap-3"><span class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-forest/10 text-forest"><svelte:component this={fact.icon} size={18}/></span><div class="min-w-0"><p class="text-[9px] font-bold uppercase tracking-[0.14em] text-ink/40">{fact.label}</p><p class="mt-0.5 truncate text-sm font-semibold text-heading">{fact.value}</p></div></div>{/each}</div></section>
 {/if}
 
 <section class="bg-canvas py-16 md:py-24">
@@ -223,29 +254,60 @@
         </div>
       {/if}
 
+      {#if lodge?.highlights?.length}
+        <div class="mt-12" use:fadeUpOnScroll={{ y: 14 }}><span class="block h-px w-16 bg-goldfinch-gold"></span><p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">Property highlights</p><div class="mt-5 grid gap-3 sm:grid-cols-2">{#each lodge.highlights as item}<div class="border-l-2 border-goldfinch-gold bg-sand/35 px-4 py-3 text-sm font-semibold leading-6 text-heading">{item.title}</div>{/each}</div></div>
+      {/if}
+
+      {#if logistics.length || lodge?.best_months?.length}
+        <div class="mt-12" use:fadeUpOnScroll={{ y: 14 }}><span class="block h-px w-16 bg-goldfinch-gold"></span><p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">Location & logistics</p><dl class="mt-5 grid gap-px overflow-hidden rounded-xl border border-ink/10 bg-ink/10 sm:grid-cols-2">{#each logistics as row}<div class="bg-surface p-4"><dt class="text-[10px] font-bold uppercase tracking-wider text-ink/45">{row[0]}</dt><dd class="mt-1 capitalize text-sm font-semibold text-heading">{row[1]}</dd></div>{/each}</dl>{#if lodge?.best_months?.length}<p class="mt-4 text-sm leading-6 text-ink/65"><b class="text-heading">Best months:</b> {lodge.best_months.join(', ')}</p>{/if}</div>
+      {/if}
+
+      {#if lodge?.rooms?.length}
+        <div class="mt-12" use:fadeUpOnScroll={{ y: 14 }}><span class="block h-px w-16 bg-goldfinch-gold"></span><p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">Rooms & suites</p><div class="mt-5 grid gap-5">{#each lodge.rooms as room}<article class="overflow-hidden rounded-xl border border-ink/10 bg-surface">{#if room.lodge_room_images?.length}<div class="grid grid-cols-2 gap-1 bg-sand p-1 sm:grid-cols-4">{#each room.lodge_room_images.slice(0,4) as image}<Img record={image} fields={['image_url']} alt={image.alt_text||room.name} width={360} sizes="(max-width:640px) 50vw, 170px" className="aspect-[4/3] h-full w-full rounded-md object-cover"/>{/each}</div>{/if}<div class="p-4 sm:p-5"><div class="flex flex-wrap items-start justify-between gap-2"><h3 class="font-serif text-xl font-semibold text-heading">{room.name}</h3>{#if room.max_guests}<span class="text-xs font-bold text-clay">Up to {room.max_guests} guests</span>{/if}</div>{#if room.short_description}<p class="mt-2 text-sm leading-6 text-ink/65">{room.short_description}</p>{/if}<p class="mt-3 text-xs text-ink/55">{[room.bed_configuration,room.view,room.unit_count?`${room.unit_count} units`:null].filter(Boolean).join(' · ')}</p>{#if room.amenities?.length}<div class="mt-3 flex flex-wrap divide-x divide-ink/15 text-[11px] font-semibold text-ink/60">{#each room.amenities as amenity}<span class="px-2 first:pl-0">{amenity}</span>{/each}</div>{/if}</div></article>{/each}</div></div>
+      {/if}
+
+      {#if lodge?.show_rates_publicly && lodge?.rates?.length}
+        <div class="mt-12" use:fadeUpOnScroll={{ y: 14 }}><span class="block h-px w-16 bg-goldfinch-gold"></span><p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">Seasonal guide rates</p><p class="mt-2 text-sm leading-6 text-ink/60">Indicative property rates only. Your safari quote combines the stay with transport, guiding, park fees and activities.</p><div class="mt-5 overflow-hidden rounded-xl border border-ink/10">{#each lodge.rates as rate}<div class="grid gap-3 border-b border-ink/10 bg-surface p-4 last:border-0 sm:grid-cols-[1fr_auto] sm:items-center"><div><h3 class="font-bold text-heading">{rate.season_name || enumLabel((rate as any).season_type || '')}</h3><p class="mt-1 text-xs text-ink/50">{rate.valid_from} – {rate.valid_until} · {enumLabel(rate.meal_plan)}</p></div><p class="text-sm font-extrabold text-forest">{rate.currency} {rate.double_rate ?? rate.rack_rate ?? rate.single_rate ?? 'On request'} <span class="font-medium text-ink/45">· {enumLabel(rate.pricing_basis)}</span></p></div>{/each}</div></div>
+      {/if}
+
+      {#if lodge?.experiences?.length}
+        <div class="mt-12" use:fadeUpOnScroll={{ y: 14 }}><span class="block h-px w-16 bg-goldfinch-gold"></span><p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">Experiences</p><div class="mt-4 grid gap-px overflow-hidden border border-ink/10 bg-ink/10 sm:grid-cols-2">{#each lodge.experiences as experience}<span class="bg-surface px-4 py-3 text-sm font-semibold text-forest">{experience.name}</span>{/each}</div></div>
+      {/if}
+
+      {#if included.length || excluded.length}
+        <div class="mt-12 grid gap-5 sm:grid-cols-2" use:fadeUpOnScroll={{ y: 14 }}>{#if included.length}<div class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-5"><h3 class="font-serif text-xl font-semibold text-heading">Included</h3><ul class="mt-3 space-y-2">{#each included as item}<li class="text-sm leading-6 text-ink/70">✓ {item.title}</li>{/each}</ul></div>{/if}{#if excluded.length}<div class="rounded-xl border border-ink/10 bg-sand/30 p-5"><h3 class="font-serif text-xl font-semibold text-heading">Not included</h3><ul class="mt-3 space-y-2">{#each excluded as item}<li class="text-sm leading-6 text-ink/70">— {item.title}</li>{/each}</ul></div>{/if}</div>
+      {/if}
+
+      {#if travelInfo.length || lodge?.arrival_instructions || lodge?.traveler_notes}
+        <div class="mt-12" use:fadeUpOnScroll={{ y: 14 }}><span class="block h-px w-16 bg-goldfinch-gold"></span><p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">Important travel information</p><dl class="mt-5 grid gap-4 sm:grid-cols-2">{#each travelInfo as row}<div><dt class="text-xs font-bold text-heading">{row[0]}</dt><dd class="mt-1 text-sm leading-6 text-ink/65">{row[1]}</dd></div>{/each}</dl>{#if lodge?.arrival_instructions}<p class="mt-5 rounded-lg bg-sand/35 p-4 text-sm leading-6 text-ink/70"><b>Arrival:</b> {lodge.arrival_instructions}</p>{/if}{#if lodge?.traveler_notes}<p class="mt-3 text-sm leading-6 text-ink/65">{lodge.traveler_notes}</p>{/if}</div>
+      {/if}
+
     </div>
 
     <!-- ── aside ────────────────────────────────────────────────────────── -->
     <aside class="lg:sticky lg:top-28">
-      <div class="border-t border-ink/15 pt-7">
-        <p class="font-serif text-xl font-semibold leading-tight text-heading">{lodge?.name}</p>
+      <div class="rounded-xl bg-deep-green p-6 text-white shadow-[0_20px_50px_rgba(28,46,39,0.2)]">
+        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-goldfinch-gold">Build your safari</p>
+        <p class="mt-2 font-serif text-2xl font-semibold leading-tight text-white">Stay at {lodge?.name}</p>
         {#if place}
-          <p class="mt-1 text-sm text-ink/55">{place}</p>
+          <p class="mt-1 text-sm text-white/55">{place}</p>
         {/if}
-        <p class="mt-5 text-sm leading-7 text-ink/60">
-          Tell us your dates and we will build a route around this stay, or suggest something closer to what you want.
+        <p class="mt-5 text-sm leading-7 text-white/70">
+          This stay works best as part of a well-paced safari route. Start with an itinerary, then we will confirm the right room, dates and transfers.
         </p>
 
         <a
           class="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-goldfinch-gold px-6 text-sm font-extrabold text-heading transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
-          href="/plan-my-trip"
+          href={tourList.length ? '#safari-itineraries' : '/tours'}
         >
-          Plan a trip here <ArrowRight size={16} />
+          {tourList.length ? 'View safari itineraries' : 'Explore tours'} <ArrowRight size={16} />
         </a>
+
+        <a class="mt-3 inline-flex h-12 w-full items-center justify-center rounded-full border border-white/25 px-6 text-sm font-bold text-white transition hover:border-goldfinch-gold hover:text-goldfinch-gold" href={planHref}>Ask us to include this stay</a>
 
         {#if lodge?.website_url}
           <a
-            class="mt-3 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border border-ink/15 px-6 text-sm font-bold text-ink/75 transition hover:border-goldfinch-gold hover:text-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
+            class="mt-3 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border border-white/15 px-6 text-sm font-bold text-white/70 transition hover:border-goldfinch-gold hover:text-goldfinch-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
             href={lodge.website_url}
             target="_blank"
             rel="noopener noreferrer"
@@ -263,21 +325,21 @@
      area relationship: no itinerary records which property it stays at, so
      claiming "this tour uses this lodge" would be inventing a fact. -->
 {#if tourList.length}
-  <section class="border-t border-ink/10 bg-canvas py-14 md:py-18">
+  <section id="safari-itineraries" class="scroll-mt-28 border-t border-ink/10 bg-deep-green py-16 text-white md:py-24">
     <div class="container-shell">
       <div class="max-w-2xl" use:fadeUpOnScroll={{ y: 14 }}>
         <span class="block h-px w-16 bg-goldfinch-gold" aria-hidden="true"></span>
         <p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">
           {toursAreReal ? 'Featured in these safaris' : 'Safaris in this area'}
         </p>
-        <h2 class="mt-3 font-serif text-3xl font-semibold leading-tight text-heading md:text-[38px]">
+        <h2 class="mt-3 font-serif text-3xl font-semibold leading-tight text-white md:text-[42px]">
           {#if toursAreReal}
             Trips that stay at {lodge?.name}
           {:else}
             {place ? `Trips that travel through ${place}` : 'Trips that travel through here'}
           {/if}
         </h2>
-        <p class="mt-3 text-[15px] leading-7 text-ink/65">
+        <p class="mt-3 text-[15px] leading-7 text-white/70">
           {#if toursAreReal}
             Every one of these itineraries includes a night here. Each is private and can be reshaped around your dates.
           {:else}
@@ -290,6 +352,7 @@
           <TourCard {tour} />
         {/each}
       </div>
+      <div class="mt-9"><a class="inline-flex h-12 items-center gap-2 rounded-full bg-goldfinch-gold px-7 text-sm font-extrabold text-heading" href={planHref}>Tailor one of these trips <ArrowRight size={16}/></a></div>
     </div>
   </section>
 {/if}

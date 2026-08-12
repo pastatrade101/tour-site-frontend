@@ -9,6 +9,8 @@
 
   export let tour: Tour;
   export let showShortlist = true;
+  /** Tour cards stay white so they remain legible on every light page canvas. */
+  export let whiteSurface = true;
 
   const tierLabels: Record<string, string> = {
     budget: 'Budget',
@@ -45,7 +47,7 @@
 </script>
 
 <article
-  class="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-[14px] border border-ink/10 bg-sand/40 shadow-[0_10px_30px_rgba(57,61,50,0.07)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_46px_rgba(57,61,50,0.14)]"
+  class={`group relative flex h-full min-w-0 flex-col overflow-hidden rounded-[14px] border border-ink/10 shadow-[0_10px_30px_rgba(57,61,50,0.07)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_46px_rgba(57,61,50,0.14)] ${whiteSurface ? 'bg-white' : 'bg-sand/40'}`}
 >
   {#if showShortlist}
     <div class="absolute right-3 top-3 z-10">

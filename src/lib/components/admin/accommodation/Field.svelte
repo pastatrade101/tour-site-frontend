@@ -1,0 +1,2 @@
+<script lang="ts">export let label='';export let value:any='';export let type='text';export let required=false;</script>
+<label class="grid min-w-0 gap-1.5 text-sm font-semibold text-ink"><span>{label}{#if required}<b class="text-red-500"> *</b>{/if}</span><input class="h-11 min-w-0 rounded-lg border border-ink/15 bg-surface px-3 font-normal outline-none focus:border-forest focus:ring-2 focus:ring-forest/10" {type} {required} bind:value/></label>

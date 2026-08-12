@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { get } from 'svelte/store';
-  import { AlertCircle, ArrowLeft, ArrowRight, CalendarDays, Check, CheckCircle2, Copy, MapPin, MessageCircle, Scale, ShieldCheck } from '@lucide/svelte';
+  import { AlertCircle, ArrowLeft, ArrowRight, BedDouble, CalendarDays, CheckCircle2, Copy, MapPin, MessageCircle, Scale, ShieldCheck, X } from '@lucide/svelte';
   import { page } from '$app/stores';
   import { getAttribution, trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
@@ -64,6 +64,7 @@
   let submitted = false;
   let copied = false;
   let tripContext = ''; // tour name carried in from a tour/departure/persona link
+  let selectedStay = { id: '', slug: '', name: '', type: '', destination: '' };
   let referrerTopic = ''; // free-form topic from a referring page (e.g. a /compare CTA)
   let errors: Record<string, string> = {};
   let bodyEl: HTMLDivElement;
@@ -96,6 +97,13 @@
     clearErr('experience_interests');
   };
 
+  const removeSelectedStay = () => {
+    const attachedName = selectedStay.name;
+    selectedStay = { id: '', slug: '', name: '', type: '', destination: '' };
+    if (tripContext === attachedName) tripContext = '';
+    if (message === `Please include ${attachedName} in my itinerary.`) message = '';
+  };
+
   // ── Context carry: a visitor arriving from a tour/persona/experience link
   //    brings that intent into the form (defaults otherwise stay empty). ───────
   const matchOption = (options: string[], value: unknown) =>
@@ -109,6 +117,24 @@
     const destination = p.get('destination');
     const monthParam = p.get('month') || p.get('date');
     const tourSlug = p.get('tour');
+    const staySlug = p.get('stay') ?? '';
+    const stayName = p.get('stay_name') ?? (staySlug.includes('-') ? staySlug.replace(/-/g, ' ') : staySlug);
+    if (stayName) {
+      selectedStay = {
+        id: p.get('stay_id') ?? '',
+        slug: staySlug,
+        name: stayName,
+        type: p.get('stay_type') ?? '',
+        destination: p.get('place') ?? ''
+      };
+      if (!tripContext) tripContext = stayName;
+      if (!message.trim()) message = `Please include ${stayName} in my itinerary.`;
+      const typePreference: Record<string, string> = {
+        HOTEL: 'Mid-range lodge/hotel', BOUTIQUE_HOTEL: 'Mid-range lodge/hotel', SAFARI_LODGE: 'Luxury lodge/resort',
+        ECO_LODGE: 'Luxury lodge/resort', TENTED_CAMP: 'Tented camp', MOBILE_CAMP: 'Tented camp', BEACH_RESORT: 'Beach resort'
+      };
+      accommodation_preference = typePreference[selectedStay.type] ?? accommodation_preference;
+    }
 
     const personaMap: Record<string, string> = {
       family: 'Family',
@@ -247,7 +273,8 @@
     const add = (label: string, value: string) => {
       if (value && value.trim()) rows.push({ label, value: value.trim() });
     };
-    if (tripContext) add('Trip', tripContext);
+    if (tripContext && !selectedStay.name) add('Trip', tripContext);
+    if (selectedStay.name) add('Requested stay', selectedStay.name);
     add('Name', full_name);
     add('Email', email);
     add('Phone / WhatsApp', phone);
@@ -393,6 +420,7 @@
     if (date_flexibility) lead_context.date_flexibility = date_flexibility;
     if (trip_duration) lead_context.trip_duration = trip_duration;
     if (accommodation_preference) lead_context.accommodation_preference = accommodation_preference;
+    if (selectedStay.name) lead_context.selected_accommodation = { ...selectedStay };
     if (tripContext) lead_context.tour_interest = tripContext;
     if (referrerTopic) lead_context.topic = referrerTopic;
     lead_context.attribution = getAttribution(); // first-touch source/campaign + session id
@@ -519,6 +547,14 @@
       <div class="planning-trip-context mt-2" title={tripContext}>
         <MapPin size={13} class="shrink-0 text-goldfinch-gold" />
         <span class="truncate text-xs font-semibold text-white/85">{tripContext}</span>
+      </div>
+    {/if}
+
+    {#if selectedStay.name}
+      <div class="mt-2 flex items-center gap-2 rounded-[8px] border border-goldfinch-gold/30 bg-goldfinch-gold/[0.08] px-3 py-2.5 text-white">
+        <BedDouble size={16} class="shrink-0 text-goldfinch-gold" />
+        <div class="min-w-0"><span class="block text-[9px] font-bold uppercase tracking-[0.14em] text-white/50">Accommodation attached</span><span class="block truncate text-sm font-bold">{selectedStay.name}</span></div>
+        <button type="button" class="ml-auto grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/15 text-white/65 transition hover:border-white/35 hover:text-white" aria-label={`Remove ${selectedStay.name} from this request`} title="Remove stay" on:click={removeSelectedStay}><X size={14}/></button>
       </div>
     {/if}
 

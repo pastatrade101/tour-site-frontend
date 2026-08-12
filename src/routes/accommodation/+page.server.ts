@@ -13,7 +13,7 @@ const apiBase = (origin: string) => {
 export const load: PageServerLoad = async ({ fetch, url }) => {
   try {
     const base = apiBase(url.origin);
-    const res = await fetch(`${base}/lodges?status=published&limit=100`);
+    const res = await fetch(`${base}/lodges?status=published&show_property_publicly=true&limit=100`);
     if (!res.ok) throw new Error(`Request failed (${res.status})`);
     const body = (await res.json()) as PaginatedBody<Lodge>;
     return { lodges: body.data?.items ?? [] };

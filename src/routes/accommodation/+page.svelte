@@ -7,25 +7,29 @@
    * taxonomy, so the page is built to be read: hairline-separated rows, large
    * serif names, and a thumbnail only where one genuinely exists.
   */
-  import { ArrowRight, BedDouble, Gem, MapPin, Tent } from '@lucide/svelte';
+  import { ArrowRight, BedDouble, Gem, MapPin, Search, ShieldCheck, Sparkles, Tent, X } from '@lucide/svelte';
   import { fadeUpOnScroll, staggeredCardReveal } from '$lib/animations';
   import { imgUrl, sourceFor, srcsetFor, variantSrc, variantsOf } from '$lib/img';
   import Img from '$lib/components/public/Img.svelte';
+  import LodgeCard from '$lib/components/public/LodgeCard.svelte';
   import { toMetaText } from '$lib/richText';
   import type { Lodge } from '$lib/types';
   import type { PageData } from './$types';
+  import { enumLabel } from '$lib/accommodationEnums';
 
   export let data: PageData;
 
   $: lodges = (data.lodges ?? []) as Lodge[];
 
   const LEVEL: Record<string, string> = {
+    BUDGET:'Budget', MID_RANGE:'Mid-range', LUXURY:'Luxury', PREMIUM_LUXURY:'Premium luxury',
     budget: 'Budget',
     mid_range: 'Mid-range',
     luxury: 'Luxury',
     ultra_luxury: 'Ultra luxury'
   };
   const TYPE: Record<string, string> = {
+    HOTEL:'Hotel', SAFARI_LODGE:'Safari lodge', TENTED_CAMP:'Tented camp', MOBILE_CAMP:'Mobile camp', BEACH_RESORT:'Beach resort', VILLA:'Villa', GUEST_HOUSE:'Guest house', ECO_LODGE:'Eco lodge', BOUTIQUE_HOTEL:'Boutique hotel',
     tented_camp: 'Tented camp',
     mobile_camp: 'Mobile camp',
     lodge: 'Lodge',
@@ -37,6 +41,7 @@
   const typeLabel = (l: Lodge) => TYPE[String(l.lodge_type)] ?? '';
   const placeOf = (l: Lodge) => l.destinations?.name ?? '';
   const blurbOf = (l: Lodge) => toMetaText(l.why_we_recommend || l.description || '', 190);
+  const settingOf = (l: Lodge) => l.settings?.slice(0, 2).map(enumLabel).join(' · ') ?? '';
 
   // Filters are built from the data, so an option never appears with nothing
   // behind it and every count is real.
@@ -57,9 +62,39 @@
   ] as Filter[];
 
   let active = 'all';
+  let activeDestination = 'all';
+  let search = '';
+  let sortBy = 'recommended';
   $: activeFilter = filters.find((f) => f.key === active) ?? filters[0];
-  $: shown = lodges.filter((l) => activeFilter?.test(l) ?? true);
+  $: destinations = [...new Set(lodges.map(placeOf).filter(Boolean))].sort();
+  $: shown = lodges
+    .filter((l) => activeFilter?.test(l) ?? true)
+    .filter((l) => activeDestination === 'all' || placeOf(l) === activeDestination)
+    .filter((l) => {
+      const query = search.trim().toLowerCase();
+      return !query || `${l.name} ${placeOf(l)} ${typeLabel(l)} ${levelLabel(l)} ${l.best_for?.join(' ') ?? ''}`.toLowerCase().includes(query);
+    })
+    .slice()
+    .sort((a, b) => {
+      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      if (sortBy === 'destination') return placeOf(a).localeCompare(placeOf(b)) || a.name.localeCompare(b.name);
+      return Number(Boolean(b.is_featured)) - Number(Boolean(a.is_featured)) || a.name.localeCompare(b.name);
+    });
+  $: featuredLodge = active === 'all' && activeDestination === 'all' && !search.trim()
+    ? shown.find((l) => l.is_featured && (l.hero_image_url || l.image_url)) ?? shown.find((l) => l.hero_image_url || l.image_url)
+    : undefined;
+  $: gridLodges = featuredLodge ? shown.filter((l) => l.id !== featuredLodge?.id) : shown;
   const countFor = (filter: Filter) => lodges.filter(filter.test).length;
+  const resetFilters = () => { active = 'all'; activeDestination = 'all'; search = ''; sortBy = 'recommended'; };
+  const selectFilter = (key: string) => {
+    active = key;
+    requestAnimationFrame(() => {
+      const results = document.getElementById('accommodation-results');
+      if (!results) return;
+      const stickyOffset = window.innerWidth >= 768 ? 150 : 134;
+      window.scrollTo({ top: window.scrollY + results.getBoundingClientRect().top - stickyOffset, behavior: 'smooth' });
+    });
+  };
 
   // Backdrop borrowed from the first stay that actually has a photograph; falls
   // back to a deep-green field, since two of the ten have no image at all.
@@ -79,8 +114,8 @@
   // Hero stats, every one counted from the records on this page — no rounding up
   // and nothing shown when the count is zero.
   $: destinationCount = new Set(lodges.map((l) => l.destinations?.name).filter(Boolean)).size;
-  $: luxuryCount = lodges.filter((l) => l.accommodation_level === 'luxury').length;
-  $: campCount = lodges.filter((l) => l.lodge_type === 'tented_camp' || l.lodge_type === 'mobile_camp').length;
+  $: luxuryCount = lodges.filter((l) => l.accommodation_level === 'LUXURY' || l.accommodation_level === 'PREMIUM_LUXURY').length;
+  $: campCount = lodges.filter((l) => l.lodge_type === 'TENTED_CAMP' || l.lodge_type === 'MOBILE_CAMP').length;
   $: heroStats = [
     { icon: BedDouble, value: lodges.length, label: lodges.length === 1 ? 'place to stay' : 'places to stay' },
     { icon: MapPin, value: destinationCount, label: destinationCount === 1 ? 'destination' : 'destinations' },
@@ -168,146 +203,65 @@
 </section>
 
 {#if lodges.length}
-  <!-- Filters as plain text toggles on a hairline, not pills in boxes. -->
-  <section class="border-y border-ink/10 bg-canvas">
-    <div class="container-shell">
-      <div class="-mx-4 flex gap-6 overflow-x-auto px-4 py-4 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden">
-        {#each filters as filter (filter.key)}
-          {@const count = countFor(filter)}
-          <button
-            type="button"
-            class={`group shrink-0 whitespace-nowrap border-b-2 pb-1 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold ${
-              active === filter.key
-                ? 'border-goldfinch-gold font-extrabold text-heading'
-                : 'border-transparent font-semibold text-ink/50 hover:text-heading'
-            }`}
-            aria-pressed={active === filter.key}
-            on:click={() => (active = filter.key)}
-          >
-            {filter.label}
-            <span class="ml-1.5 text-xs font-semibold text-ink/35">{count}</span>
-          </button>
-        {/each}
+  <section class="border-b border-ink/10 bg-sand/35">
+    <div class="container-shell flex flex-wrap items-center justify-center gap-x-8 gap-y-3 py-5 text-xs font-semibold text-ink/65">
+      {#each ['Chosen for the route', 'Local specialist guidance', 'Every stay arranged for you', 'Private tailor-made safaris'] as point}
+        <span class="inline-flex items-center gap-2"><ShieldCheck size={14} class="text-forest" />{point}</span>
+      {/each}
+    </div>
+  </section>
+
+  <section id="browse" class="scroll-mt-24 bg-canvas">
+    <div class="container-shell py-5 md:py-6">
+      <div class="flex flex-col gap-3 lg:flex-row">
+        <label class="relative flex-1">
+          <Search size={16} class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/40" />
+          <input bind:value={search} type="search" placeholder="Search stays or destinations…" class="h-12 w-full border-0 border-b border-ink/20 bg-transparent pl-10 pr-4 text-sm outline-none transition placeholder:text-ink/40 focus:border-goldfinch-gold" />
+        </label>
+        <div class="grid grid-cols-2 gap-2 sm:flex">
+          <select bind:value={activeDestination} class="h-12 min-w-0 border-0 border-b border-ink/20 bg-transparent px-2 text-sm font-semibold text-heading outline-none focus:border-goldfinch-gold">
+            <option value="all">All destinations</option>
+            {#each destinations as destination}<option value={destination}>{destination}</option>{/each}
+          </select>
+          <select bind:value={sortBy} class="h-12 min-w-0 border-0 border-b border-ink/20 bg-transparent px-2 text-sm font-semibold text-heading outline-none focus:border-goldfinch-gold">
+            <option value="recommended">Recommended</option><option value="destination">By destination</option><option value="name">Name A–Z</option>
+          </select>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="bg-canvas pb-20 md:pb-28">
+  <nav class="sticky top-[70px] z-30 border-y border-ink/10 bg-canvas/95 shadow-[0_8px_24px_rgba(57,61,50,0.06)] backdrop-blur-md" aria-label="Accommodation filters">
     <div class="container-shell">
-      <!-- Mixed rhythm rather than one repeating row: every fifth stay leads as a
-           full-width feature, the next two sit as a pair, and the last two are
-           compact rows. Mobile-first — one column by default, the pattern only
-           appears once there is width for it. -->
-      <ul class="mt-2 grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6" use:staggeredCardReveal={{ y: 14, stagger: 0.03 }}>
-        {#each shown as lodge, index (lodge.id)}
-          {@const variant = index % 5 === 0 ? 'feature' : index % 5 <= 2 ? 'card' : 'row'}
-          {@const image = sourceFor(lodge, variant === 'feature' ? 1400 : 800, 'image_url', 'hero_image_url')}
-          <li class={variant === 'card' ? 'sm:col-span-1' : 'sm:col-span-2'}>
-            {#if variant === 'row'}
-              <!-- compact hairline row -->
-              <a
-                class="group flex items-center gap-4 border-t border-ink/10 py-5 transition hover:bg-sand/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold sm:gap-6 sm:py-6"
-                href={`/accommodation/${lodge.slug}`}
-                data-sveltekit-preload-data="hover"
-              >
-                <span class="hidden w-8 shrink-0 font-serif text-sm italic text-ink/30 sm:block">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                {#if image}
-                  <span class="h-16 w-20 shrink-0 overflow-hidden rounded-[8px] bg-sand sm:h-20 sm:w-28">
-                    <Img
-                      record={lodge}
-                      fields={['image_url', 'hero_image_url']}
-                      alt=""
-                      width={320}
-                      sizes="112px"
-                      className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                    />
-                  </span>
-                {/if}
-                <span class="min-w-0 flex-1">
-                  {#if placeOf(lodge)}
-                    <span class="block text-[10px] font-bold uppercase tracking-[0.16em] text-clay">{placeOf(lodge)}</span>
-                  {/if}
-                  <span class="mt-0.5 block font-serif text-lg font-semibold leading-tight text-heading transition group-hover:text-forest sm:text-xl">
-                    {lodge.name}
-                  </span>
-                  <span class="mt-1 block text-xs font-semibold text-ink/45">
-                    {[levelLabel(lodge), typeLabel(lodge)].filter(Boolean).join(' · ')}
-                  </span>
-                </span>
-                <span class="shrink-0 text-ink/25 transition group-hover:translate-x-1 group-hover:text-goldfinch-gold">
-                  <ArrowRight size={18} />
-                </span>
-              </a>
-            {:else}
-              <!-- feature and card share one anchor; the feature simply gets a
-                   wider frame and larger type -->
-              <a
-                class="group flex h-full flex-col overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-card transition duration-300 hover:-translate-y-1 hover:border-goldfinch-gold/40 hover:shadow-[0_22px_50px_rgba(57,61,50,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
-                href={`/accommodation/${lodge.slug}`}
-                data-sveltekit-preload-data="hover"
-              >
-                <span class={`relative block w-full overflow-hidden bg-forest ${variant === 'feature' ? 'aspect-[16/10] sm:aspect-[21/9]' : 'aspect-[4/3]'}`}>
-                  {#if image}
-                    <Img
-                      record={lodge}
-                      fields={['image_url', 'hero_image_url']}
-                      alt=""
-                      width={variant === 'feature' ? 1400 : 800}
-                      sizes={variant === 'feature' ? '100vw' : '(max-width: 640px) 92vw, 50vw'}
-                      eager={index < 2}
-                      className="absolute inset-0 h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.05]"
-                    />
-                  {:else}
-                    <!-- two of the ten have no photograph; the frame still reads -->
-                    <span class="absolute inset-0 bg-gradient-to-br from-deep-green via-forest to-deep-green" aria-hidden="true"></span>
-                    <span class="absolute inset-0 grid place-items-center font-serif text-6xl text-white/12" aria-hidden="true">
-                      {lodge.name.charAt(0)}
-                    </span>
-                  {/if}
-                  <span class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" aria-hidden="true"></span>
-                  <span class="absolute inset-x-0 bottom-0 p-4 sm:p-5">
-                    {#if placeOf(lodge)}
-                      <span class="block text-[10px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{placeOf(lodge)}</span>
-                    {/if}
-                    <span class={`mt-1 block font-serif font-semibold leading-tight text-white ${variant === 'feature' ? 'text-2xl sm:text-4xl' : 'text-xl'}`}>
-                      {lodge.name}
-                    </span>
-                  </span>
-                </span>
-
-                <span class="flex flex-1 flex-col p-4 sm:p-5">
-                  {#if blurbOf(lodge)}
-                    <span class={`text-sm leading-7 text-ink/65 ${variant === 'feature' ? 'sm:text-base sm:leading-8' : 'line-clamp-3'}`}>
-                      {blurbOf(lodge)}
-                    </span>
-                  {/if}
-                  <span class="mt-4 flex items-center justify-between gap-3 border-t border-ink/10 pt-3 text-xs font-semibold text-ink/45">
-                    <span class="min-w-0 truncate">
-                      {[levelLabel(lodge), typeLabel(lodge)].filter(Boolean).join(' · ')}
-                      {#if variant === 'feature' && lodge.best_for?.length}
-                        <span class="text-ink/35"> — best for {lodge.best_for.join(', ').toLowerCase()}</span>
-                      {/if}
-                    </span>
-                    <span class="shrink-0 text-ink/25 transition group-hover:translate-x-0.5 group-hover:text-goldfinch-gold">
-                      <ArrowRight size={16} />
-                    </span>
-                  </span>
-                </span>
-              </a>
-            {/if}
-          </li>
+      <div class="flex min-h-14 gap-7 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:min-h-16">
+        {#each filters as filter (filter.key)}
+          <button type="button" class={`flex min-h-14 shrink-0 items-center border-b-[3px] px-0.5 text-[13px] font-bold transition md:min-h-16 md:text-sm ${active === filter.key ? 'border-goldfinch-gold text-heading' : 'border-transparent text-ink/50 hover:text-heading'}`} on:click={() => selectFilter(filter.key)}>{filter.label} <span class="ml-1.5 text-xs text-ink/35">{countFor(filter)}</span></button>
         {/each}
-      </ul>
+        {#if active !== 'all' || activeDestination !== 'all' || search.trim()}
+          <button type="button" class="inline-flex min-h-14 shrink-0 items-center gap-1 text-xs font-bold text-clay md:min-h-16" on:click={resetFilters}>Clear <X size={13}/></button>
+        {/if}
+      </div>
+    </div>
+  </nav>
 
-      {#if !shown.length}
-        <p class="border-t border-ink/10 py-14 text-center text-sm text-ink/55">
-          Nothing under that filter yet.
-          <button class="font-bold text-clay underline-offset-2 hover:underline" type="button" on:click={() => (active = 'all')}>
-            Show all stays
-          </button>
-        </p>
+  <section id="accommodation-results" class="bg-canvas py-14 md:py-20">
+    <div class="container-shell">
+      <div class="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+        <div class="max-w-2xl"><p class="text-[11px] font-bold uppercase tracking-[0.18em] text-clay">Stays selected for the journey</p><h2 class="mt-3 font-serif text-3xl font-semibold leading-tight text-heading md:text-[42px]">Choose the safari first. We fit the right stay into it.</h2><p class="mt-3 text-sm leading-7 text-ink/65 md:text-base">Browse for inspiration, then open the safaris that use each property or ask us to shape a private route around it.</p></div>
+        <a class="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 bg-deep-green px-6 text-sm font-bold text-white transition hover:bg-forest md:w-auto" href="/tours">Explore safari itineraries <ArrowRight size={16}/></a>
+      </div>
+
+      {#if featuredLodge}
+        <div class="mb-8 mt-10" use:fadeUpOnScroll={{ y: 14 }}><div class="mb-4 flex items-center gap-3"><span class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-clay"><Sparkles size={13}/> Goldfinch pick</span><span class="h-px flex-1 bg-ink/10"></span></div><LodgeCard lodge={featuredLodge} feature /></div>
+      {/if}
+
+      {#if gridLodges.length}
+        <p class="mb-5 mt-9 text-sm text-ink/50">{shown.length} {shown.length === 1 ? 'property' : 'properties'} selected</p>
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
+          {#each gridLodges as lodge (lodge.id)}<LodgeCard {lodge} />{/each}
+        </div>
+      {:else}
+        <div class="mt-10 border border-ink/10 bg-surface px-6 py-14 text-center"><p class="font-serif text-2xl text-heading">No stays match those filters.</p><button class="mt-4 font-bold text-clay underline-offset-4 hover:underline" type="button" on:click={resetFilters}>Show all stays</button></div>
       {/if}
     </div>
   </section>

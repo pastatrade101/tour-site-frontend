@@ -1,0 +1,2 @@
+<script lang="ts">export let label='';export let value:any='';export let options:string[]=[];export let labels:Record<string,string>={};</script>
+<label class="grid min-w-0 gap-1.5 text-sm font-semibold text-ink"><span>{label}</span><select class="h-11 min-w-0 rounded-lg border border-ink/15 bg-surface px-3 font-normal outline-none focus:border-forest" bind:value><option value="">Select…</option>{#each options as option}<option value={option}>{labels[option]??option.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())}</option>{/each}</select></label>

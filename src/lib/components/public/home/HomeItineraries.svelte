@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowRight } from '@lucide/svelte';
+  import { ArrowRight, Heart, Palmtree, PawPrint, ShieldCheck, Users } from '@lucide/svelte';
   import type { Tour } from '$lib/types';
   import TourCardRich from '../TourCardRich.svelte';
 
@@ -10,46 +10,30 @@
   export let ctaHref = '/tours';
   export let ctaLabel = 'Browse all itineraries';
 
-  type FilterChip = { key: string; label: string };
+  type FilterChip = { key: string; label: string; match: RegExp; icon: typeof PawPrint };
 
-  let activeFilter = 'all';
+  const filters: FilterChip[] = [
+    { key: 'safari-from-zanzibar', label: 'Safari from Zanzibar', match: /safari from zanzibar|zanzibar.*safari|safari.*zanzibar/i, icon: Palmtree },
+    { key: 'private-safari', label: 'Private Safari', match: /private safari|private/i, icon: ShieldCheck },
+    { key: 'family-safaris', label: 'Family Safaris', match: /family|families/i, icon: Users },
+    { key: 'honeymoon-safaris', label: 'Honeymoon Safaris', match: /honeymoon|romantic|couples?/i, icon: Heart },
+    { key: 'great-migration', label: 'Great Migration', match: /great migration|migration/i, icon: PawPrint }
+  ];
+
+  let activeFilter = filters[0].key;
 
   const categoryKey = (tour: Tour): string => tour.tour_categories?.slug || '';
   const categoryName = (tour: Tour): string => tour.tour_categories?.name || '';
-  const titleCase = (value: string): string => value.replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
   const matchesFilter = (tour: Tour, filter: string): boolean => {
-    if (filter === 'all') return true;
-    const [kind, value] = filter.split(':', 2);
-    if (kind === 'category') return categoryKey(tour) === value;
-    if (kind === 'persona') return (tour.persona_tags ?? []).includes(value);
-    if (kind === 'tier') return tour.budget_tier === value;
-    return false;
+    const definition = filters.find((item) => item.key === filter);
+    if (!definition) return false;
+    const searchable = [tour.title, tour.slug, tour.experience_type, categoryKey(tour), categoryName(tour), ...(tour.persona_tags ?? [])].filter(Boolean).join(' ');
+    return definition.match.test(searchable);
   };
 
   $: list = (tours ?? []).filter(Boolean);
-  $: filters = Array.from(
-    new Map(
-      list.flatMap((tour): Array<[string, FilterChip]> => {
-        const chips: Array<[string, FilterChip]> = [];
-        if (categoryKey(tour) && categoryName(tour)) {
-          const key = `category:${categoryKey(tour)}`;
-          chips.push([key, { key, label: categoryName(tour) }]);
-        }
-        for (const persona of tour.persona_tags ?? []) {
-          const key = `persona:${persona}`;
-          chips.push([key, { key, label: titleCase(persona) }]);
-        }
-        if (tour.budget_tier) {
-          const key = `tier:${tour.budget_tier}`;
-          chips.push([key, { key, label: titleCase(tour.budget_tier) }]);
-        }
-        return chips;
-      })
-    ).values()
-  );
   $: filteredTours = list.filter((tour) => matchesFilter(tour, activeFilter));
   $: visibleTours = filteredTours.slice(0, 6);
-  $: if (activeFilter !== 'all' && !filters.some((filter) => filter.key === activeFilter)) activeFilter = 'all';
 
 </script>
 
@@ -76,25 +60,17 @@
 
       {#if filters.length}
         <div class="filter-rail mt-8 lg:mt-11" aria-label="Filter featured itineraries">
-          <button type="button" aria-pressed={activeFilter === 'all'} class:active={activeFilter === 'all'} class="package-tab" on:click={() => (activeFilter = 'all')}>
-            <span class="chip-dot" aria-hidden="true"></span>All trips
-          </button>
           {#each filters as filter}
             <button type="button" aria-pressed={activeFilter === filter.key} class:active={activeFilter === filter.key} class="package-tab" on:click={() => (activeFilter = filter.key)}>
-              <span class="chip-dot" aria-hidden="true"></span>{filter.label}
+              <svelte:component this={filter.icon} size={15} strokeWidth={2.2} class="chip-icon" aria-hidden="true" />{filter.label}
             </button>
           {/each}
         </div>
       {/if}
 
       {#key activeFilter}
-        <div class="package-grid mt-8 grid gap-5 lg:grid-cols-3 lg:gap-6">
-          {#each visibleTours as tour (tour.slug)}
-            <div class="package-card min-w-0">
-              <TourCardRich {tour} showShortlist={false} />
-            </div>
-          {/each}
-        </div>
+        {#if visibleTours.length}<div class="package-grid mt-8 grid gap-5 lg:grid-cols-3 lg:gap-6">{#each visibleTours as tour (tour.slug)}<div class="package-card min-w-0"><TourCardRich {tour} showShortlist={false} /></div>{/each}</div>
+        {:else}<div class="mt-8 border-y border-ink/10 py-10 text-sm text-ink/55">No featured itineraries are assigned to this collection yet.</div>{/if}
       {/key}
 
       <a href={ctaHref} data-cta="browse-all-itineraries-mobile" class="mt-6 inline-flex items-center gap-2 text-sm font-bold text-clay lg:hidden">
@@ -131,14 +107,7 @@
     transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
   }
 
-  .chip-dot {
-    width: 0.375rem;
-    height: 0.375rem;
-    flex: 0 0 auto;
-    border-radius: 999px;
-    background: rgb(var(--c-ink) / 0.24);
-    transition: background-color 180ms ease, box-shadow 180ms ease;
-  }
+  :global(.chip-icon) { flex: 0 0 auto; color: rgb(var(--c-forest) / 0.72); transition: color 180ms ease, transform 180ms ease; }
 
   .package-tab:hover {
     border-color: rgb(var(--c-forest) / 0.4);
@@ -153,10 +122,7 @@
     animation: chip-select 240ms ease-out;
   }
 
-  .package-tab.active .chip-dot {
-    background: rgb(var(--c-goldfinch-gold));
-    box-shadow: 0 0 0 3px rgb(var(--c-goldfinch-gold) / 0.16);
-  }
+  .package-tab.active :global(.chip-icon) { color: rgb(var(--c-goldfinch-gold)); transform: scale(1.06); }
 
   .package-grid { animation: cards-enter 280ms ease-out both; }
 

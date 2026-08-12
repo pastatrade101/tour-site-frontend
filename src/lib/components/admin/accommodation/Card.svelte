@@ -1,0 +1,2 @@
+<script lang="ts">import{Trash2}from'@lucide/svelte';export let title='';export let remove:()=>void=()=>{};</script>
+<article class="rounded-xl border border-ink/10 bg-sand/15 p-4"><div class="mb-4 flex items-center justify-between"><h4 class="font-bold text-heading">{title}</h4><button class="grid h-8 w-8 place-items-center rounded-md text-red-600 hover:bg-red-50" type="button" aria-label="Remove" on:click={remove}><Trash2 size={15}/></button></div><div class="grid gap-4"><slot/></div></article>
