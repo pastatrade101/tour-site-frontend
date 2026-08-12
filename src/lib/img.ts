@@ -14,6 +14,43 @@ import { env as publicEnv } from '$env/dynamic/public';
 const UNSPLASH = 'images.unsplash.com';
 const SUPABASE_PUBLIC = '/storage/v1/object/public/';
 
+const mediaCdnOrigin = () => (publicEnv.PUBLIC_MEDIA_CDN_URL || '').trim().replace(/\/+$/, '');
+
+/** True only for an object managed by the legacy Supabase public bucket. */
+export const isManagedMediaUrl = (url: string | null | undefined): boolean => {
+  if (!url || url.startsWith('data:') || url.startsWith('blob:')) return false;
+  try {
+    return new URL(url).pathname.includes(SUPABASE_PUBLIC);
+  } catch {
+    return url.includes(SUPABASE_PUBLIC);
+  }
+};
+
+/**
+ * Convert a managed storage URL to its Cloudflare delivery URL.
+ * Never persist this result: callers must retain the raw DB URL as the lookup
+ * key for media_library and the image-variant resolver.
+ */
+export const cdnUrl = (url: string | null | undefined): string => {
+  if (!url) return '';
+  const cdn = mediaCdnOrigin();
+  if (!cdn || !isManagedMediaUrl(url)) return url;
+  try {
+    const pathname = new URL(url).pathname;
+    const managed = pathname.split(SUPABASE_PUBLIC)[1] ?? '';
+    const slash = managed.indexOf('/'); // discard the Supabase bucket name
+    if (slash < 0 || !managed.slice(slash + 1)) return url;
+    return `${cdn}/${managed.slice(slash + 1)}`;
+  } catch {
+    const managed = url.split(SUPABASE_PUBLIC)[1]?.split(/[?#]/)[0] ?? '';
+    const slash = managed.indexOf('/');
+    return slash >= 0 ? `${cdn}/${managed.slice(slash + 1)}` : url;
+  }
+};
+
+/** Explicit raw URL accessor for database lookups and mutation payloads. */
+export const origUrl = (url: string | null | undefined): string => url || '';
+
 export const imgUrl = (url: string | null | undefined, width = 800, quality = 70): string => {
   if (!url) return '';
   try {
@@ -21,12 +58,13 @@ export const imgUrl = (url: string | null | undefined, width = 800, quality = 70
       const base = url.split('?')[0];
       return `${base}?auto=format&fit=crop&w=${width}&q=${quality}`;
     }
+    if (mediaCdnOrigin() && isManagedMediaUrl(url)) return cdnUrl(url);
     if (url.includes(SUPABASE_PUBLIC) && publicEnv.PUBLIC_SUPABASE_IMG_TRANSFORM === 'true') {
       const transformed = url.replace(SUPABASE_PUBLIC, '/storage/v1/render/image/public/');
       const sep = transformed.includes('?') ? '&' : '?';
       return `${transformed}${sep}width=${width}&quality=${quality}`;
     }
-    return url;
+    return cdnUrl(url);
   } catch {
     return url;
   }
@@ -46,7 +84,7 @@ export const thumbUrl = (record: Record<string, any> | null | undefined, ...fiel
     const value = record[field];
     if (typeof value === 'string' && value) {
       const thumbnail = record[`${field}_thumbnail`];
-      return typeof thumbnail === 'string' && thumbnail ? thumbnail : value;
+      return cdnUrl(typeof thumbnail === 'string' && thumbnail ? thumbnail : value);
     }
   }
   return '';
@@ -71,7 +109,7 @@ export const sourceFor = (
     if (typeof original !== 'string' || !original) continue;
     const thumbnail = record[`${field}_thumbnail`];
     const useThumbnail = renderWidth <= THUMBNAIL_WIDTH && typeof thumbnail === 'string' && thumbnail;
-    return useThumbnail ? thumbnail : original;
+    return cdnUrl(useThumbnail ? thumbnail : original);
   }
   return '';
 };
@@ -111,7 +149,7 @@ export const variantBaseFromUrl = (url: string | null | undefined): string => {
   const stem = fileName.replace(/\.[^.]+$/, '');
   const folder = clean.replace(/\/[^/]+$/, '');
   if (!stem || stem === fileName || !folder || folder === clean) return '';
-  return `${folder}/responsive/${stem}`;
+  return cdnUrl(`${folder}/responsive/${stem}`);
 };
 
 export const variantForUrl = (
@@ -122,7 +160,7 @@ export const variantForUrl = (
   const raw = meta as ResolvedImageVariant & Partial<ImageVariants>;
   const widths = cleanWidths(raw.widths ?? raw.variant_widths);
   if (!widths.length) return null;
-  const base = typeof raw.base === 'string' && raw.base ? raw.base : variantBaseFromUrl(url);
+  const base = typeof raw.base === 'string' && raw.base ? cdnUrl(raw.base) : variantBaseFromUrl(url);
   if (!base) return null;
   return {
     base,

@@ -22,6 +22,7 @@
   import { SITE_URL } from '$lib/config/env';
   import { loadPublicSettings } from '$lib/settings';
   import { initCurrency } from '$lib/currency';
+  import { cdnUrl } from '$lib/img';
 
   $: isAdmin = $page.url.pathname.startsWith('/admin');
 
@@ -29,6 +30,7 @@
   $: siteOrigin = SITE_URL || $page.url.origin;
   $: canonicalUrl = `${siteOrigin}${$page.url.pathname}`;
   $: orgUrl = `${siteOrigin}/`;
+  $: mediaCdnOrigin = (publicEnv.PUBLIC_MEDIA_CDN_URL || '').trim().replace(/\/+$/, '');
 
   // ── Per-page SEO overrides (Tier 2) ─────────────────────────────────────────
   // Fetched client-side per path. When there is NO override row, every computed
@@ -75,7 +77,7 @@
   $: seoOgTitle = seoOverride?.og_title || seoOverride?.title || $branding.site_name;
   $: seoOgDescription = seoOverride?.og_description || seoOverride?.meta_description || $branding.positioning;
   $: seoCanonical = seoOverride?.canonical_url || canonicalUrl;
-  $: seoOgImage = seoOverride?.og_image_url || '';
+  $: seoOgImage = cdnUrl(seoOverride?.og_image_url || '');
   $: seoRobots = seoOverride?.robots || '';
   $: seoStructured = seoOverride?.structured_data && !Array.isArray(seoOverride.structured_data) ? seoOverride.structured_data : null;
 
@@ -173,6 +175,10 @@
   {#if seoOgImage}<meta property="og:image" content={seoOgImage} />{/if}
   <link rel="canonical" href={seoCanonical} />
   {#if seoRobots}<meta name="robots" content={seoRobots} />{/if}
+  {#if mediaCdnOrigin}
+    <link rel="preconnect" href={mediaCdnOrigin} crossorigin="anonymous" />
+    <link rel="dns-prefetch" href={mediaCdnOrigin} />
+  {/if}
 </svelte:head>
 
 <!-- Org-wide schema (JsonLd injects via {@html}; a {mustache} inside <script> is

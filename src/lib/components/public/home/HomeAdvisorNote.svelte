@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { ArrowRight, Binoculars, CalendarDays, Compass, Hotel, MapPin, MessageCircle, Route } from '@lucide/svelte';
+  import { brand } from '$lib/brand';
+  import { trackEvent } from '$lib/analytics';
+  import { publicSettings, settingText } from '$lib/settings';
   // Advisor's note — editorial card with two bulleted columns.
   // Fully CMS-driven: title / body / footnote come from the section record and
   // `columns` from its extra_data, so the client can rename either column and
@@ -37,9 +41,22 @@
     .filter((c) => c && c.title)
     .map((c) => ({ title: c.title, items: (c.items ?? []).filter((i) => typeof i === 'string' && i.trim()) }))
     .filter((c) => c.items.length);
+
+  const detailIcons = [CalendarDays, MapPin, Route, Hotel, Compass, Binoculars];
+  const splitDetail = (columnTitle: string, item: string) => {
+    const parts = item.split(/\s+[—–]\s+|:\s+/);
+    return parts.length > 1
+      ? { title: parts[0], body: parts.slice(1).join(' — ') }
+      : { title: columnTitle, body: item };
+  };
+  $: details = cols.flatMap((column) => column.items.map((item) => splitDetail(column.title, item))).slice(0, 6);
+  $: waDigits = (settingText($publicSettings, 'whatsapp_number') || settingText($publicSettings, 'contact_phone')).replace(/[^0-9]/g, '');
+  $: waHref = waDigits
+    ? `https://wa.me/${waDigits}?text=${encodeURIComponent(`Hello ${brand.name}, I would like help planning my trip.`)}`
+    : '';
 </script>
 
-<section class="home-advisor-note py-14 md:py-20">
+<section class="home-advisor-note hidden">
   <div class="container-shell">
     <div
       class="home-advisor-card relative overflow-hidden rounded-[12px] border border-ink/20 bg-sand px-7 py-8 sm:px-10 sm:py-10 md:px-14 md:py-14 lg:px-[72px] lg:py-[64px]"
@@ -105,7 +122,81 @@
   </div>
 </section>
 
+<section class="home-advisor-desktop bg-[#f3eee4] py-8 sm:py-10 xl:py-12">
+  <div class="container-shell">
+    <div class="relative overflow-hidden rounded-[18px] border border-white/80 bg-[#fffdf9] px-5 py-7 shadow-[0_24px_70px_rgba(57,61,50,0.08)] sm:px-7 sm:py-8 lg:rounded-[24px] lg:px-10 lg:py-10 xl:px-12 xl:py-11">
+      <div class="advisor-contours pointer-events-none absolute inset-0 opacity-50" aria-hidden="true"></div>
+
+      <div class="relative grid items-start gap-8 lg:grid-cols-[minmax(390px,0.92fr)_minmax(0,1.3fr)] lg:gap-10 xl:grid-cols-[minmax(440px,0.95fr)_minmax(0,1.35fr)] xl:gap-12">
+        <div class="border-b border-ink/10 pb-8 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-10 xl:pr-12">
+          {#if eyebrow}
+            <div class="inline-flex items-center gap-3 text-xs font-bold uppercase tracking-[0.16em] text-clay">
+              <span class="h-[3px] w-10 rounded-full bg-goldfinch-gold"></span>{eyebrow}
+            </div>
+          {/if}
+          {#if title}
+            <h2 class="mt-5 max-w-[15ch] font-serif text-[clamp(2.15rem,9vw,3.8rem)] font-semibold leading-[1.04] tracking-[-0.02em] text-heading">{title}</h2>
+          {/if}
+          <div class="mt-6 h-[3px] w-16 bg-goldfinch-gold"></div>
+          {#if body}<p class="mt-5 max-w-md text-[16px] leading-7 text-ink/72">{body}</p>{/if}
+          <a href="/plan-my-trip" class="mt-7 inline-flex min-h-12 items-center gap-7 rounded-[9px] bg-goldfinch-gold px-6 text-[15px] font-bold text-heading shadow-[0_12px_28px_rgba(228,169,46,0.22)] transition hover:-translate-y-0.5 hover:brightness-105">
+            Plan My Trip <ArrowRight size={20} strokeWidth={2.3} />
+          </a>
+        </div>
+
+        {#if details.length}
+          <div class="grid grid-cols-2 lg:grid-cols-3">
+            {#each details as detail, index}
+              <article class={`advisor-detail flex min-h-[180px] min-w-0 flex-col items-center justify-center px-3 py-5 text-center sm:px-5 lg:min-h-[190px] lg:py-4 ${index % 3 !== 2 ? 'lg:border-r lg:border-ink/10' : ''} ${index < 3 && details.length > 3 ? 'lg:border-b lg:border-ink/10' : ''}`}>
+                <span class="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#f3eee4] text-heading lg:h-16 lg:w-16">
+                  <svelte:component this={detailIcons[index]} size={29} strokeWidth={1.65} />
+                </span>
+                <h3 class="mt-4 text-[11px] font-extrabold uppercase tracking-[0.07em] text-heading sm:text-[12px] lg:text-[13px]">{detail.title}</h3>
+                <p class="mx-auto mt-2 max-w-[17rem] text-[12.5px] leading-[1.5] text-ink/68 sm:text-[13px] lg:text-[14px]">{detail.body}</p>
+              </article>
+            {/each}
+          </div>
+        {/if}
+      </div>
+
+      {#if footnote || waHref}
+        <div class="relative mt-8 grid items-center overflow-hidden rounded-[16px] bg-deep-green px-5 py-6 text-white shadow-[0_18px_40px_rgba(31,77,58,0.2)] sm:px-7 lg:mt-9 lg:min-h-[118px] lg:grid-cols-[1.35fr_0.65fr] lg:rounded-[18px] lg:px-8 lg:py-0">
+          <div class="absolute inset-0 bg-[radial-gradient(circle_at_15%_100%,rgba(228,169,46,0.14),transparent_35%),linear-gradient(110deg,rgba(255,255,255,0.035),transparent_55%)]" aria-hidden="true"></div>
+          {#if footnote}
+            <div class="relative flex items-center gap-4 border-b border-white/20 pb-5 lg:gap-7 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-10">
+              <span class="grid h-14 w-14 shrink-0 place-items-center rounded-full border border-goldfinch-gold/35 bg-white/[0.05] text-goldfinch-gold lg:h-16 lg:w-16"><Compass size={28} strokeWidth={1.5} /></span>
+              <p class="max-w-xl font-serif text-[17px] leading-snug text-white sm:text-[18px] lg:text-[20px]">{footnote}</p>
+            </div>
+          {/if}
+          {#if waHref}
+            <a href={waHref} target="_blank" rel="noopener noreferrer" class="relative mt-5 flex items-center gap-4 lg:mt-0 lg:gap-5 lg:pl-10" on:click={() => trackEvent('whatsapp_click', { cta_location: 'home_advisor_note' })}>
+              <span class="grid h-14 w-14 shrink-0 place-items-center rounded-full border border-goldfinch-gold/40 text-goldfinch-gold"><MessageCircle size={25} /></span>
+              <span><strong class="block font-serif text-[20px] font-semibold">Talk to an Advisor</strong><small class="mt-1 flex items-center gap-2 text-[13px] font-bold text-goldfinch-gold">Chat with our safari experts <ArrowRight size={14} /></small></span>
+            </a>
+          {/if}
+        </div>
+      {/if}
+    </div>
+  </div>
+</section>
+
 <style>
+  .advisor-contours {
+    background-image:
+      radial-gradient(ellipse at 15% 20%, transparent 0 28%, rgb(var(--c-goldfinch-gold) / 0.08) 28.3% 28.6%, transparent 29%),
+      radial-gradient(ellipse at 88% 32%, transparent 0 25%, rgb(var(--c-goldfinch-gold) / 0.07) 25.3% 25.6%, transparent 26%);
+  }
+
+  @media (max-width: 1023px) {
+    .advisor-detail:nth-child(odd) {
+      border-right: 1px solid rgb(var(--c-ink) / 0.1);
+    }
+
+    .advisor-detail:not(:nth-last-child(-n + 2)) {
+      border-bottom: 1px solid rgb(var(--c-ink) / 0.1);
+    }
+  }
+
   @media (max-width: 767px) {
     .home-advisor-note {
       padding-block: 3.25rem;

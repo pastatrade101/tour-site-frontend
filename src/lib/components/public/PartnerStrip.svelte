@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { cdnUrl } from '$lib/img';
   type Logo = { image_url: string; name?: string; url?: string };
 
   export let logos: Logo[] = [];
@@ -23,10 +24,10 @@
             <div class="marquee-item" aria-hidden={index >= valid.length ? 'true' : undefined}>
               {#if logo.url}
                 <a class="flex" href={logo.url} target="_blank" rel="noopener noreferrer" title={logo.name}>
-                  <img class="marquee-logo" src={logo.image_url} alt={logo.name || 'Partner logo'} loading="lazy" />
+                  <img class="marquee-logo" src={cdnUrl(logo.image_url)} alt={logo.name || 'Partner logo'} loading="lazy" />
                 </a>
               {:else}
-                <img class="marquee-logo" src={logo.image_url} alt={logo.name || 'Partner logo'} loading="lazy" />
+                <img class="marquee-logo" src={cdnUrl(logo.image_url)} alt={logo.name || 'Partner logo'} loading="lazy" />
               {/if}
             </div>
           {/each}
