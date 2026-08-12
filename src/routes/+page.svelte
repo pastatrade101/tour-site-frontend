@@ -21,6 +21,7 @@
   import MigrationCalendar from '$lib/components/public/MigrationCalendar.svelte';
   import LeadCaptureForm from '$lib/components/public/LeadCaptureForm.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
+  import ContentShimmer from '$lib/components/public/ContentShimmer.svelte';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
   import { api } from '$lib/api/client';
   import { API_URL } from '$lib/config/env';
@@ -94,6 +95,7 @@
   let galleryItems: GalleryCardItem[] = (data.galleryItems ?? []) as GalleryCardItem[];
   let categories: Record<string, unknown>[] = (data.categories ?? []) as Record<string, unknown>[];
   let imageVariants: ImageVariantMap = (data.imageVariants ?? {}) as ImageVariantMap;
+  let deferredLoading = true;
   let sections: Record<string, HomeSection> = Object.fromEntries(
     (data.homeSections as unknown as HomeSection[]).map((s) => [s.section_key, s])
   );
@@ -264,6 +266,7 @@
   $: homepageFaqs = homepageFaqRows.length ? homepageFaqRows : faqs;
 
   const loadDeferredHomeSections = async () => {
+    try {
     const [
       tourResult,
       destinationResult,
@@ -327,6 +330,9 @@
     reviews = featuredReviews.length ? featuredReviews : fallbackReviews;
     migrationEntries = nextMigrationEntries;
     galleryItems = nextGalleryItems as GalleryCardItem[];
+    } finally {
+      deferredLoading = false;
+    }
   };
 
   onMount(() => {
@@ -390,6 +396,8 @@
     title={cms('featured_destinations', 'title', 'The Places That Shape the Journey')}
     subtitle={cms('featured_destinations', 'subtitle', 'Some places are best for wildlife. Others are better for beaches, scenery or culture. We help you combine them in the right order.')}
   />
+{:else if isSectionActive('featured_destinations') && deferredLoading}
+  <ContentShimmer cards={3} label="Loading featured destinations" />
 {/if}
 
 <!-- 4 · Featured itineraries -->
@@ -402,6 +410,8 @@
     ctaHref={cms('featured_tours', 'button_url', '/tours')}
     ctaLabel={cms('featured_tours', 'button_text', 'Browse all itineraries')}
   />
+{:else if isSectionActive('featured_tours') && deferredLoading}
+  <ContentShimmer cards={3} label="Loading featured itineraries" />
 {/if}
 
 <!-- 5 · Why Goldfinch -->
@@ -450,6 +460,8 @@
       .map((g) => ({ src: String(g.image_url), caption: String(g.title ?? g.alt_text ?? '') }))}
     {imageVariants}
   />
+{:else if isSectionActive('reviews_section') && deferredLoading}
+  <ContentShimmer cards={3} label="Loading traveller stories" />
 {/if}
 
 <!-- ── Goldfinch-only sections (not in the reference layout) — each stays
@@ -461,14 +473,18 @@
 {/if}
 
 <!-- 8d · Serengeti Great Migration calendar (self-hiding until entries exist) -->
-<MigrationCalendar
-  entries={migrationEntries}
-  active={sections.migration_section?.is_active !== false}
-  eyebrow={cmsExtra('migration_section', 'eyebrow', 'Great Migration')}
-  title={cms('migration_section', 'title', 'Where the herds are, month by month')}
-  subtitle={cms('migration_section', 'subtitle', 'Plan around the river crossings and calving season with our month-by-month guide.')}
-  {imageVariants}
-/>
+{#if migrationEntries.length}
+  <MigrationCalendar
+    entries={migrationEntries}
+    active={sections.migration_section?.is_active !== false}
+    eyebrow={cmsExtra('migration_section', 'eyebrow', 'Great Migration')}
+    title={cms('migration_section', 'title', 'Where the herds are, month by month')}
+    subtitle={cms('migration_section', 'subtitle', 'Plan around the river crossings and calving season with our month-by-month guide.')}
+    {imageVariants}
+  />
+{:else if sections.migration_section?.is_active !== false && deferredLoading}
+  <ContentShimmer cards={3} label="Loading migration calendar" />
+{/if}
 
 <!-- 10b · Gallery preview -->
 {#if isSectionActive('gallery_preview') && galleryDisplay.length}
@@ -496,6 +512,8 @@
     </div>
   </div>
 </section>
+{:else if isSectionActive('gallery_preview') && deferredLoading}
+  <ContentShimmer cards={3} label="Loading safari gallery" />
 {/if}
 
 <!-- 11 · Blog — hidden when there are no posts -->
@@ -514,6 +532,8 @@
     </div>
   </div>
 </section>
+{:else if isSectionActive('blog_preview') && deferredLoading}
+  <ContentShimmer cards={3} label="Loading latest stories" />
 {/if}
 
 <!-- 12 · Impact -->
@@ -534,6 +554,8 @@
     <FAQAccordion faqs={homepageFaqs} />
   </div>
 </section>
+{:else if isSectionActive('faq') && deferredLoading}
+  <ContentShimmer cards={3} label="Loading frequently asked questions" />
 {/if}
 <!-- 9 · Planning form band (closing section, as in the reference layout) -->
 {#if isSectionActive('plan_dream')}

@@ -26,7 +26,6 @@
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import Img from '$lib/components/public/Img.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
-  import LoadingState from '$lib/components/public/LoadingState.svelte';
   import ReviewsWidget from '$lib/components/public/ReviewsWidget.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
@@ -582,9 +581,46 @@
 </svelte:head>
 
 {#if loading}
-  <section class="container-shell py-16">
-    <LoadingState message="Loading tour..." />
-  </section>
+  <div class="tour-detail-skeleton bg-[#fbfaf6]" aria-busy="true" aria-label="Loading tour itinerary">
+    <section class="relative min-h-[390px] overflow-hidden bg-deep-green md:min-h-[460px]">
+      <div class="skeleton-shimmer absolute inset-0 opacity-20"></div>
+      <div class="container-shell relative flex min-h-[390px] flex-col justify-end pb-9 md:min-h-[460px] md:pb-12">
+        <div class="skeleton-shimmer h-3 w-28 rounded-full bg-white/15"></div>
+        <div class="skeleton-shimmer mt-5 h-10 w-[min(82%,46rem)] rounded-md bg-white/15 md:h-14"></div>
+        <div class="mt-6 grid max-w-2xl grid-cols-3 gap-3">
+          {#each Array(3) as _}<div class="skeleton-shimmer h-[70px] bg-white/15"></div>{/each}
+        </div>
+      </div>
+    </section>
+
+    <div class="border-b border-ink/10 bg-white/90">
+      <div class="container-shell flex gap-6 py-4">
+        {#each Array(5) as _, index}<div class={`skeleton-shimmer h-3 rounded-full ${index === 1 ? 'w-20' : 'w-16'}`}></div>{/each}
+      </div>
+    </div>
+
+    <div class="container-shell grid gap-12 py-10 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <main class="space-y-10">
+        {#each Array(3) as _, index}
+          <section class="rounded-[12px] border border-ink/[0.07] bg-white p-5 md:p-7">
+            <div class="skeleton-shimmer h-3 w-24 rounded-full"></div>
+            <div class={`skeleton-shimmer mt-4 h-8 rounded-md ${index === 1 ? 'w-4/5' : 'w-3/5'}`}></div>
+            <div class="skeleton-shimmer mt-5 h-4 w-full rounded-full"></div>
+            <div class="skeleton-shimmer mt-3 h-4 w-11/12 rounded-full"></div>
+            <div class="skeleton-shimmer mt-3 h-4 w-2/3 rounded-full"></div>
+          </section>
+        {/each}
+      </main>
+      <aside class="hidden lg:block">
+        <div class="rounded-[14px] border border-ink/[0.07] bg-white p-6">
+          <div class="skeleton-shimmer h-5 w-1/2 rounded-md"></div>
+          <div class="skeleton-shimmer mt-5 h-11 w-full rounded-md"></div>
+          <div class="skeleton-shimmer mt-3 h-11 w-full rounded-md"></div>
+          <div class="skeleton-shimmer mt-5 h-12 w-full rounded-md"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
 {:else if !tour}
   <section class="container-shell py-16">
     <ErrorState message={error || 'Tour not found.'} />
@@ -1211,6 +1247,29 @@
 {#if breadcrumbLd}<JsonLd data={breadcrumbLd} />{/if}
 
 <style>
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+    background-color: rgb(var(--c-ink) / 0.08);
+  }
+
+  .skeleton-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.68), transparent);
+    animation: itinerary-shimmer 1.45s ease-in-out infinite;
+  }
+
+  @keyframes itinerary-shimmer {
+    to { transform: translateX(100%); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-shimmer::after { animation: none; }
+  }
+
   .tour-detail-tabs {
     position: -webkit-sticky;
     position: sticky;

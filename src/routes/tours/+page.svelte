@@ -10,7 +10,7 @@
   import { toMetaText } from '$lib/richText';
   import EmptyState from '$lib/components/public/EmptyState.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
-  import LoadingState from '$lib/components/public/LoadingState.svelte';
+  import ContentShimmer from '$lib/components/public/ContentShimmer.svelte';
   import Img from '$lib/components/public/Img.svelte';
   import TourCardRich from '$lib/components/public/TourCardRich.svelte';
   import TourFilterBar from '$lib/components/public/TourFilterBar.svelte';
@@ -438,7 +438,7 @@
 
       <div class="mt-5" data-results-top>
         {#if loading}
-          <LoadingState message="Loading tours..." />
+          <ContentShimmer cards={6} compact label="Loading tours" />
         {:else if error && allTours.length === 0}
           <ErrorState message={error} />
         {:else if sorted.length === 0}
