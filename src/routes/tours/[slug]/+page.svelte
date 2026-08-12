@@ -194,6 +194,9 @@
       gallery.push(image);
     };
     add(imageFromStay(stay));
+    for (const row of stay.lodge_images ?? []) {
+      add(imageFromLodgeMedia(row as unknown as Record<string, unknown>, stay));
+    }
     for (const image of lodgeMedia[stayKey(stay)] ?? []) add(image);
     return gallery;
   };
@@ -481,9 +484,11 @@
 
     const results = await Promise.allSettled(
       [...stays.entries()].map(async ([key, stay]) => {
-        const response = await api.lodges.media(stay.id);
+        // Fetch by the linked lodge id. Itinerary data can contain a stale or
+        // missing slug, while the public gallery endpoint is id-based.
+        const response = await api.lodges.gallery(stay.id);
         const images = (response.data.images ?? [])
-          .map((row) => imageFromLodgeMedia(row, stay))
+          .map((row) => imageFromLodgeMedia(row as unknown as Record<string, unknown>, stay))
           .filter(Boolean) as MediaImage[];
         return [key, images.slice(0, 6)] as const;
       })

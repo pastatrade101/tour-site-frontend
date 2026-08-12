@@ -263,7 +263,28 @@
       {/if}
 
       {#if lodge?.rooms?.length}
-        <div class="mt-12" use:fadeUpOnScroll={{ y: 14 }}><span class="block h-px w-16 bg-goldfinch-gold"></span><p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">Rooms & suites</p><div class="mt-5 grid gap-5">{#each lodge.rooms as room}<article class="overflow-hidden rounded-xl border border-ink/10 bg-surface">{#if room.lodge_room_images?.length}<div class="grid grid-cols-2 gap-1 bg-sand p-1 sm:grid-cols-4">{#each room.lodge_room_images.slice(0,4) as image}<Img record={image} fields={['image_url']} alt={image.alt_text||room.name} width={360} sizes="(max-width:640px) 50vw, 170px" className="aspect-[4/3] h-full w-full rounded-md object-cover"/>{/each}</div>{/if}<div class="p-4 sm:p-5"><div class="flex flex-wrap items-start justify-between gap-2"><h3 class="font-serif text-xl font-semibold text-heading">{room.name}</h3>{#if room.max_guests}<span class="text-xs font-bold text-clay">Up to {room.max_guests} guests</span>{/if}</div>{#if room.short_description}<p class="mt-2 text-sm leading-6 text-ink/65">{room.short_description}</p>{/if}<p class="mt-3 text-xs text-ink/55">{[room.bed_configuration,room.view,room.unit_count?`${room.unit_count} units`:null].filter(Boolean).join(' · ')}</p>{#if room.amenities?.length}<div class="mt-3 flex flex-wrap divide-x divide-ink/15 text-[11px] font-semibold text-ink/60">{#each room.amenities as amenity}<span class="px-2 first:pl-0">{amenity}</span>{/each}</div>{/if}</div></article>{/each}</div></div>
+        <div class="mt-12" use:fadeUpOnScroll={{ y: 14 }}>
+          <span class="block h-px w-16 bg-goldfinch-gold"></span>
+          <p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">Rooms & suites</p>
+          <p class="mt-2 max-w-2xl text-sm leading-6 text-ink/60">See the room styles available at {lodge.name}, including the details that matter when we match your stay to the route.</p>
+          <div class="mt-5 grid gap-5">
+            {#each lodge.rooms as room}
+              <article class="overflow-hidden rounded-xl border border-ink/10 bg-surface shadow-[0_10px_30px_rgb(57_61_50_/_0.05)]">
+                {#if room.lodge_room_images?.length}
+                  <div class="bg-sand/45 p-2 sm:p-3">
+                    <LodgeGallery images={room.lodge_room_images} propertyName={`${lodge.name} — ${room.name}`} />
+                  </div>
+                {/if}
+                <div class="p-4 sm:p-5">
+                  <div class="flex flex-wrap items-start justify-between gap-2"><h3 class="font-serif text-xl font-semibold text-heading">{room.name}</h3>{#if room.max_guests}<span class="text-xs font-bold text-clay">Up to {room.max_guests} guests</span>{/if}</div>
+                  {#if room.short_description}<p class="mt-2 text-sm leading-6 text-ink/65">{room.short_description}</p>{/if}
+                  <p class="mt-3 text-xs text-ink/55">{[room.bed_configuration,room.view,room.unit_count?`${room.unit_count} units`:null].filter(Boolean).join(' · ')}</p>
+                  {#if room.amenities?.length}<div class="mt-3 flex flex-wrap divide-x divide-ink/15 text-[11px] font-semibold text-ink/60">{#each room.amenities as amenity}<span class="px-2 first:pl-0">{amenity}</span>{/each}</div>{/if}
+                </div>
+              </article>
+            {/each}
+          </div>
+        </div>
       {/if}
 
       {#if lodge?.show_rates_publicly && lodge?.rates?.length}

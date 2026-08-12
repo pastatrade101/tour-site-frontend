@@ -183,6 +183,7 @@ export type ItineraryDay = {
     accommodation_level?: string | null;
     hero_image_url?: string | null;
     image_url?: string | null;
+    lodge_images?: Array<{ id?: string; image_url?: string | null; alt_text?: string | null; caption?: string | null; sort_order?: number; is_cover?: boolean }>;
     destinations?: { name?: string | null } | null;
   } | null;
   meals?: string | null;

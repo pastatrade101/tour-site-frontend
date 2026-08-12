@@ -311,6 +311,7 @@ export const api = {
     accommodationMeta: () => apiRequest<{ experiences: Record<string, unknown>[]; suppliers: Record<string, unknown>[] }>('/lodges/meta/accommodation'),
     list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Lodge>>(`/lodges${queryString(params)}`),
     get: (slug: string) => apiRequest<Lodge>(`/lodges/${slug}`),
+    gallery: (id: string) => apiRequest<{ images: Record<string, unknown>[] }>(`/lodges/${id}/gallery`),
     bulkRemove: (ids: string[]) =>
       apiRequest<{ deleted: number; ids: string[] }>('/lodges/bulk-delete', { method: 'POST', body: { ids } }),
     bulkStatus: (ids: string[], status: string) =>
