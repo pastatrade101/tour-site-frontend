@@ -1,6 +1,29 @@
 export const PROPERTY_TYPES=['HOTEL','SAFARI_LODGE','TENTED_CAMP','MOBILE_CAMP','BEACH_RESORT','VILLA','GUEST_HOUSE','ECO_LODGE','BOUTIQUE_HOTEL'];
 export const PROPERTY_CATEGORIES=['BUDGET','MID_RANGE','LUXURY','PREMIUM_LUXURY'];
 export const BEST_FOR=['COUPLES','HONEYMOON','FAMILIES','GROUPS','SOLO_TRAVELERS','SENIORS','LUXURY_TRAVELERS','ADVENTURE_TRAVELERS','PHOTOGRAPHERS'];
+// Older lodge rows stored display labels (and a few free-text values) before
+// the API switched this field to controlled enum codes. Normalize those rows
+// when opening the editor so saving an otherwise unchanged lodge succeeds.
+const LEGACY_BEST_FOR: Record<string, string> = {
+  'couples': 'COUPLES',
+  'honeymooners': 'HONEYMOON',
+  'honeymoon': 'HONEYMOON',
+  'families': 'FAMILIES',
+  'groups': 'GROUPS',
+  'solo travellers': 'SOLO_TRAVELERS',
+  'solo travelers': 'SOLO_TRAVELERS',
+  'seniors': 'SENIORS',
+  'luxury travellers': 'LUXURY_TRAVELERS',
+  'luxury travelers': 'LUXURY_TRAVELERS',
+  'adventure travellers': 'ADVENTURE_TRAVELERS',
+  'adventure travelers': 'ADVENTURE_TRAVELERS',
+  'photographers': 'PHOTOGRAPHERS'
+};
+export const normalizeBestFor = (values: unknown): string[] =>
+  (Array.isArray(values) ? values : [])
+    .map((value) => String(value).trim())
+    .map((value) => BEST_FOR.includes(value) ? value : LEGACY_BEST_FOR[value.toLowerCase()])
+    .filter((value): value is string => Boolean(value));
 export const SETTINGS=['INSIDE_NATIONAL_PARK','OUTSIDE_NATIONAL_PARK','CONSERVATION_AREA','PRIVATE_RESERVE','BEACHFRONT','ISLAND','CITY','COUNTRYSIDE','MOUNTAIN','REMOTE_WILDERNESS'];
 export const ROOM_TYPES=['STANDARD_ROOM','DELUXE_ROOM','SUPERIOR_ROOM','SUITE','FAMILY_ROOM','FAMILY_SUITE','SAFARI_TENT','LUXURY_TENT','COTTAGE','CHALET','VILLA','BUNGALOW','HONEYMOON_SUITE'];
 export const BED_TYPES=['SINGLE','TWIN','DOUBLE','QUEEN','KING','BUNK_BED','SOFA_BED','EXTRA_BED'];
