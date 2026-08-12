@@ -7,5 +7,5 @@
 </script>
 <div>
   <div class="flex items-end justify-between gap-3"><p class="text-sm font-semibold text-ink">{label}</p>{#if options.length>10}<input class="h-8 w-44 rounded-md border border-ink/10 px-2 text-xs" placeholder="Search…" bind:value={search}/>{/if}</div>
-  <div class="mt-2 flex max-h-44 flex-wrap gap-2 overflow-y-auto">{#each shown as option}<button class={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${selected.includes(option)?'border-forest bg-forest text-white':'border-ink/15 bg-surface text-ink/65 hover:border-forest/40'}`} type="button" on:click={()=>onToggle(option)}>{display(option)}</button>{/each}</div>
+  <div class="mt-1.5 flex max-h-32 flex-wrap gap-1.5 overflow-y-auto">{#each shown as option}<button class={`rounded-full border px-2.5 py-1 text-[11px] font-bold transition ${selected.includes(option)?'border-forest bg-forest text-white':'border-ink/15 bg-surface text-ink/65 hover:border-forest/40'}`} type="button" on:click={()=>onToggle(option)}>{display(option)}</button>{/each}</div>
 </div>

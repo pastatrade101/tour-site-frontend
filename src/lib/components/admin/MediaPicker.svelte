@@ -43,6 +43,7 @@
   let uploading = false;
   let uploadError = '';
   let fileInput: HTMLInputElement;
+  const fileInputId = `media-upload-${Math.random().toString(36).slice(2)}`;
   let searchTimer: ReturnType<typeof setTimeout> | undefined;
 
   const pageLimit = 40;
@@ -189,18 +190,18 @@
   });
 </script>
 
-<div class="grid gap-3">
+<div class="grid gap-2">
   <p class="text-sm font-medium text-ink">{label}</p>
 
   {#if value}
-    <div class={`relative overflow-hidden rounded-[8px] border border-ink/10 bg-sand/30 ${aspect}`}>
+    <div class={`relative max-h-40 overflow-hidden rounded-[8px] border border-ink/10 bg-sand/30 ${aspect}`}>
       <img class={`absolute inset-0 h-full w-full ${fit}`} src={imgUrl(value, 800)} alt={label} loading="lazy" decoding="async" />
       <button type="button" class="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-[8px] bg-ink/65 text-white backdrop-blur transition hover:bg-ink/85" on:click={clear} aria-label="Remove image">
         <Trash2 size={15} />
       </button>
     </div>
   {:else}
-    <div class={`grid place-items-center rounded-[8px] border border-dashed border-ink/20 bg-sand/20 text-ink/35 ${aspect}`}>
+    <div class={`grid max-h-40 place-items-center rounded-[8px] border border-dashed border-ink/20 bg-sand/20 text-ink/35 ${aspect}`}>
       <ImageIcon size={26} />
     </div>
   {/if}
@@ -258,14 +259,15 @@
           {/if}
         </div>
         <div class="flex shrink-0 gap-2">
-          <button
-            type="button"
+          <label
+            for={fileInputId}
             class="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-[8px] bg-forest px-4 text-sm font-bold text-white shadow-sm transition hover:bg-deep-green disabled:opacity-60"
-            on:click={() => fileInput.click()}
-            disabled={uploading}
+            class:pointer-events-none={uploading}
+            class:opacity-60={uploading}
           >
             <Upload size={15} /> {uploading ? 'Uploading...' : 'Upload'}
-          </button>
+          </label>
+          <input id={fileInputId} class="sr-only" type="file" accept="image/png,image/jpeg,image/webp,image/avif" bind:this={fileInput} on:change={onFileChange} />
           <button type="button" class="grid h-11 w-11 shrink-0 place-items-center rounded-[8px] border border-ink/10 bg-surface text-ink shadow-sm transition hover:bg-sand" on:click={() => (open = false)} aria-label="Close"><X size={18} /></button>
         </div>
       </div>
@@ -355,5 +357,3 @@
     </div>
   </div>
 {/if}
-
-<input class="hidden" type="file" accept="image/png,image/jpeg,image/webp,image/avif" bind:this={fileInput} on:change={onFileChange} />

@@ -116,7 +116,7 @@
   };
 </script>
 
-<div class="grid gap-6">
+<div class="grid gap-4">
   <!-- ── gallery ─────────────────────────────────────────────────────────── -->
   <div>
     <div class="flex flex-wrap items-end justify-between gap-3">
@@ -139,14 +139,14 @@
     {#if loading}
       <p class="mt-3 rounded-xl bg-sand/45 px-4 py-3 text-sm text-ink/60">Loading gallery…</p>
     {:else if !images.length}
-      <p class="mt-3 rounded-xl border border-dashed border-ink/15 px-4 py-6 text-center text-sm text-ink/50">
+      <p class="mt-2 rounded-xl border border-dashed border-ink/15 px-4 py-3 text-center text-sm text-ink/50">
         No photos yet. The public page will fall back to the hero and card images above.
       </p>
     {:else}
-      <ul class="mt-3 grid gap-2.5">
+      <ul class="mt-2 grid gap-2 xl:grid-cols-2">
         {#each images as image, index (image.image_url)}
-          <li class="grid gap-3 rounded-[10px] border border-ink/10 bg-surface p-2.5 sm:grid-cols-[92px_1fr_auto]">
-            <img class="h-[70px] w-full rounded-[7px] object-cover sm:w-[92px]" src={image.image_url} alt="" loading="lazy" />
+          <li class="grid gap-2 rounded-[10px] border border-ink/10 bg-surface p-2 sm:grid-cols-[76px_1fr_auto]">
+            <img class="h-16 w-full rounded-[7px] object-cover sm:w-[76px]" src={image.image_url} alt="" loading="lazy" />
 
             <div class="grid gap-1.5">
               <input
@@ -205,9 +205,9 @@
     <div>
       <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Amenities</p>
       <p class="mt-0.5 text-xs text-ink/50">Only ticked amenities appear on the public page.</p>
-      <div class="mt-3 grid gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="mt-2 grid gap-x-3 gap-y-1 sm:grid-cols-2 lg:grid-cols-4">
         {#each amenities as amenity (amenity.id)}
-          <label class="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-ink/80 transition hover:bg-sand/50">
+          <label class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-sm text-ink/80 transition hover:bg-sand/50">
             <input
               class="h-4 w-4 rounded border-ink/25 text-forest focus:ring-forest"
               type="checkbox"
@@ -224,11 +224,11 @@
 
 <!-- Picking here appends to the gallery above and clears itself, so the same
      control adds photo after photo. -->
-<div class="mt-4 rounded-[10px] border border-dashed border-ink/15 bg-sand/20 p-3">
+<div class="mt-3 max-w-md rounded-[10px] border border-dashed border-ink/15 bg-sand/20 p-3">
   <MediaPicker
     label="Add a photo to the gallery"
     uploadFolder="lodges"
-    aspect="aspect-[4/3]"
+    aspect="aspect-[3/1]"
     bind:value={picked}
     on:select={(event) => addPicked(event.detail.file_url, event.detail)}
     on:change={(event) => addPicked(event.detail)}

@@ -7,6 +7,18 @@ type RequestOptions = Omit<RequestInit, 'body'> & {
   body?: BodyInit | Record<string, unknown>;
 };
 
+export type ApiFieldError = { path?: Array<string | number>; message?: string; code?: string };
+export class ApiRequestError extends Error {
+  status: number;
+  errors: ApiFieldError[];
+  constructor(message: string, status: number, errors: unknown[] = []) {
+    super(message);
+    this.name = 'ApiRequestError';
+    this.status = status;
+    this.errors = errors.filter((item): item is ApiFieldError => Boolean(item && typeof item === 'object'));
+  }
+}
+
 const authToken = () => {
   if (!browser) return null;
   return localStorage.getItem('admin_token');
@@ -67,7 +79,7 @@ export const apiRequest = async <T>(path: string, options: RequestOptions = {}) 
   }))) as ApiResponse<T>;
 
   if (!response.ok || !result.success) {
-    throw new Error(result.message || 'API request failed.');
+    throw new ApiRequestError(result.message || 'API request failed.', response.status, result.errors ?? []);
   }
 
   if (cacheable) getCache.set(path, { at: Date.now(), result });
