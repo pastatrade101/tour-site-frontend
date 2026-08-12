@@ -31,6 +31,21 @@ type CounterOptions = {
   value?: number;
 };
 
+const HOME_MOTION_CARDS = [
+  '.experience-card',
+  '.destination-card',
+  '.package-card',
+  '.home-why-card',
+  '.home-how-card',
+  '.review-card',
+  '.season-card',
+  '.migration-card',
+  '.gallery-card',
+  '.blog-card',
+  '.impact-point',
+  '.faq-item'
+].join(',');
+
 let gsapContext: Promise<GsapContext | null> | null = null;
 
 export function prefersReducedMotion() {
@@ -202,6 +217,57 @@ export const sectionReveal: Action<HTMLElement, RevealOptions | undefined> = (no
   hideEl(node, params.y ?? 16, params.duration ?? 0.6, params.delay ?? 0);
   const stop = observeOnce(node, () => showEl(node));
   return { destroy: stop };
+};
+
+// Homepage-wide motion director. It also observes deferred CMS content, so cards
+// loaded after the first paint receive the same reveal choreography.
+export const homepageMotion: Action<HTMLElement> = (node) => {
+  if (!browser || prefersReducedMotion()) {
+    node.classList.add('home-motion-ready', 'home-motion-reduced');
+    return {};
+  }
+
+  node.classList.add('home-motion-ready');
+  const prepared = new WeakSet<Element>();
+  const sectionObserver = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const section = entry.target as HTMLElement;
+        section.classList.add('home-motion-visible');
+        sectionObserver.unobserve(section);
+      }
+    },
+    { rootMargin: '0px 0px -9% 0px', threshold: 0.08 }
+  );
+
+  const prepare = () => {
+    const sections = Array.from(node.querySelectorAll<HTMLElement>(':scope > section'));
+    sections.forEach((section, sectionIndex) => {
+      if (section.matches('[data-hero]') || prepared.has(section)) return;
+      prepared.add(section);
+      section.classList.add('home-motion-section');
+      section.style.setProperty('--home-section-index', String(sectionIndex));
+
+      const cards = Array.from(section.querySelectorAll<HTMLElement>(HOME_MOTION_CARDS));
+      cards.forEach((card, index) => {
+        card.classList.add('home-motion-card');
+        card.style.setProperty('--home-card-index', String(Math.min(index, 9)));
+      });
+      sectionObserver.observe(section);
+    });
+  };
+
+  prepare();
+  const mutationObserver = new MutationObserver(prepare);
+  mutationObserver.observe(node, { childList: true, subtree: true });
+
+  return {
+    destroy() {
+      sectionObserver.disconnect();
+      mutationObserver.disconnect();
+    }
+  };
 };
 
 export const numberCounter: Action<HTMLElement, CounterOptions | undefined> = (node, params = {}) => {

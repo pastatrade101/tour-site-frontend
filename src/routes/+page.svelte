@@ -22,7 +22,7 @@
   import LeadCaptureForm from '$lib/components/public/LeadCaptureForm.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import ContentShimmer from '$lib/components/public/ContentShimmer.svelte';
-  import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
+  import { fadeUpOnScroll, homepageMotion, sectionReveal, staggeredCardReveal } from '$lib/animations';
   import { api } from '$lib/api/client';
   import { API_URL } from '$lib/config/env';
   import { cachedJson } from '$lib/cache';
@@ -358,6 +358,7 @@
      ───────────────────────────────────────────────────────────────────────── -->
 
 <!-- 1 · Hero -->
+<main class="home-motion-root" use:homepageMotion>
 {#if isSectionActive('hero')}
   <HomeHero
     eyebrow={typeof heroExtra.eyebrow === 'string' ? heroExtra.eyebrow : 'Tanzania & East Africa specialists'}
@@ -387,7 +388,6 @@
     {imageVariants}
   />
 {/if}
-
 <!-- 3 · Destinations carousel -->
 {#if isSectionActive('featured_destinations') && destinations.length}
   <HomeDestinationsCarousel
@@ -568,3 +568,30 @@
     <LeadCaptureForm compact title={cms('plan_dream', 'button_text', 'Start your trip plan')} />
   </HomePlanningBand>
 {/if}
+</main>
+
+<style>
+  :global(.home-motion-ready .home-motion-section) {
+    opacity: 1;
+    transform: translate3d(0, 34px, 0);
+    transition: opacity 800ms cubic-bezier(0.16, 1, 0.3, 1), transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  :global(.home-motion-ready .home-motion-section.home-motion-visible) { opacity: 1; transform: translate3d(0, 0, 0); }
+  :global(.home-motion-ready .home-motion-card) {
+    opacity: 1;
+    transform: translate3d(0, 22px, 0) scale(0.985);
+    transition: opacity 650ms cubic-bezier(0.16, 1, 0.3, 1), transform 700ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 350ms ease, border-color 350ms ease;
+    transition-delay: calc(100ms + var(--home-card-index, 0) * 65ms);
+  }
+  :global(.home-motion-ready .home-motion-visible .home-motion-card) { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  @media (hover: hover) and (pointer: fine) {
+    :global(.home-motion-ready .home-motion-visible .home-motion-card:hover) {
+      transform: translate3d(0, -6px, 0) scale(1.008);
+      box-shadow: 0 22px 55px rgb(25 35 25 / 0.12);
+    }
+  }
+  :global(.home-motion-reduced .home-motion-section), :global(.home-motion-reduced .home-motion-card) { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    :global(.home-motion-ready .home-motion-section), :global(.home-motion-ready .home-motion-card) { opacity: 1; transform: none; transition: none; }
+  }
+</style>

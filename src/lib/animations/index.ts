@@ -1,6 +1,7 @@
 export {
   fadeUpOnScroll,
   heroImageParallax,
+  homepageMotion,
   initSmoothScrolling,
   navbarEntrance,
   numberCounter,
