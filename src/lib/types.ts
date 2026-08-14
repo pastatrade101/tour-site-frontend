@@ -265,6 +265,8 @@ export type Amenity = {
 
 export type Lodge = {
   /** Attached by GET /lodges/:slug. Empty until the gallery is populated. */
+  /** Gallery cover, attached by the list endpoint as a card fallback. */
+  cover_image_url?: string | null;
   images?: LodgeImage[];
   amenities?: Amenity[];
   /** Tours whose itinerary genuinely stays here — never a same-area guess. */
@@ -456,6 +458,13 @@ export type Review = {
   source_url?: string;
   tour_id?: string | null;
   tour_title?: string | null;
+  tours?: {
+    id: string;
+    title: string;
+    slug: string;
+    main_image_url?: string | null;
+    banner_image_url?: string | null;
+  } | null;
   status?: 'pending' | 'approved';
   is_featured?: boolean;
   sort_order?: number;

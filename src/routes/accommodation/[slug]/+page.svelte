@@ -78,8 +78,8 @@
   $: coverRecord = images.find((image) => image.is_cover) ?? images[0];
   $: coverImage = coverRecord?.image_url ?? '';
   $: heroRecord = coverRecord || lodge;
-  $: heroFields = coverRecord ? ['image_url'] : ['hero_image_url', 'image_url'];
-  $: heroImage = coverImage || sourceFor(lodge, 1920, 'hero_image_url', 'image_url');
+  $: heroFields = coverRecord ? ['image_url'] : ['hero_image_url', 'image_url', 'cover_image_url'];
+  $: heroImage = coverImage || sourceFor(lodge, 1920, 'hero_image_url', 'image_url', 'cover_image_url');
   $: heroVariants = variantsOf(heroRecord, ...heroFields);
   $: heroPreloadType = heroVariants?.avif ? 'image/avif' : heroVariants ? 'image/webp' : undefined;
   $: heroPreloadSrcset = heroVariants ? srcsetFor(heroVariants, heroVariants.avif ? 'avif' : 'webp') : '';
@@ -399,7 +399,7 @@
 
       <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {#each suggestions as item (item.id)}
-          {@const image = sourceFor(item, 800, 'image_url', 'hero_image_url')}
+          {@const image = sourceFor(item, 800, 'image_url', 'hero_image_url', 'cover_image_url')}
           <a
             class="group flex flex-col overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-card transition duration-300 hover:-translate-y-1 hover:border-goldfinch-gold/40 hover:shadow-[0_20px_46px_rgba(57,61,50,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
             href={`/accommodation/${item.slug}`}
@@ -409,7 +409,7 @@
               {#if image}
                 <Img
                   record={item}
-                  fields={['image_url', 'hero_image_url']}
+                  fields={['image_url', 'hero_image_url', 'cover_image_url']}
                   alt=""
                   width={800}
                   sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 33vw"
@@ -456,7 +456,7 @@
   {#if ctaImage}
     <Img
       record={ctaLodge}
-      fields={['hero_image_url', 'image_url']}
+      fields={['hero_image_url', 'image_url', 'cover_image_url']}
       alt=""
       width={1600}
       sizes="100vw"

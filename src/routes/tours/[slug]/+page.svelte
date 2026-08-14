@@ -171,7 +171,7 @@
           src,
           caption: stay.name,
           record: stay as unknown as Record<string, unknown>,
-          fields: ['hero_image_url', 'image_url']
+          fields: ['hero_image_url', 'image_url', 'cover_image_url']
         }
       : null;
   };
@@ -203,8 +203,8 @@
 
   const dayImage = (day: ItineraryDay): MediaImage | null => {
     if (day.image_url) return { src: day.image_url, caption: `Day ${day.day_number}: ${day.title}`, record: day as unknown as Record<string, unknown>, fields: ['image_url'] };
-    if (day.lodge?.hero_image_url) return { src: day.lodge.hero_image_url, caption: day.lodge.name, record: day.lodge as unknown as Record<string, unknown>, fields: ['hero_image_url', 'image_url'] };
-    if (day.lodge?.image_url) return { src: day.lodge.image_url, caption: day.lodge.name, record: day.lodge as unknown as Record<string, unknown>, fields: ['hero_image_url', 'image_url'] };
+    if (day.lodge?.hero_image_url) return { src: day.lodge.hero_image_url, caption: day.lodge.name, record: day.lodge as unknown as Record<string, unknown>, fields: ['hero_image_url', 'image_url', 'cover_image_url'] };
+    if (day.lodge?.image_url) return { src: day.lodge.image_url, caption: day.lodge.name, record: day.lodge as unknown as Record<string, unknown>, fields: ['hero_image_url', 'image_url', 'cover_image_url'] };
     return null;
   };
 

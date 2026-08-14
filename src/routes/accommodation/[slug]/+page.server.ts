@@ -84,21 +84,21 @@ export const load: PageServerLoad = async ({ fetch, params, url }) => {
   }
 
   const variantUrls = new Set<string>();
-  for (const url of collectImageUrls([lodge as Record<string, unknown>], ['hero_image_url', 'image_url'])) variantUrls.add(url);
+  for (const url of collectImageUrls([lodge as Record<string, unknown>], ['hero_image_url', 'image_url', 'cover_image_url'])) variantUrls.add(url);
   for (const url of collectImageUrls((lodge.images ?? []) as Array<Record<string, unknown>>, ['image_url'])) variantUrls.add(url);
   for (const room of lodge.rooms ?? []) {
     for (const url of collectImageUrls((room.lodge_room_images ?? []) as Array<Record<string, unknown>>, ['image_url'])) variantUrls.add(url);
   }
-  for (const url of collectImageUrls(related as Array<Record<string, unknown>>, ['hero_image_url', 'image_url'])) variantUrls.add(url);
+  for (const url of collectImageUrls(related as Array<Record<string, unknown>>, ['hero_image_url', 'image_url', 'cover_image_url'])) variantUrls.add(url);
   for (const url of collectImageUrls(safaris as Array<Record<string, unknown>>, ['main_image_url', 'banner_image_url'])) variantUrls.add(url);
 
   const imageVariants = await resolveImageVariants(fetch, base, variantUrls);
-  attachResolvedVariantFields([lodge as Record<string, any>], imageVariants, ['hero_image_url', 'image_url']);
+  attachResolvedVariantFields([lodge as Record<string, any>], imageVariants, ['hero_image_url', 'image_url', 'cover_image_url']);
   attachResolvedVariantFields((lodge.images ?? []) as Array<Record<string, any>>, imageVariants, ['image_url']);
   for (const room of lodge.rooms ?? []) {
     attachResolvedVariantFields((room.lodge_room_images ?? []) as Array<Record<string, any>>, imageVariants, ['image_url']);
   }
-  attachResolvedVariantFields(related as Array<Record<string, any>>, imageVariants, ['hero_image_url', 'image_url']);
+  attachResolvedVariantFields(related as Array<Record<string, any>>, imageVariants, ['hero_image_url', 'image_url', 'cover_image_url']);
   attachResolvedVariantFields(safaris as Array<Record<string, any>>, imageVariants, ['main_image_url', 'banner_image_url']);
 
   return { lodge, related, safaris };

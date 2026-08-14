@@ -316,7 +316,7 @@
     };
 
     for (const activity of activities) {
-      const image = sourceFor(activity, 800, 'image_url', 'hero_image_url');
+      const image = sourceFor(activity, 800, 'image_url', 'hero_image_url', 'cover_image_url');
       add({
         key: `activity-${activity.id}`,
         title: activity.name,
@@ -324,7 +324,7 @@
         eyebrow: normaliseLabel(activity.category),
         image,
         record: activity as unknown as Record<string, unknown>,
-        fields: ['image_url', 'hero_image_url']
+        fields: ['image_url', 'hero_image_url', 'cover_image_url']
       });
     }
 
@@ -358,7 +358,7 @@
 
   const lodgeFeatureCardsFor = (lodges: Lodge[]) =>
     lodges.slice(0, 6).map((lodge) => {
-      const image = sourceFor(lodge, 900, 'image_url', 'hero_image_url');
+      const image = sourceFor(lodge, 900, 'image_url', 'hero_image_url', 'cover_image_url');
       const meta = unique([
         LODGE_LEVELS[lodge.accommodation_level] ?? normaliseLabel(lodge.accommodation_level),
         LODGE_TYPES[lodge.lodge_type] ?? normaliseLabel(lodge.lodge_type),
@@ -373,7 +373,7 @@
         summary: toMetaText(lodge.why_we_recommend || lodge.description || '', 150),
         image,
         record: lodge as unknown as Record<string, unknown>,
-        fields: ['image_url', 'hero_image_url']
+        fields: ['image_url', 'hero_image_url', 'cover_image_url']
       } satisfies LodgeFeatureCard;
     });
 

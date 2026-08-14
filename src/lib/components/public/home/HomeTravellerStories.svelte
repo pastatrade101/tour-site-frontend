@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { ArrowLeft, ArrowRight, Camera, Star } from '@lucide/svelte';
+  import { ArrowLeft, ArrowRight, MapPin, Star } from '@lucide/svelte';
   import Img from '../Img.svelte';
-  import type { ImageVariantMap } from '$lib/img';
 
   // Traveller stories / verified reviews carousel. Renders ONLY from props:
   // if there are no usable reviews the whole section disappears. Star rows and
@@ -16,23 +15,24 @@
     message?: string | null;
     comment?: string | null;
     created_at?: string | null;
+    platform?: string | null;
+    author_photo_url?: string | null;
+    tour_title?: string | null;
+    tours?: {
+      id?: string;
+      title?: string;
+      slug?: string;
+      main_image_url?: string | null;
+      banner_image_url?: string | null;
+    } | null;
   };
 
   export let eyebrow = 'What Travellers Say';
   export let title = 'Verified Reviews from Tanzania Travellers';
+  export let subtitle = '';
   export let sourcesLabel = 'TripAdvisor · SafariBookings · Google';
   export let reviews: StoryReview[] = [];
-  // "Moments from our travellers" marquee — real published gallery images only.
-  export let photosLabel = 'Moments from our travellers';
-  export let photos: { src: string; caption: string }[] = [];
-  export let imageVariants: ImageVariantMap = {};
-  $: marquee = photos.filter((p) => p?.src);
-
   export let summary: { average?: number | null; total?: number | null } | null = null;
-  export let moreLabel = 'Read More Reviews';
-  export let moreHref = '#reviews';
-  export let ctaLabel = 'Plan Your Trip';
-  export let ctaHref = '#lead-form';
 
   let scrollerEl: HTMLDivElement;
   let activeIndex = 0;
@@ -41,18 +41,26 @@
   const countryOf = (r: StoryReview) => (r.country || r.client_country || '').trim();
   const quoteOf = (r: StoryReview) => (r.message || r.comment || '').trim();
   const titleOf = (r: StoryReview) => (r.title || '').trim();
+  const tourTitleOf = (r: StoryReview) => (r.tours?.title || r.tour_title || titleOf(r)).trim();
+  const tourImageOf = (r: StoryReview) => r.tours?.main_image_url || r.tours?.banner_image_url || '';
+
+  const countryCodes: Record<string, string> = {
+    australia: 'AU', austria: 'AT', belgium: 'BE', brazil: 'BR', canada: 'CA', china: 'CN',
+    denmark: 'DK', finland: 'FI', france: 'FR', germany: 'DE', india: 'IN', ireland: 'IE',
+    italy: 'IT', japan: 'JP', kenya: 'KE', netherlands: 'NL', 'new zealand': 'NZ', norway: 'NO',
+    portugal: 'PT', singapore: 'SG', 'south africa': 'ZA', spain: 'ES', sweden: 'SE',
+    switzerland: 'CH', tanzania: 'TZ', 'united arab emirates': 'AE', 'united kingdom': 'GB',
+    uk: 'GB', 'united states': 'US', 'united states of america': 'US', usa: 'US'
+  };
+  const countryFlag = (country: string) => {
+    const code = countryCodes[country.trim().toLowerCase()];
+    return code ? [...code].map((letter) => String.fromCodePoint(127397 + letter.charCodeAt(0))).join('') : '';
+  };
 
   // Whole stars, only when a real numeric rating exists (never defaulted to 5).
   const starsOf = (rating: number | null | undefined) => {
     const n = typeof rating === 'number' && isFinite(rating) ? Math.round(rating) : 0;
     return n > 0 ? Math.min(n, 5) : 0;
-  };
-
-  const dateLabel = (value: string | null | undefined) => {
-    if (!value) return '';
-    const d = new Date(value);
-    if (isNaN(d.getTime())) return '';
-    return d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
   };
 
   $: items = reviews.filter((r) => quoteOf(r) || nameOf(r));
@@ -95,19 +103,21 @@
 {#if items.length}
   <section class="home-traveller-stories py-14 md:py-20">
     <div class="container-shell">
-      <div class="home-traveller-head flex items-end justify-between gap-6">
-        <div class="max-w-[1180px]">
+      <div class="home-traveller-head text-center">
+        <div class="mx-auto max-w-[1180px]">
           {#if eyebrow}
             <div class="inline-flex items-center gap-2">
-              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
-              <span class="text-xs font-semibold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
+              <span class="text-xs font-semibold uppercase tracking-[0.22em] text-goldfinch-gold">{eyebrow}</span>
             </div>
           {/if}
-          <h2 class="font-serif mt-3 text-3xl leading-[1.1] tracking-tight text-heading sm:text-4xl md:text-[44px]">
+          <h2 class="font-serif mt-5 text-3xl leading-[1.08] tracking-tight text-heading sm:text-4xl md:text-[52px]">
             {title}
           </h2>
-          {#if hasSummaryLine}
-            <div class="mt-4 flex flex-wrap items-center gap-2 text-sm text-ink/70">
+          {#if subtitle}
+            <p class="mx-auto mt-6 max-w-5xl text-base leading-7 text-ink/70 md:text-lg">{subtitle}</p>
+          {/if}
+          {#if hasSummaryLine && (avg || total)}
+            <div class="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm text-ink/70">
               {#if avgStars}
                 <span class="inline-flex items-center gap-0.5 text-goldfinch-gold">
                   {#each Array(avgStars) as _, i (i)}
@@ -133,12 +143,12 @@
             </div>
           {/if}
         </div>
-        <div class="hidden sm:flex gap-2">
+        <div class="mt-9 hidden justify-end gap-2 sm:flex">
           <button
             type="button"
             aria-label="Previous reviews"
             on:click={() => scrollByDir(-1)}
-            class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-ink/10 bg-surface hover:bg-sand"
+            class="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-ink/15 bg-surface hover:bg-sand"
           >
             <ArrowLeft class="h-4 w-4" size={16} strokeWidth={2} />
           </button>
@@ -146,7 +156,7 @@
             type="button"
             aria-label="Next reviews"
             on:click={() => scrollByDir(1)}
-            class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-ink/10 bg-surface hover:bg-sand"
+            class="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-ink/15 bg-surface hover:bg-sand"
           >
             <ArrowRight class="h-4 w-4" size={16} strokeWidth={2} />
           </button>
@@ -158,14 +168,23 @@
         on:scroll={onScroll}
         aria-label="Traveller reviews"
         role="region"
-        class="no-scrollbar mt-10 flex snap-x snap-mandatory gap-6 overflow-x-auto pb-2"
+        class="no-scrollbar mt-5 flex snap-x snap-mandatory gap-6 overflow-x-auto pb-3"
       >
         {#each items as r, i (i)}
           <article
             data-review-card
-            class="review-card flex h-full min-h-[280px] w-[85%] shrink-0 snap-start flex-col rounded-lg border border-ink/10 bg-surface p-6 sm:w-[calc((100%-24px)/2)] lg:w-[calc((100%-48px)/3)]"
+            class="review-card flex h-full min-h-[490px] w-[88%] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-ink/10 bg-surface shadow-sm sm:w-[calc((100%-24px)/2)] lg:w-[calc((100%-48px)/3)]"
           >
-            <div class="flex items-center justify-between">
+            {#if tourImageOf(r)}
+              <div class="h-56 overflow-hidden bg-sand md:h-64">
+                <Img src={tourImageOf(r)} alt={tourTitleOf(r) || `Tour reviewed by ${nameOf(r)}`} width={800} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 88vw" className="h-full w-full object-cover" />
+              </div>
+            {/if}
+            <div class="flex flex-1 flex-col p-6">
+            <div class="flex items-center justify-between gap-4">
+              {#if r.platform}
+                <span class={`rounded-full border px-3 py-1 text-xs font-bold ${r.platform === 'Google' ? 'border-blue-200 bg-blue-50 text-blue-600' : r.platform === 'TripAdvisor' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-800'}`}>{r.platform}</span>
+              {:else}<span></span>{/if}
               {#if starsOf(r.rating)}
                 <span class="inline-flex items-center gap-0.5 text-goldfinch-gold">
                   {#each Array(starsOf(r.rating)) as _, s (s)}
@@ -173,29 +192,34 @@
                   {/each}
                 </span>
               {/if}
-              {#if dateLabel(r.created_at)}
-                <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/70">
-                  {dateLabel(r.created_at)}
-                </span>
-              {/if}
             </div>
             {#if quoteOf(r)}
-              <blockquote class="mt-4 flex-1 font-serif text-lg leading-snug text-heading">
+              <blockquote class="mt-5 flex-1 font-serif text-xl leading-snug text-heading">
                 "{quoteOf(r)}"
               </blockquote>
             {/if}
-            {#if nameOf(r) || titleOf(r)}
-              <div class="mt-5 border-t border-ink/10 pt-4 text-sm">
+            {#if nameOf(r) || tourTitleOf(r)}
+              <div class="mt-5 flex items-center gap-3 border-t border-ink/10 pt-4 text-sm">
+                {#if r.author_photo_url}
+                  <Img src={r.author_photo_url} alt={nameOf(r)} width={96} sizes="48px" className="h-12 w-12 rounded-full object-cover ring-1 ring-ink/10" />
+                {:else if countryFlag(countryOf(r))}
+                  <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-ink/10 bg-white text-2xl" aria-hidden="true">{countryFlag(countryOf(r))}</span>
+                {:else}
+                  <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-ink/10 bg-sand text-ink/55"><MapPin size={18} /></span>
+                {/if}
+                <div class="min-w-0">
                 {#if nameOf(r)}
-                  <div class="font-semibold text-heading">
+                  <div class="truncate font-semibold text-heading">
                     {nameOf(r)}{countryOf(r) ? ` · ${countryOf(r)}` : ''}
                   </div>
                 {/if}
-                {#if titleOf(r)}
-                  <div class="text-ink/70">{titleOf(r)}</div>
+                {#if tourTitleOf(r)}
+                  <div class="truncate text-ink/70">{tourTitleOf(r)}</div>
                 {/if}
+                </div>
               </div>
             {/if}
+            </div>
           </article>
         {/each}
       </div>
@@ -213,84 +237,12 @@
         {/each}
       </div>
 
-      {#if (moreLabel && moreHref) || (ctaLabel && ctaHref)}
-        <div class="mt-8 flex flex-wrap justify-center gap-3">
-          {#if moreLabel && moreHref}
-            <a
-              href={moreHref}
-              class="inline-flex items-center justify-center rounded-md border border-ink/10 bg-surface px-5 py-2.5 text-sm font-semibold text-heading transition-colors hover:bg-sand"
-            >
-              {moreLabel}
-            </a>
-          {/if}
-          {#if ctaLabel && ctaHref}
-            <a
-              href={ctaHref}
-              data-cta="reviews-plan"
-              class="inline-flex items-center justify-center rounded-md bg-deep-green px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-forest"
-            >
-              {ctaLabel}
-            </a>
-          {/if}
-        </div>
-      {/if}
     </div>
 
-    {#if marquee.length}
-      <div class="traveller-marquee relative left-1/2 right-1/2 mt-12 w-screen -translate-x-1/2 md:mt-14">
-        <div class="container-shell">
-          <div class="flex items-center gap-2">
-            <Camera size={16} class="text-clay" aria-hidden="true" />
-            <span class="text-[11px] font-semibold uppercase tracking-[0.16em] text-clay">{photosLabel}</span>
-          </div>
-        </div>
-
-        <div class="relative mt-5 w-screen overflow-hidden">
-          <ul class="traveller-marquee__track flex w-max gap-5 md:gap-6">
-            {#each [...marquee, ...marquee] as p, i (i)}
-              <li class="relative h-[240px] w-[190px] shrink-0 overflow-hidden rounded-[12px] shadow-[0_12px_28px_rgba(57,61,50,0.10)] md:h-[300px] md:w-[240px]">
-                <Img
-                  src={p.src}
-                  variantsMap={imageVariants}
-                  alt={p.caption}
-                  width={480}
-                  sizes="240px"
-                  className="h-full w-full object-cover"
-                />
-                <div class="pointer-events-none absolute inset-0" aria-hidden="true" style="background: linear-gradient(180deg, rgba(20,24,18,0) 45%, rgba(20,24,18,0.72) 100%)"></div>
-                {#if p.caption}
-                  <div class="absolute inset-x-0 bottom-0 p-3">
-                    <div class="text-[13px] font-bold text-white md:text-[14.5px]">{p.caption}</div>
-                  </div>
-                {/if}
-              </li>
-            {/each}
-          </ul>
-        </div>
-      </div>
-    {/if}
   </section>
 {/if}
 
 <style>
-  @keyframes traveller-marquee-scroll {
-    0% { transform: translate3d(0, 0, 0); }
-    100% { transform: translate3d(-50%, 0, 0); }
-  }
-  .traveller-marquee__track {
-    animation: traveller-marquee-scroll 60s linear infinite;
-    will-change: transform;
-  }
-  @media (max-width: 767px) {
-    .traveller-marquee__track { animation-duration: 70s; }
-  }
-  .traveller-marquee:hover .traveller-marquee__track {
-    animation-play-state: paused;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .traveller-marquee__track { animation: none; overflow-x: auto; }
-  }
-
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -318,7 +270,6 @@
     .review-card {
       min-height: 250px;
       width: min(82%, 310px);
-      padding: 1.25rem;
     }
 
     .review-card blockquote {
@@ -326,13 +277,5 @@
       line-height: 1.35;
     }
 
-    .traveller-marquee {
-      margin-top: 2.5rem;
-    }
-
-    .traveller-marquee__track li {
-      height: 220px;
-      width: 170px;
-    }
   }
 </style>

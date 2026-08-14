@@ -26,7 +26,7 @@
     treehouse: 'Treehouse'
   };
 
-  $: imageUrl = sourceFor(lodge, 700, 'image_url', 'hero_image_url');
+  $: imageUrl = sourceFor(lodge, 700, 'image_url', 'hero_image_url', 'cover_image_url');
   $: priceLabel =
     lodge.price_per_night_from != null
       ? formatUsd(lodge.price_per_night_from, $currency)
@@ -44,7 +44,7 @@
     {#if imageUrl}
       <Img
         record={lodge}
-        fields={['image_url', 'hero_image_url']}
+        fields={['image_url', 'hero_image_url', 'cover_image_url']}
         alt={lodge.name}
         width={feature ? 1200 : 700}
         sizes={feature ? '(min-width: 768px) 50vw, 100vw' : '(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 33vw'}

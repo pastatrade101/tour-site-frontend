@@ -70,9 +70,6 @@
   $: tourReviews = data.reviews ?? [];
   $: tourReviewSummary = data.reviewSummary ?? null;
   $: tourFaqs = data.faqs ?? [];
-  $: tourPhotos = (data.galleryItems ?? [])
-    .filter((g) => typeof g.image_url === 'string' && g.image_url)
-    .map((g) => ({ src: String(g.image_url), caption: String(g.title ?? g.alt_text ?? '') }));
   let loading = false;
   let error = '';
 
@@ -533,9 +530,9 @@
   <HomeTravellerStories
     reviews={tourReviews}
     summary={tourReviewSummary}
-    photos={tourPhotos}
     eyebrow="Traveller stories"
     title="Travellers Who Planned Tanzania With Us"
+    subtitle="Real guests, real routes and the planning details that made their trips work."
   />
 {/if}
 

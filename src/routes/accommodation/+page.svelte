@@ -105,7 +105,7 @@
     'hero_image_url',
     'image_url'
   );
-  $: heroVariants = variantsOf(heroLodge, 'hero_image_url', 'image_url');
+  $: heroVariants = variantsOf(heroLodge, 'hero_image_url', 'image_url', 'cover_image_url');
   $: heroPreloadType = heroVariants?.avif ? 'image/avif' : heroVariants ? 'image/webp' : undefined;
   $: heroPreloadSrcset = heroVariants ? srcsetFor(heroVariants, heroVariants.avif ? 'avif' : 'webp') : '';
   $: heroPreloadHref =
@@ -158,7 +158,7 @@
   {#if heroImage}
     <Img
       record={heroLodge}
-      fields={['hero_image_url', 'image_url']}
+      fields={['hero_image_url', 'image_url', 'cover_image_url']}
       alt=""
       width={1920}
       sizes="100vw"
@@ -271,7 +271,7 @@
     {#if ctaImage}
       <Img
         record={ctaLodge}
-        fields={['hero_image_url', 'image_url']}
+        fields={['hero_image_url', 'image_url', 'cover_image_url']}
         alt=""
         width={1600}
         sizes="100vw"

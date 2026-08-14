@@ -243,7 +243,7 @@
           image: l.hero_image_url || l.image_url || undefined,
           description: toMetaText(l.why_we_recommend || l.description || '', 120) || undefined,
           record: l as Record<string, any>,
-          fields: ['hero_image_url', 'image_url']
+          fields: ['hero_image_url', 'image_url', 'cover_image_url']
         }));
       } else {
         const response = await api.categories.list({ status: 'published', limit: 9 });
