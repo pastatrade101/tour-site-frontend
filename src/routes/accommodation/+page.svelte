@@ -8,7 +8,8 @@
    * serif names, and a thumbnail only where one genuinely exists.
   */
   import { ArrowRight, BedDouble, Building2, Caravan, Gem, Home, Leaf, MapPin, Palmtree, Search, ShieldCheck, Sparkles, Tent, TreePine, X } from '@lucide/svelte';
-  import { fadeUpOnScroll, staggeredCardReveal } from '$lib/animations';
+  import { flip } from 'svelte/animate';
+  import { cardReveal, fadeUpOnScroll, shuffle } from '$lib/animations';
   import { imgUrl, sourceFor, srcsetFor, variantSrc, variantsOf } from '$lib/img';
   import Img from '$lib/components/public/Img.svelte';
   import LodgeCard from '$lib/components/public/LodgeCard.svelte';
@@ -326,13 +327,22 @@
                   </button>
                 </div>
 
+                <!--
+                  overflow-y is hidden rather than left to default because
+                  `overflow-x: auto` computes the other axis to auto too, and
+                  the reveal below starts each card a few pixels low — enough
+                  to give the row its own vertical scrollbar. Nothing overflows
+                  downwards otherwise.
+                -->
                 <div
-                  class="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:contents md:px-0 {group.single
+                  class="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:contents md:px-0 {group.single
                     ? ''
                     : '-mx-4 snap-x snap-mandatory px-[12vw]'}"
                 >
-                  {#each group.items as lodge (lodge.id)}
+                  {#each group.items as lodge, i (lodge.id)}
                     <div
+                      use:cardReveal={{ index: i }}
+                      animate:flip={shuffle}
                       class="shrink-0 snap-center md:w-auto md:max-w-none {group.single
                         ? 'w-full'
                         : 'w-[76vw] max-w-[290px]'}"
@@ -345,8 +355,12 @@
             {/each}
           </div>
         {:else}
-          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
-            {#each gridLodges as lodge (lodge.id)}<LodgeCard {lodge} />{/each}
+          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {#each gridLodges as lodge, i (lodge.id)}
+              <div use:cardReveal={{ index: i }} animate:flip={shuffle}>
+                <LodgeCard {lodge} />
+              </div>
+            {/each}
           </div>
         {/if}
       {:else}

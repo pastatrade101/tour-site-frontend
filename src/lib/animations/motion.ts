@@ -157,6 +157,68 @@ export const fadeUpOnScroll: Action<HTMLElement, RevealOptions | undefined> = (n
   return { destroy: stop };
 };
 
+/**
+ * One card, revealed as it reaches the viewport.
+ *
+ * Per card rather than per grid: `staggeredCardReveal` snapshots the children
+ * it finds when it mounts, so anything rendered afterwards — a new filter, a
+ * different sort — was never hidden and simply appeared. Hanging the reveal on
+ * the card itself means every card gets one, whenever it arrives.
+ */
+export const cardReveal: Action<HTMLElement, { index?: number; y?: number } | undefined> = (
+  node,
+  params = {}
+) => {
+  if (!browser || prefersReducedMotion()) {
+    setFinalVisible(node);
+    return {};
+  }
+
+  // The cascade covers a screenful and then stops. Staggering by the true index
+  // would leave the fortieth card waiting most of a second after the scroll had
+  // already reached it.
+  hideEl(node, params.y ?? 14, 0.55, Math.min(params.index ?? 0, 8) * 0.045);
+
+  // …but without the will-change it sets. A card that is never scrolled to
+  // would hold that hint for the life of the page, and on a fifty-card index
+  // that is fifty compositor layers standing by for an animation most of them
+  // never run — more than the reveal itself costs. Opacity and transform are
+  // composited here regardless; the hint only ever bought the first frame.
+  node.style.willChange = '';
+
+  const io = new IntersectionObserver(
+    (entries) => {
+      if (!entries[0]?.isIntersecting) return;
+      showEl(node);
+      io.disconnect();
+    },
+    // Fires a little before the card is actually on screen, so the stagger is
+    // spent by the time anyone is looking at it.
+    { rootMargin: '0px 0px 12% 0px', threshold: 0 }
+  );
+  io.observe(node);
+
+  return { destroy: () => io.disconnect() };
+};
+
+/**
+ * `animate:flip` settings for the stay cards when the filters change.
+ *
+ * Distance-scaled: a card crossing the grid takes longer than one nudged along
+ * by its neighbour, and it is that difference in pace that reads as a shuffle
+ * rather than everything sliding in lockstep.
+ *
+ * Phones sit it out. There the cards live in horizontal scrollers where a
+ * filter change swaps the whole row out, so there is no reflow to animate and
+ * the work would be spent for nothing.
+ */
+export const shuffle = {
+  duration: (distance: number) =>
+    !browser || prefersReducedMotion() || !window.matchMedia('(min-width: 768px)').matches
+      ? 0
+      : Math.min(620, 200 + Math.sqrt(distance) * 24)
+};
+
 export const staggeredCardReveal: Action<HTMLElement, StaggerOptions | undefined> = (node, params = {}) => {
   const targets = (
     params.selector ? Array.from(node.querySelectorAll<HTMLElement>(params.selector)) : (Array.from(node.children) as HTMLElement[])

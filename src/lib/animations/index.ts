@@ -1,4 +1,5 @@
 export {
+  cardReveal,
   fadeUpOnScroll,
   heroImageParallax,
   homepageMotion,
@@ -9,6 +10,7 @@ export {
   revealHeading,
   sectionReveal,
   setupGsap,
+  shuffle,
   staggeredCardReveal,
   tilt
 } from './motion';
