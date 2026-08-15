@@ -93,6 +93,7 @@
   let mobileAccordion: '' | DropdownKey = '';
   let searchQuery = '';
   let scrolled = false;
+  let headerEl: HTMLElement;
 
   // The mega-menu is `fixed` (to escape the collapsing header's overflow), so we
   // position it under the hovered nav item by measuring that item's rect, and
@@ -266,6 +267,28 @@
   };
 
   onMount(() => {
+    /**
+     * Publish the header's real height so the sticky bars underneath it —
+     * the accommodation filters, the tours results panel, the destination
+     * tabs — can sit exactly below it.
+     *
+     * They each hardcoded 70px, which is only ever right when the nav fits on
+     * one line. Between the lg breakpoint and roughly 1310px the labels wrap
+     * and the header grows to 91px, so those bars stuck 21px too high and
+     * disappeared under it. Measuring removes the guess at every width, and
+     * covers the collapse animation too: the header shrinks by 80px on scroll
+     * and the bars now follow it down rather than jumping at the end.
+     */
+    const publishHeight = () => {
+      if (!headerEl) return;
+      document.documentElement.style.setProperty(
+        '--nav-h',
+        `${Math.round(headerEl.getBoundingClientRect().height)}px`
+      );
+    };
+    publishHeight();
+    const sizeWatcher = new ResizeObserver(publishHeight);
+    sizeWatcher.observe(headerEl);
 
     const onClick = (event: MouseEvent) => {
       if (!(event.target as HTMLElement)?.closest?.('.nav-dropdown')) openDropdown = '';
@@ -290,6 +313,7 @@
     window.addEventListener('keydown', onKey);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
+      sizeWatcher.disconnect();
       window.removeEventListener('click', onClick);
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('scroll', onScroll);
@@ -297,7 +321,7 @@
   });
 </script>
 
-<header class={`mobile-nav-header sticky top-0 z-40 border-b bg-surface transition-[box-shadow,border-color] duration-[400ms] ease-out ${scrolled ? 'border-transparent shadow-[0_8px_28px_rgba(57,61,50,0.10)]' : 'border-ink/10'}`} use:navbarEntrance>
+<header bind:this={headerEl} class={`mobile-nav-header sticky top-0 z-40 border-b bg-surface transition-[box-shadow,border-color] duration-[400ms] ease-out ${scrolled ? 'border-transparent shadow-[0_8px_28px_rgba(57,61,50,0.10)]' : 'border-ink/10'}`} use:navbarEntrance>
   <!-- ── mobile top bar ─────────────────────────────────────────────────── -->
   <div class="grid h-[70px] grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-3 px-4 sm:px-5 lg:hidden">
     <button class="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 bg-surface text-ink" type="button" aria-label="Toggle menu" aria-expanded={menuOpen} on:click={() => (menuOpen = !menuOpen)}>

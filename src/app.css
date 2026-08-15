@@ -17,6 +17,14 @@
   --c-ink: 57 61 50; /* #393D32 — primary text */
   --c-clay: 170 61 29; /* #AA3D1D — rust: secondary accent */
 
+  /* Height of the sticky site header, republished by the Navbar whenever it
+     actually changes size. Anything that sticks underneath the header offsets
+     by this rather than guessing: the header is 70px on a phone but grows when
+     the desktop nav labels wrap, and shrinks by 80px when the top row collapses
+     on scroll. 70px is the server-rendered starting value, correct for the
+     mobile bar and for a desktop nav that fits on one line. */
+  --nav-h: 70px;
+
   /* Theme surfaces (light). Dark values are overridden in `html.dark` below. */
   --c-surface: 255 255 255; /* #FFFFFF — clean cards / inputs */
   --c-canvas: 243 239 231; /* #F3EFE7 — warm cream page background */

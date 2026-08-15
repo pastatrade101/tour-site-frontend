@@ -928,7 +928,7 @@
   {/if}
 
   {#if visibleTabs.length > 1}
-    <div class="sticky top-[70px] z-30 border-b border-ink/10 bg-surface/95 backdrop-blur">
+    <div class="sticky top-[var(--nav-h)] z-30 border-b border-ink/10 bg-surface/95 backdrop-blur">
       <div class="container-shell">
         <div class="no-scrollbar flex gap-6 overflow-x-auto py-3 text-[13.5px] font-semibold text-ink/60">
           {#each visibleTabs as tab}

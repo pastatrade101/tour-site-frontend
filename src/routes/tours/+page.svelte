@@ -336,7 +336,7 @@
   <div class="mt-6 grid min-w-0 gap-6">
 
     <div class="min-w-0">
-      <div class="results-panel sticky top-[70px] z-20 -mx-3 border-y border-ink/10 bg-[#fbfaf6]/95 px-3 py-3 backdrop-blur lg:static lg:mx-0 lg:rounded-[8px] lg:border lg:bg-white lg:p-4">
+      <div class="results-panel sticky top-[var(--nav-h)] z-20 -mx-3 border-y border-ink/10 bg-[#fbfaf6]/95 px-3 py-3 backdrop-blur lg:static lg:mx-0 lg:rounded-[8px] lg:border lg:bg-white lg:p-4">
         <div class="results-filter-slot">
           <TourFilterBar
                 {destinationOptions}

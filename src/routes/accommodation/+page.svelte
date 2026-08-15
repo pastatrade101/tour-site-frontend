@@ -129,7 +129,14 @@
     requestAnimationFrame(() => {
       const results = document.getElementById('accommodation-results');
       if (!results) return;
-      const stickyOffset = window.innerWidth >= 768 ? 150 : 134;
+      // Measured rather than assumed, for the same reason the bar itself now
+      // offsets by --nav-h: the two fixed numbers this replaces were only right
+      // while the header stayed one line, and landed the results under the
+      // filters at any width where it wrapped.
+      const header = document.querySelector('header.mobile-nav-header');
+      const bar = document.querySelector('nav[aria-label="Accommodation filters"]');
+      const stickyOffset =
+        (header?.getBoundingClientRect().height ?? 70) + (bar?.getBoundingClientRect().height ?? 64);
       window.scrollTo({ top: window.scrollY + results.getBoundingClientRect().top - stickyOffset, behavior: 'smooth' });
     });
   };
@@ -269,7 +276,7 @@
     </div>
   </section>
 
-  <nav class="sticky top-[70px] z-30 border-y border-ink/10 bg-canvas/95 shadow-[0_8px_24px_rgba(57,61,50,0.06)] backdrop-blur-md" aria-label="Accommodation filters">
+  <nav class="sticky top-[var(--nav-h)] z-30 border-y border-ink/10 bg-canvas/95 shadow-[0_8px_24px_rgba(57,61,50,0.06)] backdrop-blur-md" aria-label="Accommodation filters">
     <div class="container-shell">
       <div class="flex min-h-14 gap-7 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:min-h-16">
         {#each filters as filter (filter.key)}
@@ -337,13 +344,13 @@
                 <div
                   class="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:contents md:px-0 {group.single
                     ? ''
-                    : '-mx-4 snap-x snap-mandatory px-[12vw]'}"
+                    : '-mx-4 snap-x snap-mandatory px-4 scroll-pl-4'}"
                 >
                   {#each group.items as lodge, i (lodge.id)}
                     <div
                       use:cardReveal={{ index: i }}
                       animate:flip={shuffle}
-                      class="shrink-0 snap-center md:w-auto md:max-w-none {group.single
+                      class="shrink-0 snap-start md:w-auto md:max-w-none {group.single
                         ? 'w-full'
                         : 'w-[76vw] max-w-[290px]'}"
                     >
