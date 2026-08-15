@@ -25,6 +25,8 @@ WORKDIR /app
 COPY --from=build /app/build ./build
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
+# Wraps build/handler.js with gzip and static cache headers — see server.js.
+COPY --from=build /app/server.js ./server.js
 
 EXPOSE 3000
 
@@ -32,4 +34,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "require('http').get('http://127.0.0.1:'+(process.env.PORT||3000)+'/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
 
 USER node
-CMD ["node", "build"]
+CMD ["node", "server.js"]
