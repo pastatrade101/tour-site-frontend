@@ -111,11 +111,12 @@
   $: grouped =
     active === 'all' && activeDestination === 'all' && !search.trim()
       ? [...new Set(gridLodges.map((l) => String(l.lodge_type)).filter(Boolean))]
-          .map((type) => ({
-            key: type,
-            label: TYPE[type] ?? enumLabel(type),
-            items: gridLodges.filter((l) => String(l.lodge_type) === type)
-          }))
+          .map((type) => {
+            const items = gridLodges.filter((l) => String(l.lodge_type) === type);
+            // A row of one has nothing to swipe to, so it drops the carousel
+            // treatment and sits full width under its own heading.
+            return { key: type, label: TYPE[type] ?? enumLabel(type), items, single: items.length === 1 };
+          })
           // Richest rows first, so the phone opens on something worth swiping.
           .sort((a, b) => b.items.length - a.items.length)
       : [];
@@ -326,10 +327,16 @@
                 </div>
 
                 <div
-                  class="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-[12vw] pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:contents md:px-0"
+                  class="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:contents md:px-0 {group.single
+                    ? ''
+                    : '-mx-4 snap-x snap-mandatory px-[12vw]'}"
                 >
                   {#each group.items as lodge (lodge.id)}
-                    <div class="w-[76vw] max-w-[290px] shrink-0 snap-center md:w-auto md:max-w-none">
+                    <div
+                      class="shrink-0 snap-center md:w-auto md:max-w-none {group.single
+                        ? 'w-full'
+                        : 'w-[76vw] max-w-[290px]'}"
+                    >
                       <LodgeCard {lodge} compact />
                     </div>
                   {/each}
