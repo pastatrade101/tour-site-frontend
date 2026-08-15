@@ -7,7 +7,7 @@
    * taxonomy, so the page is built to be read: hairline-separated rows, large
    * serif names, and a thumbnail only where one genuinely exists.
   */
-  import { ArrowRight, BedDouble, Gem, MapPin, Search, ShieldCheck, Sparkles, Tent, X } from '@lucide/svelte';
+  import { ArrowRight, BedDouble, Building2, Caravan, Gem, Home, Leaf, MapPin, Palmtree, Search, ShieldCheck, Sparkles, Tent, TreePine, X } from '@lucide/svelte';
   import { fadeUpOnScroll, staggeredCardReveal } from '$lib/animations';
   import { imgUrl, sourceFor, srcsetFor, variantSrc, variantsOf } from '$lib/img';
   import Img from '$lib/components/public/Img.svelte';
@@ -36,6 +36,21 @@
     hotel: 'Hotel',
     treehouse: 'Treehouse'
   };
+
+  // One icon per property type, matched to the enum rather than to the label,
+  // so renaming a label never silently changes the picture.
+  const TYPE_ICON: Record<string, typeof Tent> = {
+    SAFARI_LODGE: TreePine,
+    TENTED_CAMP: Tent,
+    MOBILE_CAMP: Caravan,
+    HOTEL: Building2,
+    BOUTIQUE_HOTEL: Gem,
+    BEACH_RESORT: Palmtree,
+    ECO_LODGE: Leaf,
+    VILLA: Home,
+    GUEST_HOUSE: Home
+  };
+  const iconForType = (type: string) => TYPE_ICON[type] ?? BedDouble;
 
   const levelLabel = (l: Lodge) => LEVEL[String(l.accommodation_level)] ?? '';
   const typeLabel = (l: Lodge) => TYPE[String(l.lodge_type)] ?? '';
@@ -84,6 +99,27 @@
     ? shown.find((l) => l.is_featured && (l.hero_image_url || l.image_url)) ?? shown.find((l) => l.hero_image_url || l.image_url)
     : undefined;
   $: gridLodges = featuredLodge ? shown.filter((l) => l.id !== featuredLodge?.id) : shown;
+
+  /**
+   * On "All stays" the list runs to fifty-odd properties, which on a phone is a
+   * very long scroll with no sense of structure. Grouping by property type
+   * turns it into a handful of browsable rows instead.
+   *
+   * Only for the unfiltered view: once a type or destination is chosen the
+   * result is already one coherent set, and splitting it again would be noise.
+   */
+  $: grouped =
+    active === 'all' && activeDestination === 'all' && !search.trim()
+      ? [...new Set(gridLodges.map((l) => String(l.lodge_type)).filter(Boolean))]
+          .map((type) => ({
+            key: type,
+            label: TYPE[type] ?? enumLabel(type),
+            items: gridLodges.filter((l) => String(l.lodge_type) === type)
+          }))
+          // Richest rows first, so the phone opens on something worth swiping.
+          .sort((a, b) => b.items.length - a.items.length)
+      : [];
+  $: useGroups = grouped.length > 1;
   const countFor = (filter: Filter) => lodges.filter(filter.test).length;
   const resetFilters = () => { active = 'all'; activeDestination = 'all'; search = ''; sortBy = 'recommended'; };
   const selectFilter = (key: string) => {
@@ -257,9 +293,55 @@
 
       {#if gridLodges.length}
         <p class="mb-5 mt-9 text-sm text-ink/50">{shown.length} {shown.length === 1 ? 'property' : 'properties'} selected</p>
-        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
-          {#each gridLodges as lodge (lodge.id)}<LodgeCard {lodge} />{/each}
-        </div>
+
+        {#if useGroups}
+          <!--
+            One set of cards, two layouts. On a phone each type is a swipeable
+            row; from md the group wrappers become `display: contents` so their
+            cards fall straight into the parent grid and the desktop layout is
+            exactly the flat grid it was before.
+
+            Rendering both layouts separately would have put all fifty-odd
+            cards in the DOM twice, on the page we are already trying to make
+            lighter.
+          -->
+          <div class="md:grid md:grid-cols-2 md:gap-6 lg:grid-cols-3">
+            {#each grouped as group (group.key)}
+              <section class="mb-9 last:mb-0 md:contents">
+                <div class="mb-3 flex items-end justify-between gap-3 md:hidden" data-group-heading>
+                  <h3 class="flex items-center gap-2 font-serif text-xl font-semibold text-heading">
+                    <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-forest/10 text-forest" aria-hidden="true">
+                      <svelte:component this={iconForType(group.key)} size={15} strokeWidth={1.9} />
+                    </span>
+                    {group.label}
+                    <span class="text-sm font-sans font-bold text-ink/35">{group.items.length}</span>
+                  </h3>
+                  <button
+                    class="shrink-0 text-[12px] font-bold text-clay underline-offset-4 hover:underline"
+                    type="button"
+                    on:click={() => selectFilter(`type:${group.key}`)}
+                  >
+                    See all
+                  </button>
+                </div>
+
+                <div
+                  class="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-[12vw] pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:contents md:px-0"
+                >
+                  {#each group.items as lodge (lodge.id)}
+                    <div class="w-[76vw] max-w-[290px] shrink-0 snap-center md:w-auto md:max-w-none">
+                      <LodgeCard {lodge} compact />
+                    </div>
+                  {/each}
+                </div>
+              </section>
+            {/each}
+          </div>
+        {:else}
+          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
+            {#each gridLodges as lodge (lodge.id)}<LodgeCard {lodge} />{/each}
+          </div>
+        {/if}
       {:else}
         <div class="mt-10 border border-ink/10 bg-surface px-6 py-14 text-center"><p class="font-serif text-2xl text-heading">No stays match those filters.</p><button class="mt-4 font-bold text-clay underline-offset-4 hover:underline" type="button" on:click={resetFilters}>Show all stays</button></div>
       {/if}
