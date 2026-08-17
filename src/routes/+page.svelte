@@ -115,29 +115,29 @@
 
   $: heroExtra = (sections.hero?.extra_data ?? {}) as Record<string, unknown>;
   $: heroImageResolved = cms('hero', 'image_url', '/images/surf-hero.jpg');
-  $: heroVariants = variantFromMap(heroImageResolved, imageVariants);
+  // Resolved during SSR, so the hero paints the slides it will keep. Deriving
+  // them from `tours`/`destinations` meant they were empty on the first paint
+  // and arrived a moment later, replacing the picture under the visitor.
+  //
+  // The CMS background stays as the last candidate: it is what the hero shows
+  // when there is no published tour or destination photograph to show instead,
+  // and it drops out on its own as soon as there is.
+  $: heroSlides = [...(data.heroSlides ?? []), { imageUrl: heroImageResolved, label: 'Goldfinch Adventures', href: '/tours' }]
+    .filter((slide, index, all) =>
+      Boolean(slide.imageUrl) && all.findIndex((candidate) => candidate.imageUrl === slide.imageUrl) === index
+    )
+    .slice(0, 3);
+
+  // Preload whatever the hero will actually paint first. This pointed at the
+  // CMS background regardless, so once the slides came from real tours the
+  // browser was told to prioritise an image the page never displayed, and the
+  // LCP image itself went unhinted.
+  $: heroLeadImage = heroSlides[0]?.imageUrl || heroImageResolved;
+  $: heroVariants = variantFromMap(heroLeadImage, imageVariants);
   $: heroPreloadType = heroVariants?.avif ? 'image/avif' : heroVariants ? 'image/webp' : undefined;
   $: heroPreloadSrcset = heroVariants ? srcsetFor(heroVariants, heroVariants.avif ? 'avif' : 'webp') : '';
   $: heroPreloadHref =
-    variantSrc(heroVariants, 1800, heroVariants?.avif ? 'avif' : 'webp') || imgUrl(heroImageResolved, 1800, 72);
-  $: heroSlides = (() => {
-    const candidates = [
-      ...tours.slice(0, 2).map((tour) => ({
-        imageUrl: tour.banner_image_url || tour.main_image_url || '',
-        label: tour.title,
-        href: `/tours/${tour.slug}`
-      })),
-      ...destinations.slice(0, 2).map((destination) => ({
-        imageUrl: destination.banner_image_url || destination.main_image_url || destination.image_url || '',
-        label: destination.name,
-        href: `/destinations/${destination.slug}`
-      })),
-      { imageUrl: heroImageResolved, label: 'Goldfinch Adventures', href: '/tours' }
-    ];
-    return candidates.filter((slide, index, all) =>
-      Boolean(slide.imageUrl) && all.findIndex((candidate) => candidate.imageUrl === slide.imageUrl) === index
-    ).slice(0, 3);
-  })();
+    variantSrc(heroVariants, 1800, heroVariants?.avif ? 'avif' : 'webp') || imgUrl(heroLeadImage, 1800, 72);
 
   const hexToRgba = (hex: string, alpha: number) => {
     const match = /^#?([0-9a-fA-F]{6})$/.exec(hex);

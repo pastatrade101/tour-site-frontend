@@ -176,7 +176,17 @@
       scroll-snap-type: x mandatory;
       scroll-padding-inline: calc((100vw - var(--package-card-width)) / 2);
       padding-inline: max(var(--container-pad, 1.25rem), calc((100vw - var(--package-card-width)) / 2));
-      padding-bottom: 0.75rem;
+      /*
+        Room above and below the cards, inside the scrollport.
+        `overflow-x: auto` forces the other axis to compute to auto as well, so
+        this element clips vertically whether or not it ever scrolls that way.
+        With no padding above, a card sat flush against that edge and its
+        shadow — 30px of blur reaching about 20px past the top — was sliced off
+        square, which read as the cards sitting in a box rather than floating.
+        The hover lift had nowhere to go either and simply disappeared into the
+        cut. The space below covers the larger shadow the hover state swaps in.
+      */
+      padding-block: 1.25rem 2.75rem;
       scrollbar-width: none;
     }
 
@@ -191,7 +201,10 @@
 
   @media (max-width: 639px) {
     .home-itineraries { padding-block: 3.25rem; }
-    .package-grid { margin-top: 1.5rem; gap: 0.875rem; }
+    /* Margin gives way to the padding added above, so the gap under the filter
+       chips is the 1.5rem it always was — the space just moved inside the
+       scrollport, where it can hold a shadow. */
+    .package-grid { margin-top: 0.25rem; gap: 0.875rem; }
   }
 
   @media (min-width: 640px) and (max-width: 1023px) {

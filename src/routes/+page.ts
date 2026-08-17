@@ -40,10 +40,17 @@ const resolveImageVariants = async (fetchFn: typeof fetch, urls: Set<string>): P
 export const load: PageLoad = async ({ fetch }) => {
   const [
     homeSections,
-    categories
+    categories,
+    heroTours,
+    heroDestinations
   ] = await Promise.allSettled([
     cachedJson<{ data?: Record<string, unknown>[] }>(`${API_URL}/homepage`, fetch),
-    cachedJson<{ data?: { items?: Record<string, unknown>[] } }>(`${API_URL}/categories?status=published&limit=8`, fetch)
+    cachedJson<{ data?: { items?: Record<string, unknown>[] } }>(`${API_URL}/categories?status=published&limit=8`, fetch),
+    // Just the two of each the hero actually shows. The full lists still
+    // hydrate after paint for the sections below the fold; these are here
+    // because the hero cannot wait for them — see heroSlides below.
+    cachedJson<{ data?: { items?: Tour[] } }>(`${API_URL}/tours?status=published&limit=2`, fetch),
+    cachedJson<{ data?: { items?: Destination[] } }>(`${API_URL}/destinations?status=published&limit=2`, fetch)
   ]);
 
   const tourItems: Tour[] = [];
@@ -58,15 +65,50 @@ export const load: PageLoad = async ({ fetch }) => {
   const galleryImageItems: Record<string, unknown>[] = [];
   const categoryItems = items<Record<string, unknown>>(categories);
 
+  /**
+   * The hero's slides, decided here rather than after hydration.
+   *
+   * They used to be derived from the deferred tour and destination lists,
+   * which are empty during SSR — so the hero painted the CMS background image
+   * as its only slide, and the moment the deferred fetch landed there were
+   * three real slides and the background was no longer among them. The picture
+   * the visitor was looking at swapped for a different one, unprompted.
+   *
+   * Two records of each is all the hero can show, so that is all this asks
+   * for. The full lists still hydrate after paint for the sections below.
+   */
+  const heroSlides = [
+    ...items<Tour>(heroTours).map((tour) => ({
+      imageUrl: imageText(tour.banner_image_url) || imageText(tour.main_image_url),
+      label: tour.title,
+      href: `/tours/${tour.slug}`
+    })),
+    ...items<Destination>(heroDestinations).map((destination) => ({
+      imageUrl:
+        imageText(destination.banner_image_url) ||
+        imageText(destination.main_image_url) ||
+        imageText(destination.image_url),
+      label: destination.name,
+      href: `/destinations/${destination.slug}`
+    }))
+  ].filter(
+    (slide, index, all) =>
+      Boolean(slide.imageUrl) && all.findIndex((other) => other.imageUrl === slide.imageUrl) === index
+  );
+
   const variantUrls = new Set<string>();
   collectImageUrls(variantUrls, homeSectionItems, ['image_url']);
   collectImageUrls(variantUrls, categoryItems, ['image_url', 'icon_url']);
+  // Without these the hero would fall back to the full-size originals — the
+  // very thing the responsive ladder exists to avoid, on the page's LCP image.
+  collectImageUrls(variantUrls, heroSlides as Array<Record<string, unknown>>, ['imageUrl']);
 
   const imageVariants = await resolveImageVariants(fetch, variantUrls);
   attachResolvedVariantFields(homeSectionItems as Array<Record<string, any>>, imageVariants, ['image_url']);
   attachResolvedVariantFields(categoryItems as Array<Record<string, any>>, imageVariants, ['image_url', 'icon_url']);
 
   return {
+    heroSlides,
     tours: tourItems,
     destinations: destinationItems,
     homeSections: homeSectionItems,
