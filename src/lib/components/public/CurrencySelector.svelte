@@ -4,6 +4,12 @@
 
   export let compact = false;
   export let mobile = false;
+  /**
+   * Flag-only square trigger for tight bars (the mobile top nav). The words —
+   * code, full name, symbol — live in the dropdown, which keeps its fixed
+   * 268px width and right-aligns to the trigger, so nothing is lost.
+   */
+  export let flagOnly = false;
 
   const flags: Record<string, string> = {
     USD: '🇺🇸',
@@ -151,16 +157,19 @@
   on:pointerdown|stopPropagation
   role="presentation"
 >
-  {#if !compact}
+  {#if !compact && !flagOnly}
     <span class="mb-1 block text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">Currency</span>
   {/if}
 
   <button
     type="button"
     bind:this={trigger}
-    class={`inline-flex min-w-0 items-center gap-2 rounded-[8px] border bg-surface pl-2.5 pr-2 text-heading shadow-sm transition
+    class={`inline-flex min-w-0 items-center border bg-surface text-heading shadow-sm transition
       ${open ? 'border-goldfinch-gold ring-2 ring-goldfinch-gold/25' : 'border-ink/12 hover:border-goldfinch-gold/60'}
-      ${compact ? 'h-10' : 'h-11'} ${mobile ? 'w-full justify-between' : ''}`}
+      ${flagOnly
+        ? 'h-11 w-11 justify-center rounded-xl border-ink/15'
+        : `gap-2 rounded-[8px] pl-2.5 pr-2 ${compact ? 'h-10' : 'h-11'}`}
+      ${mobile ? 'w-full justify-between' : ''}`}
     aria-haspopup="listbox"
     aria-expanded={open}
     aria-label={`Display currency: ${selected?.code ?? 'USD'}`}
@@ -170,21 +179,27 @@
     on:keydown={onTriggerKeydown}
     on:focus={ensureReady}
   >
-    <span class="text-base leading-none" aria-hidden="true">{selected ? flagFor(selected.code, selected.locale) : '🌍'}</span>
-    <span class="min-w-0 truncate text-sm font-extrabold">{selected?.code ?? 'USD'}</span>
-    {#if !compact && !mobile && selected?.symbol}
-      <span class="text-sm font-semibold text-ink/40">{selected.symbol}</span>
+    {#if flagOnly && $currency.loading}
+      <RefreshCw size={15} class="animate-spin text-ink/40" />
+    {:else}
+      <span class="text-base leading-none" aria-hidden="true">{selected ? flagFor(selected.code, selected.locale) : '🌍'}</span>
     {/if}
-    {#if mobile && selected?.name}
-      <span class="ml-1 min-w-0 flex-1 truncate text-left text-sm font-medium text-ink/50">{selected.name}</span>
-    {/if}
-    <span class="ml-auto shrink-0 text-ink/40">
-      {#if $currency.loading}
-        <RefreshCw size={14} class="animate-spin" />
-      {:else}
-        <ChevronDown size={15} class={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+    {#if !flagOnly}
+      <span class="min-w-0 truncate text-sm font-extrabold">{selected?.code ?? 'USD'}</span>
+      {#if !compact && !mobile && selected?.symbol}
+        <span class="text-sm font-semibold text-ink/40">{selected.symbol}</span>
       {/if}
-    </span>
+      {#if mobile && selected?.name}
+        <span class="ml-1 min-w-0 flex-1 truncate text-left text-sm font-medium text-ink/50">{selected.name}</span>
+      {/if}
+      <span class="ml-auto shrink-0 text-ink/40">
+        {#if $currency.loading}
+          <RefreshCw size={14} class="animate-spin" />
+        {:else}
+          <ChevronDown size={15} class={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        {/if}
+      </span>
+    {/if}
   </button>
 
   {#if open}

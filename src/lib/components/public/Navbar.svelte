@@ -323,29 +323,30 @@
 
 <header bind:this={headerEl} class={`mobile-nav-header sticky top-0 z-40 border-b bg-surface transition-[box-shadow,border-color] duration-[400ms] ease-out ${scrolled ? 'border-transparent shadow-[0_8px_28px_rgba(57,61,50,0.10)]' : 'border-ink/10'}`} use:navbarEntrance>
   <!-- ── mobile top bar ─────────────────────────────────────────────────── -->
-  <div class="grid h-[70px] grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-3 px-4 sm:px-5 lg:hidden">
-    <button class="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 bg-surface text-ink" type="button" aria-label="Toggle menu" aria-expanded={menuOpen} on:click={() => (menuOpen = !menuOpen)}>
+  <!-- Icon-only logo, absolutely centred so the wider right-hand cluster
+       (currency + WhatsApp) cannot push it off the true middle. -->
+  <div class="relative flex h-[70px] items-center justify-between gap-3 px-4 sm:px-5 lg:hidden">
+    <button class="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-ink/15 bg-surface text-ink" type="button" aria-label="Toggle menu" aria-expanded={menuOpen} on:click={() => (menuOpen = !menuOpen)}>
       <Menu size={24} strokeWidth={2.4} />
     </button>
 
-    <a href="/" class="flex min-w-0 items-center justify-center gap-2" aria-label="Goldfinch Adventures home" on:click={() => activateLink('/')}>
-      <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-10 w-10 shrink-0 object-contain" />
-      <div class="min-w-0 leading-none">
-        <p class="truncate text-xl font-extrabold tracking-normal text-heading">Goldfinch</p>
-        <p class="mt-1 truncate text-xs font-semibold text-ink/70">Adventures</p>
-      </div>
+    <a href="/" class="absolute left-1/2 -translate-x-1/2" aria-label="Goldfinch Adventures home" on:click={() => activateLink('/')}>
+      <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-11 w-11 object-contain" />
     </a>
 
-    <a
-      class="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 bg-surface text-[#25D366] transition hover:border-[#25D366]/45 hover:bg-[#25D366]/5"
-      href={waHref}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={`${waButtonText} ${waNumber}`}
-      on:click={() => trackEvent('whatsapp_click', { cta_location: 'mobile_navbar' })}
-    >
-      <MessageCircle size={21} strokeWidth={2.6} />
-    </a>
+    <div class="flex shrink-0 items-center gap-2">
+      <CurrencySelector flagOnly />
+      <a
+        class="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 bg-surface text-[#25D366] transition hover:border-[#25D366]/45 hover:bg-[#25D366]/5"
+        href={waHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`${waButtonText} ${waNumber}`}
+        on:click={() => trackEvent('whatsapp_click', { cta_location: 'mobile_navbar' })}
+      >
+        <MessageCircle size={21} strokeWidth={2.6} />
+      </a>
+    </div>
   </div>
 
   <!-- ── desktop top row (collapses smoothly on scroll) ──────────────────── -->
