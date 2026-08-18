@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowRight, Check, Sparkles } from '@lucide/svelte';
+  import { ArrowRight, CalendarRange, Check, Footprints, Sparkles } from '@lucide/svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
@@ -86,9 +86,43 @@
     return '';
   })();
 
-  $: bestMonths = Array.isArray(exp?.best_months)
-    ? (exp.best_months as unknown[]).map(Number).filter((m) => m >= 1 && m <= 12).map((m) => MONTH_SHORT[m - 1])
-    : [];
+  // One supporting line per structured level — a gloss on the label, so the
+  // big value reads as travel guidance rather than a database enum. Legacy
+  // free-text fitness never matches this map and renders as plain prose.
+  const FITNESS_SUPPORT: Record<string, string> = {
+    Easy: 'Relaxed pace',
+    Moderate: 'Steady pace',
+    Active: 'Active days',
+    Challenging: 'Tough in places',
+    Strenuous: 'Very demanding'
+  };
+  $: fitnessSupport = FITNESS_SUPPORT[info?.fitness ?? ''];
+
+  /**
+   * Consecutive selected months collapsed into season ranges: Jan, Feb, Jun,
+   * Jul, Aug, Sep, Oct reads "Jan – Feb" and "Jun – Oct", the way a travel
+   * guide writes seasons — not twelve filter chips. A run crossing the year
+   * end merges (Nov, Dec, Jan → "Nov – Jan"), and all twelve is simply
+   * year-round.
+   */
+  $: bestTimeRanges = (() => {
+    const months = Array.isArray(exp?.best_months)
+      ? [...new Set((exp.best_months as unknown[]).map(Number).filter((m) => m >= 1 && m <= 12))].sort((a, b) => a - b)
+      : [];
+    if (!months.length) return [];
+    if (months.length === 12) return ['All year round'];
+    const runs: Array<[number, number]> = [];
+    for (const month of months) {
+      const last = runs[runs.length - 1];
+      if (last && month === last[1] + 1) last[1] = month;
+      else runs.push([month, month]);
+    }
+    if (runs.length > 1 && runs[0][0] === 1 && runs[runs.length - 1][1] === 12) {
+      const wrap = runs.pop()!;
+      runs[0][0] = wrap[0];
+    }
+    return runs.map(([from, to]) => (from === to ? MONTH_SHORT[from - 1] : `${MONTH_SHORT[from - 1]} – ${MONTH_SHORT[to - 1]}`));
+  })();
 
   $: name = exp ? String(exp.name ?? slug) : slug;
   $: image = exp ? String(exp.image_url ?? '') : '';
@@ -158,26 +192,48 @@
     {#if info}
       <div class="grid gap-6 md:grid-cols-[1fr_1fr]">
         <div class="rounded-2xl border border-ink/10 bg-surface p-6 shadow-soft">
-          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">Who it's for</p>
-          <p class="mt-2 text-base leading-7 text-ink/75">{info.whoItsFor}</p>
+          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">Who this experience suits</p>
+          <p class="mt-3 text-base leading-7 text-ink/80">{info.whoItsFor}</p>
+
+          <!-- Travel facts: typography and hierarchy, not pills. Values render
+               large in the site serif; the small caps label and quiet support
+               line underneath do the explaining. -->
           {#if info.fitness || durationText}
-            <div class="mt-4 flex flex-wrap gap-2">
+            <div class="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-ink/[0.07] pt-5">
               {#if info.fitness}
-                <p class="inline-flex items-center gap-2 rounded-full bg-sand/60 px-3 py-1.5 text-sm font-semibold text-heading">Fitness: {info.fitness}</p>
+                <div class="flex items-start gap-3">
+                  <span class="mt-1 shrink-0 text-clay" aria-hidden="true"><Footprints size={17} strokeWidth={1.8} /></span>
+                  <div class="min-w-0">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/45">Fitness</p>
+                    {#if fitnessSupport}
+                      <p class="mt-1 font-serif text-xl font-semibold leading-tight text-heading">{info.fitness}</p>
+                      <p class="mt-0.5 text-xs text-ink/50">{fitnessSupport}</p>
+                    {:else}
+                      <!-- Legacy free-text fitness reads as prose, not a headline. -->
+                      <p class="mt-1 text-sm leading-6 text-ink/75">{info.fitness}</p>
+                    {/if}
+                  </div>
+                </div>
               {/if}
               {#if durationText}
-                <p class="inline-flex items-center gap-2 rounded-full bg-sand/60 px-3 py-1.5 text-sm font-semibold text-heading">Recommended: {durationText}</p>
+                <div class="flex items-start gap-3">
+                  <span class="mt-1 shrink-0 text-clay" aria-hidden="true"><CalendarRange size={17} strokeWidth={1.8} /></span>
+                  <div class="min-w-0">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/45">Ideal trip length</p>
+                    <p class="mt-1 font-serif text-xl font-semibold leading-tight text-heading">{durationText}</p>
+                    <p class="mt-0.5 text-xs text-ink/50">Recommended stay</p>
+                  </div>
+                </div>
               {/if}
             </div>
           {/if}
-          {#if bestMonths.length}
-            <div class="mt-4">
-              <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">Best months</p>
-              <div class="mt-2 flex flex-wrap gap-1.5">
-                {#each bestMonths as month}
-                  <span class="rounded-full border border-forest/20 bg-forest/5 px-2.5 py-1 text-xs font-bold text-forest">{month}</span>
-                {/each}
-              </div>
+
+          {#if bestTimeRanges.length}
+            <div class="mt-5 border-t border-ink/[0.07] pt-5">
+              <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/45">Best time to go</p>
+              <p class="mt-1 font-serif text-xl font-semibold leading-tight text-heading">
+                {#each bestTimeRanges as range, rangeIndex}{#if rangeIndex}<span class="mx-2 font-sans text-base font-normal text-ink/30">·</span>{/if}{range}{/each}
+              </p>
             </div>
           {/if}
         </div>

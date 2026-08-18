@@ -30,9 +30,14 @@ export default {
       fontFamily: {
         // Brand type system: Inter for body/UI/labels, Source Serif 4 for
         // headings & display (see brand guidelines). `admin` = Inter too.
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
-        serif: ['Source Serif 4', 'Georgia', 'Times New Roman', 'serif'],
-        display: ['Source Serif 4', 'Georgia', 'serif'],
+        // Multi-word names carry their own quotes: emitted unquoted, "Source
+        // Serif 4" is invalid CSS (an identifier cannot be "4"), so browsers
+        // dropped the whole declaration and .font-serif was an empty rule —
+        // headings only looked right because the h1–h4 rule in app.css quotes
+        // the name itself.
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
+        serif: ['"Source Serif 4"', 'Georgia', '"Times New Roman"', 'serif'],
+        display: ['"Source Serif 4"', 'Georgia', 'serif'],
         admin: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
       },
       boxShadow: {
