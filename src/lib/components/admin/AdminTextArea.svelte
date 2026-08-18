@@ -4,6 +4,15 @@
   export let value = '';
   export let rows = 5;
   export let placeholder = '';
+  /** Hard input cap (enforced by the textarea itself). */
+  export let maxlength: number | undefined = undefined;
+  /**
+   * Show "n/target" under the field. Independent of maxlength so SEO fields
+   * can show a soft recommended length without truncating what admins type.
+   */
+  export let counter: number | undefined = undefined;
+
+  $: counterTarget = counter ?? maxlength;
 </script>
 
 <label class="grid gap-1.5">
@@ -14,5 +23,11 @@
     bind:value
     {rows}
     {placeholder}
+    {maxlength}
   ></textarea>
+  {#if counterTarget}
+    <span class={`justify-self-end text-[11px] font-semibold ${value.length > counterTarget ? 'text-clay' : 'text-ink/40'}`}>
+      {value.length}/{counterTarget}
+    </span>
+  {/if}
 </label>

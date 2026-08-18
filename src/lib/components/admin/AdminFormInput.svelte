@@ -5,6 +5,10 @@
   export let value = '';
   export let placeholder = '';
   export let required = false;
+  /** Optional min for type="number" inputs. */
+  export let min: number | undefined = undefined;
+  /** Show "n/target" under the field — a soft recommended length, no truncation. */
+  export let counter: number | undefined = undefined;
 </script>
 
 <label class="grid min-w-0 gap-1.5">
@@ -16,5 +20,11 @@
     bind:value
     {placeholder}
     {required}
+    {min}
   />
+  {#if counter}
+    <span class={`justify-self-end text-[11px] font-semibold ${String(value).length > counter ? 'text-clay' : 'text-ink/40'}`}>
+      {String(value).length}/{counter}
+    </span>
+  {/if}
 </label>

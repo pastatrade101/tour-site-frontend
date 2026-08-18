@@ -195,15 +195,20 @@
   $: advisorExtra = (sections.advisor_note?.extra_data ?? {}) as Record<string, unknown>;
   $: howExtra = (sections.how_it_works?.extra_data ?? {}) as Record<string, unknown>;
   // Experiences cards come from published tour categories (real CMS records).
+  // short_description is written for exactly this compact card context, so it
+  // wins over truncating the long description. Featured categories lead;
+  // within each group the API's sort_order holds (Array.sort is stable).
   $: experienceItems = categories
     .map((c) => ({
       name: String(c.name ?? c.slug ?? ''),
       slug: String(c.slug ?? ''),
-      description: toMetaText(c.description ?? c.who_its_for ?? '', 170),
+      description: toMetaText(c.short_description ?? c.description ?? c.who_its_for ?? '', 170),
       image: String(c.image_url ?? ''),
-      href: `/safari-styles/${String(c.slug ?? '')}`
+      href: `/safari-styles/${String(c.slug ?? '')}`,
+      featured: Boolean(c.is_featured)
     }))
-    .filter((c) => c.name && c.slug);
+    .filter((c) => c.name && c.slug)
+    .sort((a, b) => Number(b.featured) - Number(a.featured));
   $: introProps = clean({
     eyebrow: introExtra.eyebrow,
     title: sections.intro?.title,

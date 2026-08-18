@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
-  import { Edit, Plus, Search, Trash2, X } from '@lucide/svelte';
+  import { ArrowDown, ArrowUp, ChevronDown, Edit, Plus, Search, Trash2, X } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
@@ -20,42 +20,59 @@
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import { hasRichContent, toMetaText } from '$lib/richText';
 
+  type FitnessLevel = '' | 'easy' | 'moderate' | 'active' | 'challenging' | 'strenuous';
+
   type Category = {
     id: string;
     name: string;
     slug: string;
+    short_description?: string | null;
     description?: string | null;
     who_its_for?: string | null;
+    /** Legacy free text; read-only fallback until fitness_level is set. */
     fitness?: string | null;
+    fitness_level?: FitnessLevel | null;
+    min_days?: number | null;
+    max_days?: number | null;
+    best_months?: number[] | null;
     highlights?: string[] | null;
     icon_url?: string | null;
     image_url?: string | null;
     lottie_url?: string | null;
     status: 'draft' | 'published' | 'archived';
+    is_featured?: boolean | null;
     sort_order: number;
     meta_title?: string | null;
     meta_description?: string | null;
+    seo_image_url?: string | null;
     created_at?: string;
     updated_at?: string;
   };
 
   type CategoryForm = {
+    best_months: number[];
     description: string;
-    who_its_for: string;
-    fitness: string;
+    fitness_level: FitnessLevel;
     highlights: string[];
     icon_url: string;
     image_url: string;
+    is_featured: boolean;
     lottie_url: string;
+    max_days: string;
     meta_description: string;
     meta_title: string;
+    min_days: string;
     name: string;
+    seo_image_url: string;
+    short_description: string;
     slug: string;
     sort_order: string;
     status: 'draft' | 'published' | 'archived';
+    who_its_for: string;
   };
 
-  type IconAssetMode = 'none' | 'icon_url' | 'icon_upload' | 'lottie_url' | 'lottie_upload';
+  type VisualType = 'none' | 'icon' | 'lottie';
+  type LottieSource = 'upload' | 'url';
 
   type MediaItem = { file_name: string; file_url: string; id: string; thumbnail_url?: string | null };
 
@@ -66,19 +83,25 @@
   };
 
   const emptyForm = (): CategoryForm => ({
+    best_months: [],
     description: '',
-    who_its_for: '',
-    fitness: '',
+    fitness_level: '',
     highlights: [''],
     icon_url: '',
     image_url: '',
+    is_featured: false,
     lottie_url: '',
+    max_days: '',
     meta_description: '',
     meta_title: '',
+    min_days: '',
     name: '',
+    seo_image_url: '',
+    short_description: '',
     slug: '',
     sort_order: '0',
-    status: 'draft'
+    status: 'draft',
+    who_its_for: ''
   });
 
   const statusOptions = [
@@ -87,12 +110,29 @@
     { label: 'Archived', value: 'archived' }
   ];
 
-  const iconAssetOptions = [
-    { label: 'No icon or animation', value: 'none' },
-    { label: 'Paste icon URL', value: 'icon_url' },
-    { label: 'Upload icon file', value: 'icon_upload' },
-    { label: 'Paste Lottie URL', value: 'lottie_url' },
-    { label: 'Upload Lottie file', value: 'lottie_upload' }
+  const fitnessOptions = [
+    { label: 'None', value: '' },
+    { label: 'Easy', value: 'easy' },
+    { label: 'Moderate', value: 'moderate' },
+    { label: 'Active', value: 'active' },
+    { label: 'Challenging', value: 'challenging' },
+    { label: 'Strenuous', value: 'strenuous' }
+  ];
+
+  const MONTHS = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const visualTypeOptions = [
+    { label: 'None', value: 'none' },
+    { label: 'Icon', value: 'icon' },
+    { label: 'Lottie animation', value: 'lottie' }
+  ];
+
+  const lottieSourceOptions = [
+    { label: 'Upload Lottie JSON', value: 'upload' },
+    { label: 'Paste Lottie URL', value: 'url' }
   ];
 
   let rows: Category[] = [];
@@ -110,8 +150,10 @@
   let editingCategory: Category | null = null;
   let categoryToDelete: Category | null = null;
   let form = emptyForm();
-  let iconAssetMode: IconAssetMode = 'none';
-  let lastIconAssetMode: IconAssetMode = 'none';
+  let visualType: VisualType = 'none';
+  let lastVisualType: VisualType = 'none';
+  let lottieSource: LottieSource = 'upload';
+  let seoOpen = false;
   let toasts: Toast[] = [];
 
   const slugify = (value: string) =>
@@ -125,11 +167,19 @@
     form.slug = slugify(form.name);
   }
 
-  $: if (modalOpen && iconAssetMode !== lastIconAssetMode) {
+  // Switching the visual type discards the other type's value, so a category
+  // can never carry both an icon and a Lottie at once.
+  $: if (modalOpen && visualType !== lastVisualType) {
     form.icon_url = '';
     form.lottie_url = '';
-    lastIconAssetMode = iconAssetMode;
+    lastVisualType = visualType;
   }
+
+  // Cross-field rule surfaced while typing, not on submit.
+  $: daysError =
+    form.min_days && form.max_days && Number(form.max_days) < Number(form.min_days)
+      ? 'Maximum days must be greater than or equal to minimum days.'
+      : '';
 
   const loadMedia = async () => {
     if (mediaItems.length || loadingMedia) return;
@@ -177,8 +227,10 @@
   const openCreateModal = async () => {
     editingCategory = null;
     form = emptyForm();
-    iconAssetMode = 'none';
-    lastIconAssetMode = iconAssetMode;
+    visualType = 'none';
+    lastVisualType = visualType;
+    lottieSource = 'upload';
+    seoOpen = false;
     slugManuallyEdited = false;
     modalOpen = true;
     await loadMedia();
@@ -187,22 +239,31 @@
   const openEditModal = async (category: Category) => {
     editingCategory = category;
     form = {
+      best_months: Array.isArray(category.best_months) ? category.best_months.map(Number).filter((m) => m >= 1 && m <= 12) : [],
       description: category.description ?? '',
-      who_its_for: category.who_its_for ?? '',
-      fitness: category.fitness ?? '',
+      fitness_level: (category.fitness_level ?? '') as FitnessLevel,
       highlights: Array.isArray(category.highlights) && category.highlights.length ? category.highlights.map(String) : [''],
       icon_url: category.icon_url ?? '',
       image_url: category.image_url ?? '',
+      is_featured: Boolean(category.is_featured),
       lottie_url: category.lottie_url ?? '',
+      max_days: category.max_days != null ? String(category.max_days) : '',
       meta_description: category.meta_description ?? '',
       meta_title: category.meta_title ?? '',
+      min_days: category.min_days != null ? String(category.min_days) : '',
       name: category.name,
+      seo_image_url: category.seo_image_url ?? '',
+      short_description: category.short_description ?? '',
       slug: category.slug,
       sort_order: String(category.sort_order ?? 0),
-      status: category.status ?? 'draft'
+      status: category.status ?? 'draft',
+      who_its_for: category.who_its_for ?? ''
     };
-    iconAssetMode = category.lottie_url ? 'lottie_url' : category.icon_url ? 'icon_url' : 'none';
-    lastIconAssetMode = iconAssetMode;
+    visualType = category.lottie_url ? 'lottie' : category.icon_url ? 'icon' : 'none';
+    lastVisualType = visualType;
+    lottieSource = 'url';
+    // Open the SEO section only when there is something in it to see.
+    seoOpen = Boolean(category.meta_title || category.meta_description || category.seo_image_url);
     slugManuallyEdited = true;
     modalOpen = true;
     await loadMedia();
@@ -213,8 +274,24 @@
     editingCategory = null;
     slugManuallyEdited = false;
     form = emptyForm();
-    iconAssetMode = 'none';
-    lastIconAssetMode = iconAssetMode;
+    visualType = 'none';
+    lastVisualType = visualType;
+    lottieSource = 'upload';
+    seoOpen = false;
+  };
+
+  const toggleMonth = (month: number) => {
+    form.best_months = form.best_months.includes(month)
+      ? form.best_months.filter((m) => m !== month)
+      : [...form.best_months, month].sort((a, b) => a - b);
+  };
+
+  const moveHighlight = (index: number, delta: -1 | 1) => {
+    const target = index + delta;
+    if (target < 0 || target >= form.highlights.length) return;
+    const next = [...form.highlights];
+    [next[index], next[target]] = [next[target], next[index]];
+    form.highlights = next;
   };
 
   // Highlights are individually editable bullets, matching the tours form. An
@@ -231,23 +308,37 @@
     form.highlights = next.length ? next : [''];
   };
 
+  // Legacy `fitness` free text is deliberately absent: the API no longer
+  // accepts it, and leaving it out of the update payload is what keeps the
+  // stored text intact as a public-page fallback.
   const payload = () => ({
+    best_months: form.best_months,
     description: form.description || null,
-    who_its_for: form.who_its_for || null,
-    fitness: form.fitness || null,
+    fitness_level: form.fitness_level || null,
     highlights: cleanHighlights(),
-    icon_url: iconAssetMode === 'icon_url' || iconAssetMode === 'icon_upload' ? form.icon_url || null : null,
+    icon_url: visualType === 'icon' ? form.icon_url || null : null,
     image_url: form.image_url.trim() || null,
-    lottie_url: iconAssetMode === 'lottie_url' || iconAssetMode === 'lottie_upload' ? form.lottie_url || null : null,
+    is_featured: form.is_featured,
+    lottie_url: visualType === 'lottie' ? form.lottie_url || null : null,
+    max_days: form.max_days ? Number(form.max_days) : null,
     meta_description: form.meta_description || null,
     meta_title: form.meta_title || null,
+    min_days: form.min_days ? Number(form.min_days) : null,
     name: form.name.trim(),
+    seo_image_url: form.seo_image_url.trim() || null,
+    short_description: form.short_description.trim() || null,
     slug: form.slug.trim(),
     sort_order: Number(form.sort_order || 0),
-    status: form.status
+    status: form.status,
+    who_its_for: form.who_its_for || null
   });
 
   const saveCategory = async () => {
+    if (saving) return;
+    if (daysError) {
+      showToast(daysError, 'error');
+      return;
+    }
     saving = true;
 
     try {
@@ -394,31 +485,83 @@
         </button>
       </div>
 
-      <form class="mt-6 grid gap-4" on:submit|preventDefault={saveCategory}>
-        <div class="grid gap-4 md:grid-cols-2">
-          <AdminFormInput label="Name" name="name" bind:value={form.name} required />
+      <form class="mt-6 grid gap-5" on:submit|preventDefault={saveCategory}>
+        <!-- ── 1 · Basic information ─────────────────────────────────────── -->
+        <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
+          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Basic information</p>
 
-          <label class="grid gap-2 text-sm font-medium text-ink">
-            <span>Slug</span>
-            <input
-              class="h-11 rounded-2xl border border-ink/10 bg-surface px-3 text-sm outline-none shadow-sm transition focus:border-forest focus:ring-2 focus:ring-forest/15"
-              name="slug"
-              bind:value={form.slug}
-              required
-              on:input={() => (slugManuallyEdited = true)}
-            />
-          </label>
-        </div>
+          <div class="grid gap-4 md:grid-cols-2">
+            <AdminFormInput label="Name" name="name" bind:value={form.name} required placeholder="Wildlife Safari" />
 
-        <AdminRichText label="Description" name="description" bind:value={form.description} rows={7} placeholder="Short category description for CMS and public pages." />
+            <label class="grid gap-1.5">
+              <span class="text-[13px] font-semibold text-ink/65">Slug</span>
+              <input
+                class="h-11 rounded-md border border-ink/15 bg-black/[0.02] px-3.5 text-sm text-ink outline-none transition hover:border-ink/25 focus:border-forest focus:bg-surface focus:ring-2 focus:ring-forest/20"
+                name="slug"
+                bind:value={form.slug}
+                required
+                pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                title="Lowercase letters, numbers and single hyphens, e.g. wildlife-safari"
+                on:input={() => (slugManuallyEdited = true)}
+              />
+              <span class="text-[11px] text-ink/40">Auto-generated from the name until you edit it.</span>
+            </label>
+          </div>
 
-        <div class="rounded-2xl border border-ink/10 bg-sand/20 p-4">
-          <p class="text-sm font-bold text-ink">Experience page enrichment</p>
-          <p class="mt-0.5 text-xs text-ink/55">Shown on the public /experiences/{form.slug || 'slug'} page. Leave blank to hide.</p>
-          <div class="mt-4 grid gap-4">
-            <AdminTextArea label="Who it's for" name="who_its_for" bind:value={form.who_its_for} rows={2} placeholder="First-timers, families and photographers…" />
-            <AdminFormInput label="Fitness" name="fitness" bind:value={form.fitness} placeholder="Easy — game drives, no walking required." />
-            <div class="grid gap-1.5">
+          <AdminTextArea
+            label="Short description"
+            name="short_description"
+            bind:value={form.short_description}
+            rows={2}
+            maxlength={250}
+            placeholder="Experience Tanzania's iconic wildlife destinations through expertly designed safari journeys."
+          />
+
+          <AdminRichText label="Description" name="description" bind:value={form.description} rows={7} placeholder="Full category introduction for the public experience page." />
+
+          <AdminTextArea label="Who it's for" name="who_its_for" bind:value={form.who_its_for} rows={2} placeholder="Ideal for first-time safari travellers, couples, families and wildlife enthusiasts." />
+        </section>
+
+        <!-- ── 2 · Travel information ────────────────────────────────────── -->
+        <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Travel information</p>
+            <p class="mt-1 text-xs text-ink/55">Shown on the public /experiences/{form.slug || 'slug'} page. Leave blank to hide.</p>
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-3">
+            <AdminSelect label="Fitness level" name="fitness_level" bind:value={form.fitness_level} options={fitnessOptions} />
+            <AdminFormInput label="Recommended minimum days" name="min_days" type="number" min={1} bind:value={form.min_days} placeholder="3" />
+            <AdminFormInput label="Recommended maximum days" name="max_days" type="number" min={1} bind:value={form.max_days} placeholder="10" />
+          </div>
+          {#if daysError}
+            <p class="-mt-2 text-xs font-semibold text-clay">{daysError}</p>
+          {/if}
+          {#if editingCategory?.fitness && !form.fitness_level}
+            <p class="-mt-2 text-xs text-ink/45">
+              Legacy fitness text — “{editingCategory.fitness}” — still shows publicly until you pick a level here.
+            </p>
+          {/if}
+
+          <div class="grid gap-1.5">
+            <span class="text-[13px] font-semibold text-ink/65">Best months</span>
+            <div class="flex flex-wrap gap-1.5">
+              {#each MONTHS as month, monthIndex}
+                {@const monthNumber = monthIndex + 1}
+                {@const selected = form.best_months.includes(monthNumber)}
+                <button
+                  class={`h-9 rounded-full border px-3 text-xs font-bold transition ${selected ? 'border-deep-green bg-deep-green text-white' : 'border-ink/15 bg-surface text-ink/65 hover:border-forest/40 hover:text-heading'}`}
+                  type="button"
+                  aria-pressed={selected}
+                  on:click={() => toggleMonth(monthNumber)}
+                >
+                  {month}
+                </button>
+              {/each}
+            </div>
+          </div>
+
+          <div class="grid gap-1.5">
               <div class="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <span class="text-[13px] font-semibold text-ink/65">Highlights</span>
@@ -444,83 +587,126 @@
                       headings="none"
                       placeholder="e.g. The Great Migration river crossings"
                     />
-                    <button
-                      class="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-red-200 bg-surface px-3 text-xs font-bold text-red-700 transition hover:bg-red-50 sm:mt-6"
-                      type="button"
-                      on:click={() => removeHighlight(index)}
-                    >
-                      <Trash2 size={14} /> Remove
-                    </button>
+                    <div class="flex gap-1.5 sm:mt-6">
+                      <button
+                        class="grid h-10 w-9 place-items-center rounded-md border border-ink/10 bg-surface text-ink/60 transition hover:text-heading disabled:opacity-30"
+                        type="button"
+                        aria-label={`Move highlight ${index + 1} up`}
+                        disabled={index === 0}
+                        on:click={() => moveHighlight(index, -1)}
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <button
+                        class="grid h-10 w-9 place-items-center rounded-md border border-ink/10 bg-surface text-ink/60 transition hover:text-heading disabled:opacity-30"
+                        type="button"
+                        aria-label={`Move highlight ${index + 1} down`}
+                        disabled={index === form.highlights.length - 1}
+                        on:click={() => moveHighlight(index, 1)}
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                      <button
+                        class="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-red-200 bg-surface px-3 text-xs font-bold text-red-700 transition hover:bg-red-50"
+                        type="button"
+                        on:click={() => removeHighlight(index)}
+                      >
+                        <Trash2 size={14} /> Remove
+                      </button>
+                    </div>
                   </div>
                 {/each}
               </div>
             </div>
+        </section>
+
+        <!-- ── 3 · Media ─────────────────────────────────────────────────── -->
+        <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
+          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Media</p>
+
+          <div class="grid gap-4 lg:grid-cols-2">
+            <div class="grid content-start gap-4">
+              <div>
+                <h3 class="text-base font-semibold text-ink">Category image</h3>
+                <p class="mt-1 text-sm text-ink/55">Primary image for cards, headers and the Tours menu. Media Library, upload or URL.</p>
+              </div>
+              <MediaPicker label="Category image" media={mediaItems} uploadFolder="categories/images" aspect="aspect-[16/9]" bind:value={form.image_url} />
+            </div>
+
+            <div class="grid content-start gap-4">
+              <div>
+                <h3 class="text-base font-semibold text-ink">Icon or animation</h3>
+                <p class="mt-1 text-sm text-ink/55">Optional badge visual. One type at a time.</p>
+              </div>
+
+              <AdminSelect label="Visual type" name="visual_type" bind:value={visualType} options={visualTypeOptions} />
+
+              {#if visualType === 'icon'}
+                <!-- The Media Picker is all three sources in one control:
+                     library, upload and paste-URL. -->
+                <MediaPicker label="Icon" media={mediaItems} uploadFolder="categories/icons" aspect="aspect-square" fit="object-contain" bind:value={form.icon_url} />
+              {:else if visualType === 'lottie'}
+                <AdminSelect label="Source" name="lottie_source" bind:value={lottieSource} options={lottieSourceOptions} />
+                {#if lottieSource === 'upload'}
+                  <AdminFileUpload
+                    label="Upload Lottie JSON"
+                    accept="application/json,text/json,.json"
+                    folder="categories/lottie"
+                    kind="lottie"
+                    value={form.lottie_url}
+                    helper="Use a valid Lottie .json file."
+                    on:uploaded={(event) => {
+                      form.lottie_url = event.detail.url;
+                      showToast('Lottie file uploaded successfully.');
+                    }}
+                    on:error={(event) => showToast(event.detail, 'error')}
+                  />
+                {:else}
+                  <AdminFormInput label="Lottie URL" name="lottie_url" bind:value={form.lottie_url} placeholder="https://..." />
+                {/if}
+              {/if}
+            </div>
           </div>
-        </div>
+        </section>
 
-        <div class="grid gap-4 md:grid-cols-2">
-          <AdminSelect label="Status" name="status" bind:value={form.status} options={statusOptions} />
-          <AdminFormInput label="Sort order" name="sort_order" type="number" bind:value={form.sort_order} />
-        </div>
+        <!-- ── 4 · Publishing ────────────────────────────────────────────── -->
+        <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
+          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Publishing</p>
+          <div class="grid gap-4 md:grid-cols-3">
+            <AdminSelect label="Status" name="status" bind:value={form.status} options={statusOptions} />
+            <AdminFormInput label="Sort order" name="sort_order" type="number" min={0} bind:value={form.sort_order} />
+            <label class="flex items-center gap-3 self-end rounded-md border border-ink/10 bg-surface px-4 py-3 text-sm font-semibold text-ink">
+              <input class="h-4 w-4 rounded border-ink/20 text-forest focus:ring-forest" type="checkbox" bind:checked={form.is_featured} />
+              Featured category
+            </label>
+          </div>
+          <p class="-mt-2 text-xs text-ink/45">Featured marks this category for homepage and promotional sections. Sort order only controls list position — lower first.</p>
+        </section>
 
-        <div class="grid gap-4 lg:grid-cols-2">
-          <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
-            <div>
-              <h3 class="text-base font-semibold text-ink">Icon or animation</h3>
-              <p class="mt-1 text-sm text-ink/55">Choose one visual source for the category badge.</p>
+        <!-- ── 5 · SEO (collapsed until needed) ──────────────────────────── -->
+        <section class="rounded-[8px] border border-ink/10 bg-sand/20">
+          <button
+            class="flex w-full items-center justify-between gap-3 p-4 text-left"
+            type="button"
+            aria-expanded={seoOpen}
+            on:click={() => (seoOpen = !seoOpen)}
+          >
+            <span class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">SEO</span>
+            <ChevronDown size={16} class={`text-ink/45 transition-transform ${seoOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {#if seoOpen}
+            <div class="grid gap-4 border-t border-ink/10 p-4">
+              <div class="grid gap-4 md:grid-cols-2">
+                <div class="grid content-start gap-4">
+                  <AdminFormInput label="SEO title" name="meta_title" bind:value={form.meta_title} counter={60} placeholder="Falls back to the category name." />
+                  <AdminTextArea label="SEO description" name="meta_description" bind:value={form.meta_description} rows={3} counter={160} placeholder="Falls back to the short description." />
+                </div>
+                <MediaPicker label="Social / Open Graph image" media={mediaItems} uploadFolder="categories/seo" aspect="aspect-[16/9]" bind:value={form.seo_image_url} />
+              </div>
+              <p class="text-xs text-ink/45">All optional. Empty fields fall back to the category name, short description and category image.</p>
             </div>
-
-            <AdminSelect label="Source" name="icon_asset_mode" bind:value={iconAssetMode} options={iconAssetOptions} />
-
-            {#if iconAssetMode === 'icon_url'}
-              <AdminFormInput label="Icon URL" name="icon_url" bind:value={form.icon_url} placeholder="https://..." />
-            {:else if iconAssetMode === 'icon_upload'}
-              <AdminFileUpload
-                label="Upload icon file"
-                folder="categories/icons"
-                value={form.icon_url}
-                helper="Use a png, jpg, webp, or avif icon file."
-                on:uploaded={(event) => {
-                  form.icon_url = event.detail.url;
-                  showToast('Icon file uploaded successfully.');
-                }}
-                on:error={(event) => showToast(event.detail, 'error')}
-              />
-            {:else if iconAssetMode === 'lottie_url'}
-              <AdminFormInput label="Lottie URL" name="lottie_url" bind:value={form.lottie_url} placeholder="https://..." />
-            {:else if iconAssetMode === 'lottie_upload'}
-              <AdminFileUpload
-                label="Upload Lottie JSON"
-                accept="application/json,text/json,.json"
-                folder="categories/lottie"
-                kind="lottie"
-                value={form.lottie_url}
-                helper="Use a valid Lottie .json file."
-                on:uploaded={(event) => {
-                  form.lottie_url = event.detail.url;
-                  showToast('Lottie file uploaded successfully.');
-                }}
-                on:error={(event) => showToast(event.detail, 'error')}
-              />
-            {:else}
-              <p class="rounded-2xl border border-dashed border-ink/15 bg-surface px-3 py-3 text-sm text-ink/55">No icon or animation will be saved.</p>
-            {/if}
-          </section>
-
-          <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
-            <div>
-              <h3 class="text-base font-semibold text-ink">Category image</h3>
-              <p class="mt-1 text-sm text-ink/55">Pick from the Media Library, upload a new file, or paste a URL. Used for category cards, headers and the Tours menu thumbnails.</p>
-            </div>
-
-            <MediaPicker label="Category image" media={mediaItems} uploadFolder="categories/images" aspect="aspect-[16/9]" bind:value={form.image_url} />
-          </section>
-        </div>
-
-        <div class="grid gap-4 md:grid-cols-2">
-          <AdminFormInput label="SEO title" name="meta_title" bind:value={form.meta_title} />
-          <AdminTextArea label="SEO description" name="meta_description" bind:value={form.meta_description} rows={3} />
-        </div>
+          {/if}
+        </section>
 
         <div class="flex justify-end gap-3 pt-2">
           <AdminButton variant="secondary" type="button" on:click={closeModal}>Cancel</AdminButton>
