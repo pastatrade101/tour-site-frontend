@@ -237,12 +237,14 @@
         </div>
 
         <div class="rounded-[8px] border border-white/15 bg-white/10 p-5 backdrop-blur" use:fadeUpOnScroll={{ y: 16 }}>
-          <p class="text-sm font-bold text-white">Style snapshot</p>
+          <p class="text-sm font-bold text-white">Is this safari for you?</p>
           <div class="mt-4 grid gap-3">
             {#if category.who_its_for}
-              <div class="flex gap-3 rounded-[8px] bg-white/10 p-3">
-                <Users size={18} class="mt-0.5 shrink-0 text-goldfinch-gold" />
-                <p class="whitespace-pre-line text-sm leading-6 text-white/78">{category.who_its_for}</p>
+              <div class="rounded-[8px] bg-white/10 p-3">
+                <p class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-goldfinch-gold">
+                  <Users size={13} /> Who it's for
+                </p>
+                <p class="mt-2 whitespace-pre-line text-sm leading-6 text-white/78">{category.who_its_for}</p>
               </div>
             {/if}
             {#if fitnessText}
@@ -253,6 +255,7 @@
             {/if}
             {#if category.highlights?.length}
               <div class="grid gap-2 rounded-[8px] bg-white/10 p-3">
+                <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-goldfinch-gold">What you get</p>
                 {#each category.highlights.slice(0, 4) as highlight}
                   <div class="flex items-start gap-2 text-sm leading-6 text-white/78">
                     <Check size={14} strokeWidth={2.8} class="mt-1 shrink-0 text-goldfinch-gold" />
