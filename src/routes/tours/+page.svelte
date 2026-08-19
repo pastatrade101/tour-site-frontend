@@ -329,14 +329,23 @@
   </div>
 </section>
 
-<div class="bg-[#fbfaf6]">
-<section class="tour-shell min-w-0 pb-12">
+<!-- Padding on the section rather than margin on the grid: the margin
+     collapsed straight through this wrapper, opening a strip where the cream
+     page canvas showed between the hero and the white results area. -->
+<div class="bg-white">
+<section class="tour-shell min-w-0 pb-12 pt-6">
 
 
-  <div class="mt-6 grid min-w-0 gap-6">
+  <div class="grid min-w-0 gap-6">
 
     <div class="min-w-0">
-      <div class="results-panel sticky top-[var(--nav-h)] z-20 -mx-3 border-y border-ink/10 bg-[#fbfaf6]/95 px-3 py-3 backdrop-blur lg:static lg:mx-0 lg:rounded-[8px] lg:border lg:bg-white lg:p-4">
+      <!-- lg:relative, not lg:static: z-index only applies to positioned
+           elements, and the reveal-transformed tour cards each create their
+           own stacking context — with the panel static, its open filter
+           dropdown painted UNDER the cards that follow it in the DOM. The
+           blur goes at lg too: it is invisible over the solid white panel but
+           still forced a stacking context (and a paint cost) of its own. -->
+      <div class="results-panel sticky top-[var(--nav-h)] z-20 -mx-3 border-y border-ink/10 bg-[#fbfaf6]/95 px-3 py-3 backdrop-blur lg:relative lg:mx-0 lg:rounded-[8px] lg:border lg:bg-white lg:p-4 lg:backdrop-blur-none">
         <div class="results-filter-slot">
           <TourFilterBar
                 {destinationOptions}
