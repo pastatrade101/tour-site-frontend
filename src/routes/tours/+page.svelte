@@ -344,8 +344,12 @@
            own stacking context — with the panel static, its open filter
            dropdown painted UNDER the cards that follow it in the DOM. The
            blur goes at lg too: it is invisible over the solid white panel but
-           still forced a stacking context (and a paint cost) of its own. -->
-      <div class="results-panel sticky top-[var(--nav-h)] z-20 -mx-3 border-y border-ink/10 bg-[#fbfaf6]/95 px-3 py-3 backdrop-blur lg:relative lg:mx-0 lg:rounded-[8px] lg:border lg:bg-white lg:p-4 lg:backdrop-blur-none">
+           still forced a stacking context (and a paint cost) of its own.
+           lg:top-auto matters: the sticky offset is harmless while the panel
+           is static, but on a relative element top shifts the paint position —
+           the panel drifted a nav-height down, opening a gap above itself and
+           landing on the cards below. -->
+      <div class="results-panel sticky top-[var(--nav-h)] z-20 -mx-3 border-y border-ink/10 bg-[#fbfaf6]/95 px-3 py-3 backdrop-blur lg:relative lg:top-auto lg:mx-0 lg:rounded-[8px] lg:border lg:bg-white lg:p-4 lg:backdrop-blur-none">
         <div class="results-filter-slot">
           <TourFilterBar
                 {destinationOptions}
