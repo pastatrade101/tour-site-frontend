@@ -152,17 +152,25 @@ export type TourCategory = {
   id: string;
   name: string;
   slug: string;
+  short_description?: string | null;
   description?: string | null;
   who_its_for?: string | null;
+  /** Legacy free text; superseded by fitness_level but kept as a fallback. */
   fitness?: string | null;
+  fitness_level?: 'easy' | 'moderate' | 'active' | 'challenging' | 'strenuous' | null;
+  min_days?: number | null;
+  max_days?: number | null;
+  best_months?: number[] | null;
   highlights?: string[] | null;
   icon_url?: string | null;
   image_url?: string | null;
   lottie_url?: string | null;
   status?: 'draft' | 'published' | 'archived';
+  is_featured?: boolean | null;
   sort_order?: number | null;
   meta_title?: string | null;
   meta_description?: string | null;
+  seo_image_url?: string | null;
   created_at?: string;
   updated_at?: string;
 };
