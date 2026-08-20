@@ -13,6 +13,7 @@
   import AdminRichText from '$lib/components/admin/AdminRichText.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
+  import AdminTranslationTabs from '$lib/components/admin/AdminTranslationTabs.svelte';
   import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
   import StatusBadge from '$lib/components/admin/StatusBadge.svelte';
   import ToastStack from '$lib/components/admin/ToastStack.svelte';
@@ -707,6 +708,15 @@
             </div>
           {/if}
         </section>
+
+        <!-- ── 6 · Translations (existing categories only — needs an id) ── -->
+        {#if editingCategory}
+          <AdminTranslationTabs
+            entityType="tour_categories"
+            entityId={editingCategory.id}
+            on:toast={(event) => showToast(event.detail.message, event.detail.type ?? 'success')}
+          />
+        {/if}
 
         <div class="flex justify-end gap-3 pt-2">
           <AdminButton variant="secondary" type="button" on:click={closeModal}>Cancel</AdminButton>

@@ -565,3 +565,46 @@ export type AdvisorPageContext = {
   destination_id?: string;
   departure_id?: string;
 };
+
+// ── Multilingual CMS ─────────────────────────────────────────────────────────
+export type Language = {
+  code: string;
+  name: string;
+  native_name: string;
+  locale: string;
+  enabled: boolean;
+  is_default: boolean;
+  sort_order: number;
+};
+
+export type TranslationStatus = 'not_started' | 'draft' | 'translated' | 'needs_review' | 'published';
+
+export type TranslationFieldDef = {
+  key: string;
+  label: string;
+  kind: 'text' | 'textarea' | 'rich' | 'rich_list';
+  required?: boolean;
+};
+
+export type TranslationRecord = {
+  id?: string;
+  language_code?: string;
+  fields: Record<string, string | string[]>;
+  translated_slug?: string | null;
+  translation_status: TranslationStatus;
+  completeness: number;
+  missing_required: string[];
+  outdated: boolean;
+  translated_at?: string | null;
+  reviewed_at?: string | null;
+  published_at?: string | null;
+};
+
+export type EntityTranslations = {
+  default_language: string;
+  languages: Language[];
+  fields: TranslationFieldDef[];
+  source: Record<string, string | string[]>;
+  source_hash: string;
+  translations: Record<string, TranslationRecord>;
+};

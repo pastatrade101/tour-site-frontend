@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { API_URL } from '$lib/config/env';
+import type { EntityTranslations, Language, TranslationRecord } from '$lib/types';
 import type { Activity, AdvisorDonePayload, AdvisorMeta, AdvisorPageContext, AdvisorRecommendation, AiChatResponse, ApiResponse, BlogPost, Comparison, CurrencyApiState, Destination, FAQ, Lodge, MigrationEntry, PageSeo, Paginated, Review, ReviewSummary, SafetyTopic, Specialist, Testimonial, Tour, TourCategory, TravelStyle, TripPoint } from '$lib/types';
 
 type QueryValue = string | number | boolean | undefined | null;
@@ -367,6 +368,19 @@ export const api = {
     create: (body: Record<string, unknown>) => apiRequest<Comparison>('/comparisons', { method: 'POST', body }),
     update: (id: string, body: Record<string, unknown>) => apiRequest<Comparison>(`/comparisons/${id}`, { method: 'PUT', body }),
     remove: (id: string) => apiRequest(`/comparisons/${id}`, { method: 'DELETE' })
+  },
+  translations: {
+    languages: (params?: Record<string, QueryValue>) => apiRequest<Language[]>(`/translations/languages${queryString(params)}`),
+    updateLanguage: (code: string, body: Record<string, unknown>) =>
+      apiRequest<Language>(`/translations/languages/${code}`, { method: 'PATCH', body }),
+    forEntity: (entityType: string, entityId: string) =>
+      apiRequest<EntityTranslations>(`/translations/${entityType}/${entityId}`),
+    save: (entityType: string, entityId: string, code: string, body: Record<string, unknown>) =>
+      apiRequest<TranslationRecord>(`/translations/${entityType}/${entityId}/${code}`, { method: 'PUT', body }),
+    copyFromDefault: (entityType: string, entityId: string, code: string) =>
+      apiRequest<TranslationRecord>(`/translations/${entityType}/${entityId}/${code}/copy-from-default`, { method: 'POST', body: {} }),
+    aiTranslate: (entityType: string, entityId: string, code: string, body: Record<string, unknown> = {}) =>
+      apiRequest<TranslationRecord | null>(`/translations/${entityType}/${entityId}/${code}/ai`, { method: 'POST', body })
   },
   categories: {
     list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<TourCategory>>(`/categories${queryString(params)}`),
