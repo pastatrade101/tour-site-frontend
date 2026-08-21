@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ArrowRight, CalendarDays, MapPin, Sparkles, Star, Tent } from '@lucide/svelte';
+  import { t } from '$lib/i18n/ui';
   import { currency, formatUsd } from '$lib/currency';
   import { sourceFor } from '$lib/img';
   import { toMetaText } from '$lib/richText';
@@ -88,7 +89,7 @@
     {/if}
 
     <div class={`mt-auto flex items-center justify-between gap-3 border-t border-ink/10 ${compact ? 'pt-2.5 mt-3' : 'min-h-10 pt-3 mt-3.5'}`}>
-      <span class="inline-flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.13em] text-forest transition group-hover:text-clay">Explore stay <ArrowRight size={14} class="transition group-hover:translate-x-1"/></span>
+      <span class="inline-flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.13em] text-forest transition group-hover:text-clay">{$t('cta.explore_stay')} <ArrowRight size={14} class="transition group-hover:translate-x-1"/></span>
       {#if priceLabel || score}<span class="text-right text-[11px] leading-5 text-ink/45">{#if score}<span class="inline-flex items-center gap-1 font-bold text-heading"><Star size={12} fill="currentColor" class="text-goldfinch-gold"/>{score}</span>{/if}{#if priceLabel}<span class="block"><b class="text-heading">{priceLabel}</b> / night</span>{/if}</span>{/if}
     </div>
   </div>

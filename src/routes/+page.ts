@@ -48,7 +48,7 @@ export const load: PageLoad = async ({ fetch, url }) => {
     heroTours,
     heroDestinations
   ] = await Promise.allSettled([
-    cachedJson<{ data?: Record<string, unknown>[] }>(`${API_URL}/homepage`, fetch),
+    cachedJson<{ data?: Record<string, unknown>[] }>(withLocale(`${API_URL}/homepage`, locale), fetch),
     cachedJson<{ data?: { items?: Record<string, unknown>[] } }>(withLocale(`${API_URL}/categories?status=published&limit=8`, locale), fetch),
     // Just the two of each the hero actually shows. The full lists still
     // hydrate after paint for the sections below the fold; these are here

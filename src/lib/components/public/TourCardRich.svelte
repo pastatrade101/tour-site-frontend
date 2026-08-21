@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ArrowRight, BedDouble, Clock, MapPin } from '@lucide/svelte';
+  import { t } from '$lib/i18n/ui';
   import { trackEvent } from '$lib/analytics';
   import { currency, formatUsd } from '$lib/currency';
   import Img from './Img.svelte';
@@ -109,7 +110,7 @@
       <div class="mt-auto flex items-end justify-between gap-3 border-t border-ink/10 pt-4">
         <div class="min-w-0">
           {#if hasPrice}
-            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/45">From</p>
+            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/45">{$t('label.from')}</p>
             <p class="text-[17px] font-extrabold leading-tight text-heading">
               {priceLabel} <span class="text-xs font-semibold text-ink/55">p.p.</span>
             </p>
@@ -121,7 +122,7 @@
         <span
           class="inline-flex shrink-0 items-center gap-1.5 rounded-[10px] border border-ink/15 bg-surface px-4 py-2.5 text-sm font-bold text-heading transition group-hover:border-goldfinch-gold group-hover:bg-goldfinch-gold"
         >
-          View Tour <ArrowRight size={15} strokeWidth={2.6} class="transition-transform group-hover:translate-x-0.5" />
+          {$t('cta.view_tour')} <ArrowRight size={15} strokeWidth={2.6} class="transition-transform group-hover:translate-x-0.5" />
         </span>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import type { PageLoad } from './$types';
 import { API_URL } from '$lib/config/env';
 import { cachedJson } from '$lib/cache';
-import { DEFAULT_LOCALE, localeFromPath } from '$lib/i18n';
+import { DEFAULT_LOCALE, localeFromPath, withLocale } from '$lib/i18n';
 import type { FAQ, Review, ReviewSummary, Tour, TourCategory } from '$lib/types';
 
 type Items<T> = { data?: { items?: T[] } };
@@ -40,15 +40,15 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     // 24 rather than 9: the tours grid now filters client-side (days, comfort,
     // price), and a filter over a truncated list would quietly lie about what
     // is available.
-    cachedJson<Items<Tour>>(`${API_URL}/tours?category_id=${encodeURIComponent(category.id)}&status=published&limit=24`, fetch),
-    cachedJson<Items<TourCategory>>(`${API_URL}/categories?status=published&limit=12`, fetch),
-    cachedJson<Items<FAQ>>(`${API_URL}/faqs?limit=6`, fetch),
+    cachedJson<Items<Tour>>(withLocale(`${API_URL}/tours?category_id=${encodeURIComponent(category.id)}&status=published&limit=24`, locale), fetch),
+    cachedJson<Items<TourCategory>>(withLocale(`${API_URL}/categories?status=published&limit=12`, locale), fetch),
+    cachedJson<Items<FAQ>>(withLocale(`${API_URL}/faqs?limit=6`, locale), fetch),
     cachedJson<Items<Review>>(`${API_URL}/reviews?status=approved&is_featured=true&limit=6`, fetch),
     cachedJson<Items<Review>>(`${API_URL}/reviews?status=approved&limit=6`, fetch),
     cachedJson<{ data?: ReviewSummary }>(`${API_URL}/reviews/summary`, fetch),
     // Advisor's-note copy is the site-wide editorial content managed on the
     // homepage CMS record; cachedJson shares the response with the homepage.
-    cachedJson<{ data?: Record<string, unknown>[] }>(`${API_URL}/homepage`, fetch)
+    cachedJson<{ data?: Record<string, unknown>[] }>(withLocale(`${API_URL}/homepage`, locale), fetch)
   ]);
 
   const featured = items(featuredReviews);

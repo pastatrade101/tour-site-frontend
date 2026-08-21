@@ -61,14 +61,12 @@
     accommodation: { icon: BedDouble, title: 'Accommodation', subtitle: 'Camps, lodges and hotels we book', viewAll: 'View all stays' }
   };
 
-  // Reactive so the primary navigation follows the active locale. Safari Styles
-  // has no dictionary key yet and stays in English until one is added — a
-  // missing key renders the key itself, which is deliberately visible.
+  // Reactive so the primary navigation follows the active locale.
   $: NAV = [
     { href: '/', label: $t('nav.home') },
     { href: '/destinations', label: $t('nav.destinations'), dropdown: 'destinations' },
     { href: '/tours', label: $t('nav.tours'), dropdown: 'tours' },
-    { href: '/safari-styles', label: 'Safari Styles', dropdown: 'safariStyles' },
+    { href: '/safari-styles', label: $t('nav.safari_styles'), dropdown: 'safariStyles' },
     { href: '/accommodation', label: $t('nav.accommodation'), dropdown: 'accommodation' },
     { href: '/experiences', label: $t('nav.experiences') },
     { href: '/about', label: $t('nav.about') },
