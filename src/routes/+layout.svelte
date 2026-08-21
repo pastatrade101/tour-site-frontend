@@ -126,10 +126,15 @@
   }
 
   // Effective head values: override ?? current default (defaults are byte-identical to before).
-  $: seoTitle = seoOverride?.title || $branding.site_name;
-  $: seoDescription = seoOverride?.meta_description || `${$branding.tagline}. ${$branding.positioning}`;
-  $: seoOgTitle = seoOverride?.og_title || seoOverride?.title || $branding.site_name;
-  $: seoOgDescription = seoOverride?.og_description || seoOverride?.meta_description || $branding.positioning;
+  // A page can publish its own SEO through load data — that is how entity
+  // pages get a server-rendered title and description instead of emitting a
+  // second <head> block of their own, which would leave two titles and two
+  // canonicals in the document. Admin overrides still win over everything.
+  $: pageSeo = ($page.data as { seo?: { title?: string; description?: string } })?.seo ?? null;
+  $: seoTitle = seoOverride?.title || pageSeo?.title || $branding.site_name;
+  $: seoDescription = seoOverride?.meta_description || pageSeo?.description || `${$branding.tagline}. ${$branding.positioning}`;
+  $: seoOgTitle = seoOverride?.og_title || seoOverride?.title || pageSeo?.title || $branding.site_name;
+  $: seoOgDescription = seoOverride?.og_description || seoOverride?.meta_description || pageSeo?.description || $branding.positioning;
   $: seoCanonical = seoOverride?.canonical_url || canonicalUrl;
   $: seoOgImage = cdnUrl(seoOverride?.og_image_url || '');
   $: seoRobots = seoOverride?.robots || '';

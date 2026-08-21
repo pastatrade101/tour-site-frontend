@@ -804,8 +804,9 @@
 </script>
 
 <svelte:head>
-  <title>{title} | Goldfinch Adventures</title>
-  <meta name="description" content={description} />
+  <!-- Title and description are published to the root layout through the
+       load's `seo` field; emitting them here as well left the document with a
+       duplicate meta description. -->
   {#if destination?.og_image_url || heroImage}
     <meta property="og:image" content={destination?.og_image_url || heroImage} />
   {/if}

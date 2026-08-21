@@ -35,6 +35,7 @@
   import { toMetaText } from '$lib/richText';
   import { getTourDestinationLabel, getTourDestinations } from '$lib/tourDestinations';
   import type { BlogPost, FAQ, ItineraryDay, Tour, TravelStyle } from '$lib/types';
+  import type { PageData } from './$types';
 
   type Icon = typeof CalendarDays;
   type FactCard = { icon: Icon; label: string; value: string };
@@ -94,10 +95,16 @@
     }
   };
 
-  let tour: Tour | null = null;
-  let loading = true;
-  let error = '';
-  let loadedSlug = '';
+  export let data: PageData;
+
+  // Seeded from the server load so the first render — the one a crawler sees —
+  // already has the tour and its SEO. The client only fetches the below-fold
+  // extras from here on.
+  let tour: Tour | null = data.tour;
+  let loading = !data.tour;
+  let error = data.tour ? '' : '';
+  let loadedSlug = data.tour?.slug ?? '';
+  let hydratedOnce = false;
   let sheetOpen = false;
   let specialistOpen = false;
   let activeTab = TABS[0].id;
@@ -505,10 +512,11 @@
     lodgeMedia = next;
   };
 
-  const load = async (nextSlug: string) => {
-    loading = true;
-    error = '';
-    tour = null;
+  /**
+   * Everything that follows the tour record itself. The record now arrives
+   * from the server load, so this only pulls the below-fold extras.
+   */
+  const hydrate = async (record: Tour) => {
     relatedTours = [];
     recentPosts = [];
     faqs = [];
@@ -517,29 +525,34 @@
     activeFaqIndex = -1;
     sheetOpen = false;
     specialistOpen = false;
+    error = '';
+    loading = false;
 
-    try {
-      const stylesRequest = api.travelStyles.list({ status: 'published', limit: 100 }).catch(() => null);
-      const response = await api.tours.get(nextSlug, activeLocale === DEFAULT_LOCALE ? undefined : { locale: activeLocale });
-      tour = response.data;
-      travelStyles = (await stylesRequest)?.data.items ?? [];
-      void loadRelated(response.data);
-      void loadLodgeMedia(response.data);
-      trackEvent('tour_page_view', {
-        tour_id: response.data.id,
-        tour_title: response.data.title,
-        destination: getTourDestinationLabel(response.data, 4) || response.data.destinations?.name
-      });
-    } catch (requestError) {
-      error = requestError instanceof Error ? requestError.message : 'Unable to load tour.';
-    } finally {
-      loading = false;
-    }
+    const stylesRequest = api.travelStyles.list({ status: 'published', limit: 100 }).catch(() => null);
+    travelStyles = (await stylesRequest)?.data.items ?? [];
+    void loadRelated(record);
+    void loadLodgeMedia(record);
+    trackEvent('tour_page_view', {
+      tour_id: record.id,
+      tour_title: record.title,
+      destination: getTourDestinationLabel(record, 4) || record.destinations?.name
+    });
   };
 
-  $: if (browser && slug && slug !== loadedSlug) {
-    loadedSlug = slug;
-    void load(slug);
+  // The load re-runs on every slug change, so this covers both first paint and
+  // client-side navigation between tours.
+  $: if (browser && data.tour) {
+    tour = data.tour;
+    if (data.tour.slug !== loadedSlug || !hydratedOnce) {
+      loadedSlug = data.tour.slug;
+      hydratedOnce = true;
+      void hydrate(data.tour);
+    }
+  }
+  $: if (browser && !data.tour) {
+    tour = null;
+    loading = false;
+    error = 'Unable to load tour.';
   }
 
   $: if (browser) document.body.style.overflow = sheetOpen || specialistOpen ? 'hidden' : '';
@@ -581,13 +594,9 @@
   });
 </script>
 
-<svelte:head>
-  {#if tour}
-    <title>{tour.seo_title || tour.meta_title || tour.title} | Goldfinch Adventures</title>
-    {#if metaDescription}<meta name="description" content={metaDescription} />{/if}
-    <link rel="canonical" href={`${origin}/tours/${tour.slug}`} />
-  {/if}
-</svelte:head>
+<!-- Title, description and canonical are published to the root layout through
+     the load's `seo` field. Emitting them here as well would leave the document
+     with two titles and two canonicals. -->
 
 {#if loading}
   <div class="tour-detail-skeleton bg-[#fbfaf6]" aria-busy="true" aria-label="Loading tour itinerary">
