@@ -283,7 +283,9 @@
     if (step < LAST) { await next(); return; }
     errorMessage = '';
 
-    if (hp_company.trim()) { submitted = true; return; } // honeypot
+    // The honeypot is judged server-side, where the same check already lives.
+    // Deciding it here too meant a false positive threw the enquiry away
+    // before anything could observe that it had happened.
 
     if (!validateStep(0) || !validateStep(1)) {
       errorMessage = 'Some required details are missing. Please review the earlier steps.';
@@ -514,42 +516,54 @@
         <!-- Review -->
         <div class="grid gap-4">
           <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Review your request</p>
-          <div class="overflow-hidden rounded-xl border border-ink/10">
-            <dl class="divide-y divide-ink/8">
+          <!--
+            This step sits on the dark panel, so it is styled against white
+            rather than against the page. `text-heading` and `text-ink` are the
+            same colour as this background — using them here rendered the whole
+            summary invisible.
+          -->
+          <div class="overflow-hidden rounded-xl border border-white/12">
+            <dl class="divide-y divide-white/10">
               {#each summaryRows as r}
                 <div class="grid gap-1 px-3 py-3 text-sm sm:grid-cols-[130px_1fr] sm:gap-3 sm:px-4 sm:py-2.5">
-                  <dt class="text-xs font-semibold uppercase tracking-[0.1em] text-ink/50 sm:text-sm sm:normal-case sm:tracking-normal">{r.label}</dt>
-                  <dd class="break-words font-semibold text-heading">{r.value}</dd>
+                  <dt class="text-xs font-semibold uppercase tracking-[0.1em] text-white/55 sm:text-sm sm:normal-case sm:tracking-normal">{r.label}</dt>
+                  <dd class="break-words font-semibold text-white">{r.value}</dd>
                 </div>
               {/each}
             </dl>
           </div>
 
           {#if indicative}
-            <div class="rounded-xl border border-goldfinch-gold/25 bg-sand/40 p-4">
-              <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-clay">Indicative estimate</p>
-              <p class="mt-1 text-lg font-extrabold text-heading">{indicative.perPerson} <span class="text-xs font-semibold text-ink/60">per person</span></p>
-              <p class="mt-0.5 text-sm text-ink/70">{indicative.perPerson} × {indicative.adults} adult{indicative.adults === 1 ? '' : 's'} ≈ <b>{indicative.total}</b></p>
-              <p class="mt-1.5 text-[11px] leading-5 text-ink/55">Indicative only — excludes international flights, visas and insurance. Your specialist confirms the final quote.</p>
+            <div class="rounded-xl border border-goldfinch-gold/30 bg-white/[0.06] p-4">
+              <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-goldfinch-gold">Indicative estimate</p>
+              <p class="mt-1 text-lg font-extrabold text-white">{indicative.perPerson} <span class="text-xs font-semibold text-white/65">per person</span></p>
+              <p class="mt-0.5 text-sm text-white/75">{indicative.perPerson} × {indicative.adults} adult{indicative.adults === 1 ? '' : 's'} ≈ <b class="text-white">{indicative.total}</b></p>
+              <p class="mt-1.5 text-[11px] leading-5 text-white/60">Indicative only — excludes international flights, visas and insurance. Your specialist confirms the final quote.</p>
             </div>
           {/if}
 
           <div class="grid gap-3 sm:grid-cols-2">
-            <button type="button" class="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-ink/15 bg-surface px-4 text-sm font-bold text-heading shadow-sm transition hover:border-goldfinch-gold/50 hover:bg-sand" on:click={downloadQuotation}>
+            <button type="button" class="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-4 text-sm font-bold text-white transition hover:border-goldfinch-gold/50 hover:bg-white/[0.12]" on:click={downloadQuotation}>
               <Download size={16} /> Download quotation (PDF)
             </button>
             <a href={waHref} target="_blank" rel="noopener noreferrer" on:click={openWhatsApp} class="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#25D366] px-4 text-sm font-bold text-white shadow-sm transition hover:brightness-105">
               <MessageCircle size={16} /> Send on WhatsApp
             </a>
           </div>
-          <p class="text-xs text-ink/55">Submit below to get a reference number, or send us your details straight away on WhatsApp.</p>
+          <p class="text-xs text-white/60">Submit below to get a reference number, or send us your details straight away on WhatsApp.</p>
         </div>
       {/if}
     </div>
 
-    <!-- Honeypot -->
+    <!--
+      Honeypot. Deliberately named and labelled as nothing: a field called
+      "Company" is exactly what a browser or password manager autofills for a
+      real person, and a filled honeypot silently discards their enquiry. The
+      form posts over fetch, so this input's name never reaches the API and
+      exists only as a signal — which means it can safely be meaningless.
+    -->
     <div class="absolute left-[-9999px] top-0 h-0 w-0 overflow-hidden" aria-hidden="true">
-      <label>Company<input type="text" name="hp_company" tabindex="-1" autocomplete="off" bind:value={hp_company} /></label>
+      <input type="text" name="gf-x1" tabindex="-1" autocomplete="off" bind:value={hp_company} />
     </div>
 
     <!-- Footer nav -->

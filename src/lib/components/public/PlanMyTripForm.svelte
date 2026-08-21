@@ -387,11 +387,9 @@
     }
     errorMessage = '';
 
-    // Honeypot tripped → behave like a normal success without sending anything.
-    if (hp_company.trim()) {
-      submitted = true;
-      return;
-    }
+    // The honeypot is judged server-side, where the same check already lives.
+    // Deciding it here too meant a false positive threw the enquiry away
+    // before anything could observe that it had happened.
 
     if (!validate()) {
       errorMessage = 'Please check the highlighted fields and try again.';
@@ -703,9 +701,14 @@
 
     </div>
 
-    <!-- Honeypot: hidden from humans, tempting to bots. -->
+    <!--
+      Honeypot. Named and labelled as nothing on purpose: a field called
+      "Company" is exactly what a browser or password manager autofills for a
+      real person, and a filled honeypot silently discards their enquiry. The
+      form posts over fetch, so this input's name never reaches the API.
+    -->
     <div class="absolute left-[-9999px] top-0 h-0 w-0 overflow-hidden" aria-hidden="true">
-      <label>Company<input type="text" name="hp_company" tabindex="-1" autocomplete="off" bind:value={hp_company} /></label>
+      <input type="text" name="gf-x1" tabindex="-1" autocomplete="off" bind:value={hp_company} />
     </div>
 
     {#if errorMessage}

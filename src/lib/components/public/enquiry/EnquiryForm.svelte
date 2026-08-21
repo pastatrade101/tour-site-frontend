@@ -266,10 +266,14 @@
         </div>
       {/key}
 
-      <!-- honeypot: off-screen, not hidden, so bots that check visibility fill it -->
+      <!--
+        Honeypot: off-screen rather than hidden, so bots that check visibility
+        still fill it. Labelled as nothing on purpose — a field called "Company"
+        is what a browser autofills for a real person, and a tripped honeypot
+        costs a genuine enquiry.
+      -->
       <div class="absolute left-[-9999px] top-0 h-0 w-0 overflow-hidden" aria-hidden="true">
-        <label for="hp_company">Company</label>
-        <input id="hp_company" type="text" tabindex="-1" autocomplete="off" bind:value={values.hp_company} />
+        <input id="gf-x1" type="text" tabindex="-1" autocomplete="off" bind:value={values.hp_company} />
       </div>
 
       {#if submitError}
