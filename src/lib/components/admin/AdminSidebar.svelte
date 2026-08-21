@@ -15,6 +15,7 @@
     GitCompare,
     Heart,
     CreditCard,
+    FileText,
     FolderTree,
     Globe,
     Home,
@@ -92,6 +93,7 @@
       label: 'Booking Management',
       links: [
         { href: '/admin/bookings', label: 'Bookings', icon: ClipboardList },
+        { href: '/admin/quotations', label: 'Quotations', icon: FileText },
         { href: '/admin/payments', label: 'Payments', icon: CreditCard },
         { href: '/admin/messages', label: 'Messages', icon: Mail }
       ]

@@ -318,7 +318,7 @@
           rel="noopener noreferrer"
         >
           <MessageCircle size={19} />
-          {#if expired && actionable}Request an updated price{:else if accepted}Message us about this booking{:else}WhatsApp us about this quote{/if}
+          {#if expired}Request an updated price{:else if accepted}Message us about this booking{:else}WhatsApp us about this quote{/if}
         </a>
       {/if}
     </div>

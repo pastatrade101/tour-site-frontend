@@ -375,7 +375,8 @@ export const api = {
     create: (body: Record<string, unknown>) => apiRequest<Record<string, unknown>>('/quotations', { method: 'POST', body }),
     update: (id: string, body: Record<string, unknown>) => apiRequest<Record<string, unknown>>(`/quotations/${id}`, { method: 'PUT', body }),
     send: (id: string, body: Record<string, unknown> = {}) => apiRequest<Record<string, unknown>>(`/quotations/${id}/send`, { method: 'POST', body }),
-    setStatus: (id: string, status: string) => apiRequest<Record<string, unknown>>(`/quotations/${id}/status`, { method: 'PATCH', body: { status } })
+    setStatus: (id: string, status: string) => apiRequest<Record<string, unknown>>(`/quotations/${id}/status`, { method: 'PATCH', body: { status } }),
+    remove: (id: string) => apiRequest(`/quotations/${id}`, { method: 'DELETE' })
   },
   whatsapp: {
     status: () => apiRequest<Record<string, unknown>>('/whatsapp/status'),

@@ -8,10 +8,12 @@
    * the lead and the assistant's captured context beside the messages.
    */
   import { onMount, onDestroy } from 'svelte';
-  import { AlertTriangle, Bot, Check, CheckCheck, Clock, MessageCircle, Search, Send, User, UserCog } from '@lucide/svelte';
+  import { AlertTriangle, Bot, Check, CheckCheck, Clock, MessageCircle, Plus, Search, Send, User, UserCog } from '@lucide/svelte';
   import { api } from '$lib/api/client';
+  import { quotationMoney, quotationStatusChip, quotationStatusLabel } from '$lib/quotations';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
+  import AdminQuotationEditor from '$lib/components/admin/AdminQuotationEditor.svelte';
   import ToastStack from '$lib/components/admin/ToastStack.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
 
@@ -31,6 +33,11 @@
   let noteDraft = '';
   let toasts: Toast[] = [];
   let poller: ReturnType<typeof setInterval> | undefined;
+  let quoteOpen = false;
+  let quoteLoading = false;
+  let editingQuote: Row | null = null;
+  let quotePrefill: Row = {};
+  let tours: Row[] = [];
 
   const STATES = [
     { value: '', label: 'All conversations' },
@@ -129,11 +136,93 @@
     }
   };
 
+  // Quoting from the inbox only earns its place if the agent retypes nothing, so the
+  // thread hands over everything it already knows. Keys without a real value are
+  // dropped rather than sent as blanks the editor would show as answered fields.
+  const newQuotation = () => {
+    if (!detail) return;
+    const prefill: Row = {
+      conversation_id: activeId,
+      booking_request_id: lead?.id,
+      tour_id: detail.tour?.id,
+      // `||`, not `??`: the webhook stores a missing WhatsApp profile name as an
+      // empty string, which `??` would keep — and the filter below would then
+      // drop the key entirely instead of falling back to the lead's name.
+      customer_name: detail.conversation.visitor_name || lead?.full_name,
+      customer_phone: detail.conversation.visitor_phone,
+      customer_email: lead?.email,
+      adults: lead?.number_of_adults,
+      children: lead?.number_of_children,
+      travel_date: lead?.travel_date,
+      title: detail.tour?.title
+    };
+    quotePrefill = Object.fromEntries(Object.entries(prefill).filter(([, value]) => value !== null && value !== undefined && value !== ''));
+    editingQuote = null;
+    quoteOpen = true;
+  };
+
+  /**
+   * The thread only carries a summary of each quotation — `getConversation`
+   * selects eleven display columns and nothing else, so this row has no items,
+   * notes, travel date, tour or contact details. The editor expects the whole
+   * record, and the update endpoint patches every field the form submits, so
+   * handing it the summary would blank the line items and the traveller-visible
+   * notes on a live commercial document. Fetch the real row first.
+   */
+  const editQuotation = async (quotation: Row) => {
+    if (quoteLoading) return;
+    quoteLoading = true;
+    try {
+      const res = await api.quotations.get(String(quotation.id));
+      editingQuote = res.data as Row;
+      quotePrefill = {};
+      quoteOpen = true;
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Unable to open that quotation.', 'error');
+    } finally {
+      quoteLoading = false;
+    }
+  };
+
+  const closeQuote = () => {
+    quoteOpen = false;
+    editingQuote = null;
+    quotePrefill = {};
+  };
+
+  // Refresh the thread but leave the editor up, the same way the quotations
+  // page does: `saved` means "there is a new version to reload", not "the agent
+  // is finished". Closing here would break saving a draft and then sending it,
+  // and would force a second save to raise a second quotation.
+  const quotationSaved = async () => {
+    await openConversation(activeId);
+  };
+
+  // A skipped send is neither a success nor an error: the opt-in check and the
+  // 24-hour window both land here, and the backend deliberately leaves the quotation
+  // unsent. Repeat its reason word for word instead of implying the traveller has it.
+  const quotationSent = async (event: CustomEvent<Row>) => {
+    const outcome = event.detail?.outcome;
+    closeQuote();
+    await openConversation(activeId);
+    if (outcome?.status === 'sent') showToast('Quotation sent to the traveller.');
+    else showToast(outcome?.detail ?? 'The quotation was not sent.', 'error');
+  };
+
   const time = (value?: string) =>
     value ? new Intl.DateTimeFormat('en', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(value)) : '';
 
   onMount(async () => {
-    await Promise.all([loadList(), api.whatsapp.agents().then((r) => (agents = r.data)).catch(() => undefined)]);
+    await Promise.all([
+      loadList(),
+      api.whatsapp.agents().then((r) => (agents = r.data)).catch(() => undefined),
+      // Feeds the composer's tour picker. Optional — without it the editor
+      // falls back to a quotation with no tour attached, which is still valid.
+      api.tours
+        .list({ status: 'all', limit: 200 })
+        .then((r) => (tours = r.data.items as Row[]))
+        .catch(() => undefined)
+    ]);
     // A quiet refresh so an agent sees new messages without reloading.
     poller = setInterval(() => void loadList(), 20000);
   });
@@ -323,6 +412,31 @@
         </dl>
       {/if}
 
+      <p class="mt-4 text-[11px] font-bold uppercase tracking-[0.14em] text-forest/70">Quotations</p>
+      <div class="mt-2">
+        <AdminButton variant="secondary" size="sm" type="button" on:click={newQuotation}>
+          <Plus size={14} /> New quotation
+        </AdminButton>
+      </div>
+      {#if detail.quotations?.length}
+        <div class="mt-2 grid gap-2">
+          {#each detail.quotations as quotation (quotation.id)}
+            <button class="w-full rounded-md bg-sand/40 p-2 text-left text-xs transition hover:bg-sand/70 disabled:opacity-60" type="button" disabled={quoteLoading} on:click={() => editQuotation(quotation)}>
+              <span class="flex items-center justify-between gap-2">
+                <span class="font-mono font-bold text-heading">{quotation.quote_code}</span>
+                <span class={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${quotationStatusChip(quotation.status)}`}>{quotationStatusLabel(quotation.status)}</span>
+              </span>
+              <span class="mt-1 flex items-center justify-between gap-2 text-ink/55">
+                {#if quotation.title}<span class="truncate">{quotation.title}</span>{/if}
+                {#if quotation.total_amount != null}<span class="shrink-0 font-semibold text-heading">{quotationMoney(quotation.total_amount, quotation.currency)}</span>{/if}
+              </span>
+            </button>
+          {/each}
+        </div>
+      {:else}
+        <p class="mt-2 text-[11px] text-ink/45">No quotations raised from this conversation yet.</p>
+      {/if}
+
       <p class="mt-4 text-[11px] font-bold uppercase tracking-[0.14em] text-forest/70">Internal notes</p>
       <p class="mt-0.5 text-[11px] text-ink/45">Staff only — never sent to the traveller.</p>
       <div class="mt-2 flex gap-1.5">
@@ -340,3 +454,13 @@
     {/if}
   </section>
 </div>
+
+<AdminQuotationEditor
+  open={quoteOpen}
+  quotation={editingQuote}
+  prefill={quotePrefill}
+  {tours}
+  on:saved={quotationSaved}
+  on:sent={quotationSent}
+  on:close={closeQuote}
+/>
