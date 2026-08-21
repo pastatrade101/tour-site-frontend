@@ -1,6 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { env as publicEnv } from '$env/dynamic/public';
 import type { Destination } from '$lib/types';
+import { localeFromPath, withLocale } from '$lib/i18n';
 
 type PaginatedBody<T> = { data?: { items?: T[] } };
 
@@ -13,7 +14,10 @@ const apiBase = (origin: string) => {
 export const load: PageServerLoad = async ({ fetch, url }) => {
   try {
     const base = apiBase(url.origin);
-    const res = await fetch(`${base}/destinations?status=published&limit=100&include=guide`);
+  // Active locale from the URL prefix; published translations merge on the
+  // API side with per-field fallback to the default language.
+  const locale = localeFromPath(url.pathname);
+    const res = await fetch(withLocale(`${base}/destinations?status=published&limit=100&include=guide`, locale));
     if (!res.ok) throw new Error(`Request failed (${res.status})`);
     const body = (await res.json()) as PaginatedBody<Destination>;
     return { destinations: body.data?.items ?? [] };

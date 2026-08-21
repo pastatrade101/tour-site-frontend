@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { DEFAULT_LOCALE } from '$lib/i18n';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import {
@@ -299,6 +300,9 @@
   };
 
   $: slug = $page.params.slug ?? '';
+  // Locale comes from the URL prefix via the root layout, so a client-side
+  // fetch asks for the same language the page was rendered in.
+  $: activeLocale = ($page.data as { locale?: string }).locale ?? DEFAULT_LOCALE;
   $: origin = $page.url.origin;
   $: destinationLabel = getTourDestinationLabel(tour, 4);
   $: destinations = getTourDestinations(tour);
@@ -516,7 +520,7 @@
 
     try {
       const stylesRequest = api.travelStyles.list({ status: 'published', limit: 100 }).catch(() => null);
-      const response = await api.tours.get(nextSlug);
+      const response = await api.tours.get(nextSlug, activeLocale === DEFAULT_LOCALE ? undefined : { locale: activeLocale });
       tour = response.data;
       travelStyles = (await stylesRequest)?.data.items ?? [];
       void loadRelated(response.data);

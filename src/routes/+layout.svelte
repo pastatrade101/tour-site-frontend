@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
-  import { afterNavigate } from '$app/navigation';
+  import { afterNavigate, goto } from '$app/navigation';
   import { env as publicEnv } from '$env/dynamic/public';
   import { onMount } from 'svelte';
   import '../app.css';
@@ -24,7 +24,7 @@
   import { initCurrency } from '$lib/currency';
   import { cdnUrl } from '$lib/img';
   import LanguageSwitcher from '$lib/components/public/LanguageSwitcher.svelte';
-  import { DEFAULT_LOCALE, localizeHref } from '$lib/i18n';
+  import { DEFAULT_LOCALE, localeFromPath, localizeHref } from '$lib/i18n';
   import { locale as localeStore } from '$lib/i18n/ui';
   import type { LayoutData } from './$types';
 
@@ -41,6 +41,35 @@
   // (static pages, listings) is available in every enabled language because its
   // chrome is dictionary-translated and its content falls back per field.
   $: pageLocales = ($page.data as { availableLocales?: string[] })?.availableLocales ?? null;
+  /**
+   * Keep the locale while browsing.
+   *
+   * Links across the site are written unprefixed (/tours), which is correct
+   * for the default language and correct in the markup a crawler reads. In a
+   * non-default locale a plain /tours click would silently drop the visitor
+   * back to English, so same-origin navigations are rewritten here — one
+   * handler instead of localising every href in the codebase, which is also
+   * what keeps hreflang and the canonical tags as the single source of truth
+   * for search engines.
+   */
+  const keepLocale = (event: MouseEvent) => {
+    if (activeLocale === DEFAULT_LOCALE || isAdmin) return;
+    if (event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    const anchor = (event.target as HTMLElement | null)?.closest?.('a');
+    if (!anchor) return;
+    const href = anchor.getAttribute('href');
+    if (!href || !href.startsWith('/') || href.startsWith('//')) return;
+    // Leave downloads, new tabs, API routes and already-localised links alone.
+    if (anchor.target && anchor.target !== '_self') return;
+    if (anchor.hasAttribute('download') || href.startsWith('/api')) return;
+    if (localeFromPath(href) !== DEFAULT_LOCALE) return;
+
+    event.preventDefault();
+    void goto(localizeHref(href, activeLocale));
+  };
+
   $: alternateLocales = languages
     .filter((language) => language.enabled)
     .filter((language) => !pageLocales || pageLocales.includes(language.code))
@@ -190,6 +219,8 @@
     };
   });
 </script>
+
+<svelte:body on:click={keepLocale} />
 
 <svelte:head>
   <title>{seoTitle}</title>

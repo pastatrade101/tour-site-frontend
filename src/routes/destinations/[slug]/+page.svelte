@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { DEFAULT_LOCALE } from '$lib/i18n';
   import { browser } from '$app/environment';
   import {
     ArrowLeft,
@@ -662,7 +663,7 @@
     resetDeferredDataFromServer();
 
     try {
-      const response = await api.destinations.get(nextSlug);
+      const response = await api.destinations.get(nextSlug, activeLocale === DEFAULT_LOCALE ? undefined : { locale: activeLocale });
       const nextDestination = response.data;
       if (!nextDestination?.id) throw new Error('Destination not found.');
       destination = nextDestination;
@@ -691,6 +692,9 @@
   }
 
   $: slug = data.slug ?? destination?.slug ?? '';
+  // Locale comes from the URL prefix via the root layout, so a client-side
+  // fetch asks for the same language the page was rendered in.
+  $: activeLocale = ((data as unknown as { locale?: string }).locale) ?? DEFAULT_LOCALE;
   $: if (browser && slug && slug !== loadedSlug) {
     loadedSlug = slug;
     void loadDestination(slug);

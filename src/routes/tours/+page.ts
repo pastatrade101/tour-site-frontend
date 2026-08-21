@@ -1,6 +1,7 @@
 import type { PageLoad } from './$types';
 import type { Destination, FAQ, Review, ReviewSummary, Tour, TravelStyle } from '$lib/types';
 import { API_URL } from '$lib/config/env';
+import { localeFromPath, withLocale } from '$lib/i18n';
 import { cachedJson } from '$lib/cache';
 
 const items = <T>(r: PromiseSettledResult<{ data?: { items?: T[] } }>) =>
@@ -13,10 +14,13 @@ const value = <T>(r: PromiseSettledResult<{ data?: T }>) =>
 // same regardless of the URL filters. The supporting content below the grid
 // (parks, reviews, FAQs, photos) loads in parallel and each part fails soft —
 // a slow or missing endpoint must never blank the tour list.
-export const load: PageLoad = async ({ fetch }) => {
+export const load: PageLoad = async ({ fetch, url }) => {
+  // Active locale from the URL prefix; the API merges published
+  // translations and falls back per field to the default language.
+  const locale = localeFromPath(url.pathname);
   const [tours, destinations, reviews, reviewSummary, faqs, gallery, travelStyles] = await Promise.allSettled([
-    cachedJson<{ data?: { items?: Tour[] } }>(`${API_URL}/tours?status=published&limit=100`, fetch),
-    cachedJson<{ data?: { items?: Destination[] } }>(`${API_URL}/destinations?status=published&limit=8`, fetch),
+    cachedJson<{ data?: { items?: Tour[] } }>(withLocale(`${API_URL}/tours?status=published&limit=100`, locale), fetch),
+    cachedJson<{ data?: { items?: Destination[] } }>(withLocale(`${API_URL}/destinations?status=published&limit=8`, locale), fetch),
     cachedJson<{ data?: { items?: Review[] } }>(`${API_URL}/reviews?status=approved&limit=6`, fetch),
     cachedJson<{ data?: ReviewSummary }>(`${API_URL}/reviews/summary`, fetch),
     cachedJson<{ data?: { items?: FAQ[] } }>(`${API_URL}/faqs?limit=8`, fetch),

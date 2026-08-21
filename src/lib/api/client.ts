@@ -206,7 +206,7 @@ export const api = {
   },
   tours: {
     list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Tour>>(`/tours${queryString(params)}`),
-    get: (slug: string) => apiRequest<Tour>(`/tours/${slug}`),
+    get: (slug: string, params?: Record<string, QueryValue>) => apiRequest<Tour>(`/tours/${slug}${queryString(params)}`),
     create: (body: Record<string, unknown>) => apiRequest<Tour>('/tours', { method: 'POST', body }),
     update: (id: string, body: Record<string, unknown>) => apiRequest<Tour>(`/tours/${id}`, { method: 'PUT', body }),
     remove: (id: string) => apiRequest(`/tours/${id}`, { method: 'DELETE' }),
@@ -303,7 +303,7 @@ export const api = {
   },
   destinations: {
     list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Destination>>(`/destinations${queryString(params)}`),
-    get: (slug: string) => apiRequest<Destination>(`/destinations/${slug}`),
+    get: (slug: string, params?: Record<string, QueryValue>) => apiRequest<Destination>(`/destinations/${slug}${queryString(params)}`),
     create: (body: Record<string, unknown>) => apiRequest<Destination>('/destinations', { method: 'POST', body }),
     update: (id: string, body: Record<string, unknown>) => apiRequest<Destination>(`/destinations/${id}`, { method: 'PUT', body }),
     remove: (id: string) => apiRequest(`/destinations/${id}`, { method: 'DELETE' })

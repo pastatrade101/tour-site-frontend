@@ -1,6 +1,7 @@
 import type { PageLoad } from './$types';
 import type { BlogPost, Destination, FAQ, MigrationEntry, Review, ReviewSummary, Testimonial, Tour } from '$lib/types';
 import { API_URL } from '$lib/config/env';
+import { localeFromPath, withLocale } from '$lib/i18n';
 import { cachedJson } from '$lib/cache';
 import { attachResolvedVariantFields, type ImageVariantMap } from '$lib/img';
 
@@ -37,7 +38,10 @@ const resolveImageVariants = async (fetchFn: typeof fetch, urls: Set<string>): P
 // Keep SSR focused on the content required to paint the top of the landing page:
 // homepage copy/config and the category records used by the hero planner and
 // first content band. Heavier below-fold lists hydrate client-side after paint.
-export const load: PageLoad = async ({ fetch }) => {
+export const load: PageLoad = async ({ fetch, url }) => {
+  // Active locale from the URL prefix; the API merges published
+  // translations and falls back per field to the default language.
+  const locale = localeFromPath(url.pathname);
   const [
     homeSections,
     categories,
@@ -45,12 +49,12 @@ export const load: PageLoad = async ({ fetch }) => {
     heroDestinations
   ] = await Promise.allSettled([
     cachedJson<{ data?: Record<string, unknown>[] }>(`${API_URL}/homepage`, fetch),
-    cachedJson<{ data?: { items?: Record<string, unknown>[] } }>(`${API_URL}/categories?status=published&limit=8`, fetch),
+    cachedJson<{ data?: { items?: Record<string, unknown>[] } }>(withLocale(`${API_URL}/categories?status=published&limit=8`, locale), fetch),
     // Just the two of each the hero actually shows. The full lists still
     // hydrate after paint for the sections below the fold; these are here
     // because the hero cannot wait for them — see heroSlides below.
-    cachedJson<{ data?: { items?: Tour[] } }>(`${API_URL}/tours?status=published&limit=2`, fetch),
-    cachedJson<{ data?: { items?: Destination[] } }>(`${API_URL}/destinations?status=published&limit=2`, fetch)
+    cachedJson<{ data?: { items?: Tour[] } }>(withLocale(`${API_URL}/tours?status=published&limit=2`, locale), fetch),
+    cachedJson<{ data?: { items?: Destination[] } }>(withLocale(`${API_URL}/destinations?status=published&limit=2`, locale), fetch)
   ]);
 
   const tourItems: Tour[] = [];

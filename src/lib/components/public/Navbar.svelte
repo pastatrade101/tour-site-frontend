@@ -14,6 +14,7 @@
   import CurrencySelector from './CurrencySelector.svelte';
   import LanguageSwitcher from './LanguageSwitcher.svelte';
   import { DEFAULT_LOCALE } from '$lib/i18n';
+  import { t } from '$lib/i18n/ui';
   import Img from './Img.svelte';
 
   type NavLink = { href: string; label: string; image?: string; description?: string; record?: Record<string, any>; fields?: string[] };
@@ -60,16 +61,19 @@
     accommodation: { icon: BedDouble, title: 'Accommodation', subtitle: 'Camps, lodges and hotels we book', viewAll: 'View all stays' }
   };
 
-  const NAV: NavItem[] = [
-    { href: '/', label: 'Home' },
-    { href: '/destinations', label: 'Destinations', dropdown: 'destinations' },
-    { href: '/tours', label: 'Tours', dropdown: 'tours' },
+  // Reactive so the primary navigation follows the active locale. Safari Styles
+  // has no dictionary key yet and stays in English until one is added — a
+  // missing key renders the key itself, which is deliberately visible.
+  $: NAV = [
+    { href: '/', label: $t('nav.home') },
+    { href: '/destinations', label: $t('nav.destinations'), dropdown: 'destinations' },
+    { href: '/tours', label: $t('nav.tours'), dropdown: 'tours' },
     { href: '/safari-styles', label: 'Safari Styles', dropdown: 'safariStyles' },
-    { href: '/accommodation', label: 'Accommodation', dropdown: 'accommodation' },
-    { href: '/experiences', label: 'Experiences' },
-    { href: '/about', label: 'About Us' },
-    { href: '/contact', label: 'Contact' }
-  ];
+    { href: '/accommodation', label: $t('nav.accommodation'), dropdown: 'accommodation' },
+    { href: '/experiences', label: $t('nav.experiences') },
+    { href: '/about', label: $t('nav.about') },
+    { href: '/contact', label: $t('nav.contact') }
+  ] as NavItem[];
 
   // Real CMS content only — no fabricated fallbacks. When a list is empty the
   // nav item renders as a plain link (its mega-menu dropdown is not shown).

@@ -3,6 +3,7 @@ import type { PageServerLoad } from './$types';
 import { env as publicEnv } from '$env/dynamic/public';
 import type { Lodge, Tour } from '$lib/types';
 import { attachResolvedVariantFields, type ImageVariantMap } from '$lib/img';
+import { localeFromPath, withLocale } from '$lib/i18n';
 
 type Body<T> = { data?: T };
 type PaginatedBody<T> = { data?: { items?: T[] } };
@@ -40,10 +41,13 @@ const resolveImageVariants = async (fetchFn: typeof fetch, base: string, urls: S
 
 export const load: PageServerLoad = async ({ fetch, params, url }) => {
   const base = apiBase(url.origin);
+  // Active locale from the URL prefix; published translations merge on the
+  // API side with per-field fallback to the default language.
+  const locale = localeFromPath(url.pathname);
 
   let lodge: Lodge | null = null;
   try {
-    const res = await fetch(`${base}/lodges/${params.slug}`);
+    const res = await fetch(withLocale(`${base}/lodges/${params.slug}`, locale));
     if (res.ok) lodge = ((await res.json()) as Body<Lodge>).data ?? null;
   } catch {
     lodge = null;
@@ -55,7 +59,7 @@ export const load: PageServerLoad = async ({ fetch, params, url }) => {
   // or broken list never takes the detail page down with it.
   let related: Lodge[] = [];
   try {
-    const res = await fetch(`${base}/lodges?status=published&show_property_publicly=true&limit=100`);
+    const res = await fetch(withLocale(`${base}/lodges?status=published&show_property_publicly=true&limit=100`, locale));
     if (res.ok) {
       const all = ((await res.json()) as PaginatedBody<Lodge>).data?.items ?? [];
       related = all.filter((item) => item.slug !== lodge!.slug);
@@ -72,7 +76,7 @@ export const load: PageServerLoad = async ({ fetch, params, url }) => {
   if (lodge.destination_id) {
     try {
       const res = await fetch(
-        `${base}/tours?destination_id=${lodge.destination_id}&status=published&limit=6`
+        withLocale(`${base}/tours?destination_id=${lodge.destination_id}&status=published&limit=6`, locale)
       );
       if (res.ok) {
         const body = (await res.json()) as PaginatedBody<Tour>;

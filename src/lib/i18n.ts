@@ -44,6 +44,16 @@ export const stripLocale = (pathname: string): string => {
  * hreflang, so a visitor changing language lands on the equivalent page rather
  * than back at the homepage.
  */
+/**
+ * Add ?locale= to an API URL, correctly whether or not it already has a query.
+ * The default language is never sent — the API serves it by definition, and
+ * omitting it keeps the default-language cache keys identical to before.
+ */
+export const withLocale = (apiUrl: string, locale: string): string => {
+  if (locale === DEFAULT_LOCALE) return apiUrl;
+  return `${apiUrl}${apiUrl.includes('?') ? '&' : '?'}locale=${locale}`;
+};
+
 export const localizeHref = (pathname: string, locale: string): string => {
   const base = stripLocale(pathname);
   if (locale === DEFAULT_LOCALE) return base;

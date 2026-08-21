@@ -2,6 +2,7 @@ import type { PageServerLoad } from './$types';
 import { env as publicEnv } from '$env/dynamic/public';
 import type { Lodge } from '$lib/types';
 import { attachResolvedVariantFields, type ImageVariantMap } from '$lib/img';
+import { localeFromPath, withLocale } from '$lib/i18n';
 
 type PaginatedBody<T> = { data?: { items?: T[] } };
 
@@ -50,7 +51,10 @@ const resolveImageVariants = async (
 export const load: PageServerLoad = async ({ fetch, url }) => {
   try {
     const base = apiBase(url.origin);
-    const res = await fetch(`${base}/lodges?status=published&show_property_publicly=true&limit=100`);
+  // Active locale from the URL prefix; published translations merge on the
+  // API side with per-field fallback to the default language.
+  const locale = localeFromPath(url.pathname);
+    const res = await fetch(withLocale(`${base}/lodges?status=published&show_property_publicly=true&limit=100`, locale));
     if (!res.ok) throw new Error(`Request failed (${res.status})`);
 
     const body = (await res.json()) as PaginatedBody<Lodge>;
