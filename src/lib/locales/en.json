@@ -1,0 +1,22 @@
+{
+  "nav.home": "Home",
+  "nav.destinations": "Destinations",
+  "nav.tours": "Tours",
+  "nav.accommodation": "Accommodation",
+  "nav.experiences": "Experiences",
+  "nav.about": "About Us",
+  "nav.contact": "Contact",
+  "cta.plan_my_trip": "Plan My Trip",
+  "cta.book_now": "Book Now",
+  "cta.view_tour": "View Tour",
+  "cta.explore_stay": "Explore stay",
+  "cta.see_all": "See all",
+  "cta.contact_us": "Contact Us",
+  "cta.search": "Search",
+  "label.from": "From",
+  "label.per_person": "Per Person",
+  "label.duration": "Duration",
+  "label.guests": "Guests",
+  "label.days": "days",
+  "label.language": "Language"
+}

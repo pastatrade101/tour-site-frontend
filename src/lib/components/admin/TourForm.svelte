@@ -9,6 +9,7 @@
   import AdminRichText from '$lib/components/admin/AdminRichText.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
+  import AdminTranslationTabs from './AdminTranslationTabs.svelte';
   import { hasRichContent, toPlainText } from '$lib/richText';
   import AiAssistButton from '$lib/components/admin/AiAssistButton.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
@@ -687,6 +688,10 @@
           <AdminTextArea label="Meta description" name="meta_description" bind:value={form.meta_description} rows={3} />
         </div>
       </section>
+
+      {#if mode === 'edit' && tourId}
+        <AdminTranslationTabs entityType="tours" entityId={tourId} on:toast={(event) => showToast(event.detail.message, event.detail.type ?? 'success')} />
+      {/if}
 
       <AdminToolbar className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p class="text-sm text-ink/60">Save changes to make this tour available in the CMS.</p>

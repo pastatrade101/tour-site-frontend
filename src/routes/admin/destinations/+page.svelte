@@ -11,6 +11,7 @@
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import AdminRichText from '$lib/components/admin/AdminRichText.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
+  import AdminTranslationTabs from '$lib/components/admin/AdminTranslationTabs.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
   import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
   import StatusBadge from '$lib/components/admin/StatusBadge.svelte';
@@ -541,6 +542,15 @@
           <AdminFormInput label="SEO title" name="meta_title" bind:value={form.meta_title} />
           <AdminTextArea label="SEO description" name="meta_description" bind:value={form.meta_description} rows={3} />
         </div>
+
+        <!-- Translations (existing destinations only — needs an id) -->
+        {#if editingDestination}
+          <AdminTranslationTabs
+            entityType="destinations"
+            entityId={editingDestination.id}
+            on:toast={(event) => showToast(event.detail.message, event.detail.type ?? 'success')}
+          />
+        {/if}
 
         <div class="flex justify-end gap-3 pt-2">
           <AdminButton variant="secondary" type="button" on:click={closeModal}>Cancel</AdminButton>

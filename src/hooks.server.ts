@@ -1,5 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
 import { env as privateEnv } from '$env/dynamic/private';
+import { DEFAULT_LOCALE, localeFromPath, stripLocale } from '$lib/i18n';
 
 // Internal backend origin (server-side only — mirrors src/routes/api/[...path]).
 //   • Docker Compose: reachable by service name -> http://backend:5000
@@ -18,7 +19,23 @@ const HAS_EXTENSION = /\.[a-z0-9]+$/i;
  * if the backend is unreachable the visitor just gets the normal 404 page.
  */
 export const handle: Handle = async ({ event, resolve }) => {
-  const response = await resolve(event);
+  const locale = localeFromPath(event.url.pathname);
+  const prefixed = stripLocale(event.url.pathname) !== event.url.pathname;
+
+  // The default language is canonical without a prefix, so /en/tours is a
+  // permanent redirect to /tours. Both addresses work; only one is indexable,
+  // which is what keeps the default language from competing with itself.
+  if (prefixed && locale === DEFAULT_LOCALE) {
+    const target = stripLocale(event.url.pathname) + event.url.search;
+    return new Response(null, { status: 301, headers: { location: target } });
+  }
+
+  const response = await resolve(event, {
+    // The document must declare the language it is actually written in —
+    // screen readers, translation prompts and search engines all read it.
+    transformPageChunk: ({ html }) =>
+      locale === DEFAULT_LOCALE ? html : html.replace('<html lang="en"', `<html lang="${locale}"`)
+  });
 
   if (
     response.status !== 404 ||

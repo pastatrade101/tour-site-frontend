@@ -1,0 +1,22 @@
+{
+  "nav.home": "Mwanzo",
+  "nav.destinations": "Maeneo",
+  "nav.tours": "Safari",
+  "nav.accommodation": "Malazi",
+  "nav.experiences": "Matukio",
+  "nav.about": "Kutuhusu",
+  "nav.contact": "Wasiliana",
+  "cta.plan_my_trip": "Panga Safari Yangu",
+  "cta.book_now": "Weka Nafasi",
+  "cta.view_tour": "Angalia Safari",
+  "cta.explore_stay": "Angalia malazi",
+  "cta.see_all": "Ona zote",
+  "cta.contact_us": "Wasiliana Nasi",
+  "cta.search": "Tafuta",
+  "label.from": "Kuanzia",
+  "label.per_person": "Kwa Mtu",
+  "label.duration": "Muda",
+  "label.guests": "Wageni",
+  "label.days": "siku",
+  "label.language": "Lugha"
+}

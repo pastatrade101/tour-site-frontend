@@ -12,6 +12,8 @@
   import { publicSettings, settingText } from '$lib/settings';
   import { canInstall, promptInstall } from '$lib/pwa';
   import CurrencySelector from './CurrencySelector.svelte';
+  import LanguageSwitcher from './LanguageSwitcher.svelte';
+  import { DEFAULT_LOCALE } from '$lib/i18n';
   import Img from './Img.svelte';
 
   type NavLink = { href: string; label: string; image?: string; description?: string; record?: Record<string, any>; fields?: string[] };
@@ -368,6 +370,11 @@
       </form>
 
       <div class="flex items-center gap-4 text-[13px] font-semibold">
+        <LanguageSwitcher
+          languages={($page.data as { languages?: never[] })?.languages ?? []}
+          current={($page.data as { locale?: typeof DEFAULT_LOCALE })?.locale ?? DEFAULT_LOCALE}
+          availableLocales={($page.data as { availableLocales?: string[] })?.availableLocales ?? null}
+        />
         <CurrencySelector compact />
         <a class="inline-flex items-center gap-1 text-forest transition hover:text-heading" href="/contact" on:click={() => activateLink('/contact')} on:focus={() => preloadRoute('/contact')}>
           <CircleHelp size={15} strokeWidth={2.6} />

@@ -1,6 +1,7 @@
 import type { PageLoad } from './$types';
 import { API_URL } from '$lib/config/env';
 import { cachedJson } from '$lib/cache';
+import { DEFAULT_LOCALE, localeFromPath } from '$lib/i18n';
 import type { FAQ, Review, ReviewSummary, Tour, TourCategory } from '$lib/types';
 
 type Items<T> = { data?: { items?: T[] } };
@@ -8,7 +9,12 @@ type Items<T> = { data?: { items?: T[] } };
 const items = <T>(result: PromiseSettledResult<Items<T>>) =>
   result.status === 'fulfilled' ? result.value?.data?.items ?? [] : [];
 
-export const load: PageLoad = async ({ fetch, params }) => {
+export const load: PageLoad = async ({ fetch, params, url }) => {
+  // The active locale comes from the URL prefix; the API returns the published
+  // translation for it, falling back per field to the default language.
+  const locale = localeFromPath(url.pathname);
+  const localeQuery = locale === DEFAULT_LOCALE ? '' : `?locale=${locale}`;
+
   const empty = {
     category: null as TourCategory | null,
     tours: [] as Tour[],
@@ -21,7 +27,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
 
   let category: TourCategory | null = null;
   try {
-    const categoryBody = await cachedJson<{ data?: TourCategory }>(`${API_URL}/categories/${params.slug}`, fetch);
+    const categoryBody = await cachedJson<{ data?: TourCategory }>(`${API_URL}/categories/${params.slug}${localeQuery}`, fetch);
     category = categoryBody.data ?? null;
   } catch {
     return empty;
@@ -49,6 +55,9 @@ export const load: PageLoad = async ({ fetch, params }) => {
 
   return {
     category,
+    // Consumed by the root layout for hreflang and by the switcher, so neither
+    // ever links to a language this page has no published translation for.
+    availableLocales: (category as { available_locales?: string[] }).available_locales ?? null,
     tours: items(tours),
     otherStyles: items(otherStyles).filter((style) => style.slug !== category?.slug),
     faqs: items(faqs),

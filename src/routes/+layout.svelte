@@ -23,12 +23,37 @@
   import { loadPublicSettings } from '$lib/settings';
   import { initCurrency } from '$lib/currency';
   import { cdnUrl } from '$lib/img';
+  import LanguageSwitcher from '$lib/components/public/LanguageSwitcher.svelte';
+  import { DEFAULT_LOCALE, localizeHref } from '$lib/i18n';
+  import { locale as localeStore } from '$lib/i18n/ui';
+  import type { LayoutData } from './$types';
+
+  export let data: LayoutData;
 
   $: isAdmin = $page.url.pathname.startsWith('/admin');
 
+  // ── Locale ──────────────────────────────────────────────────────────────────
+  // One assignment drives every static UI string on the page.
+  $: activeLocale = data.locale ?? DEFAULT_LOCALE;
+  $: localeStore.set(activeLocale);
+  $: languages = data.languages ?? [];
+  // Entity pages publish the locales they actually exist in; everything else
+  // (static pages, listings) is available in every enabled language because its
+  // chrome is dictionary-translated and its content falls back per field.
+  $: pageLocales = ($page.data as { availableLocales?: string[] })?.availableLocales ?? null;
+  $: alternateLocales = languages
+    .filter((language) => language.enabled)
+    .filter((language) => !pageLocales || pageLocales.includes(language.code))
+    .map((language) => language.code);
+
   // Site origin from PUBLIC_SITE_URL (.env), falling back to the live request origin.
   $: siteOrigin = SITE_URL || $page.url.origin;
-  $: canonicalUrl = `${siteOrigin}${$page.url.pathname}`;
+  // A locale URL is only canonical when that language actually has published
+  // content. /de/… on an untranslated page serves English text at a German
+  // address — pointing its canonical at the default-language URL is what stops
+  // it competing with the original as duplicate content.
+  $: localeIsPublished = !pageLocales || pageLocales.includes(activeLocale);
+  $: canonicalUrl = `${siteOrigin}${localizeHref($page.url.pathname, localeIsPublished ? activeLocale : DEFAULT_LOCALE)}`;
   $: orgUrl = `${siteOrigin}/`;
   $: mediaCdnOrigin = (publicEnv.PUBLIC_MEDIA_CDN_URL || '').trim().replace(/\/+$/, '');
 
@@ -175,6 +200,16 @@
   {#if seoOgImage}<meta property="og:image" content={seoOgImage} />{/if}
   <link rel="canonical" href={seoCanonical} />
   {#if seoRobots}<meta name="robots" content={seoRobots} />{/if}
+  <!-- hreflang for every locale this page genuinely exists in, plus x-default
+       pointing at the unprefixed default-language address. Locales without a
+       published translation are excluded, so search engines are never sent to
+       a page that would simply fall back to English. -->
+  {#if !isAdmin && alternateLocales.length > 1}
+    {#each alternateLocales as code (code)}
+      <link rel="alternate" hreflang={code} href={`${siteOrigin}${localizeHref($page.url.pathname, code)}`} />
+    {/each}
+    <link rel="alternate" hreflang="x-default" href={`${siteOrigin}${localizeHref($page.url.pathname, DEFAULT_LOCALE)}`} />
+  {/if}
   {#if mediaCdnOrigin}
     <link rel="preconnect" href={mediaCdnOrigin} crossorigin="anonymous" />
     <link rel="dns-prefetch" href={mediaCdnOrigin} />

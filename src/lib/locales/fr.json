@@ -1,0 +1,22 @@
+{
+  "nav.home": "Accueil",
+  "nav.destinations": "Destinations",
+  "nav.tours": "Circuits",
+  "nav.accommodation": "Hébergements",
+  "nav.experiences": "Expériences",
+  "nav.about": "À propos",
+  "nav.contact": "Contact",
+  "cta.plan_my_trip": "Planifier mon voyage",
+  "cta.book_now": "Réserver",
+  "cta.view_tour": "Voir le circuit",
+  "cta.explore_stay": "Voir l'hébergement",
+  "cta.see_all": "Voir tout",
+  "cta.contact_us": "Contactez-nous",
+  "cta.search": "Rechercher",
+  "label.from": "À partir de",
+  "label.per_person": "Par personne",
+  "label.duration": "Durée",
+  "label.guests": "Voyageurs",
+  "label.days": "jours",
+  "label.language": "Langue"
+}

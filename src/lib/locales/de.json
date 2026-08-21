@@ -1,0 +1,22 @@
+{
+  "nav.home": "Startseite",
+  "nav.destinations": "Reiseziele",
+  "nav.tours": "Touren",
+  "nav.accommodation": "Unterkünfte",
+  "nav.experiences": "Erlebnisse",
+  "nav.about": "Über uns",
+  "nav.contact": "Kontakt",
+  "cta.plan_my_trip": "Reise planen",
+  "cta.book_now": "Jetzt buchen",
+  "cta.view_tour": "Tour ansehen",
+  "cta.explore_stay": "Unterkunft ansehen",
+  "cta.see_all": "Alle ansehen",
+  "cta.contact_us": "Kontaktieren Sie uns",
+  "cta.search": "Suchen",
+  "label.from": "Ab",
+  "label.per_person": "Pro Person",
+  "label.duration": "Dauer",
+  "label.guests": "Gäste",
+  "label.days": "Tage",
+  "label.language": "Sprache"
+}
