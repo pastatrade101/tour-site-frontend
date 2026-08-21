@@ -8,7 +8,7 @@
    * the lead and the assistant's captured context beside the messages.
    */
   import { onMount, onDestroy } from 'svelte';
-  import { AlertTriangle, Bot, Check, CheckCheck, Clock, FileText, MessageCircle, Plus, Search, Send, User, UserCog } from '@lucide/svelte';
+  import { AlertTriangle, Ban, Bot, Check, CheckCheck, Clock, FileText, MessageCircle, Plus, Search, Send, User, UserCog } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import { quotationMoney, quotationStatusChip, quotationStatusLabel } from '$lib/quotations';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
@@ -456,15 +456,41 @@
                 <p class="whitespace-pre-wrap leading-6">{message.content}</p>
                 <p class="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-60">
                   {time(message.created_at)}
+                  <!--
+                    Six distinct states, because they mean different things to
+                    the traveller. 'accepted' in particular is Meta holding the
+                    request, not a phone holding the message — drawing it the
+                    same as delivered is what made unsent messages look sent.
+                    An outbound turn with no transport row shows nothing at all.
+                  -->
                   {#if message.delivery?.direction === 'outbound'}
-                    {#if message.delivery.status === 'read'}<CheckCheck size={12} />
-                    {:else if message.delivery.status === 'delivered'}<CheckCheck size={12} class="opacity-60" />
-                    {:else if message.delivery.status === 'failed'}<AlertTriangle size={12} class="text-goldfinch-gold" />
-                    {:else}<Check size={12} />{/if}
+                    {#if message.delivery.status === 'read'}
+                      <CheckCheck size={12} aria-label="Read" title="Read by the traveller" />
+                    {:else if message.delivery.status === 'delivered'}
+                      <CheckCheck size={12} class="opacity-60" aria-label="Delivered" title="Delivered to the traveller's phone" />
+                    {:else if message.delivery.status === 'sent'}
+                      <Check size={12} aria-label="Sent" title="Sent — delivery not yet confirmed" />
+                    {:else if message.delivery.status === 'accepted'}
+                      <Check size={12} class="opacity-45" aria-label="Accepted by WhatsApp" title="WhatsApp accepted the request — delivery not yet confirmed" />
+                    {:else if message.delivery.status === 'pending'}
+                      <Clock size={12} class="opacity-70" aria-label="Pending" title="Not yet sent" />
+                    {:else if message.delivery.status === 'failed'}
+                      <AlertTriangle size={12} class="text-red-300" aria-label="Failed" title="Not delivered" />
+                    {:else if message.delivery.status === 'skipped'}
+                      <Ban size={12} class="opacity-70" aria-label="Not sent" title="Not sent" />
+                    {/if}
                   {/if}
                 </p>
-                {#if message.delivery?.status === 'failed' && message.delivery.error_message}
-                  <p class="mt-1 text-[10px] text-goldfinch-gold">{message.delivery.error_message}</p>
+                {#if message.delivery?.status === 'failed'}
+                  <p class="mt-1 flex items-start gap-1 rounded bg-red-500/15 px-1.5 py-1 text-[10px] leading-4 text-red-200">
+                    <AlertTriangle size={11} class="mt-px shrink-0" />
+                    <span>Not delivered{message.delivery.error_message ? ` — ${message.delivery.error_message}` : '.'}</span>
+                  </p>
+                {:else if message.delivery?.status === 'skipped'}
+                  <p class="mt-1 flex items-start gap-1 rounded bg-white/10 px-1.5 py-1 text-[10px] leading-4 opacity-80">
+                    <Ban size={11} class="mt-px shrink-0" />
+                    <span>Not sent{message.delivery.skipped_reason ? ` — ${message.delivery.skipped_reason}` : '.'}</span>
+                  </p>
                 {/if}
               </div>
             </div>
