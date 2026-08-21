@@ -369,6 +369,19 @@ export const api = {
     update: (id: string, body: Record<string, unknown>) => apiRequest<Comparison>(`/comparisons/${id}`, { method: 'PUT', body }),
     remove: (id: string) => apiRequest(`/comparisons/${id}`, { method: 'DELETE' })
   },
+  whatsapp: {
+    status: () => apiRequest<Record<string, unknown>>('/whatsapp/status'),
+    conversations: (params?: Record<string, QueryValue>) =>
+      apiRequest<Record<string, unknown>[]>(`/whatsapp/conversations${queryString(params)}`),
+    conversation: (id: string) => apiRequest<Record<string, unknown>>(`/whatsapp/conversations/${id}`),
+    send: (body: Record<string, unknown>) => apiRequest<Record<string, unknown>>('/whatsapp/send', { method: 'POST', body }),
+    markRead: (id: string) => apiRequest(`/whatsapp/conversations/${id}/read`, { method: 'POST', body: {} }),
+    updateState: (id: string, body: Record<string, unknown>) =>
+      apiRequest<Record<string, unknown>>(`/whatsapp/conversations/${id}`, { method: 'PATCH', body }),
+    addNote: (id: string, body: string) =>
+      apiRequest<Record<string, unknown>>(`/whatsapp/conversations/${id}/notes`, { method: 'POST', body: { body } }),
+    agents: () => apiRequest<Array<{ id: string; full_name: string; email: string }>>('/whatsapp/agents')
+  },
   translations: {
     languages: (params?: Record<string, QueryValue>) => apiRequest<Language[]>(`/translations/languages${queryString(params)}`),
     updateLanguage: (code: string, body: Record<string, unknown>) =>

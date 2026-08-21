@@ -28,6 +28,7 @@
     Mail,
     Map,
     MapPin,
+    MessageCircle,
     MessageCircleHeart,
     Newspaper,
     Palette,
@@ -116,6 +117,7 @@
       label: 'AI System',
       links: [
         { href: '/admin/ai-conversations', label: 'AI Conversations', icon: Bot, exact: true },
+        { href: '/admin/whatsapp', label: 'WhatsApp Inbox', icon: MessageCircle, exact: true },
         { href: '/admin/ai-usage', label: 'AI Usage & Cost', icon: CircleDollarSign }
       ]
     },
