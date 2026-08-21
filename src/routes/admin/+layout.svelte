@@ -31,7 +31,8 @@
     '/admin/users': 'Admin Users',
     '/admin/roles': 'Roles and Permissions',
     '/admin/audit-logs': 'Audit Logs',
-    '/admin/ai-conversations': 'AI Conversations'
+    '/admin/ai-conversations': 'AI Conversations',
+    '/admin/whatsapp': 'WhatsApp Inbox'
   };
 
   $: path = $page.url.pathname;

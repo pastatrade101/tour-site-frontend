@@ -11,7 +11,6 @@
   import { AlertTriangle, Bot, Check, CheckCheck, Clock, FileText, MessageCircle, Plus, Search, Send, User, UserCog } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import { quotationMoney, quotationStatusChip, quotationStatusLabel } from '$lib/quotations';
-  import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import AdminQuotationEditor from '$lib/components/admin/AdminQuotationEditor.svelte';
   import ToastStack from '$lib/components/admin/ToastStack.svelte';
@@ -345,10 +344,17 @@
 
 <ToastStack {toasts} on:dismiss={(e) => (toasts = toasts.filter((t) => t.id !== e.detail))} />
 
-<AdminPageHeader
-  title="WhatsApp Inbox"
-  description="Traveller conversations on WhatsApp, with the lead and the assistant's captured context beside each thread."
-/>
+<header class="mb-4 flex flex-col gap-3 rounded-[10px] border border-ink/10 bg-surface px-5 py-4 shadow-card sm:flex-row sm:items-center sm:justify-between">
+  <div class="min-w-0">
+    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-forest/70">Admin CMS</p>
+    <h1 class="mt-1 text-2xl font-bold tracking-normal text-ink">WhatsApp Inbox</h1>
+    <p class="mt-1 text-sm text-ink/60">Read, reply, and manage traveller conversations in one place.</p>
+  </div>
+  <div class="flex shrink-0 items-center gap-2 text-xs font-semibold text-ink/55">
+    <span class="h-2 w-2 rounded-full bg-[#25D366]"></span>
+    {conversations.length} {conversations.length === 1 ? 'conversation' : 'conversations'}
+  </div>
+</header>
 
 <!--
   Every track is minmax(0, …) and every child carries min-w-0: a grid item's
@@ -356,9 +362,9 @@
   traveller panel — would otherwise widen its column past the track and push
   the whole layout off screen.
 -->
-<div class="grid gap-4 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)_minmax(0,300px)]">
+<div class="grid min-h-[640px] gap-4 lg:h-[calc(100dvh-240px)] lg:grid-cols-[minmax(240px,280px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(240px,280px)_minmax(420px,1fr)_minmax(320px,360px)]">
   <!-- ── Threads ──────────────────────────────────────────────────────────── -->
-  <section class="min-w-0 rounded-[10px] border border-ink/10 bg-surface">
+  <section class="min-w-0 overflow-hidden rounded-[10px] border border-ink/10 bg-surface lg:flex lg:min-h-0 lg:flex-col">
     <div class="grid gap-2 border-b border-ink/10 p-3">
       <label class="flex h-10 items-center gap-2 rounded-md border border-ink/15 px-3">
         <Search size={15} class="text-ink/40" />
@@ -369,7 +375,7 @@
       </select>
     </div>
 
-    <div class="max-h-[70vh] overflow-y-auto">
+    <div class="min-h-0 flex-1 overflow-y-auto">
       {#if loadingList}
         <div class="p-6"><LoadingState message="Loading conversations…" /></div>
       {:else if !conversations.length}
@@ -400,7 +406,7 @@
   </section>
 
   <!-- ── Thread ───────────────────────────────────────────────────────────── -->
-  <section class="min-w-0 flex min-h-[70vh] flex-col rounded-[10px] border border-ink/10 bg-surface">
+  <section class="flex min-h-[640px] min-w-0 flex-col overflow-hidden rounded-[10px] border border-ink/10 bg-surface lg:min-h-0">
     {#if !detail}
       <div class="grid flex-1 place-items-center p-10 text-center text-sm text-ink/50">
         <div><MessageCircle size={26} class="mx-auto mb-2 text-ink/25" />Select a conversation to read and reply.</div>
@@ -434,14 +440,14 @@
         </p>
       {/if}
 
-      <div class="flex-1 space-y-3 overflow-y-auto p-4">
+      <div class="min-h-0 flex-1 space-y-3 overflow-y-auto bg-canvas/35 p-4">
         {#if loadingThread}
           <LoadingState message="Loading messages…" />
         {:else}
           {#each detail.messages as message (message.id)}
             {@const mine = message.role !== 'user'}
             <div class={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-              <div class={`max-w-[78%] rounded-[10px] px-3 py-2 text-sm ${mine ? 'bg-deep-green text-white' : 'bg-sand/60 text-ink'}`}>
+              <div class={`max-w-[82%] break-words rounded-[10px] px-3 py-2 text-sm shadow-sm ${mine ? 'bg-deep-green text-white' : 'border border-ink/[0.06] bg-surface text-ink'}`}>
                 <p class="mb-0.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] opacity-70">
                   {#if message.role === 'user'}<User size={10} /> Traveller
                   {:else if message.role === 'agent'}<UserCog size={10} /> Agent
@@ -580,36 +586,36 @@
   </section>
 
   <!-- ── Traveller ────────────────────────────────────────────────────────── -->
-  <section class="min-w-0 rounded-[10px] border border-ink/10 bg-surface p-3">
+  <section class="min-w-0 overflow-y-auto rounded-[10px] border border-ink/10 bg-surface p-4 lg:col-span-2 2xl:col-span-1">
     {#if !detail}
       <p class="text-sm text-ink/50">No conversation selected.</p>
     {:else}
       <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-forest/70">Traveller</p>
-      <dl class="mt-2 grid min-w-0 gap-1.5 text-sm">
-        {#if detail.conversation.visitor_country}<div class="flex min-w-0 justify-between gap-2"><dt class="shrink-0 text-ink/50">Country</dt><dd class="min-w-0 break-all text-right font-semibold text-heading">{detail.conversation.visitor_country}</dd></div>{/if}
-        {#if detail.conversation.lead_status}<div class="flex min-w-0 justify-between gap-2"><dt class="shrink-0 text-ink/50">Lead</dt><dd class="min-w-0 break-all text-right font-semibold capitalize text-heading">{detail.conversation.lead_status}</dd></div>{/if}
-        {#if detail.contact?.whatsapp_opt_in}<div class="flex min-w-0 justify-between gap-2"><dt class="shrink-0 text-ink/50">Opt-in</dt><dd class="shrink-0 font-semibold text-forest">Yes</dd></div>{/if}
+      <dl class="mt-2 grid min-w-0 gap-2 text-sm">
+        {#if detail.conversation.visitor_country}<div class="grid min-w-0 grid-cols-[100px_minmax(0,1fr)] gap-3"><dt class="text-ink/50">Country</dt><dd class="min-w-0 break-words font-semibold text-heading">{detail.conversation.visitor_country}</dd></div>{/if}
+        {#if detail.conversation.lead_status}<div class="grid min-w-0 grid-cols-[100px_minmax(0,1fr)] gap-3"><dt class="text-ink/50">Lead</dt><dd class="min-w-0 break-words font-semibold capitalize text-heading">{detail.conversation.lead_status}</dd></div>{/if}
+        {#if detail.contact?.whatsapp_opt_in}<div class="grid min-w-0 grid-cols-[100px_minmax(0,1fr)] gap-3"><dt class="text-ink/50">Opt-in</dt><dd class="font-semibold text-forest">Yes</dd></div>{/if}
       </dl>
 
       {#if lead}
         <p class="mt-4 text-[11px] font-bold uppercase tracking-[0.14em] text-forest/70">Enquiry</p>
-        <dl class="mt-2 grid min-w-0 gap-1.5 text-sm">
-          {#if lead.booking_code}<div class="flex min-w-0 justify-between gap-2"><dt class="shrink-0 text-ink/50">Ref</dt><dd class="min-w-0 break-all text-right font-semibold text-heading">{lead.booking_code}</dd></div>{/if}
-          {#if detail.tour}<div class="flex min-w-0 justify-between gap-2"><dt class="shrink-0 text-ink/50">Tour</dt><dd class="min-w-0 break-all text-right font-semibold text-heading">{detail.tour.title}</dd></div>{/if}
-          {#if lead.travel_date}<div class="flex min-w-0 justify-between gap-2"><dt class="shrink-0 text-ink/50">Travel</dt><dd class="min-w-0 break-all text-right font-semibold text-heading">{lead.travel_date}</dd></div>{/if}
-          {#if lead.total_people}<div class="flex min-w-0 justify-between gap-2"><dt class="shrink-0 text-ink/50">Travellers</dt><dd class="min-w-0 break-all text-right font-semibold text-heading">{lead.total_people}</dd></div>{/if}
-          {#if lead.estimated_amount}<div class="flex min-w-0 justify-between gap-2"><dt class="shrink-0 text-ink/50">Estimate</dt><dd class="min-w-0 break-all text-right font-semibold text-heading">{lead.currency ?? 'USD'} {lead.estimated_amount}</dd></div>{/if}
-          {#if lead.status}<div class="flex min-w-0 justify-between gap-2"><dt class="shrink-0 text-ink/50">Status</dt><dd class="min-w-0 break-all text-right font-semibold capitalize text-heading">{lead.status}</dd></div>{/if}
+        <dl class="mt-2 grid min-w-0 gap-2 text-sm">
+          {#if lead.booking_code}<div class="grid min-w-0 grid-cols-[100px_minmax(0,1fr)] gap-3"><dt class="text-ink/50">Ref</dt><dd class="min-w-0 break-words font-semibold text-heading">{lead.booking_code}</dd></div>{/if}
+          {#if detail.tour}<div class="grid min-w-0 grid-cols-[100px_minmax(0,1fr)] gap-3"><dt class="text-ink/50">Tour</dt><dd class="min-w-0 break-words font-semibold text-heading">{detail.tour.title}</dd></div>{/if}
+          {#if lead.travel_date}<div class="grid min-w-0 grid-cols-[100px_minmax(0,1fr)] gap-3"><dt class="text-ink/50">Travel</dt><dd class="min-w-0 break-words font-semibold text-heading">{lead.travel_date}</dd></div>{/if}
+          {#if lead.total_people}<div class="grid min-w-0 grid-cols-[100px_minmax(0,1fr)] gap-3"><dt class="text-ink/50">Travellers</dt><dd class="min-w-0 break-words font-semibold text-heading">{lead.total_people}</dd></div>{/if}
+          {#if lead.estimated_amount}<div class="grid min-w-0 grid-cols-[100px_minmax(0,1fr)] gap-3"><dt class="text-ink/50">Estimate</dt><dd class="min-w-0 break-words font-semibold text-heading">{lead.currency ?? 'USD'} {lead.estimated_amount}</dd></div>{/if}
+          {#if lead.status}<div class="grid min-w-0 grid-cols-[100px_minmax(0,1fr)] gap-3"><dt class="text-ink/50">Status</dt><dd class="min-w-0 break-words font-semibold capitalize text-heading">{lead.status}</dd></div>{/if}
         </dl>
       {/if}
 
       {#if contextEntries.length}
         <p class="mt-4 text-[11px] font-bold uppercase tracking-[0.14em] text-forest/70">From the assistant</p>
-        <dl class="mt-2 grid min-w-0 gap-1.5 text-sm">
+        <dl class="mt-2 grid min-w-0 gap-2.5 text-sm">
           {#each contextEntries.slice(0, 10) as [key, value]}
-            <div class="flex min-w-0 justify-between gap-2">
-              <dt class="shrink-0 capitalize text-ink/50">{key.replace(/_/g, ' ')}</dt>
-              <dd class="min-w-0 break-all text-right font-semibold text-heading">{contextValue(value)}</dd>
+            <div class="grid min-w-0 grid-cols-[100px_minmax(0,1fr)] gap-3">
+              <dt class="capitalize text-ink/50">{key.replace(/_/g, ' ')}</dt>
+              <dd class="min-w-0 break-words font-semibold leading-5 text-heading [overflow-wrap:anywhere]">{contextValue(value)}</dd>
             </div>
           {/each}
         </dl>
