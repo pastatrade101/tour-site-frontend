@@ -33,6 +33,8 @@
     customer_name: null | string;
     customer_phone: null | string;
     id: string;
+    // The enquiry this quotation answers, when it was raised from one.
+    lead: { booking_code: string; full_name: null | string } | null;
     public_url: string;
     quote_code: string;
     sent_at: null | string;
@@ -338,6 +340,10 @@
                     {#if row.customer_phone}<div class="text-xs text-ink/55">{row.customer_phone}</div>{/if}
                   {:else if row.customer_phone}
                     <div class="text-ink/70">{row.customer_phone}</div>
+                  {/if}
+                  <!-- Which enquiry this answers, when it was raised from one. -->
+                  {#if row.lead?.booking_code}
+                    <div class="mt-0.5 font-mono text-[11px] text-ink/45">from {row.lead.booking_code}</div>
                   {/if}
                 </td>
                 <td class="px-4 py-3 text-ink/65">
