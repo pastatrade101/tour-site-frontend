@@ -350,9 +350,15 @@
   description="Traveller conversations on WhatsApp, with the lead and the assistant's captured context beside each thread."
 />
 
-<div class="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)_300px]">
+<!--
+  Every track is minmax(0, …) and every child carries min-w-0: a grid item's
+  default min-width is auto, so one unbreakable string — a source URL in the
+  traveller panel — would otherwise widen its column past the track and push
+  the whole layout off screen.
+-->
+<div class="grid gap-4 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)_minmax(0,300px)]">
   <!-- ── Threads ──────────────────────────────────────────────────────────── -->
-  <section class="rounded-[10px] border border-ink/10 bg-surface">
+  <section class="min-w-0 rounded-[10px] border border-ink/10 bg-surface">
     <div class="grid gap-2 border-b border-ink/10 p-3">
       <label class="flex h-10 items-center gap-2 rounded-md border border-ink/15 px-3">
         <Search size={15} class="text-ink/40" />
@@ -394,7 +400,7 @@
   </section>
 
   <!-- ── Thread ───────────────────────────────────────────────────────────── -->
-  <section class="flex min-h-[70vh] flex-col rounded-[10px] border border-ink/10 bg-surface">
+  <section class="min-w-0 flex min-h-[70vh] flex-col rounded-[10px] border border-ink/10 bg-surface">
     {#if !detail}
       <div class="grid flex-1 place-items-center p-10 text-center text-sm text-ink/50">
         <div><MessageCircle size={26} class="mx-auto mb-2 text-ink/25" />Select a conversation to read and reply.</div>
@@ -574,36 +580,36 @@
   </section>
 
   <!-- ── Traveller ────────────────────────────────────────────────────────── -->
-  <section class="rounded-[10px] border border-ink/10 bg-surface p-3">
+  <section class="min-w-0 rounded-[10px] border border-ink/10 bg-surface p-3">
     {#if !detail}
       <p class="text-sm text-ink/50">No conversation selected.</p>
     {:else}
       <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-forest/70">Traveller</p>
-      <dl class="mt-2 grid gap-1.5 text-sm">
-        {#if detail.conversation.visitor_country}<div class="flex justify-between gap-2"><dt class="text-ink/50">Country</dt><dd class="font-semibold text-heading">{detail.conversation.visitor_country}</dd></div>{/if}
-        {#if detail.conversation.lead_status}<div class="flex justify-between gap-2"><dt class="text-ink/50">Lead</dt><dd class="font-semibold text-heading capitalize">{detail.conversation.lead_status}</dd></div>{/if}
-        {#if detail.contact?.whatsapp_opt_in}<div class="flex justify-between gap-2"><dt class="text-ink/50">Opt-in</dt><dd class="font-semibold text-forest">Yes</dd></div>{/if}
+      <dl class="mt-2 grid min-w-0 gap-1.5 text-sm">
+        {#if detail.conversation.visitor_country}<div class="flex min-w-0 justify-between gap-2"><dt class="shrink-0 text-ink/50">Country</dt><dd class="min-w-0 break-all text-right font-semibold text-heading">{detail.conversation.visitor_country}</dd></div>{/if}
+        {#if detail.conversation.lead_status}<div class="flex min-w-0 justify-between gap-2"><dt class="shrink-0 text-ink/50">Lead</dt><dd class="min-w-0 break-all text-right font-semibold capitalize text-heading">{detail.conversation.lead_status}</dd></div>{/if}
+        {#if detail.contact?.whatsapp_opt_in}<div class="flex min-w-0 justify-between gap-2"><dt class="shrink-0 text-ink/50">Opt-in</dt><dd class="shrink-0 font-semibold text-forest">Yes</dd></div>{/if}
       </dl>
 
       {#if lead}
         <p class="mt-4 text-[11px] font-bold uppercase tracking-[0.14em] text-forest/70">Enquiry</p>
-        <dl class="mt-2 grid gap-1.5 text-sm">
-          {#if lead.booking_code}<div class="flex justify-between gap-2"><dt class="text-ink/50">Ref</dt><dd class="font-semibold text-heading">{lead.booking_code}</dd></div>{/if}
-          {#if detail.tour}<div class="flex justify-between gap-2"><dt class="text-ink/50">Tour</dt><dd class="text-right font-semibold text-heading">{detail.tour.title}</dd></div>{/if}
-          {#if lead.travel_date}<div class="flex justify-between gap-2"><dt class="text-ink/50">Travel</dt><dd class="font-semibold text-heading">{lead.travel_date}</dd></div>{/if}
-          {#if lead.total_people}<div class="flex justify-between gap-2"><dt class="text-ink/50">Travellers</dt><dd class="font-semibold text-heading">{lead.total_people}</dd></div>{/if}
-          {#if lead.estimated_amount}<div class="flex justify-between gap-2"><dt class="text-ink/50">Estimate</dt><dd class="font-semibold text-heading">{lead.currency ?? 'USD'} {lead.estimated_amount}</dd></div>{/if}
-          {#if lead.status}<div class="flex justify-between gap-2"><dt class="text-ink/50">Status</dt><dd class="font-semibold text-heading capitalize">{lead.status}</dd></div>{/if}
+        <dl class="mt-2 grid min-w-0 gap-1.5 text-sm">
+          {#if lead.booking_code}<div class="flex min-w-0 justify-between gap-2"><dt class="shrink-0 text-ink/50">Ref</dt><dd class="min-w-0 break-all text-right font-semibold text-heading">{lead.booking_code}</dd></div>{/if}
+          {#if detail.tour}<div class="flex min-w-0 justify-between gap-2"><dt class="shrink-0 text-ink/50">Tour</dt><dd class="min-w-0 break-all text-right font-semibold text-heading">{detail.tour.title}</dd></div>{/if}
+          {#if lead.travel_date}<div class="flex min-w-0 justify-between gap-2"><dt class="shrink-0 text-ink/50">Travel</dt><dd class="min-w-0 break-all text-right font-semibold text-heading">{lead.travel_date}</dd></div>{/if}
+          {#if lead.total_people}<div class="flex min-w-0 justify-between gap-2"><dt class="shrink-0 text-ink/50">Travellers</dt><dd class="min-w-0 break-all text-right font-semibold text-heading">{lead.total_people}</dd></div>{/if}
+          {#if lead.estimated_amount}<div class="flex min-w-0 justify-between gap-2"><dt class="shrink-0 text-ink/50">Estimate</dt><dd class="min-w-0 break-all text-right font-semibold text-heading">{lead.currency ?? 'USD'} {lead.estimated_amount}</dd></div>{/if}
+          {#if lead.status}<div class="flex min-w-0 justify-between gap-2"><dt class="shrink-0 text-ink/50">Status</dt><dd class="min-w-0 break-all text-right font-semibold capitalize text-heading">{lead.status}</dd></div>{/if}
         </dl>
       {/if}
 
       {#if contextEntries.length}
         <p class="mt-4 text-[11px] font-bold uppercase tracking-[0.14em] text-forest/70">From the assistant</p>
-        <dl class="mt-2 grid gap-1.5 text-sm">
+        <dl class="mt-2 grid min-w-0 gap-1.5 text-sm">
           {#each contextEntries.slice(0, 10) as [key, value]}
-            <div class="flex justify-between gap-2">
+            <div class="flex min-w-0 justify-between gap-2">
               <dt class="shrink-0 capitalize text-ink/50">{key.replace(/_/g, ' ')}</dt>
-              <dd class="min-w-0 break-words text-right font-semibold text-heading">{contextValue(value)}</dd>
+              <dd class="min-w-0 break-all text-right font-semibold text-heading">{contextValue(value)}</dd>
             </div>
           {/each}
         </dl>
