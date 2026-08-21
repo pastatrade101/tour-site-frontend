@@ -369,6 +369,14 @@ export const api = {
     update: (id: string, body: Record<string, unknown>) => apiRequest<Comparison>(`/comparisons/${id}`, { method: 'PUT', body }),
     remove: (id: string) => apiRequest(`/comparisons/${id}`, { method: 'DELETE' })
   },
+  quotations: {
+    list: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>[]>(`/quotations${queryString(params)}`),
+    get: (id: string) => apiRequest<Record<string, unknown>>(`/quotations/${id}`),
+    create: (body: Record<string, unknown>) => apiRequest<Record<string, unknown>>('/quotations', { method: 'POST', body }),
+    update: (id: string, body: Record<string, unknown>) => apiRequest<Record<string, unknown>>(`/quotations/${id}`, { method: 'PUT', body }),
+    send: (id: string, body: Record<string, unknown> = {}) => apiRequest<Record<string, unknown>>(`/quotations/${id}/send`, { method: 'POST', body }),
+    setStatus: (id: string, status: string) => apiRequest<Record<string, unknown>>(`/quotations/${id}/status`, { method: 'PATCH', body: { status } })
+  },
   whatsapp: {
     status: () => apiRequest<Record<string, unknown>>('/whatsapp/status'),
     conversations: (params?: Record<string, QueryValue>) =>
