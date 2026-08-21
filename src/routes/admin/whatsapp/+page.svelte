@@ -8,7 +8,7 @@
    * the lead and the assistant's captured context beside the messages.
    */
   import { onMount, onDestroy } from 'svelte';
-  import { AlertTriangle, Bot, Check, CheckCheck, Clock, MessageCircle, Plus, Search, Send, User, UserCog } from '@lucide/svelte';
+  import { AlertTriangle, Bot, Check, CheckCheck, Clock, FileText, MessageCircle, Plus, Search, Send, User, UserCog } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import { quotationMoney, quotationStatusChip, quotationStatusLabel } from '$lib/quotations';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
@@ -38,6 +38,16 @@
   let editingQuote: Row | null = null;
   let quotePrefill: Row = {};
   let tours: Row[] = [];
+  let templates: Row[] = [];
+  // A failed fetch and an empty registry look identical in `templates`, and
+  // telling an agent "none are configured" when the request actually failed
+  // would be a lie. Keep the reason so the composer can say which it was.
+  let templatesError = '';
+  let templateKey = '';
+  let templateValues: string[] = [];
+  let templateSending = false;
+  // Free-form stays the default inside the window; the template path is opt-in.
+  let useTemplate = false;
 
   const STATES = [
     { value: '', label: 'All conversations' },
@@ -66,6 +76,9 @@
   };
 
   const openConversation = async (id: string) => {
+    // Only on a real switch: the post-send reload re-opens the same thread and
+    // must not wipe what the agent is still writing.
+    if (id !== activeId) clearThreadDrafts();
     activeId = id;
     loadingThread = true;
     try {
@@ -98,6 +111,66 @@
       showToast(error instanceof Error ? error.message : 'Unable to send.', 'error');
     } finally {
       sending = false;
+    }
+  };
+
+  /**
+   * Everything the agent had half-typed for the thread they are leaving.
+   *
+   * All of it belongs to one traveller: a reply, an internal note, a template's
+   * name and reference. Carrying any of it into the next thread means one click
+   * sends the wrong person someone else's message, so they go together.
+   */
+  const clearThreadDrafts = () => {
+    templateKey = '';
+    templateValues = [];
+    useTemplate = false;
+    draft = '';
+    noteDraft = '';
+  };
+
+  // Values are positional, so a leftover from the previous template would be
+  // sent as a different variable entirely. Rebuild the array from scratch.
+  const selectTemplate = (key: string) => {
+    templateKey = key;
+    const chosen = templates.find((row) => row.internal_key === key);
+    templateValues = (Array.isArray(chosen?.variables) ? chosen?.variables : []).map(() => '');
+  };
+
+  const humanise = (name: string) => {
+    const spaced = String(name).replace(/_/g, ' ').trim();
+    return spaced ? spaced[0].toUpperCase() + spaced.slice(1) : '';
+  };
+
+  /**
+   * The one thing allowed to cross the 24-hour boundary — and only because it
+   * goes through the approved registry rather than carrying free text.
+   */
+  const sendTemplate = async () => {
+    if (!detail || !activeTemplate || templateSending || templateIncomplete) return;
+    templateSending = true;
+    // Minted once per attempt, here rather than in the markup: a re-render must
+    // not hand a second click a fresh key and message the traveller twice.
+    const idempotencyKey = crypto.randomUUID();
+    try {
+      await api.whatsapp.send({
+        to: detail.conversation.visitor_phone,
+        // The internal key, not Meta's name: the registry is what decides which
+        // approved template actually goes out.
+        template_name: activeTemplate.internal_key,
+        language: activeTemplate.language,
+        parameters: templateParameters,
+        idempotency_key: idempotencyKey
+      });
+      templateValues = templateValues.map(() => '');
+      await openConversation(activeId);
+      showToast('Template sent.');
+    } catch (error) {
+      // The server names the exact template and count it rejected. Repeat it
+      // word for word — a paraphrase loses what the agent needs to fix.
+      showToast(error instanceof Error ? error.message : 'Unable to send the template.', 'error');
+    } finally {
+      templateSending = false;
     }
   };
 
@@ -216,6 +289,12 @@
     await Promise.all([
       loadList(),
       api.whatsapp.agents().then((r) => (agents = r.data)).catch(() => undefined),
+      // The approved registry, fetched once. Outside the 24-hour window this is
+      // the only way to reach the traveller, so a failure has to be visible.
+      api.whatsapp
+        .templates()
+        .then((r) => (templates = r.data as Row[]))
+        .catch((error) => (templatesError = error instanceof Error ? error.message : 'Unable to load templates.')),
       // Feeds the composer's tour picker. Optional — without it the editor
       // falls back to a quotation with no tour attached, which is still valid.
       api.tours
@@ -231,7 +310,37 @@
   $: void (search, stateFilter, loadList());
   $: lead = detail?.lead ?? null;
   $: context = (lead?.lead_context ?? detail?.conversation?.lead_context ?? {}) as Record<string, unknown>;
-  $: contextEntries = Object.entries(context).filter(([, v]) => v !== null && v !== '' && !(Array.isArray(v) && !v.length));
+  /**
+   * The assistant stores whatever it captured, so a value here can be a nested
+   * object — attribution is one. String() turns those into "[object Object]",
+   * which tells an agent nothing; a compact key: value rendering at least says
+   * what was captured.
+   */
+  const contextValue = (value: unknown): string => {
+    if (Array.isArray(value)) return value.join(', ');
+    if (value && typeof value === 'object') {
+      return Object.entries(value as Record<string, unknown>)
+        .filter(([, v]) => v !== null && v !== undefined && v !== '')
+        .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`)
+        .join(' · ');
+    }
+    return String(value);
+  };
+
+  $: contextEntries = Object.entries(context)
+    .filter(([, v]) => v !== null && v !== '' && !(Array.isArray(v) && !v.length))
+    // An object that reduces to nothing is noise, not information.
+    .filter(([, v]) => contextValue(v).trim() !== '');
+  $: activeTemplate = templates.find((row) => row.internal_key === templateKey) ?? null;
+  $: templateVariables = (Array.isArray(activeTemplate?.variables) ? activeTemplate?.variables : []) as string[];
+  // What actually goes to Meta. The preview reads from the same array, so the
+  // agent is looking at the message that will be sent, not an approximation.
+  $: templateParameters = templateValues.map((value) => value.trim());
+  // Meta rejects a template with a missing parameter. Say so before the send.
+  $: templateIncomplete = templateParameters.length !== templateVariables.length || templateParameters.some((value) => !value);
+  $: templatePreview = activeTemplate?.body_text
+    ? String(activeTemplate.body_text).replace(/\{\{(\d+)\}\}/g, (match, index) => templateParameters[Number(index) - 1] || match)
+    : '';
 </script>
 
 <ToastStack {toasts} on:dismiss={(e) => (toasts = toasts.filter((t) => t.id !== e.detail))} />
@@ -353,6 +462,24 @@
 
       <footer class="border-t border-ink/10 p-3">
         {#if detail.session_window_open}
+          <div class="mb-2 flex justify-end">
+            <button
+              class="inline-flex items-center gap-1.5 rounded-md border border-ink/15 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.1em] text-ink/55 transition hover:border-forest/30 hover:text-heading"
+              type="button"
+              aria-pressed={useTemplate}
+              on:click={() => (useTemplate = !useTemplate)}
+            >
+              <FileText size={12} /> {useTemplate ? 'Write a reply' : 'Use a template'}
+            </button>
+          </div>
+        {:else}
+          <p class="mb-2.5 flex items-start gap-2 rounded-md border border-goldfinch-gold/35 bg-goldfinch-gold/[0.08] px-3 py-2.5 text-xs text-ink/75">
+            <Clock size={14} class="mt-0.5 shrink-0 text-clay" />
+            This traveller last wrote more than 24 hours ago, so WhatsApp only allows an approved template now. Free-form replies resume as soon as they message again.
+          </p>
+        {/if}
+
+        {#if detail.session_window_open && !useTemplate}
           <div class="flex gap-2">
             <textarea
               class="min-h-[44px] flex-1 rounded-md border border-ink/15 bg-black/[0.02] px-3 py-2 text-sm outline-none focus:border-forest"
@@ -366,11 +493,81 @@
             </AdminButton>
           </div>
           <p class="mt-1 text-[11px] text-ink/40">⌘/Ctrl + Enter to send.</p>
-        {:else}
-          <p class="flex items-start gap-2 rounded-md border border-goldfinch-gold/35 bg-goldfinch-gold/[0.08] px-3 py-2.5 text-xs text-ink/75">
-            <Clock size={14} class="mt-0.5 shrink-0 text-clay" />
-            This traveller last wrote more than 24 hours ago, so WhatsApp only allows an approved template now. Free-form replies resume as soon as they message again.
+        {:else if templatesError}
+          <p class="flex items-start gap-2 rounded-md border border-clay/35 bg-clay/[0.06] px-3 py-2.5 text-xs text-ink/75">
+            <AlertTriangle size={14} class="mt-0.5 shrink-0 text-clay" />
+            {templatesError}
           </p>
+        {:else if !templates.length}
+          <p class="rounded-md border border-ink/15 bg-sand/40 px-3 py-2.5 text-xs text-ink/60">
+            No approved templates are configured yet. One has to be approved in WhatsApp Manager and registered here before it can be sent.
+          </p>
+        {:else}
+          <div class="grid gap-2.5">
+            <label class="grid gap-1">
+              <span class="text-[11px] font-bold uppercase tracking-[0.14em] text-forest/70">Template</span>
+              <select
+                class="h-9 rounded-md border border-ink/15 bg-surface px-2 text-sm text-ink outline-none focus:border-forest"
+                value={templateKey}
+                on:change={(event) => selectTemplate(event.currentTarget.value)}
+              >
+                <option value="">Choose a template…</option>
+                {#each templates as template (template.internal_key)}
+                  <option value={template.internal_key}>{template.label || template.internal_key}</option>
+                {/each}
+              </select>
+            </label>
+
+            {#if activeTemplate}
+              <!-- Meta's own name, so an agent can check this against WhatsApp Manager. -->
+              <p class="-mt-1 text-[11px] text-ink/55">
+                <span class="font-mono text-ink/70">{activeTemplate.meta_template_name}</span>
+                · {activeTemplate.language}{#if activeTemplate.category} · {activeTemplate.category}{/if}
+              </p>
+              {#if activeTemplate.description}
+                <p class="-mt-1.5 text-[11px] text-ink/55">{activeTemplate.description}</p>
+              {/if}
+
+              {#if templateVariables.length}
+                <div class="grid gap-2 sm:grid-cols-2">
+                  {#each templateVariables as variable, index}
+                    <label class="grid gap-1">
+                      <span class="text-[11px] font-semibold text-ink/55">{humanise(variable)}</span>
+                      <input
+                        class="h-9 rounded-md border border-ink/15 bg-surface px-2 text-sm outline-none focus:border-forest"
+                        bind:value={templateValues[index]}
+                      />
+                    </label>
+                  {/each}
+                </div>
+              {/if}
+
+              <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-forest/70">Preview</p>
+              {#if activeTemplate.body_text}
+                <div class="-mt-1 flex justify-end">
+                  <div class="max-w-[78%] rounded-[10px] bg-deep-green px-3 py-2 text-sm text-white">
+                    <p class="mb-0.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] opacity-70">
+                      <UserCog size={10} /> Agent
+                    </p>
+                    <p class="whitespace-pre-wrap leading-6">{templatePreview}</p>
+                  </div>
+                </div>
+              {:else}
+                <p class="-mt-1 text-[11px] text-ink/55">
+                  This template's body text is not stored here, so there is nothing to preview. The traveller receives the approved wording from WhatsApp Manager with these values filled in.
+                </p>
+              {/if}
+
+              <div class="flex items-center justify-end gap-3">
+                {#if templateIncomplete}
+                  <p class="text-[11px] text-clay">Every value is required — WhatsApp rejects a template with a blank one.</p>
+                {/if}
+                <AdminButton type="button" disabled={templateSending || templateIncomplete} on:click={sendTemplate}>
+                  <Send size={15} /> {templateSending ? 'Sending…' : 'Send template'}
+                </AdminButton>
+              </div>
+            {/if}
+          </div>
         {/if}
       </footer>
     {/if}
@@ -405,8 +602,8 @@
         <dl class="mt-2 grid gap-1.5 text-sm">
           {#each contextEntries.slice(0, 10) as [key, value]}
             <div class="flex justify-between gap-2">
-              <dt class="capitalize text-ink/50">{key.replace(/_/g, ' ')}</dt>
-              <dd class="text-right font-semibold text-heading">{Array.isArray(value) ? value.join(', ') : String(value)}</dd>
+              <dt class="shrink-0 capitalize text-ink/50">{key.replace(/_/g, ' ')}</dt>
+              <dd class="min-w-0 break-words text-right font-semibold text-heading">{contextValue(value)}</dd>
             </div>
           {/each}
         </dl>

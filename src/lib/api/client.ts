@@ -380,6 +380,8 @@ export const api = {
   },
   whatsapp: {
     status: () => apiRequest<Record<string, unknown>>('/whatsapp/status'),
+    /** Approved templates only — the registry decides, so a new one needs no deploy. */
+    templates: () => apiRequest<Record<string, unknown>[]>('/whatsapp/templates'),
     conversations: (params?: Record<string, QueryValue>) =>
       apiRequest<Record<string, unknown>[]>(`/whatsapp/conversations${queryString(params)}`),
     conversation: (id: string) => apiRequest<Record<string, unknown>>(`/whatsapp/conversations/${id}`),
