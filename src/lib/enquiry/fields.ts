@@ -215,6 +215,18 @@ export const bestTimeField: Field = {
   placeholder: 'e.g. mornings, after 6pm my time'
 };
 
+/**
+ * Transactional WhatsApp consent — permission to message this traveller about
+ * their own trip. Separate from marketing below, and unticked by default:
+ * giving us a phone number is not the same as asking to be messaged on it.
+ */
+export const whatsappConsentField: Field = {
+  key: 'whatsapp_opt_in',
+  label: 'Contact me on WhatsApp about my trip, quotation and booking updates',
+  hint: 'Optional. We will still reply by email either way.',
+  kind: 'checkbox'
+};
+
 export const marketingConsentField: Field = {
   key: 'marketing_consent',
   label: 'Send me occasional travel ideas and offers',
@@ -231,6 +243,7 @@ export const aboutYouFields = (): Field[] => [
   languageField,
   contactMethodField,
   bestTimeField,
+  whatsappConsentField,
   marketingConsentField
 ];
 

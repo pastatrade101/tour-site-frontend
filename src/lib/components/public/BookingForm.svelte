@@ -44,6 +44,7 @@
   let full_name = '';
   let email = '';
   let phone = '';
+  let whatsapp_opt_in = false;
   let country = ''; // no longer collected in the form; kept so the API payload shape is unchanged
   let travel_date = '';
   let date_flexibility = '';
@@ -314,6 +315,7 @@
         full_name: full_name.trim(),
         email: email.trim(),
         phone: phone.trim() || null,
+        whatsapp_opt_in,
         country: country.trim() || null,
         travel_date: travel_date || null,
         number_of_adults: Number(number_of_adults) || 1,
@@ -436,6 +438,18 @@
               <span class="gf-label">Phone / WhatsApp</span>
               <input class={cls('phone')} type="tel" bind:value={phone} on:input={() => clearErr('phone')} placeholder="+255 ..." autocomplete="tel" />
               {#if errors.phone}<span class="text-xs text-red-600">{errors.phone}</span>{/if}
+            </label>
+            <!--
+              Transactional consent, unticked by default. A phone number is a
+              way to reach someone, not permission to message them on WhatsApp,
+              and the backend records this tick as the evidence for that.
+            -->
+            <label class="flex cursor-pointer items-start gap-2.5 sm:col-span-2">
+              <input type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 accent-goldfinch-gold" bind:checked={whatsapp_opt_in} />
+              <span class="text-xs leading-5 text-white/75">
+                Contact me on WhatsApp about my trip, quotation and booking updates.
+                <span class="block text-white/50">Optional — we will still reply by email either way.</span>
+              </span>
             </label>
           </div>
         </fieldset>

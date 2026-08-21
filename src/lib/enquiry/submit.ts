@@ -64,7 +64,7 @@ export const buildPayload = (
   const answers: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(values)) {
     if (COLUMN_KEYS.has(key)) continue;
-    if (key === 'hp_company' || key === 'marketing_consent') continue;
+    if (key === 'hp_company' || key === 'marketing_consent' || key === 'whatsapp_opt_in') continue;
     if (value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) continue;
     answers[key] = value;
   }
@@ -77,7 +77,10 @@ export const buildPayload = (
     attribution,
     language: String(values.preferred_language ?? '') || undefined,
     // Recorded separately from the enquiry itself, as asked.
-    consent: { marketing: values.marketing_consent === true },
+    consent: {
+      marketing: values.marketing_consent === true,
+      whatsapp_transactional: values.whatsapp_opt_in === true
+    },
     answers
   };
 
@@ -99,6 +102,8 @@ export const buildPayload = (
     source: config.formType,
     idempotency_key: idempotencyKey,
     lead_context: leadContext,
+    // Explicit tick only — never inferred from the phone number being filled.
+    whatsapp_opt_in: values.whatsapp_opt_in === true,
     // Honeypot — always sent, always empty for a human.
     hp_company: String(values.hp_company ?? '')
   };
