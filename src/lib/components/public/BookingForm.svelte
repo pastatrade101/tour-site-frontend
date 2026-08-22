@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, Copy, Download, MapPin, MessageCircle, ShieldCheck } from '@lucide/svelte';
+  import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, Copy, Download, Mail, MapPin, MessageCircle, ShieldCheck, User } from '@lucide/svelte';
   import { page } from '$app/stores';
   import { getAttribution, trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
@@ -420,35 +420,55 @@
     <div class="grid min-h-0 flex-1 gap-3 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5 md:px-6" bind:this={bodyEl}>
       {#if step === 0}
         <fieldset class="grid gap-3">
-          <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Contact details</legend>
+          <legend class="mb-1 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">
+            <User size={13} /> Contact details
+          </legend>
+          <p class="-mt-0.5 mb-1 text-xs text-white/50">We'll use this to reach you about your trip.</p>
           <div class="booking-field-grid">
             <label class="grid gap-1.5">
               <span class="gf-label">Full name</span>
-              <input class={cls('full_name')} bind:value={full_name} on:input={() => clearErr('full_name')} placeholder="Your name" autocomplete="name" />
+              <span class="gf-field">
+                <User size={15} class="gf-field-icon" />
+                <input class={cls('full_name')} bind:value={full_name} on:input={() => clearErr('full_name')} placeholder="Your name" autocomplete="name" />
+              </span>
               {#if errors.full_name}<span class="text-xs text-red-600">{errors.full_name}</span>{/if}
             </label>
             <label class="grid gap-1.5">
               <span class="gf-label">Email</span>
-              <input class={cls('email')} type="email" bind:value={email} on:input={() => clearErr('email')} placeholder="you@example.com" autocomplete="email" />
+              <span class="gf-field">
+                <Mail size={15} class="gf-field-icon" />
+                <input class={cls('email')} type="email" bind:value={email} on:input={() => clearErr('email')} placeholder="you@example.com" autocomplete="email" />
+              </span>
               {#if errors.email}<span class="text-xs text-red-600">{errors.email}</span>{/if}
             </label>
           </div>
           <div class="booking-field-grid">
-            <label class="grid gap-1.5">
+            <label class="grid gap-1.5 sm:col-span-2">
               <span class="gf-label">Phone / WhatsApp</span>
-              <input class={cls('phone')} type="tel" bind:value={phone} on:input={() => clearErr('phone')} placeholder="+255 ..." autocomplete="tel" />
+              <span class="gf-field">
+                <MessageCircle size={15} class="gf-field-icon" />
+                <input class={cls('phone')} type="tel" bind:value={phone} on:input={() => clearErr('phone')} placeholder="+255 ..." autocomplete="tel" />
+              </span>
               {#if errors.phone}<span class="text-xs text-red-600">{errors.phone}</span>{/if}
             </label>
             <!--
-              Transactional consent, unticked by default. A phone number is a
-              way to reach someone, not permission to message them on WhatsApp,
-              and the backend records this tick as the evidence for that.
+              Transactional consent. Given prominence because it genuinely helps
+              a traveller — replies reach them faster — but left unticked: an
+              agreement nobody made is not consent, and the backend stores this
+              tick as the evidence that they did.
             -->
-            <label class="flex cursor-pointer items-start gap-2.5 sm:col-span-2">
-              <input type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 accent-goldfinch-gold" bind:checked={whatsapp_opt_in} />
-              <span class="text-xs leading-5 text-white/75">
+            <label
+              class="flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition sm:col-span-2 {whatsapp_opt_in
+                ? 'border-[#25D366]/45 bg-[#25D366]/[0.10]'
+                : 'border-white/12 bg-white/[0.04] hover:border-white/20'}"
+            >
+              <input type="checkbox" class="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[#25D366]" bind:checked={whatsapp_opt_in} />
+              <span class="min-w-0 text-[13px] leading-5 text-white/85">
                 Contact me on WhatsApp about my trip, quotation and booking updates.
-                <span class="block text-white/50">Optional — we will still reply by email either way.</span>
+                <span class="mt-1.5 block">
+                  <span class="rounded bg-[#25D366]/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#25D366]">Recommended</span>
+                  <span class="text-xs text-white/50"> — faster replies and real-time updates.</span>
+                </span>
               </span>
             </label>
           </div>
@@ -657,6 +677,22 @@
     height: 2.5rem;
     min-height: 2.5rem;
     font-size: 0.8125rem;
+  }
+
+  .gf-field {
+    position: relative;
+    display: block;
+  }
+  .gf-field :global(.gf-field-icon) {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgb(255 255 255 / 0.35);
+    pointer-events: none;
+  }
+  .gf-field :global(input) {
+    padding-left: 2.4rem;
   }
 
   :global(.booking-form .gf-label) {
