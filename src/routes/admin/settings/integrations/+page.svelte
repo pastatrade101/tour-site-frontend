@@ -2,9 +2,11 @@
   import { onMount } from 'svelte';
   import { BarChart3, Bot, CheckCircle2, MessageCircle, ShieldCheck, XCircle, Users } from '@lucide/svelte';
   import { api } from '$lib/api/client';
+  import AdminWhatsAppConnection from '$lib/components/admin/AdminWhatsAppConnection.svelte';
 
   type Status = { configured: boolean; portalId?: string | null };
   let data: Record<string, Status> | null = null;
+  let whatsappConnection: Record<string, any> | null = null;
   let loading = true;
 
   const load = async () => {
@@ -17,6 +19,13 @@
     } finally {
       loading = false;
     }
+    // Separate from the env-status list above: which WhatsApp account sends is
+    // now a thing the business owns, not a variable on the server.
+    try {
+      whatsappConnection = (await api.whatsapp.connection()).data;
+    } catch {
+      whatsappConnection = null;
+    }
   };
   onMount(load);
 
@@ -24,7 +33,7 @@
     ? [
         { key: 'ga4', icon: BarChart3, name: 'Google Analytics 4', status: data.ga4, env: ['GA4_PROPERTY_ID', 'GOOGLE_CLIENT_EMAIL', 'GOOGLE_PRIVATE_KEY'], hint: 'Service-account credentials (backend only). Powers the traffic section of the analytics dashboard.' },
         { key: 'hubspot', icon: Users, name: 'HubSpot CRM', status: data.hubspot, env: ['HUBSPOT_ACCESS_TOKEN', 'HUBSPOT_PORTAL_ID'], hint: 'Private-app token. Leads sync to HubSpot contacts/deals when connected.' },
-        { key: 'whatsappCloudApi', icon: MessageCircle, name: 'WhatsApp Cloud API', status: data.whatsappCloudApi, env: ['WHATSAPP_ACCESS_TOKEN', 'WHATSAPP_PHONE_NUMBER_ID'], hint: 'Optional two-way messaging. The wa.me CTA + click tracking work without this.' },
+        { key: 'whatsappCloudApi', icon: MessageCircle, name: 'WhatsApp Cloud API (server fallback)', status: data.whatsappCloudApi, env: ['WHATSAPP_ACCESS_TOKEN', 'WHATSAPP_PHONE_NUMBER_ID'], hint: 'The sender used until a business connects their own account below. The wa.me CTA and click tracking work without either.' },
         { key: 'aiAdvisor', icon: Bot, name: 'AI Travel Advisor', status: data.aiAdvisor, env: ['ANTHROPIC_API_KEY'], hint: 'Anthropic key for the public AI advisor.' },
         { key: 'turnstile', icon: ShieldCheck, name: 'Cloudflare Turnstile', status: data.turnstile, env: ['TURNSTILE_SECRET_KEY'], hint: 'Optional bot protection for the AI advisor.' }
       ]
@@ -44,6 +53,10 @@
     <p class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">Unable to load integration status.</p>
   {:else}
     <div class="grid gap-4">
+      {#if whatsappConnection}
+        <AdminWhatsAppConnection bind:connection={whatsappConnection} />
+      {/if}
+
       {#each rows as row}
         {@const Icon = row.icon}
         <article class="flex flex-col gap-4 rounded-[10px] border border-ink/10 bg-surface p-5 shadow-card sm:flex-row sm:items-center sm:justify-between">

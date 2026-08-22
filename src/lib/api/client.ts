@@ -391,7 +391,20 @@ export const api = {
       apiRequest<Record<string, unknown>>(`/whatsapp/conversations/${id}`, { method: 'PATCH', body }),
     addNote: (id: string, body: string) =>
       apiRequest<Record<string, unknown>>(`/whatsapp/conversations/${id}/notes`, { method: 'POST', body: { body } }),
-    agents: () => apiRequest<Array<{ id: string; full_name: string; email: string }>>('/whatsapp/agents')
+    agents: () => apiRequest<Array<{ id: string; full_name: string; email: string }>>('/whatsapp/agents'),
+
+    /**
+     * Which WhatsApp account this site sends from. The access token is never in
+     * any of these responses — the server holds it sealed and only ever sends
+     * back what a human needs to recognise the connection.
+     */
+    connection: () => apiRequest<Record<string, any>>('/whatsapp/connection'),
+    connect: (body: { code: string; waba_id: string; phone_number_id: string }) =>
+      apiRequest<Record<string, any>>('/whatsapp/connect', { method: 'POST', body }),
+    connectManual: (body: { waba_id: string; phone_number_id: string; access_token: string }) =>
+      apiRequest<Record<string, any>>('/whatsapp/connect/manual', { method: 'POST', body }),
+    disconnect: () => apiRequest<Record<string, any>>('/whatsapp/disconnect', { method: 'POST', body: {} }),
+    testConnection: () => apiRequest<Record<string, any>>('/whatsapp/connection/test', { method: 'POST', body: {} })
   },
   translations: {
     languages: (params?: Record<string, QueryValue>) => apiRequest<Language[]>(`/translations/languages${queryString(params)}`),
