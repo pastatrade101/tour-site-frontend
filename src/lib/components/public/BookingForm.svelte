@@ -400,13 +400,15 @@
       </div>
     {/if}
 
-    <div class="grid gap-3 sm:grid-cols-2">
-      <button type="button" class="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-ink/15 bg-surface px-5 text-sm font-bold text-heading shadow-sm transition hover:border-goldfinch-gold/50 hover:bg-sand" on:click={downloadQuotation}>
-        <Download size={17} /> Download quotation (PDF)
-      </button>
-      <a href={waHref} target="_blank" rel="noopener noreferrer" on:click={openWhatsApp} class="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#25D366] px-5 text-sm font-bold text-white shadow-sm transition hover:brightness-105">
+    <!-- Same reason as the review step: this can render inside the ~360px
+         sticky panel, where a column split wraps both labels. -->
+    <div class="grid gap-2.5">
+      <a href={waHref} target="_blank" rel="noopener noreferrer" on:click={openWhatsApp} class="inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#25D366] px-5 text-sm font-bold text-white shadow-sm transition hover:brightness-105">
         <MessageCircle size={17} /> Continue on WhatsApp
       </a>
+      <button type="button" class="inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border border-ink/15 bg-surface px-5 text-sm font-bold text-heading shadow-sm transition hover:border-goldfinch-gold/50 hover:bg-sand" on:click={downloadQuotation}>
+        <Download size={17} /> Download quotation (PDF)
+      </button>
     </div>
 
     <Button type="button" variant="secondary" on:click={resetForm}>Submit another request</Button>
@@ -614,13 +616,19 @@
               Submit your request to get a reference number, or send us your details straight away on WhatsApp.
             </p>
           </div>
-          <div class="grid gap-3 sm:grid-cols-2">
-            <button type="button" class="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-4 text-sm font-bold text-white transition hover:border-goldfinch-gold/50 hover:bg-white/[0.12]" on:click={downloadQuotation}>
-              <Download size={16} /> Download quotation (PDF)
-            </button>
-            <a href={waHref} target="_blank" rel="noopener noreferrer" on:click={openWhatsApp} class="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#25D366] px-4 text-sm font-bold text-white shadow-sm transition hover:brightness-105">
+          <!--
+            Stacked, not two-up. This panel is ~360px wide whatever the viewport
+            is doing, so a `sm:` column split gave each button about 170px —
+            enough to wrap "Download quotation (PDF)" onto three lines and push
+            it straight out of a fixed-height pill.
+          -->
+          <div class="grid gap-2.5">
+            <a href={waHref} target="_blank" rel="noopener noreferrer" on:click={openWhatsApp} class="inline-flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#25D366] px-4 text-sm font-bold text-white shadow-sm transition hover:brightness-105">
               <MessageCircle size={16} /> Send on WhatsApp
             </a>
+            <button type="button" class="inline-flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white/20 bg-white/[0.06] px-4 text-sm font-bold text-white transition hover:border-goldfinch-gold/50 hover:bg-white/[0.12]" on:click={downloadQuotation}>
+              <Download size={16} /> Download quotation (PDF)
+            </button>
           </div>
         </div>
       {/if}
