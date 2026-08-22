@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, Copy, Download, Mail, MapPin, MessageCircle, ShieldCheck, User } from '@lucide/svelte';
+  import { AlertCircle, ArrowLeft, ArrowRight, BedDouble, CalendarCheck, CalendarDays, CheckCircle2, ClipboardList, Clock, Copy, Download, FileText, Hash, Mail, MapPin, MessageCircle, MessageSquare, ShieldCheck, Sparkles, Star, User, Users, Wallet } from '@lucide/svelte';
+  import type { Component } from 'svelte';
   import { page } from '$app/stores';
   import { getAttribution, trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
@@ -172,26 +173,38 @@
   }`;
   const money = (n: number) => formatUsd(n, $currency);
 
-  type Row = { label: string; value: string };
+  /**
+   * The review rows, shared by this step, the PDF and the WhatsApp message.
+   *
+   * The icon and pill are for the screen only — the other two consumers read
+   * label and value and ignore the rest, so one list stays the single account
+   * of what the traveller is submitting.
+   */
+  type Row = { label: string; value: string; icon: Component; pill?: 'gold' | 'green' };
+  const prettyDate = (value: string) =>
+    /^\d{4}-\d{2}-\d{2}$/.test(value)
+      ? new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00`))
+      : value;
+
   $: summaryRows = (() => {
     const rows: Row[] = [];
-    const add = (label: string, value: string | undefined | null) => {
-      if (value && String(value).trim()) rows.push({ label, value: String(value).trim() });
+    const add = (label: string, value: string | undefined | null, icon: Component, pill?: 'gold' | 'green') => {
+      if (value && String(value).trim()) rows.push({ label, value: String(value).trim(), icon, pill });
     };
-    if (tour?.title) add('Trip', tour.title);
-    if (bookingCode) add('Reference', bookingCode);
-    add('Name', full_name);
-    add('Email', email);
-    add('Phone / WhatsApp', phone);
-    add('Preferred date', travel_date);
-    add('Dates flexible', date_flexibility);
-    add('Duration', trip_duration);
-    add('Travellers', paxLabel);
-    add('Budget per person', budget_range);
-    add('Interests', travel_interests.join(', '));
-    add('Accommodation', accommodation_preference);
-    add('Special requests', special_requests);
-    add('Notes', message);
+    if (tour?.title) add('Trip', tour.title, MapPin);
+    if (bookingCode) add('Reference', bookingCode, Hash);
+    add('Full name', full_name, User);
+    add('Email', email, Mail);
+    add('Phone / WhatsApp', phone, MessageCircle);
+    add('Preferred date', prettyDate(travel_date), CalendarDays);
+    add('Dates flexible', date_flexibility, CalendarCheck, 'green');
+    add('Duration', trip_duration, Clock);
+    add('Travellers', paxLabel, Users);
+    add('Budget per person', budget_range, Wallet, 'gold');
+    add('Interests', travel_interests.join(', '), Star);
+    add('Accommodation', accommodation_preference, BedDouble);
+    add('Special requests', special_requests, MessageSquare);
+    add('Notes', message, FileText);
     return rows;
   })();
 
@@ -549,19 +562,36 @@
       {:else}
         <!-- Review -->
         <div class="grid gap-4">
-          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Review your request</p>
           <!--
             This step sits on the dark panel, so it is styled against white
             rather than against the page. `text-heading` and `text-ink` are the
             same colour as this background — using them here rendered the whole
             summary invisible.
           -->
+          <div>
+            <p class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">
+              <ClipboardList size={13} /> Your request summary
+            </p>
+            <p class="mt-1 text-xs text-white/50">Please review your details below. You can go back to make changes.</p>
+          </div>
           <div class="overflow-hidden rounded-xl border border-white/12">
-            <dl class="divide-y divide-white/10">
+            <dl class="divide-y divide-white/[0.08]">
               {#each summaryRows as r}
-                <div class="grid gap-1 px-3 py-3 text-sm sm:grid-cols-[130px_1fr] sm:gap-3 sm:px-4 sm:py-2.5">
-                  <dt class="text-xs font-semibold uppercase tracking-[0.1em] text-white/55 sm:text-sm sm:normal-case sm:tracking-normal">{r.label}</dt>
-                  <dd class="break-words font-semibold text-white">{r.value}</dd>
+                {@const Icon = r.icon}
+                <div class="flex items-start justify-between gap-3 px-3.5 py-2.5 text-sm odd:bg-white/[0.02]">
+                  <dt class="flex min-w-0 shrink-0 items-center gap-2 text-white/55">
+                    <Icon size={14} class="shrink-0 text-white/35" />
+                    <span class="truncate">{r.label}</span>
+                  </dt>
+                  <dd class="min-w-0 break-words text-right font-semibold text-white">
+                    {#if r.pill === 'green'}
+                      <span class="inline-flex items-center gap-1 rounded-md bg-[#25D366]/15 px-2 py-0.5 text-xs font-bold text-[#25D366]"><CheckCircle2 size={12} /> {r.value}</span>
+                    {:else if r.pill === 'gold'}
+                      <span class="inline-flex rounded-md bg-goldfinch-gold/15 px-2 py-0.5 text-xs font-bold text-goldfinch-gold">{r.value}</span>
+                    {:else}
+                      {r.value}
+                    {/if}
+                  </dd>
                 </div>
               {/each}
             </dl>
@@ -576,6 +606,14 @@
             </div>
           {/if}
 
+          <div>
+            <p class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">
+              <Sparkles size={13} /> What's next?
+            </p>
+            <p class="mt-1 text-xs leading-5 text-white/50">
+              Submit your request to get a reference number, or send us your details straight away on WhatsApp.
+            </p>
+          </div>
           <div class="grid gap-3 sm:grid-cols-2">
             <button type="button" class="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-4 text-sm font-bold text-white transition hover:border-goldfinch-gold/50 hover:bg-white/[0.12]" on:click={downloadQuotation}>
               <Download size={16} /> Download quotation (PDF)
@@ -584,7 +622,6 @@
               <MessageCircle size={16} /> Send on WhatsApp
             </a>
           </div>
-          <p class="text-xs text-white/60">Submit below to get a reference number, or send us your details straight away on WhatsApp.</p>
         </div>
       {/if}
     </div>
