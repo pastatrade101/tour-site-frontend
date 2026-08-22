@@ -3,6 +3,7 @@
   import { fade, scale } from 'svelte/transition';
   import {
     CalendarDays,
+    ChevronDown,
     ClipboardList,
     Edit,
     Eye,
@@ -13,6 +14,7 @@
     Plus,
     Save,
     Search,
+    SlidersHorizontal,
     Trash2,
     User,
     Users,
@@ -98,6 +100,8 @@ import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
   let error = '';
 
   let search = '';
+  let showMoreFilters = false;
+  $: extraFilterCount = [tourFilter !== 'all', assignFilter !== 'all', sourceFilter !== 'all', Boolean(dateFrom), Boolean(dateTo)].filter(Boolean).length;
   let statusFilter = 'all';
   let paymentFilter = 'all';
   let tourFilter = 'all';
@@ -518,38 +522,64 @@ import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
     on:action={openCreate}
   />
 
-  <div class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-    {#each [['Total', kpis.total, 'text-ink'], ['Pending', kpis.pending, 'text-goldfinch-gold'], ['Confirmed', kpis.confirmed, 'text-emerald-600'], ['Completed', kpis.completed, 'text-forest'], ['Cancelled / Rejected', kpis.cancelled, 'text-slate-500'], ['Unpaid', kpis.unpaid, 'text-red-500']] as [label, value, tone]}
-      <div class="rounded-2xl border border-ink/10 bg-surface p-4 shadow-sm">
-        <p class="text-xs font-semibold text-ink/50">{label}</p>
-        <p class={`mt-1 text-2xl font-extrabold ${tone}`}>{value}</p>
+  <!--
+    One strip rather than six cards. The count is what an agent scans for, so
+    it leads; the accent bar carries the same colour the status chip uses in the
+    table, so the two read as the same vocabulary.
+  -->
+  <div class="grid grid-cols-3 gap-2 lg:grid-cols-6">
+    {#each [['Total', kpis.total, 'text-ink', 'bg-ink/25'], ['Pending', kpis.pending, 'text-goldfinch-gold', 'bg-goldfinch-gold'], ['Confirmed', kpis.confirmed, 'text-emerald-600', 'bg-emerald-500'], ['Completed', kpis.completed, 'text-forest', 'bg-forest'], ['Cancelled', kpis.cancelled, 'text-slate-500', 'bg-slate-400'], ['Unpaid', kpis.unpaid, 'text-red-500', 'bg-red-400']] as [label, value, tone, accent]}
+      <div class="flex items-center gap-2.5 overflow-hidden rounded-xl border border-ink/10 bg-surface px-3 py-2.5 shadow-sm">
+        <span class={`h-8 w-1 shrink-0 rounded-full ${accent}`}></span>
+        <span class="min-w-0">
+          <span class={`block text-xl font-extrabold leading-none ${tone}`}>{value}</span>
+          <span class="mt-0.5 block truncate text-[11px] font-semibold text-ink/50">{label}</span>
+        </span>
       </div>
     {/each}
   </div>
 
-  <AdminToolbar className="grid gap-3 lg:grid-cols-[1fr_150px_150px_auto] lg:items-end">
-    <label class="grid gap-2 text-sm font-medium text-ink">
-      <span>Search</span>
-      <span class="flex h-11 items-center gap-2 rounded-2xl border border-ink/10 bg-surface px-3 shadow-sm transition focus-within:border-forest/45 focus-within:ring-2 focus-within:ring-forest/10">
-        <Search size={16} class="text-ink/45" />
-        <input class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink/35" bind:value={search} placeholder="Code, name, email, phone, country, message..." on:keydown={(e) => e.key === 'Enter' && loadBookings()} />
-      </span>
-    </label>
-    <AdminSelect label="Status" name="status_filter" bind:value={statusFilter} options={[{ label: 'All statuses', value: 'all' }, ...statusOptions]} />
-    <AdminSelect label="Payment" name="payment_filter" bind:value={paymentFilter} options={[{ label: 'All payments', value: 'all' }, ...paymentOptions]} />
-    <AdminButton variant="secondary" on:click={loadBookings}>Apply</AdminButton>
-  </AdminToolbar>
-
-  <AdminToolbar className="grid gap-3 lg:grid-cols-[repeat(3,1fr)_140px_140px_auto] lg:items-end">
-    <AdminSelect label="Tour" name="tour_filter" bind:value={tourFilter} options={tourFilterOptions} />
-    <AdminSelect label="Assigned to" name="assign_filter" bind:value={assignFilter} options={assignFilterOptions} />
-    <AdminSelect label="Source" name="source_filter" bind:value={sourceFilter} options={[{ label: 'All sources', value: 'all' }, ...sourceOptions]} />
-    <AdminFormInput label="From" name="date_from" type="date" bind:value={dateFrom} />
-    <AdminFormInput label="To" name="date_to" type="date" bind:value={dateTo} />
-    <div class="flex gap-2">
-      <AdminButton variant="secondary" on:click={loadBookings}>Filter</AdminButton>
-      <button class="inline-flex h-11 items-center rounded-2xl border border-ink/10 bg-surface px-3 text-sm font-semibold text-ink/60 transition hover:bg-sand/60" type="button" on:click={clearFilters}>Clear</button>
+  <AdminToolbar className="grid gap-3">
+    <div class="grid gap-3 lg:grid-cols-[1fr_150px_150px_auto_auto] lg:items-end">
+      <label class="grid gap-2 text-sm font-medium text-ink">
+        <span>Search</span>
+        <span class="flex h-11 items-center gap-2 rounded-2xl border border-ink/10 bg-surface px-3 shadow-sm transition focus-within:border-forest/45 focus-within:ring-2 focus-within:ring-forest/10">
+          <Search size={16} class="text-ink/45" />
+          <input class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink/35" bind:value={search} placeholder="Code, name, email, phone, country, message..." on:keydown={(e) => e.key === 'Enter' && loadBookings()} />
+        </span>
+      </label>
+      <AdminSelect label="Status" name="status_filter" bind:value={statusFilter} options={[{ label: 'All statuses', value: 'all' }, ...statusOptions]} />
+      <AdminSelect label="Payment" name="payment_filter" bind:value={paymentFilter} options={[{ label: 'All payments', value: 'all' }, ...paymentOptions]} />
+      <!--
+        Collapsed by default because most days these are untouched. The count
+        keeps a hidden filter from silently narrowing the list an agent thinks
+        they are reading in full.
+      -->
+      <button
+        class="inline-flex h-11 items-center gap-2 rounded-2xl border border-ink/10 bg-surface px-3.5 text-sm font-semibold text-ink/70 shadow-sm transition hover:bg-sand/60"
+        type="button"
+        aria-expanded={showMoreFilters}
+        on:click={() => (showMoreFilters = !showMoreFilters)}
+      >
+        <SlidersHorizontal size={15} /> More filters
+        {#if extraFilterCount}
+          <span class="rounded-full bg-forest px-1.5 py-0.5 text-[10px] font-bold text-white">{extraFilterCount}</span>
+        {/if}
+        <ChevronDown size={14} class={`transition ${showMoreFilters ? 'rotate-180' : ''}`} />
+      </button>
+      <AdminButton variant="secondary" on:click={loadBookings}>Apply</AdminButton>
     </div>
+
+    {#if showMoreFilters}
+      <div class="grid gap-3 border-t border-ink/10 pt-3 lg:grid-cols-[repeat(3,1fr)_140px_140px_auto] lg:items-end">
+        <AdminSelect label="Tour" name="tour_filter" bind:value={tourFilter} options={tourFilterOptions} />
+        <AdminSelect label="Assigned to" name="assign_filter" bind:value={assignFilter} options={assignFilterOptions} />
+        <AdminSelect label="Source" name="source_filter" bind:value={sourceFilter} options={[{ label: 'All sources', value: 'all' }, ...sourceOptions]} />
+        <AdminFormInput label="From" name="date_from" type="date" bind:value={dateFrom} />
+        <AdminFormInput label="To" name="date_to" type="date" bind:value={dateTo} />
+        <button class="inline-flex h-11 items-center rounded-2xl border border-ink/10 bg-surface px-3 text-sm font-semibold text-ink/60 transition hover:bg-sand/60" type="button" on:click={clearFilters}>Clear all</button>
+      </div>
+    {/if}
   </AdminToolbar>
 
   {#if loading}
