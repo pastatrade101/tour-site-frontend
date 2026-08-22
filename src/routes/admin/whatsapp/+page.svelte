@@ -454,42 +454,61 @@
                   {:else}<Bot size={10} /> Assistant{/if}
                 </p>
                 <p class="whitespace-pre-wrap leading-6">{message.content}</p>
-                <p class="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-60">
-                  {time(message.created_at)}
+                <!--
+                  The timestamp carries the muting, not the row: a failure drawn
+                  inside an opacity-60 line is a decoration, and this one has to
+                  stop an agent scrolling past it.
+                -->
+                <p class="mt-1 flex items-center justify-end gap-1.5 text-[10px]">
+                  <span class="opacity-60">{time(message.created_at)}</span>
                   <!--
                     Six distinct states, because they mean different things to
                     the traveller. 'accepted' in particular is Meta holding the
                     request, not a phone holding the message — drawing it the
                     same as delivered is what made unsent messages look sent.
                     An outbound turn with no transport row shows nothing at all.
+
+                    Each tooltip sits on the wrapping span rather than on the
+                    icon: `title` is not an SVG attribute, so a browser renders
+                    no tooltip for one set on the svg itself.
                   -->
                   {#if message.delivery?.direction === 'outbound'}
                     {#if message.delivery.status === 'read'}
-                      <CheckCheck size={12} aria-label="Read" title="Read by the traveller" />
+                      <span class="inline-flex" title="Read by the traveller"><CheckCheck size={12} aria-label="Read" /></span>
                     {:else if message.delivery.status === 'delivered'}
-                      <CheckCheck size={12} class="opacity-60" aria-label="Delivered" title="Delivered to the traveller's phone" />
+                      <span class="inline-flex opacity-60" title="Delivered to the traveller's phone"><CheckCheck size={12} aria-label="Delivered" /></span>
                     {:else if message.delivery.status === 'sent'}
-                      <Check size={12} aria-label="Sent" title="Sent — delivery not yet confirmed" />
+                      <span class="inline-flex opacity-90" title="Sent — delivery not yet confirmed"><Check size={12} aria-label="Sent" /></span>
                     {:else if message.delivery.status === 'accepted'}
-                      <Check size={12} class="opacity-45" aria-label="Accepted by WhatsApp" title="WhatsApp accepted the request — delivery not yet confirmed" />
+                      <span class="inline-flex opacity-45" title="WhatsApp accepted the request — delivery is not confirmed yet">
+                        <Check size={12} aria-label="Accepted by WhatsApp, delivery not confirmed" />
+                      </span>
                     {:else if message.delivery.status === 'pending'}
-                      <Clock size={12} class="opacity-70" aria-label="Pending" title="Not yet sent" />
+                      <span class="inline-flex opacity-70" title="Not handed to WhatsApp yet"><Clock size={12} aria-label="Pending" /></span>
                     {:else if message.delivery.status === 'failed'}
-                      <AlertTriangle size={12} class="text-red-300" aria-label="Failed" title="Not delivered" />
+                      <span class="inline-flex items-center gap-1 rounded-full bg-clay px-1.5 py-0.5 font-bold uppercase tracking-[0.08em] text-white" title="This message did not reach the traveller">
+                        <AlertTriangle size={11} /> Failed
+                      </span>
                     {:else if message.delivery.status === 'skipped'}
-                      <Ban size={12} class="opacity-70" aria-label="Not sent" title="Not sent" />
+                      <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-bold uppercase tracking-[0.08em] opacity-70 ring-1 ring-current" title="Nothing was handed to WhatsApp">
+                        <Ban size={11} /> Not sent
+                      </span>
                     {/if}
                   {/if}
                 </p>
-                {#if message.delivery?.status === 'failed'}
-                  <p class="mt-1 flex items-start gap-1 rounded bg-red-500/15 px-1.5 py-1 text-[10px] leading-4 text-red-200">
-                    <AlertTriangle size={11} class="mt-px shrink-0" />
-                    <span>Not delivered{message.delivery.error_message ? ` — ${message.delivery.error_message}` : '.'}</span>
+                <!--
+                  Why it did not arrive, in the backend's own words. Without a
+                  reason the badge only tells an agent that something is wrong,
+                  not what to do about it — and neither line invents one when the
+                  row carries none.
+                -->
+                {#if message.delivery?.direction === 'outbound' && message.delivery.status === 'failed'}
+                  <p class="mt-1 rounded bg-clay/30 px-1.5 py-1 text-[10px] leading-4">
+                    Not delivered{message.delivery.error_message ? ` — ${message.delivery.error_message}` : '.'}
                   </p>
-                {:else if message.delivery?.status === 'skipped'}
-                  <p class="mt-1 flex items-start gap-1 rounded bg-white/10 px-1.5 py-1 text-[10px] leading-4 opacity-80">
-                    <Ban size={11} class="mt-px shrink-0" />
-                    <span>Not sent{message.delivery.skipped_reason ? ` — ${message.delivery.skipped_reason}` : '.'}</span>
+                {:else if message.delivery?.direction === 'outbound' && message.delivery.status === 'skipped'}
+                  <p class="mt-1 rounded bg-black/15 px-1.5 py-1 text-[10px] leading-4 opacity-80">
+                    Not sent{message.delivery.skipped_reason ? ` — ${message.delivery.skipped_reason}` : '.'}
                   </p>
                 {/if}
               </div>
