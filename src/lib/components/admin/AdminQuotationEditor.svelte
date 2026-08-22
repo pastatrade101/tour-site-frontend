@@ -52,9 +52,16 @@
   // Lifted from AdminFormInput so the money fields can carry a step and stay
   // plain strings — Svelte coerces a bound type="number" input to a number and
   // rewrites what is in the box mid-keystroke, which a price should never do.
-  const fieldClass =
-    'h-11 w-full min-w-0 rounded-md border border-ink/15 bg-black/[0.02] px-3.5 text-sm text-ink outline-none transition placeholder:text-ink/35 hover:border-ink/25 focus:border-forest focus:bg-surface focus:ring-2 focus:ring-forest/20';
+  // Width is deliberately NOT in the base. It used to be, and `w-32` on the
+  // amount input lost the collision to `w-full` — Tailwind decides that by
+  // stylesheet order, not by the order classes appear on the element — so the
+  // amount took the whole row and squeezed the description to nothing.
+  const fieldBase =
+    'h-11 min-w-0 rounded-md border border-ink/15 bg-black/[0.02] px-3.5 text-sm text-ink outline-none transition placeholder:text-ink/35 hover:border-ink/25 focus:border-forest focus:bg-surface focus:ring-2 focus:ring-forest/20';
+  const fieldClass = `${fieldBase} w-full`;
+  const amountClass = `${fieldBase} w-28 shrink-0 text-right tabular-nums`;
   const labelClass = 'text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45';
+  const hintClass = 'text-xs leading-5 text-ink/55';
 
   const emptyForm = (): Form => ({
     title: '',
@@ -446,7 +453,10 @@
 
       <div class="min-h-0 flex-1 overflow-y-auto">
         <section class="grid gap-4 p-5">
-          <p class={labelClass}>Trip</p>
+          <div>
+            <p class={labelClass}>Trip</p>
+            <p class="mt-1 {hintClass}">What the traveller is being quoted for. The title is the heading they see.</p>
+          </div>
           <div class="grid gap-1.5">
             <AdminFormInput
               label="Title"
@@ -475,7 +485,10 @@
         </section>
 
         <section class="grid gap-4 border-t border-ink/10 p-5">
-          <p class={labelClass}>Who it is for</p>
+          <div>
+            <p class={labelClass}>Who it is for</p>
+            <p class="mt-1 {hintClass}">Where the quotation is delivered. Either a WhatsApp number or an email address is enough.</p>
+          </div>
           {#if current}
             {#if form.customer_name || form.customer_phone || form.customer_email}
               <dl class="grid gap-px overflow-hidden rounded-md border border-ink/10 bg-ink/10 sm:grid-cols-3">
@@ -517,9 +530,21 @@
         </section>
 
         <section class="grid gap-3 border-t border-ink/10 p-5">
-          <p class={labelClass}>What's included</p>
+          <div>
+            <p class={labelClass}>What's included</p>
+            <p class="mt-1 {hintClass}">
+              Optional. Break the price down so the traveller can see what they are paying for — park fees, lodges, a private
+              guide. Leave it empty and they simply see the total.
+            </p>
+          </div>
           {#if lines.length}
             <div class="grid gap-2">
+              <div class="flex items-center gap-2 pr-[52px]">
+                <span class="flex-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-ink/40">Description</span>
+                <span class="w-28 shrink-0 text-right text-[11px] font-semibold uppercase tracking-[0.1em] text-ink/40">
+                  Amount ({form.currency})
+                </span>
+              </div>
               {#each lines as line, index (line.key)}
                 <div class="flex items-center gap-2">
                   <input
@@ -531,7 +556,7 @@
                     on:input={(event) => setLine(line.key, 'label', event.currentTarget.value)}
                   />
                   <input
-                    class={`${fieldClass} w-32`}
+                    class={amountClass}
                     type="number"
                     step="0.01"
                     min="0"
@@ -559,7 +584,10 @@
         </section>
 
         <section class="grid gap-4 border-t border-ink/10 p-5">
-          <p class={labelClass}>Price</p>
+          <div>
+            <p class={labelClass}>Price</p>
+            <p class="mt-1 {hintClass}">The total is what the traveller is quoted — it is not calculated from the lines above.</p>
+          </div>
           <div class="grid gap-4 sm:grid-cols-3">
             <AdminSelect label="Currency" name="currency" bind:value={form.currency} options={currencyOptions} />
             <label class="grid min-w-0 gap-1.5">
@@ -583,9 +611,13 @@
           {#if errors.total}<p class="text-[12px] font-medium text-red-600">{errors.total}</p>{/if}
 
           {#if totalDiffers}
-            <p class="rounded-md bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 ring-1 ring-amber-200/70">
-              The lines add up to {money(lineSum)} but the total says {money(totalValue)}. The total is what the traveller is quoted, so
-              leave it if that is deliberate.
+            <p class="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 ring-1 ring-amber-200/70">
+              <span>The lines add up to {money(lineSum)} but the total says {money(totalValue)}. The total is what the traveller is quoted, so leave it if that is deliberate.</span>
+              <button
+                type="button"
+                class="shrink-0 font-bold underline underline-offset-2 hover:no-underline"
+                on:click={() => (form.total_amount = lineSum.toFixed(2))}
+              >Use {money(lineSum)}</button>
             </p>
           {:else if pricedLines.length}
             <p class="text-xs text-ink/55">The lines add up to {money(lineSum)}.</p>
