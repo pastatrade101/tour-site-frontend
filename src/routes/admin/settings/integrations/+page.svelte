@@ -31,9 +31,9 @@
 
   $: rows = data
     ? [
-        { key: 'ga4', icon: BarChart3, name: 'Google Analytics 4', status: data.ga4, env: ['GA4_PROPERTY_ID', 'GOOGLE_CLIENT_EMAIL', 'GOOGLE_PRIVATE_KEY'], hint: 'Service-account credentials (backend only). Powers the traffic section of the analytics dashboard.' },
+        { key: 'ga4', onLabel: undefined as string | undefined, icon: BarChart3, name: 'Google Analytics 4', status: data.ga4, env: ['GA4_PROPERTY_ID', 'GOOGLE_CLIENT_EMAIL', 'GOOGLE_PRIVATE_KEY'], hint: 'Service-account credentials (backend only). Powers the traffic section of the analytics dashboard.' },
         { key: 'hubspot', icon: Users, name: 'HubSpot CRM', status: data.hubspot, env: ['HUBSPOT_ACCESS_TOKEN', 'HUBSPOT_PORTAL_ID'], hint: 'Private-app token. Leads sync to HubSpot contacts/deals when connected.' },
-        { key: 'whatsappCloudApi', icon: MessageCircle, name: 'WhatsApp Cloud API (server fallback)', status: data.whatsappCloudApi, env: ['WHATSAPP_ACCESS_TOKEN', 'WHATSAPP_PHONE_NUMBER_ID'], hint: 'The sender used until a business connects their own account below. The wa.me CTA and click tracking work without either.' },
+        { key: 'whatsappCloudApi', icon: MessageCircle, name: 'WhatsApp Cloud API (server fallback)', status: data.whatsappCloudApi, env: ['WHATSAPP_ACCESS_TOKEN', 'WHATSAPP_PHONE_NUMBER_ID'], onLabel: 'Configured', hint: 'The sender used until a business connects their own account above. Nothing to click here — use the panel at the top.' },
         { key: 'aiAdvisor', icon: Bot, name: 'AI Travel Advisor', status: data.aiAdvisor, env: ['ANTHROPIC_API_KEY'], hint: 'Anthropic key for the public AI advisor.' },
         { key: 'turnstile', icon: ShieldCheck, name: 'Cloudflare Turnstile', status: data.turnstile, env: ['TURNSTILE_SECRET_KEY'], hint: 'Optional bot protection for the AI advisor.' }
       ]
@@ -75,7 +75,7 @@
           </div>
           <div class="shrink-0">
             {#if row.status?.configured}
-              <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-600"><CheckCircle2 size={15} /> Connected</span>
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-600"><CheckCircle2 size={15} /> {row.onLabel ?? 'Connected'}</span>
             {:else}
               <span class="inline-flex items-center gap-1.5 rounded-full bg-ink/5 px-3 py-1.5 text-xs font-bold text-ink/50"><XCircle size={15} /> Not configured</span>
             {/if}
