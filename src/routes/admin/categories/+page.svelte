@@ -538,21 +538,21 @@
             trip length and fitness already have fields below; the parks a style
             visits are read from its published tours, so they cannot go stale.
           -->
-          <AdminTextArea
+          <AdminRichText
             label="Travel costs — how to plan"
             name="planning_costs"
             bind:value={form.planning_costs}
-            rows={3}
-            placeholder="What a trip of this style typically costs and what drives the price — park fees, lodge standard, season, group size."
+            rows={4}
+            placeholder="What a trip of this style typically costs and what drives the price. A short list often reads better than a paragraph — park fees, lodge standard, season, group size."
           />
-          <AdminTextArea
+          <AdminRichText
             label="Route planning — how to plan"
             name="planning_route"
             bind:value={form.planning_route}
-            rows={3}
+            rows={4}
             placeholder="How the route is usually put together for this style — where to start, how long to stay, what to leave out."
           />
-          <p class="-mt-1 text-xs text-ink/55">Both optional. Each appears as its own block on the style page; leave one blank and it is hidden.</p>
+          <p class="-mt-1 text-xs text-ink/55">Both optional, and both take bullets. Each appears as its own card on the style page; leave one blank and it is hidden.</p>
         </section>
 
         <!-- ── 2 · Travel information ────────────────────────────────────── -->

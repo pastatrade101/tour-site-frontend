@@ -149,9 +149,11 @@
   // Parks sits with the prose, not the facts: it is a list of six names, and in
   // a strip beside "Easy" it set the height of the whole row.
   $: planningNotesBlocks = [
-    { icon: MapPinned, label: 'Parks and destinations', value: destinationsLabel },
-    { icon: Wallet, label: 'Travel costs', value: (planningNotes.costs ?? '').trim() },
-    { icon: Route, label: 'Route planning', value: (planningNotes.route ?? '').trim() }
+    // A list of names reads as a list, not as one sentence held together by
+    // interpuncts — which is what six parks looked like in a card.
+    { icon: MapPinned, label: 'Parks and destinations', kind: 'list' as const, items: styleDestinations, value: destinationsLabel },
+    { icon: Wallet, label: 'Travel costs', kind: 'rich' as const, items: [], value: (planningNotes.costs ?? '').trim() },
+    { icon: Route, label: 'Route planning', kind: 'rich' as const, items: [], value: (planningNotes.route ?? '').trim() }
   ].filter((block) => block.value);
 
   $: planningFacts = [...quickFacts, ...planningNotesBlocks];
@@ -484,7 +486,23 @@
                   <svelte:component this={block.icon} size={14} strokeWidth={2.2} class="text-goldfinch-gold" />
                   {block.label}
                 </p>
-                <p class="mt-2.5 text-[15px] leading-7 text-ink/70">{block.value}</p>
+                {#if block.kind === 'list'}
+                  <ul class="mt-3 grid gap-1.5">
+                    {#each block.items.slice(0, 8) as item}
+                      <li class="flex items-start gap-2 text-[15px] leading-6 text-ink/70">
+                        <span class="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-goldfinch-gold" aria-hidden="true"></span>
+                        {item}
+                      </li>
+                    {/each}
+                  </ul>
+                  {#if block.items.length > 8}
+                    <p class="mt-2 text-[13px] text-ink/45">and {block.items.length - 8} more</p>
+                  {/if}
+                {:else}
+                  <div class="planning-rich mt-2.5 text-[15px] leading-7 text-ink/70">
+                    <RichText value={block.value} />
+                  </div>
+                {/if}
               </div>
             {/each}
           </div>
@@ -687,3 +705,21 @@
     <a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-forest hover:text-heading" href="/safari-styles">All safari styles <ArrowRight size={16} /></a>
   </section>
 {/if}
+
+<style>
+  /* The notes are authored rich text, so lists need marking up here — the
+     public prose styles elsewhere are scoped to their own components. */
+  .planning-rich :global(ul) {
+    margin-top: 0.5rem;
+    display: grid;
+    gap: 0.4rem;
+    padding-left: 1.05rem;
+    list-style: disc;
+  }
+  .planning-rich :global(li)::marker {
+    color: rgb(var(--c-goldfinch-gold));
+  }
+  .planning-rich :global(p + p) {
+    margin-top: 0.6rem;
+  }
+</style>
