@@ -133,14 +133,28 @@
   // an empty heading.
   $: planningNotes = ((category as Record<string, any> | null)?.planning_notes ?? {}) as { costs?: string | null; route?: string | null };
 
-  $: planningFacts = [
+  /**
+   * Two different kinds of answer, so two different treatments.
+   *
+   * Best months and fitness are two words; costs and route are paragraphs.
+   * Putting them in one row of equal cards stretched the short ones to the
+   * height of the long ones and left most of the section empty.
+   */
+  $: quickFacts = [
     { icon: CalendarRange, label: 'Best months', value: bestMonthsLabel },
     { icon: Clock, label: 'Trip length', value: tripLengthLabel },
-    { icon: Gauge, label: 'Fitness', value: fitnessText },
+    { icon: Gauge, label: 'Fitness', value: fitnessText }
+  ].filter((fact) => fact.value);
+
+  // Parks sits with the prose, not the facts: it is a list of six names, and in
+  // a strip beside "Easy" it set the height of the whole row.
+  $: planningNotesBlocks = [
     { icon: MapPinned, label: 'Parks and destinations', value: destinationsLabel },
     { icon: Wallet, label: 'Travel costs', value: (planningNotes.costs ?? '').trim() },
     { icon: Route, label: 'Route planning', value: (planningNotes.route ?? '').trim() }
-  ].filter((fact) => fact.value);
+  ].filter((block) => block.value);
+
+  $: planningFacts = [...quickFacts, ...planningNotesBlocks];
 
   /**
    * The four steps, from the homepage CMS rather than this category.
@@ -448,17 +462,33 @@
           <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">Planning</p>
           <h2 class="mt-3 font-serif text-3xl font-semibold leading-tight text-heading md:text-[38px]">Planning facts</h2>
         </div>
-        <div class="mt-8 flex flex-wrap gap-3" use:staggeredCardReveal={{ y: 14, stagger: 0.05 }}>
-          {#each planningFacts as fact}
-            <div class="min-w-[220px] flex-1 rounded-[12px] border border-ink/10 bg-surface p-5 shadow-[0_10px_28px_rgba(57,61,50,0.05)]">
-              <p class="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-ink/45">
-                <svelte:component this={fact.icon} size={14} strokeWidth={2.2} class="text-goldfinch-gold" />
-                {fact.label}
-              </p>
-              <p class="mt-2 text-[15px] font-bold leading-6 text-heading">{fact.value}</p>
-            </div>
-          {/each}
-        </div>
+        {#if quickFacts.length}
+          <dl class="mt-8 grid gap-px overflow-hidden rounded-[12px] border border-ink/10 bg-ink/10 sm:grid-cols-3">
+            {#each quickFacts as fact}
+              <div class="bg-surface px-5 py-4">
+                <dt class="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-ink/45">
+                  <svelte:component this={fact.icon} size={14} strokeWidth={2.2} class="text-goldfinch-gold" />
+                  {fact.label}
+                </dt>
+                <dd class="mt-1.5 text-[15px] font-bold leading-6 text-heading">{fact.value}</dd>
+              </div>
+            {/each}
+          </dl>
+        {/if}
+
+        {#if planningNotesBlocks.length}
+          <div class="mt-5 grid gap-5 sm:grid-cols-2 {planningNotesBlocks.length === 3 ? 'lg:grid-cols-3' : ''}" use:staggeredCardReveal={{ y: 14, stagger: 0.05 }}>
+            {#each planningNotesBlocks as block}
+              <div class="rounded-[12px] border border-ink/10 bg-surface p-6 shadow-[0_10px_28px_rgba(57,61,50,0.05)]">
+                <p class="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-ink/45">
+                  <svelte:component this={block.icon} size={14} strokeWidth={2.2} class="text-goldfinch-gold" />
+                  {block.label}
+                </p>
+                <p class="mt-2.5 text-[15px] leading-7 text-ink/70">{block.value}</p>
+              </div>
+            {/each}
+          </div>
+        {/if}
       </div>
     </section>
   {/if}
