@@ -6,6 +6,7 @@
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import HomeTravellerStories from '$lib/components/public/home/HomeTravellerStories.svelte';
   import BookingForm from '$lib/components/public/BookingForm.svelte';
+  import StylePlannerBand from '$lib/components/public/StylePlannerBand.svelte';
   import { configFor } from '$lib/enquiry/configs';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
@@ -342,49 +343,15 @@
     </section>
   {/if}
 
-  <!-- 3. Enquiry band ----------------------------------------------------- -->
-  <!-- The band carries the form's title, blurb and submit label and opens it.
-       Writing a row of fields here instead would be a second form to keep in
-       step with the real one. -->
-  <section class="relative overflow-hidden bg-deep-green py-12 text-white md:py-16">
-    <div class="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full border border-white/10" aria-hidden="true"></div>
-    <div class="container-shell relative">
-      <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-        <div class="max-w-2xl">
-          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Start planning</p>
-          <h2 class="mt-3 font-serif text-2xl font-semibold leading-tight md:text-[32px]">{enquiryConfig.title}</h2>
-          {#if enquiryConfig.description}
-            <p class="mt-3 text-[15px] leading-7 text-white/70">{enquiryConfig.description}</p>
-          {/if}
-        </div>
-
-        <div class="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:shrink-0">
-          <button
-            class="inline-flex h-12 items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-6 text-sm font-bold text-heading transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-            type="button"
-            on:click={() => (enquiryOpen = true)}
-          >
-            <Sparkles size={17} />
-            {enquiryConfig.submitLabel}
-          </button>
-          {#if waHref}
-            <a
-              class="inline-flex h-12 items-center justify-center gap-2 rounded-[8px] border border-white/25 bg-white/10 px-6 text-sm font-bold text-white transition hover:bg-white/20"
-              href={waHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              on:click={() => trackEvent('whatsapp_click', { cta_location: 'safari_style_band', category_id: category.id })}
-            >
-              <MessageCircle size={17} /> WhatsApp
-            </a>
-          {/if}
-        </div>
-      </div>
-      {#if enquiryConfig.submitNote}
-        <p class="mt-5 text-[12.5px] leading-5 text-white/50">{enquiryConfig.submitNote}</p>
-      {/if}
-    </div>
-  </section>
+  <!-- 3. Planner band — three short steps, inline. ----------------------- -->
+  <StylePlannerBand
+    title={enquiryConfig.title}
+    description={enquiryConfig.description ?? ''}
+    startPoints={data.startPoints ?? []}
+    interests={[{ name: category.name, slug: category.slug }, ...otherStyles.map((style) => ({ name: style.name, slug: style.slug }))]}
+    categoryName={category.name}
+    categorySlug={category.slug}
+  />
 
   <!-- 4. Trip ideas ------------------------------------------------------- -->
   <section id="trip-ideas" class="scroll-mt-24 border-t border-ink/[0.06] bg-canvas py-14 md:py-20">

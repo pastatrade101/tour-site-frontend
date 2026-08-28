@@ -21,6 +21,7 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     otherStyles: [] as TourCategory[],
     faqs: [] as FAQ[],
     reviews: [] as Review[],
+    startPoints: [] as Array<Record<string, unknown>>,
     reviewSummary: null as ReviewSummary | null,
     homeSections: [] as Record<string, unknown>[]
   };
@@ -36,7 +37,7 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
 
   // Everything below is section fodder and fails soft: a broken list hides its
   // section rather than taking the page down.
-  const [tours, otherStyles, faqs, featuredReviews, allReviews, reviewSummary, homeSections] = await Promise.allSettled([
+  const [tours, otherStyles, faqs, featuredReviews, allReviews, reviewSummary, homeSections, startPoints] = await Promise.allSettled([
     // 24 rather than 9: the tours grid now filters client-side (days, comfort,
     // price), and a filter over a truncated list would quietly lie about what
     // is available.
@@ -48,7 +49,10 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     cachedJson<{ data?: ReviewSummary }>(`${API_URL}/reviews/summary`, fetch),
     // Advisor's-note copy is the site-wide editorial content managed on the
     // homepage CMS record; cachedJson shares the response with the homepage.
-    cachedJson<{ data?: Record<string, unknown>[] }>(withLocale(`${API_URL}/homepage`, locale), fetch)
+    cachedJson<{ data?: Record<string, unknown>[] }>(withLocale(`${API_URL}/homepage`, locale), fetch),
+    // Real gateways for the planner's "starting point" — an authored list, so
+    // it stays right when a new gateway is added and never invents one.
+    cachedJson<Items<Record<string, unknown>>>(`${API_URL}/trip-points?status=published&limit=30`, fetch)
   ]);
 
   const featured = items(featuredReviews);
@@ -63,6 +67,7 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     faqs: items(faqs),
     reviews: featured.length ? featured : items(allReviews),
     reviewSummary: reviewSummary.status === 'fulfilled' ? reviewSummary.value?.data ?? null : null,
-    homeSections: homeSections.status === 'fulfilled' ? homeSections.value?.data ?? [] : []
+    homeSections: homeSections.status === 'fulfilled' ? homeSections.value?.data ?? [] : [],
+    startPoints: items(startPoints).filter((point) => ['start', 'both'].includes(String(point.role ?? '')))
   };
 };
