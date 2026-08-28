@@ -14,6 +14,14 @@
   import type { Tour } from '$lib/types';
 
   export let tour: Tour | null = null;
+  /**
+   * Which form this lead came from. Reporting and the staff-notification
+   * routing both read it, so a category page must not file its enquiries as
+   * tour bookings just because it reuses this form.
+   */
+  export let source = 'website_booking_form';
+  /** Extra context for the specialist — the safari style, say. */
+  export let leadContext: Record<string, unknown> = {};
 
   onMount(() => {
     trackEvent('request_trip_opened', { tour_id: tour?.id, tour_title: tour?.title });
@@ -320,6 +328,10 @@
     if (travel_interests.length) lead_context.travel_interests = travel_interests.join(', ');
     if (accommodation_preference) lead_context.accommodation_preference = accommodation_preference;
     lead_context.attribution = getAttribution();
+    // Caller context first, so a field the form itself captured always wins.
+    for (const [key, value] of Object.entries(leadContext)) {
+      if (lead_context[key] === undefined && value !== undefined && value !== '') lead_context[key] = value;
+    }
 
     submitting = true;
     try {
@@ -335,7 +347,7 @@
         number_of_children: Number(number_of_children) || 0,
         special_requests: special_requests.trim() || null,
         message: message.trim() || null,
-        source: 'website_booking_form',
+        source,
         selected_currency: $currency.selectedCurrency,
         lead_context,
         hp_company

@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { fade } from 'svelte/transition';
   import { ArrowRight, Route, Wallet, CalendarRange, Check, Clock, Compass, Gauge, MapPinned, MessageCircle, Sparkles, Users } from '@lucide/svelte';
   import { page } from '$app/stores';
   import EmptyState from '$lib/components/public/EmptyState.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import HomeTravellerStories from '$lib/components/public/home/HomeTravellerStories.svelte';
-  import EnquiryForm from '$lib/components/public/enquiry/EnquiryForm.svelte';
+  import BookingForm from '$lib/components/public/BookingForm.svelte';
   import { configFor } from '$lib/enquiry/configs';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
@@ -31,8 +32,9 @@
   $: reviewSummary = (data.reviewSummary ?? null) as ReviewSummary | null;
   $: homeSections = (data.homeSections ?? []) as Array<Record<string, any>>;
 
-  // The planning CTA opens the same category enquiry the experiences page
-  // uses, pre-scoped to this style.
+  // The CTAs open the four-step booking form — the same one the tour pages use,
+  // including its WhatsApp consent card. configFor still supplies the heading
+  // and copy for the band below, which is all it is used for now.
   let enquiryOpen = false;
   $: enquiryContext = {
     category: category ? { id: String(category.id), name: category.name, slug: category.slug } : undefined
@@ -341,10 +343,9 @@
   {/if}
 
   <!-- 3. Enquiry band ----------------------------------------------------- -->
-  <!-- The band carries the enquiry form's own title, blurb and submit label,
-       then opens that form. EnquiryForm is a focus-trapping dialog with no
-       inline mode, and a row of fields written here would be a second form to
-       keep in step with the first. -->
+  <!-- The band carries the form's title, blurb and submit label and opens it.
+       Writing a row of fields here instead would be a second form to keep in
+       step with the real one. -->
   <section class="relative overflow-hidden bg-deep-green py-12 text-white md:py-16">
     <div class="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full border border-white/10" aria-hidden="true"></div>
     <div class="container-shell relative">
@@ -643,7 +644,32 @@
     </div>
   </section>
 
-  <EnquiryForm open={enquiryOpen} config={enquiryConfig} context={enquiryContext} on:close={() => (enquiryOpen = false)} />
+  <!--
+    BookingForm is built as an inline panel, so it is wrapped rather than
+    rewritten. Escape and a backdrop click close it; the panel itself stops the
+    click so a stray tap inside does not discard a half-filled form.
+  -->
+  {#if enquiryOpen}
+    <div
+      class="fixed inset-0 z-[60] grid place-items-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm"
+      role="presentation"
+      transition:fade={{ duration: 140 }}
+      on:click={() => (enquiryOpen = false)}
+      on:keydown={(event) => event.key === 'Escape' && (enquiryOpen = false)}
+    >
+      <div class="w-full max-w-[420px]" role="dialog" aria-modal="true" tabindex="-1" aria-label={enquiryConfig.title} on:click|stopPropagation on:keydown|stopPropagation>
+        <BookingForm
+          source="category_enquiry"
+          leadContext={{ safari_style: category.name, safari_style_slug: category.slug }}
+        />
+        <button
+          class="mx-auto mt-3 flex h-10 items-center justify-center rounded-full px-5 text-sm font-semibold text-white/70 transition hover:text-white"
+          type="button"
+          on:click={() => (enquiryOpen = false)}
+        >Close</button>
+      </div>
+    </div>
+  {/if}
 {:else}
   <section class="container-shell py-20 text-center">
     <h1 class="text-2xl font-bold text-heading">Safari style not found</h1>
