@@ -264,7 +264,7 @@
   />
 
   <!-- 1. Hero ------------------------------------------------------------- -->
-  <section class="relative flex min-h-[calc(100svh-var(--header-h,72px))] items-end overflow-hidden bg-deep-green text-white">
+  <section class="relative grid min-h-[calc(100svh-var(--header-h,72px))] items-end overflow-hidden bg-deep-green text-white">
     {#if category.image_url}
       <Img
         record={category}
@@ -282,7 +282,7 @@
       <div class="pointer-events-none absolute inset-0 opacity-[0.08]" style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1.6px); background-size: 28px 28px;"></div>
     {/if}
 
-    <div class="container-shell relative w-full py-14 md:py-20">
+    <div class="container-shell relative py-14 md:py-20">
       <nav class="mb-7 flex items-center gap-2 text-sm font-medium text-white/70">
         <a class="transition hover:text-white" href="/">Home</a>
         <span class="text-white/35">/</span>
