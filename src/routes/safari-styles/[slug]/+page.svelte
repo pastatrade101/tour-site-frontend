@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { ArrowRight, Binoculars, Check, Compass, Gauge, MapPinned, MessageCircle, PlaneTakeoff, Sparkles, Users } from '@lucide/svelte';
+  import { ArrowRight, Route, Wallet, CalendarRange, Check, Clock, Compass, Gauge, MapPinned, MessageCircle, Sparkles, Users } from '@lucide/svelte';
   import { page } from '$app/stores';
   import EmptyState from '$lib/components/public/EmptyState.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
-  import HomeAdvisorNote from '$lib/components/public/home/HomeAdvisorNote.svelte';
   import HomeTravellerStories from '$lib/components/public/home/HomeTravellerStories.svelte';
   import EnquiryForm from '$lib/components/public/enquiry/EnquiryForm.svelte';
   import { configFor } from '$lib/enquiry/configs';
@@ -16,7 +15,7 @@
   import TourCardRich from '$lib/components/public/TourCardRich.svelte';
   import { fadeUpOnScroll, revealHeading, staggeredCardReveal } from '$lib/animations';
   import { imgUrl, srcsetFor, variantSrc, variantsOf } from '$lib/img';
-  import { toMetaText } from '$lib/richText';
+  import { toMetaText, toPlainText } from '$lib/richText';
   import { breadcrumbLd, faqLd } from '$lib/seo';
   import Img from '$lib/components/public/Img.svelte';
   import type { FAQ, Review, ReviewSummary, Tour, TourCategory } from '$lib/types';
@@ -30,20 +29,7 @@
   $: faqs = (data.faqs ?? []) as FAQ[];
   $: reviews = (data.reviews ?? []) as Review[];
   $: reviewSummary = (data.reviewSummary ?? null) as ReviewSummary | null;
-
-  // Site-wide editorial sections (advisor's note) come from the homepage CMS
-  // record — same source, same admin control, same fallback copy as the
-  // homepage itself.
-  $: sections = Object.fromEntries(
-    ((data.homeSections ?? []) as Record<string, unknown>[]).map((section) => [String(section.section_key ?? ''), section])
-  ) as Record<string, Record<string, unknown> | undefined>;
-  $: advisorSection = sections.advisor_note;
-  $: advisorExtra = (advisorSection?.extra_data ?? {}) as Record<string, unknown>;
-  $: advisorColumns = Array.isArray(advisorExtra.columns) ? (advisorExtra.columns as { title: string; items: string[] }[]) : [];
-  const sectionText = (section: Record<string, unknown> | undefined, field: string, fallback: string) => {
-    const value = section?.[field];
-    return typeof value === 'string' && value.trim() ? value : fallback;
-  };
+  $: homeSections = (data.homeSections ?? []) as Array<Record<string, any>>;
 
   // The planning CTA opens the same category enquiry the experiences page
   // uses, pre-scoped to this style.
@@ -64,6 +50,12 @@
   $: heroPreloadHref =
     variantSrc(heroVariants, 1800, heroVariants?.avif ? 'avif' : 'webp') || imgUrl(category?.image_url, 1600, 72);
 
+  // Almost no style carries a short_description, so the hero standfirst falls
+  // back to the opening paragraph of the description rather than leaving the
+  // headline stranded — never to invented copy.
+  $: standfirst =
+    category?.short_description?.trim() || toMetaText(toPlainText(category?.description).split('\n\n')[0] ?? '', 210);
+
   const FITNESS_LABELS: Record<string, string> = {
     easy: 'Easy',
     moderate: 'Moderate',
@@ -75,7 +67,91 @@
   // category is re-saved with the new form.
   $: fitnessText = (category?.fitness_level && FITNESS_LABELS[category.fitness_level]) || category?.fitness || '';
 
-  $: benefits = (category?.highlights ?? []).filter((item) => String(item).trim()).slice(0, 4);
+  // Highlights are authored in the rich-text editor, so they are flattened for
+  // the hero pills (a pill cannot hold a paragraph) but kept as markup in the
+  // list further down.
+  $: highlights = (category?.highlights ?? []).filter((item) => toPlainText(item).trim());
+  $: heroPills = highlights.map((item) => toPlainText(item).replace(/\s+/g, ' ').trim()).slice(0, 4);
+
+  const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  /**
+   * Selected months collapse into seasons the way a travel guide writes them:
+   * Jun, Jul, Aug, Sep reads "Jun – Sep", and a run crossing the year end
+   * merges, so Nov, Dec, Jan is one season rather than three loose months.
+   */
+  $: bestMonthsLabel = (() => {
+    const months = [...new Set((category?.best_months ?? []).map(Number).filter((month) => month >= 1 && month <= 12))].sort(
+      (a, b) => a - b
+    );
+    if (!months.length) return '';
+    if (months.length === 12) return 'All year round';
+
+    const runs: Array<[number, number]> = [];
+    for (const month of months) {
+      const last = runs[runs.length - 1];
+      if (last && month === last[1] + 1) last[1] = month;
+      else runs.push([month, month]);
+    }
+    if (runs.length > 1 && runs[0][0] === 1 && runs[runs.length - 1][1] === 12) {
+      const wrap = runs.pop() as [number, number];
+      runs[0][0] = wrap[0];
+    }
+    return runs
+      .map(([from, to]) => (from === to ? MONTH_SHORT[from - 1] : `${MONTH_SHORT[from - 1]} – ${MONTH_SHORT[to - 1]}`))
+      .join(' · ');
+  })();
+
+  const dayCount = (value: number) => `${value} day${value === 1 ? '' : 's'}`;
+  $: tripLengthLabel = (() => {
+    const min = Number(category?.min_days ?? 0);
+    const max = Number(category?.max_days ?? 0);
+    if (min > 0 && max > 0) return min === max ? dayCount(min) : `${min}–${max} days`;
+    if (min > 0) return `From ${dayCount(min)}`;
+    if (max > 0) return `Up to ${dayCount(max)}`;
+    return '';
+  })();
+
+  // Nothing on a category records which parks it visits, so the list is read
+  // off the published tours themselves — it can only ever name places this
+  // style genuinely goes.
+  $: styleDestinations = [
+    ...new Map(tours.flatMap((tour) => getTourDestinations(tour)).map((destination) => [destination.slug, destination.name])).values()
+  ];
+  $: destinationsLabel = styleDestinations.length
+    ? styleDestinations.slice(0, 6).join(' · ') +
+      (styleDestinations.length > 6 ? ` +${styleDestinations.length - 6} more` : '')
+    : '';
+
+  // Each fact drops out on its own; only one style of fourteen has any of the
+  // first three, so the whole row has to survive being empty.
+  // Authored per style in the Categories admin. Absent keys drop out below, so a
+  // style nobody has written notes for shows the facts it does have rather than
+  // an empty heading.
+  $: planningNotes = ((category as Record<string, any> | null)?.planning_notes ?? {}) as { costs?: string | null; route?: string | null };
+
+  $: planningFacts = [
+    { icon: CalendarRange, label: 'Best months', value: bestMonthsLabel },
+    { icon: Clock, label: 'Trip length', value: tripLengthLabel },
+    { icon: Gauge, label: 'Fitness', value: fitnessText },
+    { icon: MapPinned, label: 'Parks and destinations', value: destinationsLabel },
+    { icon: Wallet, label: 'Travel costs', value: (planningNotes.costs ?? '').trim() },
+    { icon: Route, label: 'Route planning', value: (planningNotes.route ?? '').trim() }
+  ].filter((fact) => fact.value);
+
+  /**
+   * The four steps, from the homepage CMS rather than this category.
+   *
+   * The process is the same whichever style you are reading, so it is authored
+   * once as a homepage section — retyping it per style would only let fourteen
+   * copies drift apart.
+   */
+  $: processSection = homeSections.find((section) => section.section_key === 'planning_process');
+  $: processSteps = Array.isArray(processSection?.extra_data?.steps)
+    ? (processSection.extra_data.steps as Array<Record<string, unknown>>)
+        .map((step) => ({ title: String(step?.title ?? '').trim(), body: String(step?.body ?? '').trim() }))
+        .filter((step) => step.title)
+    : [];
 
   /**
    * Tour filters: number of days, comfort level, price. Every option is built
@@ -136,24 +212,6 @@
     return daysOk && tierOk && priceOk;
   });
   $: filtersActive = activeDays !== 'all' || activeTier !== 'all' || activePrice !== 'all';
-  const benefitIcons = [PlaneTakeoff, Gauge, Users, Sparkles];
-
-  // The flow is shown only when a published matching tour supplies every fact.
-  // This prevents generic marketing copy from being presented as itinerary data.
-  $: flowTour = tours.find((tour) => {
-    const destinations = getTourDestinations(tour).map((item) => item.name).filter(Boolean);
-    return Boolean(tour.start_location && tour.end_location && destinations.length);
-  });
-  $: flowDestinations = flowTour
-    ? [...new Set(getTourDestinations(flowTour).map((item) => item.name).filter(Boolean))].join(' + ')
-    : '';
-  $: journeySteps = flowTour && flowDestinations
-    ? [
-        { label: 'Start', value: flowTour.start_location as string, icon: PlaneTakeoff },
-        { label: 'Safari experience', value: flowDestinations, icon: Binoculars },
-        { label: 'Finish', value: flowTour.end_location as string, icon: MapPinned }
-      ]
-    : [];
 
   $: waDigits = (settingText($publicSettings, 'whatsapp_number') || settingText($publicSettings, 'contact_phone')).replace(/[^0-9]/g, '');
   $: waHref = waDigits
@@ -186,6 +244,7 @@
     ])}
   />
 
+  <!-- 1. Hero ------------------------------------------------------------- -->
   <section class="relative overflow-hidden bg-deep-green text-white">
     {#if category.image_url}
       <Img
@@ -213,127 +272,126 @@
         <span class="text-white">{category.name}</span>
       </nav>
 
-      <div class="grid items-end gap-8 lg:grid-cols-[1fr_360px]">
-        <div>
-          <p class="inline-flex items-center gap-2 rounded-[8px] border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-goldfinch-gold backdrop-blur">
-            <Compass size={13} />
-            Safari Style
-          </p>
-          <h1 class="mt-5 max-w-4xl text-4xl font-extrabold leading-[1.05] tracking-normal md:text-6xl" use:revealHeading>
-            {category.name}
-          </h1>
-          {#if category.description}
-            <RichText value={category.description} className="rich-on-dark mt-5 max-w-2xl text-base font-medium leading-8 text-white/84 md:text-lg" />
-          {/if}
-          <div class="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <button class="inline-flex h-12 items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-6 text-sm font-bold text-heading shadow-lg shadow-black/10 transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white" type="button" on:click={() => (enquiryOpen = true)}>
-              <Sparkles size={17} />
-              Plan this style
-            </button>
-            <a class="inline-flex h-12 items-center justify-center gap-2 rounded-[8px] border border-white/35 bg-white/8 px-6 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15" href={`/tours?category=${category.slug}`}>
-              See matching tours <ArrowRight size={17} />
-            </a>
-          </div>
-        </div>
+      <p class="inline-flex items-center gap-2 rounded-[8px] border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-goldfinch-gold backdrop-blur">
+        <Compass size={13} />
+        Safari Style
+      </p>
+      <h1 class="mt-5 max-w-4xl font-serif text-4xl font-semibold leading-[1.05] tracking-normal md:text-[54px]" use:revealHeading>
+        {category.name}
+      </h1>
+      {#if standfirst}
+        <p class="mt-5 max-w-2xl text-base font-medium leading-8 text-white/84 md:text-lg">{standfirst}</p>
+      {/if}
 
-        <div class="rounded-[8px] border border-white/15 bg-white/10 p-5 backdrop-blur" use:fadeUpOnScroll={{ y: 16 }}>
-          <p class="text-sm font-bold text-white">Is this safari for you?</p>
-          <div class="mt-4 grid gap-3">
-            {#if category.who_its_for}
-              <div class="rounded-[8px] bg-white/10 p-3">
-                <p class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-goldfinch-gold">
-                  <Users size={13} /> Who it's for
-                </p>
-                <p class="mt-2 whitespace-pre-line text-sm leading-6 text-white/78">{category.who_its_for}</p>
-              </div>
-            {/if}
-            {#if fitnessText}
-              <div class="flex items-center gap-3 rounded-[8px] bg-white/10 p-3">
-                <Gauge size={18} class="shrink-0 text-goldfinch-gold" />
-                <p class="text-sm font-semibold text-white">{fitnessText}</p>
-              </div>
-            {/if}
-            {#if category.highlights?.length}
-              <div class="grid gap-2 rounded-[8px] bg-white/10 p-3">
-                <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-goldfinch-gold">What you get</p>
-                {#each category.highlights.slice(0, 4) as highlight}
-                  <div class="flex items-start gap-2 text-sm leading-6 text-white/78">
-                    <Check size={14} strokeWidth={2.8} class="mt-1 shrink-0 text-goldfinch-gold" />
-                    <RichText value={highlight} className="min-w-0 text-sm leading-6 text-white/78" />
-                  </div>
-                {/each}
-              </div>
-            {/if}
-          </div>
+      <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <button
+          class="inline-flex h-12 items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-6 text-sm font-bold text-heading shadow-lg shadow-black/10 transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          type="button"
+          on:click={() => (enquiryOpen = true)}
+        >
+          <Sparkles size={17} />
+          Plan this trip
+        </button>
+        <a class="inline-flex h-12 items-center justify-center gap-2 rounded-[8px] border border-white/35 bg-white/10 px-6 text-sm font-bold text-white backdrop-blur transition hover:bg-white/20" href="#trip-ideas">
+          See trip ideas <ArrowRight size={17} />
+        </a>
+      </div>
+    </div>
+
+    <!-- Pills sit on the hero's own footing so they read as part of it; they
+         are the style's highlights verbatim, so no highlights means no rail. -->
+    {#if heroPills.length}
+      <div class="relative border-t border-white/12 bg-black/20 backdrop-blur">
+        <div class="container-shell flex flex-wrap gap-2.5 py-4">
+          {#each heroPills as pill}
+            <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[13px] font-semibold leading-5 text-white/85">
+              <Check size={13} strokeWidth={3} class="shrink-0 text-goldfinch-gold" />
+              {pill}
+            </span>
+          {/each}
         </div>
       </div>
+    {/if}
+  </section>
+
+  <!-- 2. Intro ------------------------------------------------------------ -->
+  {#if toPlainText(category.description).trim()}
+    <section class="bg-canvas py-14 md:py-20">
+      <div class="container-shell grid items-start gap-10 lg:grid-cols-2 lg:gap-14">
+        <div use:fadeUpOnScroll={{ y: 14 }}>
+          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">The style</p>
+          <h2 class="mt-3 font-serif text-3xl font-semibold leading-tight text-heading md:text-[38px]">About {category.name}</h2>
+          <RichText value={category.description} className="mt-5 text-[15px] leading-relaxed text-ink/70 md:text-[16px]" />
+        </div>
+
+        {#if category.image_url}
+          <div class="overflow-hidden rounded-[14px] border border-ink/10 shadow-[0_16px_44px_rgba(57,61,50,0.10)]" use:fadeUpOnScroll={{ y: 18 }}>
+            <Img
+              record={category}
+              fields={['image_url']}
+              alt={category.name}
+              width={1000}
+              sizes="(max-width: 1024px) 92vw, 46vw"
+              className="aspect-[4/3] h-full w-full object-cover"
+            />
+          </div>
+        {/if}
+      </div>
+    </section>
+  {/if}
+
+  <!-- 3. Enquiry band ----------------------------------------------------- -->
+  <!-- The band carries the enquiry form's own title, blurb and submit label,
+       then opens that form. EnquiryForm is a focus-trapping dialog with no
+       inline mode, and a row of fields written here would be a second form to
+       keep in step with the first. -->
+  <section class="relative overflow-hidden bg-deep-green py-12 text-white md:py-16">
+    <div class="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full border border-white/10" aria-hidden="true"></div>
+    <div class="container-shell relative">
+      <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div class="max-w-2xl">
+          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Start planning</p>
+          <h2 class="mt-3 font-serif text-2xl font-semibold leading-tight md:text-[32px]">{enquiryConfig.title}</h2>
+          {#if enquiryConfig.description}
+            <p class="mt-3 text-[15px] leading-7 text-white/70">{enquiryConfig.description}</p>
+          {/if}
+        </div>
+
+        <div class="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:shrink-0">
+          <button
+            class="inline-flex h-12 items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-6 text-sm font-bold text-heading transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            type="button"
+            on:click={() => (enquiryOpen = true)}
+          >
+            <Sparkles size={17} />
+            {enquiryConfig.submitLabel}
+          </button>
+          {#if waHref}
+            <a
+              class="inline-flex h-12 items-center justify-center gap-2 rounded-[8px] border border-white/25 bg-white/10 px-6 text-sm font-bold text-white transition hover:bg-white/20"
+              href={waHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              on:click={() => trackEvent('whatsapp_click', { cta_location: 'safari_style_band', category_id: category.id })}
+            >
+              <MessageCircle size={17} /> WhatsApp
+            </a>
+          {/if}
+        </div>
+      </div>
+      {#if enquiryConfig.submitNote}
+        <p class="mt-5 text-[12.5px] leading-5 text-white/50">{enquiryConfig.submitNote}</p>
+      {/if}
     </div>
   </section>
 
-  {#if benefits.length}
-    <section class="border-b border-ink/[0.07] bg-[#fbfaf6] py-12 md:py-16">
-      <div class="container-shell">
-        <div class="grid gap-8 lg:grid-cols-[0.7fr_1.3fr] lg:items-start">
-          <div class="max-w-md" use:fadeUpOnScroll={{ y: 14 }}>
-            <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">Why this style</p>
-            <h2 class="mt-3 font-serif text-3xl font-semibold leading-tight text-heading md:text-[38px]">Why choose {category.name}?</h2>
-            {#if category.who_its_for}
-              <p class="mt-4 whitespace-pre-line text-[15px] leading-7 text-ink/65">{category.who_its_for}</p>
-            {/if}
-          </div>
-
-          <div class="grid gap-3 sm:grid-cols-2" use:staggeredCardReveal={{ y: 14, stagger: 0.05 }}>
-            {#each benefits as benefit, index}
-              <article class="group flex min-w-0 gap-4 rounded-[12px] border border-ink/[0.09] bg-white p-5 shadow-[0_10px_28px_rgba(57,61,50,0.06)] transition duration-300 hover:-translate-y-0.5 hover:border-goldfinch-gold/40 hover:shadow-[0_16px_36px_rgba(57,61,50,0.1)]">
-                <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-deep-green text-goldfinch-gold">
-                  <svelte:component this={benefitIcons[index]} size={18} strokeWidth={2.2} />
-                </span>
-                <RichText value={benefit} className="min-w-0 pt-1 text-[14.5px] font-semibold leading-6 text-heading" />
-              </article>
-            {/each}
-          </div>
-        </div>
-      </div>
-    </section>
-  {/if}
-
-  {#if journeySteps.length}
-    <section class="relative flex min-h-[330px] items-center overflow-hidden bg-[linear-gradient(180deg,#f5f1e9_0%,#fbfaf6_48%,#f5f1e9_100%)] py-16 md:min-h-[390px] md:py-20">
-      <div class="pointer-events-none absolute left-[8%] top-1/2 h-52 w-52 -translate-y-1/2 rounded-full bg-goldfinch-gold/[0.08] blur-3xl" aria-hidden="true"></div>
-      <div class="container-shell relative">
-        <div class="mx-auto max-w-6xl overflow-hidden rounded-[16px] border border-goldfinch-gold/30 bg-deep-green text-white shadow-[0_24px_70px_rgba(31,77,58,0.22)] ring-1 ring-white/5" use:fadeUpOnScroll={{ y: 16 }}>
-          <div class="border-b border-white/10 px-5 py-4 md:px-7">
-            <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">How it works</p>
-            <p class="mt-1 text-sm text-white/65">A published route from {flowTour?.title}</p>
-          </div>
-          <div class="grid md:grid-cols-3">
-            {#each journeySteps as step, index}
-              <div class="relative flex min-w-0 items-center gap-4 border-white/10 px-5 py-5 max-md:border-b last:max-md:border-b-0 md:border-r md:px-7 md:py-6 md:last:border-r-0">
-                <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/15 bg-white/10 text-goldfinch-gold">
-                  <svelte:component this={step.icon} size={19} strokeWidth={2.2} />
-                </span>
-                <div class="min-w-0">
-                  <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-white/50">{step.label}</p>
-                  <p class="mt-1 text-[15px] font-bold leading-snug text-white">{step.value}</p>
-                </div>
-                {#if index < journeySteps.length - 1}
-                  <ArrowRight size={17} class="absolute -right-2.5 top-1/2 z-10 hidden -translate-y-1/2 text-goldfinch-gold md:block" />
-                {/if}
-              </div>
-            {/each}
-          </div>
-        </div>
-      </div>
-    </section>
-  {/if}
-
-  <section class="relative overflow-hidden bg-canvas py-14 md:py-20">
-    <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-goldfinch-gold/30 to-transparent" aria-hidden="true"></div>
+  <!-- 4. Trip ideas ------------------------------------------------------- -->
+  <section id="trip-ideas" class="scroll-mt-24 border-t border-ink/[0.06] bg-canvas py-14 md:py-20">
     <div class="container-shell">
       <div class="flex flex-wrap items-end justify-between gap-4">
         <div class="max-w-2xl">
-          <p class="text-sm font-bold uppercase tracking-[0.14em] text-goldfinch-gold">Matching tours</p>
-          <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[38px]">{category.name} trips</h2>
+          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">Trip ideas</p>
+          <h2 class="mt-3 font-serif text-3xl font-semibold leading-tight text-heading md:text-[38px]">{category.name} trips</h2>
         </div>
         <a class="inline-flex h-11 items-center gap-2 rounded-[8px] border border-ink/10 bg-surface px-5 text-sm font-bold text-forest shadow-sm transition hover:border-forest/25 hover:text-heading" href={`/tours?category=${category.slug}`}>
           View all tours <ArrowRight size={15} />
@@ -400,28 +458,105 @@
     </div>
   </section>
 
-  <!-- Advisor's note — the site-wide editorial planning copy, managed on the
-       homepage CMS record and reused here so it never forks. -->
-  {#if advisorSection?.is_active !== false}
-    <HomeAdvisorNote
-      eyebrow={typeof advisorExtra.eyebrow === 'string' && advisorExtra.eyebrow.trim() ? advisorExtra.eyebrow : "An Advisor's Note"}
-      title={sectionText(advisorSection, 'title', 'The Trip Is Won or Lost in the Planning Details')}
-      body={sectionText(advisorSection, 'subtitle', 'Most travel mistakes happen before arrival. The wrong route, too many one-night stops, poor lodge locations or badly timed transfers can make even a beautiful trip feel tiring.')}
-      {...advisorColumns.length ? { columns: advisorColumns } : {}}
-      {...typeof advisorExtra.footnote === 'string' && advisorExtra.footnote ? { footnote: advisorExtra.footnote } : {}}
-    />
+  <!-- 5. Planning facts --------------------------------------------------- -->
+  {#if planningFacts.length}
+    <section class="border-t border-ink/[0.06] bg-sand/30 py-14 md:py-20">
+      <div class="container-shell">
+        <div class="max-w-2xl" use:fadeUpOnScroll={{ y: 14 }}>
+          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">Planning</p>
+          <h2 class="mt-3 font-serif text-3xl font-semibold leading-tight text-heading md:text-[38px]">Planning facts</h2>
+        </div>
+        <div class="mt-8 flex flex-wrap gap-3" use:staggeredCardReveal={{ y: 14, stagger: 0.05 }}>
+          {#each planningFacts as fact}
+            <div class="min-w-[220px] flex-1 rounded-[12px] border border-ink/10 bg-surface p-5 shadow-[0_10px_28px_rgba(57,61,50,0.05)]">
+              <p class="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-ink/45">
+                <svelte:component this={fact.icon} size={14} strokeWidth={2.2} class="text-goldfinch-gold" />
+                {fact.label}
+              </p>
+              <p class="mt-2 text-[15px] font-bold leading-6 text-heading">{fact.value}</p>
+            </div>
+          {/each}
+        </div>
+      </div>
+    </section>
   {/if}
 
-  <!-- Traveller stories — real approved reviews only; no reviews, no section. -->
+    <!-- 5b. How planning works — one homepage section, shown on every style. -->
+    {#if processSteps.length}
+      <section class="border-t border-ink/[0.06] bg-canvas py-14 md:py-20">
+        <div class="container-shell">
+          <div class="max-w-2xl" use:fadeUpOnScroll={{ y: 14 }}>
+            {#if processSection?.extra_data?.eyebrow}
+              <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">{processSection.extra_data.eyebrow}</p>
+            {/if}
+            <h2 class="mt-3 font-serif text-3xl font-semibold leading-tight text-heading md:text-[38px]" use:revealHeading>
+              {processSection?.title || 'How planning works'}
+            </h2>
+            {#if processSection?.subtitle}
+              <p class="mt-3 text-[15px] leading-7 text-ink/65">{processSection.subtitle}</p>
+            {/if}
+          </div>
+          <ol class="mt-9 grid gap-6 sm:grid-cols-2 lg:grid-cols-4" use:staggeredCardReveal={{ y: 14, stagger: 0.05 }}>
+            {#each processSteps as step, index}
+              <li class="border-t-2 border-goldfinch-gold/45 pt-4">
+                <p class="font-serif text-2xl font-semibold text-goldfinch-gold">{String(index + 1).padStart(2, '0')}</p>
+                <p class="mt-2 font-bold text-heading">{step.title}</p>
+                {#if step.body}<p class="mt-1.5 text-sm leading-6 text-ink/65">{step.body}</p>{/if}
+              </li>
+            {/each}
+          </ol>
+        </div>
+      </section>
+    {/if}
+
+  <!-- 6. What we help you get right --------------------------------------- -->
+  {#if category.who_its_for || highlights.length}
+    <section class="border-t border-ink/[0.06] bg-surface py-14 md:py-20">
+      <div class="container-shell">
+        <div class="max-w-2xl" use:fadeUpOnScroll={{ y: 14 }}>
+          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">Why this style</p>
+          <h2 class="mt-3 font-serif text-3xl font-semibold leading-tight text-heading md:text-[38px]">What we help you get right</h2>
+        </div>
+
+        <div class="mt-9 grid gap-8 lg:grid-cols-2 lg:gap-12">
+          {#if category.who_its_for}
+            <div use:fadeUpOnScroll={{ y: 14 }}>
+              <p class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-forest">
+                <Users size={14} /> Who it's for
+              </p>
+              <p class="mt-4 whitespace-pre-line text-[15px] leading-7 text-ink/70">{category.who_its_for}</p>
+            </div>
+          {/if}
+
+          {#if highlights.length}
+            <div use:fadeUpOnScroll={{ y: 14 }}>
+              <p class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-forest">
+                <Sparkles size={14} /> What you get
+              </p>
+              <ul class="mt-4 grid gap-3">
+                {#each highlights as highlight}
+                  <li class="flex min-w-0 items-start gap-3 rounded-[10px] border border-ink/[0.08] bg-canvas p-4">
+                    <Check size={15} strokeWidth={2.8} class="mt-0.5 shrink-0 text-goldfinch-gold" />
+                    <RichText value={highlight} className="min-w-0 text-[14.5px] font-semibold leading-6 text-heading" />
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          {/if}
+        </div>
+      </div>
+    </section>
+  {/if}
+
+  <!-- 7. Traveller stories — real approved reviews only; no reviews, no section. -->
   {#if reviews.length}
     <HomeTravellerStories {reviews} summary={reviewSummary} />
   {/if}
 
-  <!-- FAQs — real CMS records; hidden entirely when none exist. -->
+  <!-- 8. FAQs — real CMS records; hidden entirely when none exist. -->
   {#if faqs.length}
     <JsonLd data={faqLd(faqs.map((faq) => ({ q: faq.question, a: faq.answer })))} />
-    <section class="relative overflow-hidden bg-surface py-14 md:py-20">
-      <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-forest/20 to-transparent" aria-hidden="true"></div>
+    <section class="relative overflow-hidden border-t border-ink/10 bg-sand/25 py-14 md:py-20">
       <div class="container-shell grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
         <div>
           <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">Good to know</p>
@@ -438,10 +573,10 @@
     </section>
   {/if}
 
-  <!-- Other safari styles — real published categories; captions only where a
+  <!-- 9. Other safari styles — real published categories; captions only where a
        short description exists. -->
   {#if otherStyles.length}
-    <section class="bg-canvas py-14 md:py-20">
+    <section class="border-t border-ink/[0.06] bg-canvas py-14 md:py-20">
       <div class="container-shell">
         <div class="max-w-2xl">
           <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">Choose your safari style</p>
@@ -485,6 +620,7 @@
     </section>
   {/if}
 
+  <!-- 10. Final CTA -------------------------------------------------------- -->
   <section class="relative overflow-hidden bg-deep-green py-14 text-white md:py-20">
     <div class="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full border border-white/10"></div>
     <div class="pointer-events-none absolute -bottom-40 left-10 h-80 w-80 rounded-full bg-goldfinch-gold/[0.07] blur-3xl"></div>
