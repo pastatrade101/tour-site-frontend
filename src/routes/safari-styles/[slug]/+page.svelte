@@ -151,9 +151,9 @@
   $: planningNotesBlocks = [
     // A list of names reads as a list, not as one sentence held together by
     // interpuncts — which is what six parks looked like in a card.
-    { icon: MapPinned, label: 'Parks and destinations', kind: 'list' as const, items: styleDestinations, value: destinationsLabel },
-    { icon: Wallet, label: 'Travel costs', kind: 'rich' as const, items: [], value: (planningNotes.costs ?? '').trim() },
-    { icon: Route, label: 'Route planning', kind: 'rich' as const, items: [], value: (planningNotes.route ?? '').trim() }
+    { icon: MapPinned, label: 'Parks and destinations', accent: 'forest' as const, kind: 'list' as const, items: styleDestinations, value: destinationsLabel },
+    { icon: Wallet, label: 'Travel costs', accent: 'clay' as const, kind: 'rich' as const, items: [], value: (planningNotes.costs ?? '').trim() },
+    { icon: Route, label: 'Route planning', accent: 'gold' as const, kind: 'rich' as const, items: [], value: (planningNotes.route ?? '').trim() }
   ].filter((block) => block.value);
 
   $: planningFacts = [...quickFacts, ...planningNotesBlocks];
@@ -465,14 +465,16 @@
           <h2 class="mt-3 font-serif text-3xl font-semibold leading-tight text-heading md:text-[38px]">Planning facts</h2>
         </div>
         {#if quickFacts.length}
-          <dl class="mt-8 grid gap-px overflow-hidden rounded-[12px] border border-ink/10 bg-ink/10 sm:grid-cols-3">
+          <dl class="mt-8 grid gap-px overflow-hidden rounded-[12px] border border-ink/10 bg-ink/10 shadow-[0_10px_28px_rgba(57,61,50,0.05)] sm:grid-cols-3">
             {#each quickFacts as fact}
-              <div class="bg-surface px-5 py-4">
-                <dt class="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-ink/45">
-                  <svelte:component this={fact.icon} size={14} strokeWidth={2.2} class="text-goldfinch-gold" />
-                  {fact.label}
-                </dt>
-                <dd class="mt-1.5 text-[15px] font-bold leading-6 text-heading">{fact.value}</dd>
+              <div class="flex items-center gap-3 bg-surface px-5 py-4">
+                <span class="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-goldfinch-gold/15 text-goldfinch-gold">
+                  <svelte:component this={fact.icon} size={16} strokeWidth={2.2} />
+                </span>
+                <span class="min-w-0">
+                  <dt class="text-[10.5px] font-bold uppercase tracking-[0.14em] text-clay">{fact.label}</dt>
+                  <dd class="mt-0.5 text-[15px] font-bold leading-6 text-heading">{fact.value}</dd>
+                </span>
               </div>
             {/each}
           </dl>
@@ -481,9 +483,26 @@
         {#if planningNotesBlocks.length}
           <div class="mt-5 grid gap-5 sm:grid-cols-2 {planningNotesBlocks.length === 3 ? 'lg:grid-cols-3' : ''}" use:staggeredCardReveal={{ y: 14, stagger: 0.05 }}>
             {#each planningNotesBlocks as block}
-              <div class="rounded-[12px] border border-ink/10 bg-surface p-6 shadow-[0_10px_28px_rgba(57,61,50,0.05)]">
-                <p class="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-ink/45">
-                  <svelte:component this={block.icon} size={14} strokeWidth={2.2} class="text-goldfinch-gold" />
+              <div
+                class="overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_10px_28px_rgba(57,61,50,0.05)] transition hover:shadow-[0_16px_38px_rgba(57,61,50,0.09)]"
+              >
+                <!-- A rule in the block's own accent, so three cards read as
+                     three subjects rather than three identical boxes. -->
+                <span
+                  class="block h-1 w-full {block.accent === 'forest' ? 'bg-forest' : block.accent === 'clay' ? 'bg-clay' : 'bg-goldfinch-gold'}"
+                  aria-hidden="true"
+                ></span>
+                <div class="p-6">
+                <p class="inline-flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-clay">
+                  <span
+                    class="grid h-8 w-8 place-items-center rounded-lg {block.accent === 'forest'
+                      ? 'bg-forest/10 text-forest'
+                      : block.accent === 'clay'
+                        ? 'bg-clay/10 text-clay'
+                        : 'bg-goldfinch-gold/20 text-goldfinch-gold'}"
+                  >
+                    <svelte:component this={block.icon} size={15} strokeWidth={2.2} />
+                  </span>
                   {block.label}
                 </p>
                 {#if block.kind === 'list'}
@@ -503,6 +522,7 @@
                     <RichText value={block.value} />
                   </div>
                 {/if}
+                </div>
               </div>
             {/each}
           </div>
