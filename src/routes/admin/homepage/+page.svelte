@@ -125,6 +125,27 @@
       }
     },
     {
+      key: 'planning_process',
+      label: 'Planning process (4 steps)',
+      surface: 'public',
+      description:
+        'The four steps from first enquiry to arrival, shown on every safari-style page. Extra JSON: `steps` is a list of {title, body}; four reads best. Edited once here rather than per style, because the process does not change with the trip.',
+      fields: ['title', 'subtitle', 'extra: eyebrow, steps'],
+      preset: {
+        title: 'From First Note to Final Sundowner',
+        subtitle: 'How planning works with us, from the first message to the day you fly home.',
+        extra_data: {
+          eyebrow: 'How we work',
+          steps: [
+            { title: 'Tell us your travel style', body: 'Your dates, who is travelling and what you want out of the trip.' },
+            { title: 'We shape the right route', body: 'A specialist puts together a route that fits your time, not a fixed package.' },
+            { title: 'We refine lodges, flights and pacing', body: 'You see the detail and we adjust until it reads like your trip.' },
+            { title: 'Our team supports you on the ground', body: 'One point of contact before you travel and while you are there.' }
+          ]
+        }
+      }
+    },
+    {
       key: 'advisor_note',
       label: "Advisor's note",
       surface: 'public',

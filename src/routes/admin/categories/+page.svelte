@@ -36,6 +36,7 @@
     min_days?: number | null;
     max_days?: number | null;
     best_months?: number[] | null;
+    planning_notes?: Record<string, unknown> | null;
     highlights?: string[] | null;
     icon_url?: string | null;
     image_url?: string | null;
@@ -70,6 +71,8 @@
     sort_order: string;
     status: 'draft' | 'published' | 'archived';
     who_its_for: string;
+    planning_costs: string;
+    planning_route: string;
   };
 
   type VisualType = 'none' | 'icon' | 'lottie';
@@ -102,7 +105,9 @@
     slug: '',
     sort_order: '0',
     status: 'draft',
-    who_its_for: ''
+    who_its_for: '',
+    planning_costs: '',
+    planning_route: ''
   });
 
   const statusOptions = [
@@ -258,7 +263,9 @@
       slug: category.slug,
       sort_order: String(category.sort_order ?? 0),
       status: category.status ?? 'draft',
-      who_its_for: category.who_its_for ?? ''
+      who_its_for: category.who_its_for ?? '',
+      planning_costs: String((category.planning_notes as Record<string, unknown> | null)?.costs ?? ''),
+      planning_route: String((category.planning_notes as Record<string, unknown> | null)?.route ?? '')
     };
     visualType = category.lottie_url ? 'lottie' : category.icon_url ? 'icon' : 'none';
     lastVisualType = visualType;
@@ -331,7 +338,11 @@
     slug: form.slug.trim(),
     sort_order: Number(form.sort_order || 0),
     status: form.status,
-    who_its_for: form.who_its_for || null
+    who_its_for: form.who_its_for || null,
+    planning_notes:
+      form.planning_costs.trim() || form.planning_route.trim()
+        ? { costs: form.planning_costs.trim() || null, route: form.planning_route.trim() || null }
+        : null
   });
 
   const saveCategory = async () => {
@@ -521,6 +532,27 @@
           <AdminRichText label="Description" name="description" bind:value={form.description} rows={7} placeholder="Full category introduction for the public experience page." />
 
           <AdminTextArea label="Who it's for" name="who_its_for" bind:value={form.who_its_for} rows={2} placeholder="Ideal for first-time safari travellers, couples, families and wildlife enthusiasts." />
+
+          <!--
+            The two planning facts that have no home of their own. Best months,
+            trip length and fitness already have fields below; the parks a style
+            visits are read from its published tours, so they cannot go stale.
+          -->
+          <AdminTextArea
+            label="Travel costs — how to plan"
+            name="planning_costs"
+            bind:value={form.planning_costs}
+            rows={3}
+            placeholder="What a trip of this style typically costs and what drives the price — park fees, lodge standard, season, group size."
+          />
+          <AdminTextArea
+            label="Route planning — how to plan"
+            name="planning_route"
+            bind:value={form.planning_route}
+            rows={3}
+            placeholder="How the route is usually put together for this style — where to start, how long to stay, what to leave out."
+          />
+          <p class="-mt-1 text-xs text-ink/55">Both optional. Each appears as its own block on the style page; leave one blank and it is hidden.</p>
         </section>
 
         <!-- ── 2 · Travel information ────────────────────────────────────── -->
