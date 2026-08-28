@@ -320,11 +320,16 @@
     <!-- Pills sit on the hero's own footing so they read as part of it; they
          are the style's highlights verbatim, so no highlights means no rail. -->
     {#if heroPills.length}
-      <div class="relative border-t border-white/12 bg-black/20 backdrop-blur">
-        <div class="container-shell flex flex-wrap gap-2.5 py-4">
+      <div class="relative bg-black/25 backdrop-blur">
+        <!--
+          No chrome on the items themselves. A pill inside a band is two
+          containers doing one job, and the outlines were competing with the
+          photograph directly above them — the tick already marks each one.
+        -->
+        <div class="container-shell flex flex-wrap items-center gap-x-8 gap-y-3 py-4">
           {#each heroPills as pill}
-            <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[13px] font-semibold leading-5 text-white/85">
-              <Check size={13} strokeWidth={3} class="shrink-0 text-goldfinch-gold" />
+            <span class="inline-flex items-center gap-2 text-[13px] font-semibold leading-5 text-white/85">
+              <Check size={14} strokeWidth={3} class="shrink-0 text-goldfinch-gold" />
               {pill}
             </span>
           {/each}
