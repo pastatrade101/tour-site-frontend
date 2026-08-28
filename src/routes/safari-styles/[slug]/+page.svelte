@@ -423,6 +423,20 @@
           <EmptyState title="No published tours for this style yet" message="A local advisor can still shape this type of trip around your dates and budget." />
         </div>
       {/if}
+
+      <!--
+        The way out for someone who has read every card and still is not sure.
+        Opens the same form the hero CTA does, so there is one place a request
+        can come from rather than a second half-form written here.
+      -->
+      <p class="mt-8 text-center text-[15px] text-ink/65">
+        Not sure which one fits?
+        <button
+          class="ml-1 inline-flex items-center gap-1 font-bold text-clay underline decoration-clay/35 underline-offset-4 transition hover:decoration-clay"
+          type="button"
+          on:click={() => (enquiryOpen = true)}
+        >Request a custom recommendation <ArrowRight size={15} /></button>
+      </p>
     </div>
   </section>
 
