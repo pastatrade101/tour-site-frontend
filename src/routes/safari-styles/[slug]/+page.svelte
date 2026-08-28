@@ -131,6 +131,13 @@
   // Authored per style in the Categories admin. Absent keys drop out below, so a
   // style nobody has written notes for shows the facts it does have rather than
   // an empty heading.
+  // Authored as one block with a line per audience, so it reads as a list and
+  // is rendered as one. A single-line value still works: one bullet.
+  $: whoItsForItems = String(category?.who_its_for ?? '')
+    .split(/\r?\n|·|;/)
+    .map((line) => line.replace(/^[-•*\s]+/, '').trim())
+    .filter(Boolean);
+
   $: planningNotes = ((category as Record<string, any> | null)?.planning_notes ?? {}) as { costs?: string | null; route?: string | null };
 
   /**
@@ -564,40 +571,73 @@
       </section>
     {/if}
 
-  <!-- 6. What we help you get right --------------------------------------- -->
+  <!-- 6. What we help you get right ---------------------------------------- -->
+  <!-- The advisor's-note treatment from the homepage: one tinted card, two
+       bulleted columns. Same shell, so the two read as the same voice rather
+       than two designs. -->
   {#if category.who_its_for || highlights.length}
-    <section class="border-t border-ink/[0.06] bg-surface py-14 md:py-20">
+    <section class="bg-canvas py-14 md:py-20">
       <div class="container-shell">
-        <div class="max-w-2xl" use:fadeUpOnScroll={{ y: 14 }}>
-          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">Why this style</p>
-          <h2 class="mt-3 font-serif text-3xl font-semibold leading-tight text-heading md:text-[38px]">What we help you get right</h2>
-        </div>
+        <div
+          class="relative overflow-hidden rounded-[12px] border border-ink/20 bg-sand px-7 py-8 sm:px-10 sm:py-10 md:px-14 md:py-14 lg:px-[72px] lg:py-[64px]"
+          style="box-shadow: 0 18px 45px rgba(57,61,50,0.06)"
+          use:fadeUpOnScroll={{ y: 16 }}
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 200 200"
+            class="pointer-events-none absolute right-6 top-6 z-0 h-[110px] w-[110px] text-clay opacity-[0.09] sm:right-8 sm:top-8 md:h-[160px] md:w-[160px] lg:h-[200px] lg:w-[200px]"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.2"
+          >
+            <circle cx="100" cy="100" r="80" />
+            <circle cx="100" cy="100" r="55" />
+            <path d="M100 20 L110 100 L100 180 L90 100 Z" fill="currentColor" opacity="0.5" />
+            <path d="M20 100 L100 90 L180 100 L100 110 Z" fill="currentColor" opacity="0.3" />
+          </svg>
 
-        <div class="mt-9 grid gap-8 lg:grid-cols-2 lg:gap-12">
-          {#if category.who_its_for}
-            <div use:fadeUpOnScroll={{ y: 14 }}>
-              <p class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-forest">
-                <Users size={14} /> Who it's for
-              </p>
-              <p class="mt-4 whitespace-pre-line text-[15px] leading-7 text-ink/70">{category.who_its_for}</p>
+          <div class="relative max-w-[1180px]">
+            <div class="inline-flex items-center gap-2">
+              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
+              <span class="text-xs font-semibold uppercase tracking-[0.15em] text-clay">Why this style</span>
             </div>
-          {/if}
+            <h2 class="mt-4 font-serif text-3xl leading-[1.1] tracking-tight text-heading sm:text-4xl md:text-[42px]" use:revealHeading>
+              What we help you get right
+            </h2>
+          </div>
 
-          {#if highlights.length}
-            <div use:fadeUpOnScroll={{ y: 14 }}>
-              <p class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-forest">
-                <Sparkles size={14} /> What you get
-              </p>
-              <ul class="mt-4 grid gap-3">
-                {#each highlights as highlight}
-                  <li class="flex min-w-0 items-start gap-3 rounded-[10px] border border-ink/[0.08] bg-canvas p-4">
-                    <Check size={15} strokeWidth={2.8} class="mt-0.5 shrink-0 text-goldfinch-gold" />
-                    <RichText value={highlight} className="min-w-0 text-[14.5px] font-semibold leading-6 text-heading" />
-                  </li>
-                {/each}
-              </ul>
-            </div>
-          {/if}
+          <div class="relative mt-10 grid gap-10 md:mt-14 md:grid-cols-2 md:gap-14">
+            {#if whoItsForItems.length}
+              <div>
+                <h3 class="font-serif text-xl text-heading md:text-2xl">Who it's for</h3>
+                <div class="mt-3 h-[2px] w-10 bg-goldfinch-gold" aria-hidden="true"></div>
+                <ul class="mt-6 space-y-[15px]">
+                  {#each whoItsForItems as item}
+                    <li class="flex items-start gap-3.5 text-[15px] leading-relaxed text-heading">
+                      <span aria-hidden="true" class="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-goldfinch-gold"></span>
+                      <span>{item}</span>
+                    </li>
+                  {/each}
+                </ul>
+              </div>
+            {/if}
+
+            {#if highlights.length}
+              <div>
+                <h3 class="font-serif text-xl text-heading md:text-2xl">What you get</h3>
+                <div class="mt-3 h-[2px] w-10 bg-goldfinch-gold" aria-hidden="true"></div>
+                <ul class="mt-6 space-y-[15px]">
+                  {#each highlights as highlight}
+                    <li class="flex items-start gap-3.5 text-[15px] leading-relaxed text-heading">
+                      <span aria-hidden="true" class="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-goldfinch-gold"></span>
+                      <RichText value={highlight} className="min-w-0" />
+                    </li>
+                  {/each}
+                </ul>
+              </div>
+            {/if}
+          </div>
         </div>
       </div>
     </section>
