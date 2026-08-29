@@ -1,61 +1,155 @@
 <script lang="ts">
+  import { ArrowRight, Image as ImageIcon } from '@lucide/svelte';
   import { trackEvent } from '$lib/analytics';
-  import { sourceFor } from '$lib/img';
-  import { tilt } from '$lib/animations';
   import { currency, formatUsd } from '$lib/currency';
-  import { Image as ImageIcon } from '@lucide/svelte';
-  import { toMetaText } from '$lib/richText';
-  import { getTourDestinationLabel } from '$lib/tourDestinations';
-  import ShortlistButton from './ShortlistButton.svelte';
-  import Img from './Img.svelte';
+  import { toPlainText } from '$lib/richText';
+  import { getTourDestinations } from '$lib/tourDestinations';
   import type { Tour } from '$lib/types';
+  import Img from './Img.svelte';
+  import ShortlistButton from './ShortlistButton.svelte';
+
+  type TourCardBadgeType = 'rust' | 'gold' | 'olive' | 'default';
 
   export let tour: Tour;
+  export let showShortlist = true;
+  export let whiteSurface = true;
+  export let badge: string | null | undefined = undefined;
+  export let badgeType: TourCardBadgeType | undefined = undefined;
+  export let ctaLabel = 'View trip';
+  export let ctaHref = '';
 
-  $: tourImage = sourceFor(tour, 700, 'main_image_url', 'banner_image_url');
-  $: destinationLabel = getTourDestinationLabel(tour, 2);
-  $: item = {
+  const badgeStyles: Record<TourCardBadgeType, { background: string; color: string }> = {
+    rust: { background: 'rgba(255,255,255,0.95)', color: '#393D32' },
+    gold: { background: 'rgba(228,169,46,0.45)', color: '#2D3027' },
+    olive: { background: 'rgba(103,103,88,0.55)', color: '#FFFFFF' },
+    default: { background: 'rgba(20,20,10,0.4)', color: '#FFFFFF' }
+  };
+
+  const unique = (values: string[]) => [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+
+  const cardTags = (item: Tour): string[] => {
+    const destinations = getTourDestinations(item).map((destination) => destination.name);
+    if (destinations.length) return unique(destinations).slice(0, 3);
+
+    const fallbacks = [
+      item.tour_categories?.name ?? '',
+      item.experience_type ?? '',
+      ...(item.highlights ?? []).map((highlight) => toPlainText(highlight))
+    ];
+    return unique(fallbacks).slice(0, 3);
+  };
+
+  $: image = tour.main_image_url || tour.banner_image_url || '';
+  $: href = ctaHref || `/tours/${tour.slug}`;
+  $: duration = tour.duration_days
+    ? `${tour.duration_days} ${tour.duration_days === 1 ? 'day' : 'days'}`
+    : 'Tailor-made';
+  $: resolvedBadge = badge === undefined
+    ? tour.is_popular
+      ? 'Most Popular 🔥'
+      : tour.is_featured
+        ? 'Featured'
+        : tour.tour_categories?.name || 'Tailor-made'
+    : badge;
+  $: resolvedBadgeType = badgeType ?? (tour.is_popular ? 'rust' : tour.is_featured ? 'gold' : 'olive');
+  $: badgeStyle = badgeStyles[resolvedBadgeType];
+  $: tags = cardTags(tour);
+  $: hasPrice = typeof tour.price_from === 'number' && tour.price_from > 0;
+  $: priceLabel = hasPrice ? formatUsd(tour.price_from, $currency) : '';
+  $: shortlistItem = {
     slug: tour.slug,
     title: tour.title,
-    image_url: tourImage,
+    image_url: image,
     duration_days: tour.duration_days,
     price_from: tour.price_from,
     currency: tour.currency,
-    destination: destinationLabel
+    destination: tags.join(', ')
   };
-  $: priceLabel = tour.price_from ? formatUsd(tour.price_from, $currency) : '';
-  $: summary = toMetaText(tour.short_description || tour.full_description || '', 190);
+
+  function recordClick() {
+    trackEvent('tour_card_click', { tour_id: tour.id, tour_title: tour.title });
+  }
 </script>
 
-<article class="group relative flex h-full flex-col overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_14px_40px_rgba(57,61,50,0.07)] transition-shadow duration-300 hover:shadow-[0_26px_60px_rgba(57,61,50,0.16)]" use:tilt={{ max: 5 }}>
-  <div class="absolute right-3 top-3 z-10">
-    <ShortlistButton {item} />
-  </div>
-  <a href={`/tours/${tour.slug}`} class="flex h-full flex-col" on:click={() => trackEvent('tour_card_click', { tour_id: tour.id, tour_title: tour.title })}>
-    <div class="aspect-[4/3] overflow-hidden bg-skywash">
-      {#if tourImage}
+<article
+  class={`group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-[#E3DCCB] shadow-[0_8px_24px_-16px_rgba(57,61,50,0.35)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_38px_-16px_rgba(57,61,50,0.42)] ${whiteSurface ? 'bg-white' : 'bg-surface'}`}
+  data-tour-card
+>
+  <div class="relative aspect-[4/3] w-full overflow-hidden bg-sand">
+    <a href={href} aria-label={`View ${tour.title}`} on:click={recordClick} class="block h-full w-full">
+      {#if image}
         <Img
           record={tour}
           fields={['main_image_url', 'banner_image_url']}
           alt={tour.title}
-          width={700}
+          width={760}
           sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 33vw"
-          className="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-110"
+          className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.035]"
         />
       {:else}
-        <div class="grid h-full w-full place-items-center bg-skywash text-forest/35">
+        <div class="grid h-full w-full place-items-center bg-gradient-to-br from-sand to-ink/10 text-ink/25">
           <ImageIcon size={30} />
         </div>
       {/if}
-    </div>
-    <div class="flex flex-1 flex-col p-5">
-      <p class="text-sm font-semibold text-clay">{tour.duration_days ? `${tour.duration_days} ${tour.duration_days === 1 ? 'day' : 'days'}` : 'Customisable itinerary'}</p>
-      <h3 class="mt-2 text-xl font-bold tracking-normal text-ink">{tour.title}</h3>
-      {#if summary}<p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/70">{summary}</p>{/if}
-      <div class="mt-auto flex items-center justify-between pt-5 text-sm">
-        <span class="font-semibold text-forest">{#if priceLabel}From {priceLabel}{:else}Price on request{/if}</span>
-        <span class="font-semibold text-ink">View</span>
+    </a>
+
+    {#if resolvedBadge}
+      <span
+        class="pointer-events-none absolute left-3.5 top-3.5 inline-flex max-w-[calc(100%-5rem)] items-center truncate rounded-full border border-white/30 px-3 py-1.5 text-[11px] font-semibold backdrop-blur-md"
+        style={`background: ${badgeStyle.background}; color: ${badgeStyle.color};`}
+      >
+        {resolvedBadge}
+      </span>
+    {/if}
+
+    {#if showShortlist}
+      <div class="absolute right-3.5 top-3.5 z-10">
+        <ShortlistButton item={shortlistItem} />
+      </div>
+    {/if}
+
+    <span
+      class="pointer-events-none absolute bottom-3.5 right-3.5 inline-flex items-center rounded-full border border-white/25 bg-[rgba(20,20,10,0.5)] px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-md"
+    >
+      {duration}
+    </span>
+  </div>
+
+  <div class="flex flex-1 flex-col p-5">
+    <a href={href} on:click={recordClick} class="transition-colors hover:text-clay">
+      <h3 class="font-serif text-xl font-semibold leading-tight text-heading">{tour.title}</h3>
+    </a>
+
+    {#if tags.length}
+      <div class="mt-2.5 flex flex-wrap gap-1.5">
+        {#each tags as tag (tag)}
+          <span class="max-w-full truncate rounded-full border border-[#E3DCCB] px-2.5 py-0.5 text-[11px] font-medium text-ink/65">
+            {tag}
+          </span>
+        {/each}
+      </div>
+    {/if}
+
+    <div class="mt-auto pt-4">
+      <div class="flex items-center justify-between gap-3 border-t border-dashed border-[#E3DCCB] pt-4">
+        <div class="min-w-0 text-[14px] text-heading">
+          {#if hasPrice}
+            <span class="text-[11px] uppercase tracking-[0.08em] text-ink/45">From </span>
+            <span class="font-serif text-[17px] font-medium">{priceLabel}</span>
+          {:else}
+            <span class="font-serif text-[17px] font-medium">Tailored quote</span>
+          {/if}
+        </div>
+        <a
+          href={href}
+          data-cta={`itinerary-${tour.slug}`}
+          on:click={recordClick}
+          class="inline-flex shrink-0 items-center gap-1.5 text-[13px] font-semibold text-clay transition-transform hover:translate-x-0.5"
+        >
+          {ctaLabel}
+          <ArrowRight size={14} />
+        </a>
       </div>
     </div>
-  </a>
+  </div>
 </article>

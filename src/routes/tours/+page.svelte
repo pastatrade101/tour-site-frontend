@@ -12,7 +12,7 @@
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import ContentShimmer from '$lib/components/public/ContentShimmer.svelte';
   import Img from '$lib/components/public/Img.svelte';
-  import TourCardRich from '$lib/components/public/TourCardRich.svelte';
+  import TourCard from '$lib/components/public/TourCard.svelte';
   import TourFilterBar from '$lib/components/public/TourFilterBar.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import LeadCaptureForm from '$lib/components/public/LeadCaptureForm.svelte';
@@ -465,7 +465,7 @@
         {:else}
           <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
             {#each paged as tour (tour.slug)}
-              <TourCardRich {tour} />
+              <TourCard {tour} />
             {/each}
           </div>
 

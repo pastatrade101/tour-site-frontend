@@ -195,7 +195,7 @@
     message: form.message.trim(),
     rating: form.rating,
     source_url: form.source_url.trim(),
-    tour_id: form.tour_id || '',
+    tour_id: form.tour_id || null,
     tour_title: tours.find((t) => t.id === form.tour_id)?.title ?? null,
     status: form.status,
     is_featured: form.is_featured,
@@ -332,12 +332,17 @@
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {#each rows as r (r.id)}
         <article class="flex flex-col gap-4 rounded-[8px] border border-ink/10 bg-surface p-5 shadow-[0_14px_44px_rgba(57,61,50,0.06)]" transition:fade={{ duration: 120 }}>
+          {#if r.author_photo_url}
+            <img
+              class="aspect-[16/10] w-full rounded-[8px] object-cover ring-1 ring-ink/10"
+              src={r.author_photo_url}
+              alt={`Review card image for ${r.author_name}`}
+              loading="lazy"
+              decoding="async"
+            />
+          {/if}
           <div class="flex items-start gap-3">
-            {#if r.author_photo_url}
-              <img class="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-ink/10" src={r.author_photo_url} alt={r.author_name} />
-            {:else}
-              <div class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-forest/10 text-sm font-bold text-forest ring-1 ring-forest/15">{initials(r)}</div>
-            {/if}
+            <div class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-forest/10 text-sm font-bold text-forest ring-1 ring-forest/15">{initials(r)}</div>
             <div class="min-w-0 flex-1">
               <p class="truncate font-bold text-ink">{r.author_name}</p>
               {#if r.country}<p class="truncate text-xs text-ink/55">{r.country}</p>{/if}
@@ -433,7 +438,8 @@
         <AdminFormInput label="Source URL (optional)" name="source_url" bind:value={form.source_url} placeholder="https://www.tripadvisor.com/..." />
 
         <div class="rounded-[8px] border border-ink/10 bg-sand/25 p-4">
-          <MediaPicker label="Author photo (optional)" media={mediaItems} uploadFolder="reviews" aspect="aspect-square" bind:value={form.author_photo_url} />
+          <MediaPicker label="Review card image (optional)" media={mediaItems} uploadFolder="reviews" aspect="aspect-[16/10]" bind:value={form.author_photo_url} />
+          <p class="mt-2 text-xs leading-5 text-ink/55">Shown as the large image at the top of review cards. Choose an existing image from the media gallery or upload a new one.</p>
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2">

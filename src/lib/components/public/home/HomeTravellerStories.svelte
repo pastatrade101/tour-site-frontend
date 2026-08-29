@@ -16,6 +16,7 @@
     comment?: string | null;
     created_at?: string | null;
     platform?: string | null;
+    source_url?: string | null;
     author_photo_url?: string | null;
     tour_title?: string | null;
     tours?: {
@@ -32,7 +33,7 @@
   export let subtitle = '';
   export let sourcesLabel = 'TripAdvisor · SafariBookings · Google';
   export let reviews: StoryReview[] = [];
-  export let summary: { average?: number | null; total?: number | null } | null = null;
+  export let summary: { average?: number | null; count?: number | null; total?: number | null } | null = null;
 
   let scrollerEl: HTMLDivElement;
   let activeIndex = 0;
@@ -41,8 +42,9 @@
   const countryOf = (r: StoryReview) => (r.country || r.client_country || '').trim();
   const quoteOf = (r: StoryReview) => (r.message || r.comment || '').trim();
   const titleOf = (r: StoryReview) => (r.title || '').trim();
+  const sourceUrlOf = (r: StoryReview) => (r.source_url || '').trim();
   const tourTitleOf = (r: StoryReview) => (r.tours?.title || r.tour_title || titleOf(r)).trim();
-  const tourImageOf = (r: StoryReview) => r.tours?.main_image_url || r.tours?.banner_image_url || '';
+  const cardImageOf = (r: StoryReview) => r.author_photo_url || r.tours?.main_image_url || r.tours?.banner_image_url || '';
 
   const countryCodes: Record<string, string> = {
     australia: 'AU', austria: 'AT', belgium: 'BE', brazil: 'BR', canada: 'CA', china: 'CN',
@@ -69,9 +71,10 @@
     summary && typeof summary.average === 'number' && isFinite(summary.average) && summary.average > 0
       ? summary.average
       : null;
+  $: summaryTotal = summary?.total ?? summary?.count ?? null;
   $: total =
-    summary && typeof summary.total === 'number' && isFinite(summary.total) && summary.total > 0
-      ? Math.round(summary.total)
+    typeof summaryTotal === 'number' && isFinite(summaryTotal) && summaryTotal > 0
+      ? Math.round(summaryTotal)
       : null;
   $: avgStars = avg ? starsOf(avg) : 0;
   $: hasSummaryLine = Boolean(avg || total || sourcesLabel);
@@ -175,15 +178,25 @@
             data-review-card
             class="review-card flex h-full min-h-[490px] w-[88%] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-ink/10 bg-surface shadow-sm sm:w-[calc((100%-24px)/2)] lg:w-[calc((100%-48px)/3)]"
           >
-            {#if tourImageOf(r)}
+            {#if cardImageOf(r)}
               <div class="h-56 overflow-hidden bg-sand md:h-64">
-                <Img src={tourImageOf(r)} alt={tourTitleOf(r) || `Tour reviewed by ${nameOf(r)}`} width={800} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 88vw" className="h-full w-full object-cover" />
+                <Img record={r} fields={['author_photo_url']} src={cardImageOf(r)} alt={tourTitleOf(r) || `Safari reviewed by ${nameOf(r)}`} width={800} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 88vw" className="h-full w-full object-cover" />
               </div>
             {/if}
             <div class="flex flex-1 flex-col p-6">
             <div class="flex items-center justify-between gap-4">
               {#if r.platform}
-                <span class={`rounded-full border px-3 py-1 text-xs font-bold ${r.platform === 'Google' ? 'border-blue-200 bg-blue-50 text-blue-600' : r.platform === 'TripAdvisor' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-800'}`}>{r.platform}</span>
+                {#if sourceUrlOf(r)}
+                  <a
+                    href={sourceUrlOf(r)}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                    aria-label={`Read ${nameOf(r) || 'this'} review on ${r.platform}`}
+                    class={`rounded-full border px-3 py-1 text-xs font-bold transition hover:brightness-95 ${r.platform === 'Google' ? 'border-blue-200 bg-blue-50 text-blue-600' : r.platform === 'TripAdvisor' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-800'}`}
+                  >{r.platform}</a>
+                {:else}
+                  <span class={`rounded-full border px-3 py-1 text-xs font-bold ${r.platform === 'Google' ? 'border-blue-200 bg-blue-50 text-blue-600' : r.platform === 'TripAdvisor' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-800'}`}>{r.platform}</span>
+                {/if}
               {:else}<span></span>{/if}
               {#if starsOf(r.rating)}
                 <span class="inline-flex items-center gap-0.5 text-goldfinch-gold">
@@ -200,9 +213,7 @@
             {/if}
             {#if nameOf(r) || tourTitleOf(r)}
               <div class="mt-5 flex items-center gap-3 border-t border-ink/10 pt-4 text-sm">
-                {#if r.author_photo_url}
-                  <Img src={r.author_photo_url} alt={nameOf(r)} width={96} sizes="48px" className="h-12 w-12 rounded-full object-cover ring-1 ring-ink/10" />
-                {:else if countryFlag(countryOf(r))}
+                {#if countryFlag(countryOf(r))}
                   <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-ink/10 bg-white text-2xl" aria-hidden="true">{countryFlag(countryOf(r))}</span>
                 {:else}
                   <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-ink/10 bg-sand text-ink/55"><MapPin size={18} /></span>

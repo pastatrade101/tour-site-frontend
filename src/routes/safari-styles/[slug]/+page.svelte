@@ -1,12 +1,9 @@
 <script lang="ts">
   import {
     ArrowRight,
-    BedDouble,
     CalendarRange,
     Check,
-    Clock,
     Compass,
-    MapPin,
     MapPinned,
     Route,
     ShieldCheck,
@@ -23,14 +20,16 @@
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
   import StylePlannerBand from '$lib/components/public/StylePlannerBand.svelte';
+  import TravellerMomentsMarquee from '$lib/components/public/TravellerMomentsMarquee.svelte';
+  import TourCard from '$lib/components/public/TourCard.svelte';
   import { currency, formatUsd } from '$lib/currency';
   import { imgUrl, srcsetFor, variantSrc, variantsOf } from '$lib/img';
   import { publicSettings, settingText } from '$lib/settings';
   import { defaultStyleLandingContent } from '$lib/safariStyleLanding';
   import { breadcrumbLd, faqLd } from '$lib/seo';
-  import { getTourDestinationLabel, getTourDestinations } from '$lib/tourDestinations';
+  import { getTourDestinations } from '$lib/tourDestinations';
   import { toMetaText, toPlainText } from '$lib/richText';
-  import type { FAQ, Review, ReviewSummary, Testimonial, Tour, TourCategory } from '$lib/types';
+  import type { FAQ, Review, ReviewSummary, Tour, TourCategory } from '$lib/types';
   import type { PageData } from './$types';
 
   export let data: PageData;
@@ -71,7 +70,8 @@
   $: tours = (data.tours ?? []) as Tour[];
   $: otherStyles = (data.otherStyles ?? []) as TourCategory[];
   $: faqs = (data.faqs ?? []) as FAQ[];
-  $: reviews = (data.reviews ?? []) as Array<Review | Testimonial>;
+  $: reviews = (data.reviews ?? []) as Review[];
+  $: galleryItems = (data.galleryItems ?? []) as Array<Record<string, unknown>>;
   $: reviewSummary = (data.reviewSummary ?? null) as ReviewSummary | null;
   $: homeSections = (data.homeSections ?? []) as HomeSection[];
   $: homeByKey = Object.fromEntries(homeSections.map((section) => [section.section_key, section]));
@@ -315,27 +315,7 @@
         {#if filteredTours.length}
           <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {#each visibleTours as tour (tour.slug)}
-              {@const destinationLabel = getTourDestinationLabel(tour)}
-              {@const cost = Number(tour.price_from ?? 0)}
-              <article class="group flex flex-col overflow-hidden rounded-[12px] border border-ink/10 bg-canvas shadow-[0_12px_30px_rgba(57,61,50,0.06)] transition hover:-translate-y-1 hover:shadow-[0_18px_36px_rgba(57,61,50,0.10)]">
-                <div class="relative aspect-[16/10] overflow-hidden bg-sand">
-                  {#if tour.main_image_url || tour.banner_image_url}<Img record={tour} fields={['main_image_url', 'banner_image_url']} alt={tour.title} width={800} sizes="(max-width: 640px) 92vw, (max-width: 1024px) 50vw, 33vw" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />{/if}
-                  <span class={`absolute left-3 top-3 rounded-full px-2.5 py-[5px] text-[10px] font-bold uppercase tracking-[0.06em] ${tour.is_popular ? 'bg-clay text-white' : 'bg-goldfinch-gold text-heading'}`}>{tour.is_popular ? 'Most Requested' : tour.is_featured ? 'Featured' : 'Safari Idea'}</span>
-                </div>
-                <div class="flex flex-1 flex-col p-5">
-                  <h3 class="min-h-[42px] line-clamp-2 font-serif text-[19px] font-semibold leading-[1.25] text-heading">{tour.title}</h3>
-                  {#if tour.short_description}<p class="mt-2 line-clamp-2 text-sm leading-6 text-ink/65">{tour.short_description}</p>{/if}
-                  <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12px] text-ink/65">
-                    <span class="inline-flex items-center gap-1.5"><Clock size={14} />{tour.duration_days ?? 'Custom'} days</span>
-                    {#if destinationLabel}<span>·</span><span class="inline-flex items-center gap-1.5"><MapPin size={14} />{destinationLabel}</span>{/if}
-                    <span>·</span><span class="inline-flex items-center gap-1.5"><BedDouble size={14} />{TIER_LABELS[String(tour.budget_tier ?? '')] ?? tour.budget_tier ?? 'Flexible'}</span>
-                  </div>
-                  <div class="mt-5 flex items-center justify-between gap-3 border-t border-ink/10 pt-4">
-                    <div>{#if cost > 0}<div class="text-[11px] uppercase tracking-[0.08em] text-ink/60">From</div><div class="text-base font-bold text-heading">{formatUsd(cost, $currency)} <span class="text-xs font-medium text-ink/65">p.p.</span></div>{:else}<span class="text-[13px] font-semibold text-heading">Tailored quote</span>{/if}</div>
-                    <a href={`/tours/${tour.slug}`} class="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-ink/30 px-4 text-[13px] font-semibold text-heading transition group-hover:border-goldfinch-gold group-hover:bg-goldfinch-gold">View Tour <ArrowRight size={14} /></a>
-                  </div>
-                </div>
-              </article>
+              <TourCard {tour} />
             {/each}
           </div>
           <div class="mt-10 flex flex-col items-center gap-4 text-center">
@@ -420,6 +400,8 @@
     {reviews}
     summary={reviewSummary}
   />
+
+  <TravellerMomentsMarquee images={galleryItems} />
 
   <!-- 11 · FAQ -->
   {#if faqs.length}

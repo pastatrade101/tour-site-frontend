@@ -116,19 +116,20 @@
         <div class="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 18, stagger: 0.07 }}>
           {#each reviews as review}
             <article class="flex h-full flex-col gap-4 rounded-[8px] border border-ink/10 bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:border-forest/25 hover:shadow-card-hover">
-              <div class="flex items-start gap-3">
-                {#if review.author_photo_url}
+              {#if review.author_photo_url}
+                <div class="aspect-[16/10] overflow-hidden rounded-[8px] bg-sand ring-1 ring-ink/10">
                   <Img
                     record={review}
                     fields={['author_photo_url']}
-                    alt={review.author_name}
-                    width={120}
-                    height={120}
-                    className="h-12 w-12 shrink-0 rounded-[8px] object-cover ring-1 ring-ink/10"
+                    alt={`Safari reviewed by ${review.author_name}`}
+                    width={720}
+                    sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                    className="h-full w-full object-cover"
                   />
-                {:else}
-                  <div class="grid h-12 w-12 shrink-0 place-items-center rounded-[8px] bg-forest/10 text-sm font-bold text-forest ring-1 ring-forest/15">{initialsOf(review)}</div>
-                {/if}
+                </div>
+              {/if}
+              <div class="flex items-start gap-3">
+                <div class="grid h-12 w-12 shrink-0 place-items-center rounded-[8px] bg-forest/10 text-sm font-bold text-forest ring-1 ring-forest/15">{initialsOf(review)}</div>
                 <div class="min-w-0 flex-1">
                   <p class="truncate font-bold text-ink">{review.author_name}</p>
                   {#if review.country}<p class="truncate text-xs text-ink/70">{review.country}</p>{/if}

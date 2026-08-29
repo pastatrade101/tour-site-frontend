@@ -31,7 +31,7 @@
   import RichText from '$lib/components/public/RichText.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import SpecialistCard from '$lib/components/public/SpecialistCard.svelte';
-  import TourCardRich from '$lib/components/public/TourCardRich.svelte';
+  import TourCard from '$lib/components/public/TourCard.svelte';
   import { toMetaText } from '$lib/richText';
   import { getTourDestinationLabel, getTourDestinations } from '$lib/tourDestinations';
   import type { BlogPost, FAQ, ItineraryDay, Tour, TravelStyle } from '$lib/types';
@@ -1154,7 +1154,7 @@
         </div>
         <div class="mt-9 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {#each relatedTours as item (item.id)}
-            <TourCardRich tour={item} whiteSurface />
+            <TourCard tour={item} whiteSurface />
           {/each}
         </div>
       </div>

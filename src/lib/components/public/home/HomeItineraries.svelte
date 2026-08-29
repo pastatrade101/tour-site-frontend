@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ArrowRight, Heart, Palmtree, PawPrint, ShieldCheck, Users } from '@lucide/svelte';
   import type { Tour } from '$lib/types';
-  import TourCardRich from '../TourCardRich.svelte';
+  import TourCard from '../TourCard.svelte';
 
   export let eyebrow = 'Featured Itineraries';
   export let title = 'Trip Ideas You Can Shape Around You';
@@ -69,7 +69,7 @@
       {/if}
 
       {#key activeFilter}
-        {#if visibleTours.length}<div class="package-grid mt-8 grid gap-5 lg:grid-cols-3 lg:gap-6">{#each visibleTours as tour (tour.slug)}<div class="package-card min-w-0"><TourCardRich {tour} showShortlist={false} /></div>{/each}</div>
+        {#if visibleTours.length}<div class="package-grid mt-8 grid gap-5 lg:grid-cols-3 lg:gap-6">{#each visibleTours as tour (tour.slug)}<div class="package-card min-w-0"><TourCard {tour} showShortlist={false} /></div>{/each}</div>
         {:else}<div class="mt-8 border-y border-ink/10 py-10 text-sm text-ink/55">No featured itineraries are assigned to this collection yet.</div>{/if}
       {/key}
 
