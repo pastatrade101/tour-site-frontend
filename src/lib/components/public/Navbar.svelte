@@ -98,6 +98,7 @@
   let searchQuery = '';
   let scrolled = false;
   let headerEl: HTMLElement;
+  let menuButton: HTMLButtonElement;
 
   // The mega-menu is `fixed` (to escape the collapsing header's overflow), so we
   // position it under the hovered nav item by measuring that item's rect, and
@@ -126,20 +127,115 @@
     openDropdown = '';
   };
 
-  // Render the mobile drawer on <body>. The header carries a leftover GSAP
-  // transform (navbarEntrance), and a transformed ancestor re-anchors
-  // position:fixed — so inside the header the drawer's "full-screen" backdrop
-  // only covered the header's box, letting taps fall through to the page.
-  const portal = (node: HTMLElement) => {
-    document.body.appendChild(node);
-    return { destroy: () => node.remove() };
-  };
+  const DRAWER_FOCUSABLE =
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-  // Lock page scroll while the drawer is open so the page can't scroll or
-  // react underneath it.
-  $: if (typeof document !== 'undefined') {
-    document.body.style.overflow = menuOpen ? 'hidden' : '';
-  }
+  // Render the drawer directly on <body> and make the rest of the document
+  // genuinely modal. `overflow: hidden` alone does not stop focus, keyboard
+  // activation, or Safari's page-level touch scrolling from reaching content
+  // underneath a fixed drawer.
+  const modalDrawer = (node: HTMLElement) => {
+    const body = document.body;
+    const html = document.documentElement;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousBodyStyle = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+      overflow: body.style.overflow
+    };
+    const previousHtmlStyle = {
+      overflow: html.style.overflow,
+      overscrollBehavior: html.style.overscrollBehavior,
+      scrollBehavior: html.style.scrollBehavior
+    };
+
+    document.body.appendChild(node);
+    node.focus({ preventScroll: true });
+
+    const blockedSiblings = Array.from(body.children)
+      .filter((child): child is HTMLElement => child instanceof HTMLElement && child !== node && child.tagName !== 'SCRIPT')
+      .map((element) => ({
+        element,
+        inert: element.inert,
+        ariaHidden: element.getAttribute('aria-hidden')
+      }));
+
+    blockedSiblings.forEach(({ element }) => {
+      element.inert = true;
+      element.setAttribute('aria-hidden', 'true');
+    });
+
+    html.style.overflow = 'hidden';
+    html.style.overscrollBehavior = 'none';
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = `-${scrollX}px`;
+    body.style.right = '0';
+    body.style.width = '100%';
+    body.style.overflow = 'hidden';
+
+    const visibleFocusables = () =>
+      Array.from(node.querySelectorAll<HTMLElement>(DRAWER_FOCUSABLE)).filter(
+        (element) => !element.hasAttribute('disabled') && element.getAttribute('aria-hidden') !== 'true'
+      );
+
+    const onKeydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        menuOpen = false;
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const items = visibleFocusables();
+      if (!items.length) {
+        event.preventDefault();
+        node.focus();
+        return;
+      }
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || !node.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active === last || !node.contains(active))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKeydown);
+    const focusFrame = requestAnimationFrame(() => {
+      node.querySelector<HTMLElement>('[data-drawer-initial-focus]')?.focus();
+    });
+
+    return {
+      destroy: () => {
+        cancelAnimationFrame(focusFrame);
+        document.removeEventListener('keydown', onKeydown);
+        blockedSiblings.forEach(({ element, inert, ariaHidden }) => {
+          element.inert = inert;
+          if (ariaHidden === null) element.removeAttribute('aria-hidden');
+          else element.setAttribute('aria-hidden', ariaHidden);
+        });
+
+        Object.assign(body.style, previousBodyStyle);
+        html.style.overflow = previousHtmlStyle.overflow;
+        html.style.overscrollBehavior = previousHtmlStyle.overscrollBehavior;
+        html.style.scrollBehavior = 'auto';
+        window.scrollTo(scrollX, scrollY);
+        html.style.scrollBehavior = previousHtmlStyle.scrollBehavior;
+        node.remove();
+        (previousFocus?.isConnected ? previousFocus : menuButton)?.focus();
+      }
+    };
+  };
 
   // ── active route ──────────────────────────────────────────────────────────
   $: path = $page.url.pathname;
@@ -330,7 +426,15 @@
   <!-- Icon-only logo, absolutely centred so the wider right-hand cluster
        (currency + WhatsApp) cannot push it off the true middle. -->
   <div class="relative flex h-[70px] items-center justify-between gap-3 px-4 sm:px-5 lg:hidden">
-    <button class="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-ink/15 bg-surface text-ink" type="button" aria-label="Toggle menu" aria-expanded={menuOpen} on:click={() => (menuOpen = !menuOpen)}>
+    <button
+      bind:this={menuButton}
+      class="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-ink/15 bg-surface text-ink"
+      type="button"
+      aria-label="Toggle menu"
+      aria-controls="mobile-navigation-drawer"
+      aria-expanded={menuOpen}
+      on:click={() => (menuOpen = !menuOpen)}
+    >
       <Menu size={24} strokeWidth={2.4} />
     </button>
 
@@ -588,13 +692,22 @@
 
   <!-- ── mobile drawer ──────────────────────────────────────────────────── -->
   {#if menuOpen}
-    <div use:portal class="fixed inset-0 z-[120] lg:hidden" transition:fade={{ duration: 120 }}>
-      <button class="absolute inset-0 bg-black/45 backdrop-blur-md" type="button" aria-label="Close menu" on:click={() => (menuOpen = false)}></button>
+    <div
+      id="mobile-navigation-drawer"
+      use:modalDrawer
+      class="fixed inset-0 z-[120] isolate overscroll-none lg:hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Mobile navigation"
+      tabindex="-1"
+      transition:fade={{ duration: 120 }}
+    >
+      <button class="absolute inset-0 touch-none bg-black/55 backdrop-blur-sm" type="button" aria-label="Close menu" on:click={() => (menuOpen = false)}></button>
 
       <!-- h-dvh (not min-h) so the panel is capped at the viewport and its content
            scrolls internally — with min-h it grew past the screen and the links
            below the fold (e.g. an open accordion) were unreachable. -->
-      <aside class="absolute right-0 top-0 flex h-dvh w-[86vw] min-w-[300px] max-w-[380px] flex-col overflow-y-auto overscroll-contain border-l border-ink/10 bg-surface px-5 py-5 shadow-[-20px_0_55px_rgba(0,0,0,0.12)]" transition:fly={{ x: 60, duration: 200 }}>
+      <aside class="absolute right-0 top-0 flex h-dvh w-[86vw] min-w-[300px] max-w-[380px] touch-pan-y flex-col overflow-y-auto overscroll-contain border-l border-ink/10 bg-surface px-5 py-5 shadow-[-20px_0_55px_rgba(0,0,0,0.12)]" transition:fly={{ x: 60, duration: 200 }}>
         <div class="flex items-center justify-between gap-4">
           <a href="/" class="flex shrink-0 items-center gap-2.5" on:click={() => activateLink('/')}>
             <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-10 w-10 shrink-0 object-contain" />
@@ -603,7 +716,7 @@
               <p class="mt-1 text-xs font-semibold text-ink/70">Adventures</p>
             </div>
           </a>
-          <button class="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 bg-surface text-ink" type="button" aria-label="Close menu" on:click={() => (menuOpen = false)}>
+          <button data-drawer-initial-focus class="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 bg-surface text-ink" type="button" aria-label="Close menu" on:click={() => (menuOpen = false)}>
             <X size={22} strokeWidth={2.4} />
           </button>
         </div>
