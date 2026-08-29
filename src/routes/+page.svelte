@@ -587,14 +587,14 @@
     transform: translate3d(0, 34px, 0);
     transition: opacity 800ms cubic-bezier(0.16, 1, 0.3, 1), transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
   }
-  :global(.home-motion-ready .home-motion-section.home-motion-visible) { opacity: 1; transform: translate3d(0, 0, 0); }
+  :global(.home-motion-ready .home-motion-section.home-motion-visible) { opacity: 1; transform: none; }
   :global(.home-motion-ready .home-motion-card) {
     opacity: 1;
     transform: translate3d(0, 22px, 0) scale(0.985);
     transition: opacity 650ms cubic-bezier(0.16, 1, 0.3, 1), transform 700ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 350ms ease, border-color 350ms ease;
     transition-delay: calc(100ms + var(--home-card-index, 0) * 65ms);
   }
-  :global(.home-motion-ready .home-motion-visible .home-motion-card) { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  :global(.home-motion-ready .home-motion-visible .home-motion-card) { opacity: 1; transform: none; }
   @media (hover: hover) and (pointer: fine) {
     :global(.home-motion-ready .home-motion-visible .home-motion-card:hover) {
       transform: translate3d(0, -6px, 0) scale(1.008);

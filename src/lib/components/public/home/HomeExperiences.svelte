@@ -140,7 +140,7 @@
                     width={1200}
                     sizes="(max-width: 479px) calc(100vw - 32px), (max-width: 767px) calc(100vw - 48px), (max-width: 1024px) 100vw, 65vw"
                     pictureClass="block h-full w-full max-w-full"
-                    className="exp-fade block h-full w-full max-w-full object-cover will-change-[opacity,transform]"
+                    className="exp-fade block h-full w-full max-w-full object-cover"
                   />
                 {/key}
               {/if}
@@ -150,7 +150,7 @@
                   {#each active.tags as t (t)}
                     <span
                       class="rounded-full px-3.5 py-1.5 text-[11px] font-medium text-white"
-                      style="background: rgba(20,25,20,0.55); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2);"
+                      style="background: rgba(20,25,20,0.78); border: 1px solid rgba(255,255,255,0.2);"
                     >
                       {t}
                     </span>
@@ -198,7 +198,7 @@
                   <a
                     href={secondaryCtaHref}
                     data-cta={`experience-${active.slug}-secondary`}
-                    class="inline-flex items-center justify-center gap-2 rounded-md border border-ink/15 bg-surface/70 px-5 py-2.5 text-sm font-semibold text-heading backdrop-blur-sm transition-colors hover:bg-surface"
+                    class="inline-flex items-center justify-center gap-2 rounded-md border border-ink/15 bg-surface/95 px-5 py-2.5 text-sm font-semibold text-heading transition-colors hover:bg-surface"
                   >
                     {secondaryCtaLabel}
                   </a>

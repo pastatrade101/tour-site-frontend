@@ -10,7 +10,11 @@
   let activeIndex = 0;
 
   onMount(() => {
+    let nearViewport = false;
+    let frame = 0;
+
     const compute = () => {
+      frame = 0;
       if (!root) return;
       const threshold = window.innerHeight * 0.45;
       const items = root.querySelectorAll<HTMLElement>('[data-faq-item]');
@@ -21,12 +25,27 @@
       activeIndex = Math.max(0, reached);
     };
 
-    compute();
-    window.addEventListener('scroll', compute, { passive: true });
-    window.addEventListener('resize', compute);
+    const queueCompute = () => {
+      if (!nearViewport || frame) return;
+      frame = requestAnimationFrame(compute);
+    };
+
+    const proximityObserver = new IntersectionObserver(
+      ([entry]) => {
+        nearViewport = Boolean(entry?.isIntersecting);
+        if (nearViewport) queueCompute();
+      },
+      { rootMargin: '100% 0px' }
+    );
+
+    proximityObserver.observe(root);
+    window.addEventListener('scroll', queueCompute, { passive: true });
+    window.addEventListener('resize', queueCompute);
     return () => {
-      window.removeEventListener('scroll', compute);
-      window.removeEventListener('resize', compute);
+      proximityObserver.disconnect();
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', queueCompute);
+      window.removeEventListener('resize', queueCompute);
     };
   });
 </script>

@@ -87,7 +87,14 @@ function hideEl(el: HTMLElement, y: number, duration: number, delay: number) {
 function showEl(el: HTMLElement) {
   el.style.opacity = '1';
   el.style.transform = 'translate3d(0, 0, 0)';
-  const clear = () => {
+  const clear = (event: TransitionEvent) => {
+    if (event.target !== el || event.propertyName !== 'transform') return;
+    // A resting translate3d(0, 0, 0) still promotes every revealed section to
+    // its own compositor layer. Safari keeps those large layers alive while the
+    // page scrolls, which is especially visible as dropped frames on scroll-up.
+    // Release the layer as soon as the entrance motion has finished.
+    el.style.transform = 'none';
+    el.style.transition = '';
     el.style.willChange = '';
     el.removeEventListener('transitionend', clear);
   };

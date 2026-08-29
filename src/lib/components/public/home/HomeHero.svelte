@@ -123,7 +123,6 @@
           sizes="100vw"
           eager={index === 0}
           className="hero-slide-image absolute inset-0 h-full w-full object-cover"
-          imgStyle="filter: saturate(1.08) contrast(1.04) brightness(0.98)"
         />
       </div>
     {/each}
@@ -143,7 +142,7 @@
     <div class="max-w-2xl text-white">
       {#if eyebrow}
         <span
-          class="inline-flex items-center rounded-md bg-white/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white ring-1 ring-white/25 backdrop-blur"
+          class="inline-flex items-center rounded-md bg-black/30 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white ring-1 ring-white/25"
         >
           {eyebrow}
         </span>
@@ -161,7 +160,7 @@
 
     {#if trustPoints.length}
       <div
-        class="mt-6 inline-flex items-center gap-2 rounded-md bg-black/25 px-3 py-2 text-[12px] font-medium text-white/90 backdrop-blur-sm ring-1 ring-white/15 md:absolute md:bottom-8 md:left-6 md:mt-0"
+        class="mt-6 inline-flex items-center gap-2 rounded-md bg-black/40 px-3 py-2 text-[12px] font-medium text-white/90 ring-1 ring-white/15 md:absolute md:bottom-8 md:left-6 md:mt-0"
       >
         {#each trustPoints as point, i}
           {#if i === 0}
@@ -180,7 +179,7 @@
       {#if showPanel}
         <div
           class="hero-planner-card rounded-[14px] p-4 md:p-3"
-          style="background: rgba(57,61,50,0.78); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15)"
+          style="background: rgba(39,43,34,0.94); border: 1px solid rgba(255,255,255,0.15)"
         >
           <div class="hero-planner-grid grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end md:gap-3">
             <label class="hero-planner-field hero-planner-field-origin block">

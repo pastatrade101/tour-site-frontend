@@ -6,33 +6,21 @@
 
   // Show once the visitor has scrolled well past the hero.
   const THRESHOLD = 600;
-  const IDLE_DELAY = 2200;
   let visible = false;
-  let hideTimer: ReturnType<typeof setTimeout> | undefined;
+  let scrollFrame = 0;
   $: isTourDetail = /^\/tours\/[^/]+\/?$/.test($page.url.pathname);
 
-  const cancelHide = () => {
-    if (hideTimer) clearTimeout(hideTimer);
-    hideTimer = undefined;
-  };
-
-  const scheduleHide = () => {
-    cancelHide();
-    hideTimer = setTimeout(() => (visible = false), IDLE_DELAY);
-  };
-
   const onScroll = () => {
-    if (window.scrollY <= THRESHOLD) {
-      visible = false;
-      cancelHide();
-      return;
-    }
-    visible = true;
-    scheduleHide();
+    if (scrollFrame) return;
+    scrollFrame = requestAnimationFrame(() => {
+      scrollFrame = 0;
+      const next = window.scrollY > THRESHOLD;
+      if (next !== visible) visible = next;
+    });
   };
 
   const toTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
-  onDestroy(cancelHide);
+  onDestroy(() => scrollFrame && cancelAnimationFrame(scrollFrame));
 </script>
 
 <svelte:window on:scroll={onScroll} />
@@ -45,10 +33,6 @@
     aria-label="Back to top"
     title="Back to top"
     transition:fly={{ y: 14, duration: 180 }}
-    on:pointerenter={cancelHide}
-    on:pointerleave={scheduleHide}
-    on:focus={cancelHide}
-    on:blur={scheduleHide}
     on:click={toTop}
   >
     <span class="relative grid h-full w-full place-items-center rounded-full bg-goldfinch-gold">
