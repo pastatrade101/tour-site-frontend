@@ -1,10 +1,15 @@
 <script lang="ts">
+  import Img from '../Img.svelte';
+
   export let eyebrow = 'How Your Trip Is Planned';
   export let title = 'Simple Planning. Clear Routes. Local Support.';
   export let subtitle =
     "You do not need to arrive with a finished itinerary. Share the basics, and we'll help turn the idea into a route that makes sense.";
-
-  export let steps: Array<{ title: string; text: string }> = [
+  export let imageUrl = '';
+  export let fallbackImageUrl = '';
+  export let captionEyebrow = 'Planned With You';
+  export let caption = 'From first message to arrival, we shape it together.';
+  export let steps: Array<{ body?: string; text?: string; title: string }> = [
     {
       title: 'Tell Us What You Have in Mind',
       text: 'Share your dates, starting point, number of travellers, budget range and whether you want safari, Zanzibar, Kilimanjaro, culture or a mix.'
@@ -23,44 +28,70 @@
     }
   ];
 
-  const stepNumber = (i: number) => String(i + 1).padStart(2, '0');
+  const stepNumber = (index: number) => String(index + 1).padStart(2, '0');
+  const stepText = (step: { body?: string; text?: string }) => step.text?.trim() || step.body?.trim() || '';
+
+  $: displayImage = imageUrl || fallbackImageUrl;
+  $: visibleSteps = (steps ?? []).filter((step) => step?.title?.trim()).slice(0, 4);
 </script>
 
-{#if steps.length}
+{#if visibleSteps.length}
   <section class="home-how-planned py-14 md:py-20">
     <div class="container-shell">
-      <div class="home-how-head max-w-[1180px]">
+      <div class="max-w-[1180px]">
         {#if eyebrow}
-          <div class="inline-flex items-center gap-2">
-            <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
-            <span class="text-xs font-semibold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
-          </div>
+          <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{eyebrow}</span>
         {/if}
         {#if title}
-          <h2
-            class="font-serif mt-3 text-3xl leading-[1.1] tracking-tight text-heading sm:text-4xl md:text-[44px]"
-          >
-            {title}
-          </h2>
+          <h2 class="mt-2 font-serif text-3xl font-semibold leading-[1.1] tracking-tight text-heading sm:text-4xl md:text-[44px]">{title}</h2>
         {/if}
         {#if subtitle}
-          <p class="mt-4 max-w-[820px] text-base leading-relaxed text-ink/70">
-            {subtitle}
-          </p>
+          <p class="mt-4 max-w-[720px] text-base leading-relaxed text-ink/65">{subtitle}</p>
         {/if}
       </div>
-      <div class="home-how-grid mt-10 grid gap-8 md:grid-cols-4 md:gap-6">
-        {#each steps as s, i (s.title)}
-          <div class="home-how-card border-t border-ink/10 pt-5">
-            <div class="font-serif text-4xl text-clay">{stepNumber(i)}</div>
-            {#if s.title}
-              <h3 class="mt-3 text-lg font-semibold text-heading">{s.title}</h3>
+
+      <div class="mt-10 grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-center">
+        <div class="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-sand lg:aspect-auto lg:h-full lg:min-h-[440px]">
+          {#if displayImage}
+            <Img
+              src={displayImage}
+              alt="Tanzania safari route planned around your trip"
+              width={900}
+              sizes="(max-width: 1024px) 92vw, 42vw"
+              className="h-full w-full object-cover"
+            />
+          {:else}
+            <div class="h-full w-full bg-gradient-to-br from-forest to-deep-green"></div>
+          {/if}
+          <div class="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" aria-hidden="true"></div>
+          <div class="absolute inset-x-0 bottom-0 p-6">
+            {#if captionEyebrow}
+              <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">{captionEyebrow}</div>
             {/if}
-            {#if s.text}
-              <p class="mt-2 text-sm leading-relaxed text-ink/70">{s.text}</p>
+            {#if caption}
+              <p class="mt-1.5 font-serif text-xl font-semibold leading-tight text-white md:text-2xl">{caption}</p>
             {/if}
           </div>
-        {/each}
+        </div>
+
+        <div class="relative">
+          <div aria-hidden="true" class="absolute bottom-2 left-[19px] top-2 hidden w-px bg-[#E3DCCB] sm:block md:left-[21px]"></div>
+          <div class="flex flex-col gap-8">
+            {#each visibleSteps as step, index (step.title)}
+              <article class="relative flex gap-5">
+                <div class="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-goldfinch-gold bg-white font-serif text-[15px] font-semibold text-clay sm:h-11 sm:w-11">
+                  {stepNumber(index)}
+                </div>
+                <div class="pt-1">
+                  <h3 class="font-serif text-lg font-semibold text-heading">{step.title}</h3>
+                  {#if stepText(step)}
+                    <p class="mt-1.5 text-sm leading-relaxed text-ink/65">{stepText(step)}</p>
+                  {/if}
+                </div>
+              </article>
+            {/each}
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -68,35 +99,10 @@
 
 <style>
   @media (max-width: 767px) {
-    .home-how-planned {
-      padding-block: 3.25rem;
-      background: rgb(var(--c-surface));
-    }
-
-    .home-how-head h2 {
+    .home-how-planned h2 {
       font-size: clamp(1.85rem, 8vw, 2.25rem);
       line-height: 1.08;
       text-wrap: balance;
-    }
-
-    .home-how-head p {
-      font-size: 0.95rem;
-      line-height: 1.65;
-    }
-
-    .home-how-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 0.85rem;
-      margin-top: 1.5rem;
-    }
-
-    .home-how-card {
-      min-height: 0;
-      border: 1px solid rgb(var(--c-ink) / 0.1);
-      border-radius: 12px;
-      background: rgb(var(--c-surface));
-      padding: 1.1rem;
     }
   }
 </style>

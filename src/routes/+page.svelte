@@ -424,7 +424,10 @@
   <HomeWhyChoose
     eyebrow={cmsExtra('why_us', 'eyebrow', 'Why Goldfinch')}
     title={cms('why_us', 'title', 'A Local Team to Help You Make Sense of Tanzania')}
-    subtitle={cms('why_us', 'subtitle', 'Tanzania has many possible routes. That is the good part — and also the confusing part. We help you understand what fits your dates, budget and pace.')}
+    subtitle={cms('why_us', 'subtitle', 'Tanzania has many possible routes. That is the good part — and also the confusing part. We help you understand what fits your dates, budget, pace and travel style before you commit to anything.')}
+    titleHighlight={cmsExtra('why_us', 'title_highlight', 'Tanzania')}
+    ctaLabel={cms('why_us', 'button_text', 'Plan Your Trip')}
+    ctaHref={cms('why_us', 'button_url', '#lead-form')}
     {...clean({ features: arr(whyExtra.features) })}
   />
 {/if}
@@ -432,11 +435,14 @@
 <!-- 6 · Advisor's note -->
 {#if isSectionActive('advisor_note')}
   <HomeAdvisorNote
-    eyebrow={cmsExtra('advisor_note', 'eyebrow', "An Advisor's Note")}
+    eyebrow={cmsExtra('advisor_note', 'eyebrow', "Advisor's Note")}
     title={cms('advisor_note', 'title', 'The Trip Is Won or Lost in the Planning Details')}
     body={cms('advisor_note', 'subtitle', 'Most travel mistakes happen before arrival. The wrong route, too many one-night stops, poor lodge locations or badly timed transfers can make even a beautiful trip feel tiring.')}
+    imageUrl={cms('advisor_note', 'image_url', '')}
+    authorName={cmsExtra('advisor_note', 'author_name', 'Deo Robert')}
+    authorRole={cmsExtra('advisor_note', 'author_role', 'Founder & Advisor, Goldfinch Adventures')}
     {...clean({
-      columns: arr<{ title: string; items: string[] }>(advisorExtra.columns),
+      columns: arr<{ icon_url?: string; title: string; items: string[] }>(advisorExtra.columns),
       footnote: typeof advisorExtra.footnote === 'string' ? advisorExtra.footnote : ''
     })}
   />
@@ -448,6 +454,10 @@
     eyebrow={cmsExtra('how_it_works', 'eyebrow', 'How Your Trip Is Planned')}
     title={cms('how_it_works', 'title', 'Simple Planning. Clear Routes. Local Support.')}
     subtitle={cms('how_it_works', 'subtitle', "You do not need to arrive with a finished itinerary. Share the basics, and we'll help turn the idea into a route that makes sense.")}
+    imageUrl={cms('how_it_works', 'image_url', '')}
+    fallbackImageUrl={heroImageResolved}
+    captionEyebrow={cmsExtra('how_it_works', 'caption_eyebrow', 'Planned With You')}
+    caption={cmsExtra('how_it_works', 'caption', 'From first message to arrival, we shape it together.')}
     {...clean({ steps: arr(howExtra.steps) })}
   />
 {/if}

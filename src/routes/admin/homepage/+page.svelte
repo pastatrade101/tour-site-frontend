@@ -149,16 +149,19 @@
       key: 'advisor_note',
       label: "Advisor's note",
       surface: 'public',
-      description: 'Editorial card with two bulleted columns. Extra JSON: `columns` is a list of {title, items: [...]} (two columns look best) and `footnote` is the closing italic line.',
-      fields: ['title', 'subtitle', 'extra: eyebrow, columns, footnote'],
+      description: 'Split editorial card with an advisor portrait, author details and two illustrated checklist columns.',
+      fields: ['title', 'subtitle', 'image', 'extra: eyebrow, author, columns, footnote'],
       preset: {
         title: 'The Trip Is Won or Lost in the Planning Details',
         subtitle: 'Most travel mistakes happen before arrival. The wrong route, too many one-night stops, poor lodge locations or badly timed transfers can make even a beautiful trip feel tiring.',
         extra_data: {
           eyebrow: "Advisor's Note",
+          author_name: 'Deo Robert',
+          author_role: 'Founder & Advisor, Goldfinch Adventures',
           footnote: 'That is why we start with your dates, travel style and priorities — not with a fixed package.',
           columns: [
             {
+              icon_url: '/images/icons-home/icon-big-choices.png',
               title: 'The big choices',
               items: [
                 'When to travel — migration timing, dry season, shoulder-season value, beach conditions and Kilimanjaro weather.',
@@ -168,6 +171,7 @@
               ]
             },
             {
+              icon_url: '/images/icons-home/icon-quiet-details.png',
               title: 'The quiet details',
               items: [
                 'Vehicle style, road time and where open-side game-drive vehicles make sense.',
@@ -209,12 +213,25 @@
       key: 'why_us',
       label: 'Why us',
       surface: 'public',
-      description: 'The safari value-proposition band. Extra JSON can override the feature cards.',
-      fields: ['title', 'subtitle', 'extra: eyebrow, features'],
+      description: 'Centered six-point value section with illustrated media-library icons and a planning CTA.',
+      fields: ['title', 'subtitle', 'button', 'extra: eyebrow, title_highlight, features'],
       preset: {
-        title: 'Your Safari, Your Way',
-        subtitle: 'We listen first, then design. Every trip is shaped around your dates, budget and the kind of journey you want.',
-        extra_data: { eyebrow: 'Why travel with us' }
+        title: 'A Local Team to Help You Make Sense of Tanzania',
+        subtitle: 'Tanzania has many possible routes. That is the good part — and also the confusing part. We help you understand what fits your dates, budget, pace and travel style before you commit to anything.',
+        button_text: 'Plan Your Trip',
+        button_url: '#lead-form',
+        extra_data: {
+          eyebrow: 'Why Goldfinch',
+          title_highlight: 'Tanzania',
+          features: [
+            { icon_url: '/images/icons-home/icon-planned.png', title: 'Planned Around Your Trip', text: 'We do not force every traveller into the same route. Safari, Zanzibar, Kilimanjaro, culture and beach can be shaped around what you actually want.' },
+            { icon_url: '/images/icons-home/icon-local-knowledge.png', title: 'Local Knowledge, Real Experience', text: 'We understand the parks, roads, seasons, lodge areas, domestic flights and beach regions because this is where we work.' },
+            { icon_url: '/images/icons-home/icon-real-support.png', title: 'Real Support, Real People', text: 'From first enquiry to final drop-off, you speak with people who know your route and can help when plans need adjusting.' },
+            { icon_url: '/images/icons-home/icon-transparent-planning.png', title: 'Transparent Planning', text: 'We explain what affects cost — lodges, park fees, transfers, domestic flights, route style and comfort level — before you confirm.' },
+            { icon_url: '/images/icons-home/icon-we-care.png', title: 'We Actually Care', text: 'Tanzania is our home. The goal is not to sell the longest trip. It is to help you experience the country properly.' },
+            { icon_url: '/images/icons-home/icon-connected.png', title: 'Connected From Start to Finish', text: 'Safari, Zanzibar, Kilimanjaro, culture, airport pickups, domestic flights, guides and transfers are planned as one connected journey.' }
+          ]
+        }
       }
     },
     {
@@ -282,13 +299,22 @@
       key: 'how_it_works',
       label: 'Planning process',
       surface: 'public',
-      description: 'Process section heading and CTA. Step content is controlled by the frontend component defaults.',
-      fields: ['title', 'subtitle', 'button'],
+      description: 'Image-led four-step planning timeline. The section image is shown beside the editable steps.',
+      fields: ['title', 'subtitle', 'image', 'extra: eyebrow, caption_eyebrow, caption, steps'],
       preset: {
-        title: 'Our Process',
-        subtitle: 'A calm, transparent process - no pressure, and no payment to start.',
-        button_text: 'Start planning',
-        button_url: '/plan-my-trip'
+        title: 'Simple Planning. Clear Routes. Local Support.',
+        subtitle: "You do not need to arrive with a finished itinerary. Share the basics, and we'll help turn the idea into a route that makes sense.",
+        extra_data: {
+          eyebrow: 'How Your Trip Is Planned',
+          caption_eyebrow: 'Planned With You',
+          caption: 'From first message to arrival, we shape it together.',
+          steps: [
+            { title: 'Tell Us What You Have in Mind', text: 'Share your dates, starting point, number of travellers, budget range and whether you want safari, Zanzibar, Kilimanjaro, culture or a mix.' },
+            { title: 'We Shape the Right Route', text: 'We suggest what fits, what to avoid and how the journey could flow from arrival to departure.' },
+            { title: 'We Refine the Details', text: 'Lodges, camps, beach areas, domestic flights, transfers, guides and timing are matched to your season and comfort level.' },
+            { title: 'You Travel With Local Support', text: 'You travel with trusted guides and a Tanzania-based team reachable from arrival to departure.' }
+          ]
+        }
       }
     },
     {
@@ -498,13 +524,144 @@
   // ── repeaters stored inside extra_data (partner logos + login slides) ──────
   type LogoRow = { image_url: string; name: string; url: string };
   type SlideRow = { image_url: string; title: string; subtitle: string };
+  type WhyFeatureRow = { icon_url: string; text: string; title: string };
+  type AdvisorColumnRow = { icon_url: string; items: string[]; title: string };
+  type HowStepRow = { text: string; title: string };
   let logos: LogoRow[] = [];
   let slides: SlideRow[] = [];
+  let whyFeatures: WhyFeatureRow[] = [];
+  let whyTitleHighlight = 'Tanzania';
+  let advisorColumns: AdvisorColumnRow[] = [];
+  let advisorAuthorName = 'Deo Robert';
+  let advisorAuthorRole = 'Founder & Advisor, Goldfinch Adventures';
+  let advisorFootnote = '';
+  let howSteps: HowStepRow[] = [];
+  let howCaptionEyebrow = 'Planned With You';
+  let howCaption = 'From first message to arrival, we shape it together.';
 
   // Shared media-library picker — targets either a logo row or a slide row.
   let mediaPicker: { list: 'logos' | 'slides'; index: number } | null = null;
 
-  const MANAGED_KEYS = [...BG_KEYS, 'faqs', 'logos', 'slides', 'ranges'];
+  const MANAGED_KEYS = [
+    ...BG_KEYS,
+    'faqs',
+    'logos',
+    'slides',
+    'ranges',
+    'features',
+    'title_highlight',
+    'columns',
+    'author_name',
+    'author_role',
+    'footnote',
+    'steps',
+    'caption_eyebrow',
+    'caption'
+  ];
+
+  const defaultWhyFeatures = (): WhyFeatureRow[] => [
+    { icon_url: '/images/icons-home/icon-planned.png', title: 'Planned Around Your Trip', text: 'We do not force every traveller into the same route. Safari, Zanzibar, Kilimanjaro, culture and beach can be shaped around what you actually want.' },
+    { icon_url: '/images/icons-home/icon-local-knowledge.png', title: 'Local Knowledge, Real Experience', text: 'We understand the parks, roads, seasons, lodge areas, domestic flights and beach regions because this is where we work.' },
+    { icon_url: '/images/icons-home/icon-real-support.png', title: 'Real Support, Real People', text: 'From first enquiry to final drop-off, you speak with people who know your route and can help when plans need adjusting.' },
+    { icon_url: '/images/icons-home/icon-transparent-planning.png', title: 'Transparent Planning', text: 'We explain what affects cost — lodges, park fees, transfers, domestic flights, route style and comfort level — before you confirm.' },
+    { icon_url: '/images/icons-home/icon-we-care.png', title: 'We Actually Care', text: 'Tanzania is our home. The goal is not to sell the longest trip. It is to help you experience the country properly.' },
+    { icon_url: '/images/icons-home/icon-connected.png', title: 'Connected From Start to Finish', text: 'Safari, Zanzibar, Kilimanjaro, culture, airport pickups, domestic flights, guides and transfers are planned as one connected journey.' }
+  ];
+
+  const defaultAdvisorColumns = (): AdvisorColumnRow[] => [
+    {
+      icon_url: '/images/icons-home/icon-big-choices.png',
+      title: 'The big choices',
+      items: [
+        'When to travel — migration timing, dry season, shoulder-season value, beach conditions and Kilimanjaro weather.',
+        'Which places to include — and which to leave out so the trip has enough space.',
+        'How to combine safari, Zanzibar, Kilimanjaro or culture without wasting days in transit.',
+        'Accommodation style — mobile camp, tented camp, lodge, boutique hotel, beach resort or mountain hotel.'
+      ]
+    },
+    {
+      icon_url: '/images/icons-home/icon-quiet-details.png',
+      title: 'The quiet details',
+      items: [
+        'Vehicle style, road time and where open-side game-drive vehicles make sense.',
+        'Which Zanzibar coast fits your month, swimming preference and travel style.',
+        'Family logistics, gentler safari days, connecting rooms and realistic drive times.',
+        'Photography, birding, walking, culture or trekking interests matched to the right guide and pace.'
+      ]
+    }
+  ];
+
+  const defaultHowSteps = (): HowStepRow[] => [
+    { title: 'Tell Us What You Have in Mind', text: 'Share your dates, starting point, number of travellers, budget range and whether you want safari, Zanzibar, Kilimanjaro, culture or a mix.' },
+    { title: 'We Shape the Right Route', text: 'We suggest what fits, what to avoid and how the journey could flow from arrival to departure.' },
+    { title: 'We Refine the Details', text: 'Lodges, camps, beach areas, domestic flights, transfers, guides and timing are matched to your season and comfort level.' },
+    { title: 'You Travel With Local Support', text: 'You travel with trusted guides and a Tanzania-based team reachable from arrival to departure.' }
+  ];
+
+  const extraToWhyFeatures = (ed: Record<string, unknown>): WhyFeatureRow[] => {
+    if (!Array.isArray(ed.features) || !ed.features.length) return defaultWhyFeatures();
+    const rows = (ed.features as Array<Record<string, unknown>>).slice(0, 6).map((feature, index) => ({
+      icon_url: String(feature?.icon_url ?? feature?.icon ?? defaultWhyFeatures()[index]?.icon_url ?? ''),
+      title: String(feature?.title ?? ''),
+      text: String(feature?.text ?? feature?.body ?? '')
+    }));
+    return [...rows, ...defaultWhyFeatures().slice(rows.length)].slice(0, 6);
+  };
+  const whyFeaturesToExtra = () => whyFeatures.slice(0, 6).map((feature) => ({
+    icon_url: feature.icon_url.trim(),
+    title: feature.title.trim(),
+    text: feature.text.trim()
+  }));
+
+  const extraToAdvisorColumns = (ed: Record<string, unknown>): AdvisorColumnRow[] => {
+    if (!Array.isArray(ed.columns) || !ed.columns.length) return defaultAdvisorColumns();
+    const rows = (ed.columns as Array<Record<string, unknown>>).slice(0, 2).map((column, index) => ({
+      icon_url: String(column?.icon_url ?? defaultAdvisorColumns()[index]?.icon_url ?? ''),
+      title: String(column?.title ?? ''),
+      items: Array.isArray(column?.items) ? column.items.map(String).filter(Boolean) : []
+    }));
+    return [...rows, ...defaultAdvisorColumns().slice(rows.length)].slice(0, 2);
+  };
+  const advisorColumnsToExtra = () => advisorColumns.slice(0, 2).map((column) => ({
+    icon_url: column.icon_url.trim(),
+    title: column.title.trim(),
+    items: column.items.map((item) => item.trim()).filter(Boolean)
+  }));
+  const setAdvisorItems = (index: number, value: string) => {
+    advisorColumns = advisorColumns.map((column, columnIndex) =>
+      columnIndex === index ? { ...column, items: value.split('\n') } : column
+    );
+  };
+
+  const extraToHowSteps = (ed: Record<string, unknown>): HowStepRow[] => {
+    if (!Array.isArray(ed.steps) || !ed.steps.length) return defaultHowSteps();
+    const rows = (ed.steps as Array<Record<string, unknown>>).slice(0, 4).map((step) => ({
+      title: String(step?.title ?? ''),
+      text: String(step?.text ?? step?.body ?? '')
+    }));
+    return [...rows, ...defaultHowSteps().slice(rows.length)].slice(0, 4);
+  };
+  const howStepsToExtra = () => howSteps.slice(0, 4).map((step) => ({ title: step.title.trim(), text: step.text.trim() }));
+
+  const hydrateReferenceEditors = (key: string, ed: Record<string, unknown>) => {
+    whyFeatures = extraToWhyFeatures(key === 'why_us' ? ed : {});
+    whyTitleHighlight = key === 'why_us' ? String(ed.title_highlight ?? 'Tanzania') : 'Tanzania';
+
+    advisorColumns = extraToAdvisorColumns(key === 'advisor_note' ? ed : {});
+    advisorAuthorName = key === 'advisor_note' ? String(ed.author_name ?? 'Deo Robert') : 'Deo Robert';
+    advisorAuthorRole = key === 'advisor_note'
+      ? String(ed.author_role ?? 'Founder & Advisor, Goldfinch Adventures')
+      : 'Founder & Advisor, Goldfinch Adventures';
+    advisorFootnote = key === 'advisor_note'
+      ? String(ed.footnote ?? 'That is why we start with your dates, travel style and priorities — not with a fixed package.')
+      : '';
+
+    howSteps = extraToHowSteps(key === 'how_it_works' ? ed : {});
+    howCaptionEyebrow = key === 'how_it_works' ? String(ed.caption_eyebrow ?? 'Planned With You') : 'Planned With You';
+    howCaption = key === 'how_it_works'
+      ? String(ed.caption ?? 'From first message to arrival, we shape it together.')
+      : 'From first message to arrival, we shape it together.';
+  };
 
   const openMediaPicker = async (list: 'logos' | 'slides', index: number) => {
     mediaPicker = { list, index };
@@ -718,6 +875,7 @@
     slides = [];
     costRanges = [];
     faqRows = [];
+    hydrateReferenceEditors('', {});
     void loadMedia();
     modalOpen = true;
   };
@@ -739,6 +897,7 @@
     slides = key === 'login_slider' ? extraToSlides(ed) : [];
     costRanges = key === 'cost_ranges' ? extraToCostRanges(ed) : [];
     faqRows = key === 'faq' ? extraToFaqRows(ed) : [];
+    hydrateReferenceEditors(key, ed);
     const rest = Object.fromEntries(Object.entries(ed).filter(([extraKey]) => !MANAGED_KEYS.includes(extraKey)));
     extraDataText = Object.keys(rest).length ? JSON.stringify(rest, null, 2) : '{}';
     void loadMedia();
@@ -766,6 +925,7 @@
     slides = [];
     costRanges = [];
     faqRows = [];
+    hydrateReferenceEditors('', {});
     void loadMedia();
     modalOpen = true;
   };
@@ -789,13 +949,26 @@
     slides = extraToSlides(ed);
     costRanges = extraToCostRanges(ed);
     faqRows = extraToFaqRows(ed);
+    hydrateReferenceEditors(section.section_key, ed);
     const rest = Object.fromEntries(Object.entries(ed).filter(([key]) => !MANAGED_KEYS.includes(key)));
     extraDataText = Object.keys(rest).length ? JSON.stringify(rest, null, 2) : '{}';
     void loadMedia();
     modalOpen = true;
   };
 
-  const closeModal = () => { modalOpen = false; editing = null; form = emptyForm(); extraDataText = '{}'; bg = emptyBg(); logos = []; slides = []; costRanges = []; faqRows = []; mediaPicker = null; };
+  const closeModal = () => {
+    modalOpen = false;
+    editing = null;
+    form = emptyForm();
+    extraDataText = '{}';
+    bg = emptyBg();
+    logos = [];
+    slides = [];
+    costRanges = [];
+    faqRows = [];
+    hydrateReferenceEditors('', {});
+    mediaPicker = null;
+  };
 
   const save = async () => {
     if (!/^[a-z0-9_]{2,}$/.test(form.section_key.trim())) {
@@ -836,6 +1009,33 @@
     // back to the global Admin → FAQs records.
     if (form.section_key.trim() === 'faq' || faqRows.some((f) => f.question.trim() || f.answer.trim())) {
       extra = { ...extra, faqs: faqRowsToExtra() };
+    }
+
+    if (form.section_key.trim() === 'why_us') {
+      extra = {
+        ...extra,
+        title_highlight: whyTitleHighlight.trim(),
+        features: whyFeaturesToExtra()
+      };
+    }
+
+    if (form.section_key.trim() === 'advisor_note') {
+      extra = {
+        ...extra,
+        author_name: advisorAuthorName.trim(),
+        author_role: advisorAuthorRole.trim(),
+        footnote: advisorFootnote.trim(),
+        columns: advisorColumnsToExtra()
+      };
+    }
+
+    if (form.section_key.trim() === 'how_it_works') {
+      extra = {
+        ...extra,
+        caption_eyebrow: howCaptionEyebrow.trim(),
+        caption: howCaption.trim(),
+        steps: howStepsToExtra()
+      };
     }
 
     saving = true;
@@ -1198,9 +1398,106 @@
         <AdminTextArea label="Content" name="content" bind:value={form.content} rows={3} placeholder="Optional body text for this section." />
 
         <!-- image -->
-        <div class="rounded-[8px] border border-ink/10 bg-sand/25 p-4">
-          <MediaPicker label="Section image" media={mediaItems} uploadFolder="homepage" bind:value={form.image_url} />
-        </div>
+        {#if !currentMeta || currentMeta.fields.includes('image')}
+          <div class="rounded-[8px] border border-ink/10 bg-sand/25 p-4">
+            <MediaPicker
+              label={form.section_key.trim() === 'advisor_note' ? 'Advisor portrait' : form.section_key.trim() === 'how_it_works' ? 'Planning section image' : 'Section image'}
+              media={mediaItems}
+              uploadFolder={`homepage/${form.section_key.trim() || 'sections'}`}
+              bind:value={form.image_url}
+            />
+          </div>
+        {/if}
+
+        {#if form.section_key.trim() === 'why_us'}
+          <div class="grid gap-5 rounded-[8px] border border-ink/10 bg-sand/25 p-4">
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">Why Goldfinch layout</p>
+              <p class="mt-1 text-xs leading-5 text-ink/50">Exactly six points render in the centered homepage layout. Each icon can use the supplied artwork or any image from the media library.</p>
+            </div>
+            <AdminFormInput label="Italic gold word in heading" name="why_title_highlight" bind:value={whyTitleHighlight} placeholder="Tanzania" />
+            <div class="grid gap-4 sm:grid-cols-2">
+              {#each whyFeatures as feature, i (i)}
+                <div class="grid gap-3 rounded-[8px] border border-ink/10 bg-surface p-4 shadow-sm">
+                  <div class="flex items-center justify-between gap-3">
+                    <p class="text-xs font-extrabold uppercase tracking-[0.12em] text-heading">Point {i + 1}</p>
+                    <span class="rounded-full bg-goldfinch-gold/20 px-2 py-0.5 text-[10px] font-bold text-heading">Fixed position</span>
+                  </div>
+                  <MediaPicker
+                    label="Illustrated icon"
+                    media={mediaItems}
+                    uploadFolder="homepage/why"
+                    bind:value={feature.icon_url}
+                    aspect="aspect-square"
+                    fit="object-contain"
+                  />
+                  <AdminFormInput label="Point title" name={`why_feature_${i}_title`} bind:value={feature.title} />
+                  <AdminTextArea label="Point text" name={`why_feature_${i}_text`} bind:value={feature.text} rows={4} />
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        {#if form.section_key.trim() === 'advisor_note'}
+          <div class="grid gap-5 rounded-[8px] border border-ink/10 bg-sand/25 p-4">
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">Advisor card details</p>
+              <p class="mt-1 text-xs leading-5 text-ink/50">The portrait appears in the dark left panel. These two fixed columns render in the warm cream panel.</p>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <AdminFormInput label="Advisor name" name="advisor_author_name" bind:value={advisorAuthorName} />
+              <AdminFormInput label="Advisor role" name="advisor_author_role" bind:value={advisorAuthorRole} />
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              {#each advisorColumns as column, i (i)}
+                <div class="grid gap-3 rounded-[8px] border border-ink/10 bg-surface p-4 shadow-sm">
+                  <p class="text-xs font-extrabold uppercase tracking-[0.12em] text-heading">Column {i + 1}</p>
+                  <MediaPicker
+                    label="Column icon"
+                    media={mediaItems}
+                    uploadFolder="homepage/advisor"
+                    bind:value={column.icon_url}
+                    aspect="aspect-square"
+                    fit="object-contain"
+                  />
+                  <AdminFormInput label="Column title" name={`advisor_column_${i}_title`} bind:value={column.title} />
+                  <label class="grid gap-1.5">
+                    <span class="text-[13px] font-semibold text-ink/65">Checklist items · one per line</span>
+                    <textarea
+                      class="min-h-[190px] rounded-md border border-ink/15 bg-black/[0.02] px-3.5 py-2.5 text-sm leading-6 text-ink outline-none transition hover:border-ink/25 focus:border-forest focus:bg-surface focus:ring-2 focus:ring-forest/20"
+                      value={column.items.join('\n')}
+                      on:input={(event) => setAdvisorItems(i, event.currentTarget.value)}
+                    ></textarea>
+                  </label>
+                </div>
+              {/each}
+            </div>
+            <AdminTextArea label="Closing pull quote" name="advisor_footnote" bind:value={advisorFootnote} rows={3} />
+          </div>
+        {/if}
+
+        {#if form.section_key.trim() === 'how_it_works'}
+          <div class="grid gap-5 rounded-[8px] border border-ink/10 bg-sand/25 p-4">
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">Planning timeline</p>
+              <p class="mt-1 text-xs leading-5 text-ink/50">The image caption overlays the photograph. Exactly four steps render along the numbered vertical timeline.</p>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <AdminFormInput label="Image caption eyebrow" name="how_caption_eyebrow" bind:value={howCaptionEyebrow} />
+              <AdminFormInput label="Image caption" name="how_caption" bind:value={howCaption} />
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              {#each howSteps as step, i (i)}
+                <div class="grid gap-3 rounded-[8px] border border-ink/10 bg-surface p-4 shadow-sm">
+                  <p class="text-xs font-extrabold uppercase tracking-[0.12em] text-heading">Step {String(i + 1).padStart(2, '0')}</p>
+                  <AdminFormInput label="Step title" name={`how_step_${i}_title`} bind:value={step.title} />
+                  <AdminTextArea label="Step text" name={`how_step_${i}_text`} bind:value={step.text} rows={4} />
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
 
         <!-- background video + overlay -->
         <div class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/25 p-4">
