@@ -161,6 +161,12 @@ export type TourCategory = {
   min_days?: number | null;
   max_days?: number | null;
   best_months?: number[] | null;
+  planning_notes?: {
+    costs?: string | null;
+    route?: string | null;
+  } | null;
+  /** Complete CMS document consumed by the shared safari-style landing page. */
+  landing_page_content?: import('$lib/safariStyleLanding').StyleLandingContent | null;
   highlights?: string[] | null;
   icon_url?: string | null;
   image_url?: string | null;

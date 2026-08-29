@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
-  import { ArrowDown, ArrowUp, ChevronDown, Edit, Plus, Search, Trash2, X } from '@lucide/svelte';
+  import { ArrowDown, ArrowUp, Braces, Check, ChevronDown, Copy, Edit, Plus, Search, Trash2, X } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
@@ -20,6 +20,11 @@
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import { hasRichContent, toMetaText } from '$lib/richText';
+  import {
+    defaultStyleLandingContent,
+    parseStyleLandingJson,
+    type StyleLandingContent
+  } from '$lib/safariStyleLanding';
 
   type FitnessLevel = '' | 'easy' | 'moderate' | 'active' | 'challenging' | 'strenuous';
 
@@ -37,6 +42,7 @@
     max_days?: number | null;
     best_months?: number[] | null;
     planning_notes?: Record<string, unknown> | null;
+    landing_page_content?: StyleLandingContent | null;
     highlights?: string[] | null;
     icon_url?: string | null;
     image_url?: string | null;
@@ -73,6 +79,7 @@
     who_its_for: string;
     planning_costs: string;
     planning_route: string;
+    landing_page_json: string;
   };
 
   type VisualType = 'none' | 'icon' | 'lottie';
@@ -107,7 +114,8 @@
     status: 'draft',
     who_its_for: '',
     planning_costs: '',
-    planning_route: ''
+    planning_route: '',
+    landing_page_json: JSON.stringify(defaultStyleLandingContent(), null, 2)
   });
 
   const statusOptions = [
@@ -265,7 +273,8 @@
       status: category.status ?? 'draft',
       who_its_for: category.who_its_for ?? '',
       planning_costs: String((category.planning_notes as Record<string, unknown> | null)?.costs ?? ''),
-      planning_route: String((category.planning_notes as Record<string, unknown> | null)?.route ?? '')
+      planning_route: String((category.planning_notes as Record<string, unknown> | null)?.route ?? ''),
+      landing_page_json: JSON.stringify(category.landing_page_content ?? defaultStyleLandingContent(category), null, 2)
     };
     visualType = category.lottie_url ? 'lottie' : category.icon_url ? 'icon' : 'none';
     lastVisualType = visualType;
@@ -316,6 +325,35 @@
     form.highlights = next.length ? next : [''];
   };
 
+  $: landingPageValidation = parseStyleLandingJson(form.landing_page_json);
+  $: landingPageError = landingPageValidation.errors[0] ?? '';
+
+  const generateLandingPageTemplate = () => {
+    form.landing_page_json = JSON.stringify(
+      defaultStyleLandingContent({
+        name: form.name,
+        short_description: form.short_description,
+        description: form.description,
+        highlights: cleanHighlights(),
+        image_url: form.image_url,
+        best_months: form.best_months,
+        planning_notes: { costs: form.planning_costs, route: form.planning_route }
+      }),
+      null,
+      2
+    );
+    showToast('Complete landing-page template generated. Review the copy before publishing.');
+  };
+
+  const copyLandingPageJson = async () => {
+    try {
+      await navigator.clipboard.writeText(form.landing_page_json);
+      showToast('Landing-page JSON copied.');
+    } catch {
+      showToast('Unable to copy. Select the JSON and copy it manually.', 'error');
+    }
+  };
+
   // Legacy `fitness` free text is deliberately absent: the API no longer
   // accepts it, and leaving it out of the update payload is what keeps the
   // stored text intact as a public-page fallback.
@@ -342,13 +380,22 @@
     planning_notes:
       form.planning_costs.trim() || form.planning_route.trim()
         ? { costs: form.planning_costs.trim() || null, route: form.planning_route.trim() || null }
-        : null
+        : null,
+    landing_page_content: landingPageValidation.data
   });
 
   const saveCategory = async () => {
     if (saving) return;
     if (daysError) {
       showToast(daysError, 'error');
+      return;
+    }
+    if (form.status === 'published' && landingPageValidation.errors.length) {
+      showToast(`Landing page is incomplete: ${landingPageValidation.errors[0]}`, 'error');
+      return;
+    }
+    if (form.landing_page_json.trim() && landingPageValidation.errors.length) {
+      showToast(landingPageValidation.errors[0], 'error');
       return;
     }
     saving = true;
@@ -555,7 +602,59 @@
           <p class="-mt-1 text-xs text-ink/55">Both optional, and both take bullets. Each appears as its own card on the style page; leave one blank and it is hidden.</p>
         </section>
 
-        <!-- ── 2 · Travel information ────────────────────────────────────── -->
+        <!-- ── 2 · Exact safari-style landing-page document ─────────────── -->
+        <section class="grid gap-4 rounded-[8px] border border-goldfinch-gold/35 bg-goldfinch-gold/[0.06] p-4">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div class="flex items-center gap-2">
+                <Braces size={17} class="text-forest" />
+                <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Safari-style page UI content</p>
+              </div>
+              <p class="mt-2 max-w-3xl text-sm leading-6 text-ink/60">
+                This JSON maps one-to-one to the shared safari-style layout. Paste a complete page document here, or generate a valid template from the category fields and edit its copy. Published categories require every section.
+              </p>
+            </div>
+            <div class="flex shrink-0 flex-wrap gap-2">
+              <button class="inline-flex h-10 items-center gap-2 rounded-md border border-forest/25 bg-surface px-3 text-xs font-bold text-forest transition hover:bg-sand/60" type="button" on:click={generateLandingPageTemplate}>
+                <Braces size={14} /> Generate template
+              </button>
+              <button class="inline-flex h-10 items-center gap-2 rounded-md border border-ink/10 bg-surface px-3 text-xs font-bold text-ink transition hover:bg-sand/60" type="button" on:click={copyLandingPageJson}>
+                <Copy size={14} /> Copy JSON
+              </button>
+            </div>
+          </div>
+
+          <label class="grid gap-1.5">
+            <span class="text-[13px] font-semibold text-ink/65">Complete landing-page JSON</span>
+            <textarea
+              class={`min-h-[520px] w-full resize-y rounded-md border bg-[#20231d] px-4 py-3 font-mono text-[12px] leading-5 text-[#f3efe7] outline-none transition focus:ring-2 ${landingPageError ? 'border-red-400 focus:border-red-400 focus:ring-red-300/30' : 'border-ink/15 focus:border-goldfinch-gold focus:ring-goldfinch-gold/20'}`}
+              name="landing_page_content"
+              bind:value={form.landing_page_json}
+              spellcheck="false"
+              aria-invalid={Boolean(landingPageError)}
+              aria-describedby="landing-page-validation"
+            ></textarea>
+          </label>
+
+          <div id="landing-page-validation" class={`flex items-start gap-2 rounded-md border px-3 py-2.5 text-xs ${landingPageError ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+            {#if landingPageError}
+              <X size={15} class="mt-0.5 shrink-0" />
+              <span><strong>Not ready to publish:</strong> {landingPageError}{landingPageValidation.errors.length > 1 ? ` (+${landingPageValidation.errors.length - 1} more)` : ''}</span>
+            {:else}
+              <Check size={15} class="mt-0.5 shrink-0" />
+              <span>Valid and complete. The public page can render every supplied UI section directly from CMS.</span>
+            {/if}
+          </div>
+
+          <details class="rounded-md border border-ink/10 bg-surface px-4 py-3 text-sm text-ink/65">
+            <summary class="cursor-pointer font-semibold text-heading">Required document structure</summary>
+            <p class="mt-2 leading-6">
+              hero · trustChips (4) · overview · planner · tourCollection · planningGuide (4 blocks) · advisor (4 big + 4 quiet) · howItsPlanned (4 steps) · reviews · faq · finalCta (4 proofs).
+            </p>
+          </details>
+        </section>
+
+        <!-- ── 3 · Travel information ────────────────────────────────────── -->
         <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
           <div>
             <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Travel information</p>
@@ -653,7 +752,7 @@
             </div>
         </section>
 
-        <!-- ── 3 · Media ─────────────────────────────────────────────────── -->
+        <!-- ── 4 · Media ─────────────────────────────────────────────────── -->
         <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
           <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Media</p>
 
@@ -702,7 +801,7 @@
           </div>
         </section>
 
-        <!-- ── 4 · Publishing ────────────────────────────────────────────── -->
+        <!-- ── 5 · Publishing ────────────────────────────────────────────── -->
         <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
           <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Publishing</p>
           <div class="grid gap-4 md:grid-cols-3">
@@ -716,7 +815,7 @@
           <p class="-mt-2 text-xs text-ink/45">Featured marks this category for homepage and promotional sections. Sort order only controls list position — lower first.</p>
         </section>
 
-        <!-- ── 5 · SEO (collapsed until needed) ──────────────────────────── -->
+        <!-- ── 6 · SEO (collapsed until needed) ──────────────────────────── -->
         <section class="rounded-[8px] border border-ink/10 bg-sand/20">
           <button
             class="flex w-full items-center justify-between gap-3 p-4 text-left"
@@ -741,7 +840,7 @@
           {/if}
         </section>
 
-        <!-- ── 6 · Translations (existing categories only — needs an id) ── -->
+        <!-- ── 7 · Translations (existing categories only — needs an id) ── -->
         {#if editingCategory}
           <AdminTranslationTabs
             entityType="tour_categories"

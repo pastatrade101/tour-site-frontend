@@ -10,7 +10,7 @@
    * same honeypot, same idempotency key — so a lead from here reaches the
    * inbox looking like every other lead, tagged with the style it came from.
    */
-  import { ArrowRight, ChevronLeft, Loader2 } from '@lucide/svelte';
+  import { ChevronDown, ChevronLeft, ChevronRight, Loader2 } from '@lucide/svelte';
   import { getAttribution, trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
   import { ACCOMMODATION } from '$lib/enquiry/fields';
@@ -46,12 +46,20 @@
 
   const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
-  // Only the last step can fail validation in a way worth blocking on — the
-  // first two are preferences, and an empty preference is a real answer.
   $: canSubmit = fullName.trim().length > 1 && isEmail(email.trim()) && phone.trim().length > 5;
 
   const next = () => {
     error = '';
+    if (step === 1) {
+      if (!travellers) return (error = 'How many travellers?');
+      if (!travelDate.trim()) return (error = 'Add a travel date or month.');
+      if (!days.trim()) return (error = 'How many days?');
+    }
+    if (step === 2) {
+      if (!startPoint) return (error = 'Where are you starting from?');
+      if (!comfort) return (error = 'Choose a comfort level.');
+      if (!interest) return (error = 'Choose a main interest.');
+    }
     if (step < TOTAL) step += 1;
   };
   const back = () => {
@@ -105,26 +113,30 @@
   };
 
   const fieldClass =
-    'h-12 w-full min-w-0 rounded-xl border border-transparent bg-white px-4 text-sm text-heading outline-none transition placeholder:text-ink/35 focus:border-goldfinch-gold focus:ring-2 focus:ring-goldfinch-gold/30';
-  const labelClass = 'text-[11px] font-bold uppercase tracking-[0.14em] text-white/70';
+    'h-11 w-full min-w-0 rounded-[10px] border border-white/20 bg-white px-3.5 text-[15px] text-heading outline-none transition placeholder:text-ink/45 focus:border-goldfinch-gold focus:ring-2 focus:ring-goldfinch-gold/25';
+  const selectClass = `${fieldClass} appearance-none pr-10`;
+  const labelClass = 'mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.10em] text-white/70';
+  $: usableStartPoints = startPoints.length
+    ? startPoints
+    : ['Arusha', 'Zanzibar', 'Kilimanjaro Airport', 'Dar es Salaam', 'Nairobi', 'Moshi'].map((name) => ({ name }));
 </script>
 
-<section class="relative overflow-hidden bg-deep-green py-12 text-white md:py-16">
-  <div class="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full border border-white/10" aria-hidden="true"></div>
-
-  <div class="container-shell relative grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)] lg:items-center lg:gap-12">
-    <div class="min-w-0">
+<section class="bg-surface py-10 md:py-14">
+  <div class="container-shell">
+    <div class="relative overflow-hidden rounded-[12px] bg-deep-green p-6 text-white md:p-8">
+      <div class="grid gap-6 lg:grid-cols-12 lg:items-center lg:gap-10">
+    <div class="min-w-0 lg:col-span-4">
       <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{eyebrow}</p>
-      <h2 class="mt-3 font-serif text-3xl font-semibold leading-tight md:text-[32px]">{title}</h2>
+      <h2 class="mt-2 font-serif text-2xl font-semibold leading-[1.15] md:text-[30px]">{title}</h2>
       {#if description}
-        <p class="mt-3 text-[15px] leading-7 text-white/70">{description}</p>
+        <p class="mt-2 text-[14px] leading-relaxed text-white/70">{description}</p>
       {/if}
 
       {#if !submitted}
         <!-- Progress reads as bars rather than numbered circles: three steps do
              not need the ceremony, and it keeps the left column short. -->
-        <div class="mt-6 flex items-center gap-3">
-          <span class="flex items-center gap-1.5" aria-hidden="true">
+        <div class="mt-4 flex items-center gap-2">
+          <span class="flex items-center gap-2" aria-hidden="true">
             {#each Array(TOTAL) as _, index}
               <span
                 class="h-1.5 rounded-full transition-all duration-300 {index + 1 === step
@@ -135,12 +147,12 @@
               ></span>
             {/each}
           </span>
-          <span class="text-[11px] font-bold uppercase tracking-[0.14em] text-white/60">Step {step} of {TOTAL}</span>
+          <span class="ml-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">Step {step} of {TOTAL}</span>
         </div>
       {/if}
     </div>
 
-    <div class="min-w-0">
+    <div class="min-w-0 lg:col-span-8">
       {#if submitted}
         <div class="rounded-2xl border border-goldfinch-gold/30 bg-white/[0.06] p-6">
           <p class="font-serif text-2xl font-semibold">Thank you — we have your request.</p>
@@ -173,37 +185,45 @@
             </div>
           {:else if step === 2}
             <div class="grid gap-4 sm:grid-cols-3">
-              {#if startPoints.length}
-                <label class="grid gap-1.5">
-                  <span class={labelClass}>Starting point</span>
-                  <select class={fieldClass} bind:value={startPoint}>
-                    <option value="">Not sure yet</option>
-                    {#each startPoints as point}
+              <label>
+                <span class={labelClass}>Starting point</span>
+                <span class="relative block">
+                  <select class={selectClass} bind:value={startPoint}>
+                    <option value="">Select</option>
+                    {#each usableStartPoints as point}
                       <option value={String(point.name)}>{point.name}</option>
                     {/each}
+                    <option value="Not sure yet">Not sure yet</option>
                   </select>
-                </label>
-              {/if}
-              <label class="grid gap-1.5">
-                <span class={labelClass}>Comfort level</span>
-                <select class={fieldClass} bind:value={comfort}>
-                  <option value="">Not sure yet</option>
-                  {#each ACCOMMODATION as option}
-                    <option value={option.value}>{option.label}</option>
-                  {/each}
-                </select>
+                  <ChevronDown class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/65" size={18} />
+                </span>
               </label>
-              {#if interests.length}
-                <label class="grid gap-1.5">
-                  <span class={labelClass}>Main interest</span>
-                  <select class={fieldClass} bind:value={interest}>
-                    <option value="">Not sure yet</option>
+              <label>
+                <span class={labelClass}>Comfort level</span>
+                <span class="relative block">
+                  <select class={selectClass} bind:value={comfort}>
+                    <option value="">Select</option>
+                    {#each ACCOMMODATION as option}
+                      <option value={option.value}>{option.label}</option>
+                    {/each}
+                    <option value="Not sure yet">Not sure yet</option>
+                  </select>
+                  <ChevronDown class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/65" size={18} />
+                </span>
+              </label>
+              <label>
+                <span class={labelClass}>Main interest</span>
+                <span class="relative block">
+                  <select class={selectClass} bind:value={interest}>
+                    <option value="">Select</option>
                     {#each interests as option}
                       <option value={option.name}>{option.name}</option>
                     {/each}
+                    <option value="Not sure yet">Not sure yet</option>
                   </select>
-                </label>
-              {/if}
+                  <ChevronDown class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/65" size={18} />
+                </span>
+              </label>
             </div>
           {:else}
             <div class="grid gap-4 sm:grid-cols-3">
@@ -236,28 +256,30 @@
             <p class="mt-3 rounded-lg bg-clay/25 px-3 py-2 text-xs text-white" role="alert">{error}</p>
           {/if}
 
-          <div class="mt-5 flex flex-wrap items-center justify-end gap-3">
+          <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
             {#if step > 1}
               <button
-                class="inline-flex h-12 items-center gap-1.5 rounded-full border border-white/25 px-5 text-sm font-bold text-white transition hover:bg-white/10"
+                class="inline-flex h-11 items-center justify-center gap-1.5 rounded-[10px] border border-white/25 px-5 text-[13px] font-semibold text-white transition hover:bg-white/10"
                 type="button"
                 on:click={back}
               ><ChevronLeft size={16} /> Back</button>
             {/if}
             <button
-              class="inline-flex h-12 items-center gap-2 rounded-full bg-goldfinch-gold px-7 text-sm font-bold uppercase tracking-[0.06em] text-heading transition hover:brightness-105 disabled:opacity-60"
+              class="inline-flex h-11 items-center justify-center gap-1.5 rounded-[10px] bg-goldfinch-gold px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-heading transition hover:brightness-105 disabled:opacity-60"
               type="submit"
               disabled={submitting}
             >
               {#if submitting}
                 <Loader2 size={16} class="animate-spin" /> Sending…
               {:else}
-                {step === TOTAL ? 'Start my trip plan' : 'Continue'} <ArrowRight size={16} />
+                {step === TOTAL ? 'Start my trip plan' : 'Continue'} <ChevronRight size={16} />
               {/if}
             </button>
           </div>
         </form>
       {/if}
+    </div>
+      </div>
     </div>
   </div>
 </section>
