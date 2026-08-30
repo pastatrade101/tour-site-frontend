@@ -452,6 +452,26 @@ export const api = {
     updateNotes: (id: string, body: Record<string, unknown>) => apiRequest(`/bookings/${id}/notes`, { method: 'PUT', body }),
     remove: (id: string) => apiRequest(`/bookings/${id}`, { method: 'DELETE' }),
 
+    /** What is owed, what has been asked for, and asking for more. */
+    payment: {
+      position: (bookingId: string) =>
+        apiRequest<{
+          currency: string;
+          total: number | null;
+          paid: number;
+          outstanding: number | null;
+          suggested_deposit: number | null;
+          terms: string | null;
+          requests: Record<string, unknown>[];
+        }>(`/bookings/${bookingId}/payment-position`),
+      request: (bookingId: string, body: Record<string, unknown>) =>
+        apiRequest<Record<string, unknown>>(`/bookings/${bookingId}/payment-requests`, { method: 'POST', body }),
+      cancelRequest: (bookingId: string, requestId: string) =>
+        apiRequest<Record<string, unknown>>(`/bookings/${bookingId}/payment-requests/${requestId}/cancel`, {
+          method: 'PATCH'
+        })
+    },
+
     /** Changes agreed after the quotation was accepted and frozen. */
     amendments: {
       list: (bookingId: string) =>

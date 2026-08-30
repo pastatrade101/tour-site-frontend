@@ -27,6 +27,7 @@
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import AdminBookingAmendments from '$lib/components/admin/AdminBookingAmendments.svelte';
+  import AdminBookingPayment from '$lib/components/admin/AdminBookingPayment.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
   import AdminQuotationEditor from '$lib/components/admin/AdminQuotationEditor.svelte';
@@ -742,6 +743,14 @@ import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
             </select>
           </div>
         </div>
+
+        <!-- Above amendments on purpose: what is owed is the more common
+             question, and asking for it is the more common action. -->
+        <AdminBookingPayment
+          bookingId={String(viewing.id)}
+          bookingStatus={String(viewing.status ?? '')}
+          on:sent={(e) => showToast(e.detail ? `Payment request sent by ${e.detail}.` : 'Recorded, but not delivered.', e.detail ? 'success' : 'error')}
+        />
 
         <!-- Where a confirmed trip changes. The accepted quotation behind it is
              frozen, so this is the only place those changes can be recorded. -->
