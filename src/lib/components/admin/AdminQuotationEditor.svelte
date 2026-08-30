@@ -38,6 +38,12 @@
     total_amount: string;
     valid_until: string;
     notes: string;
+    /** One per line. Stored as string arrays; edited as text because that is
+        how an agent actually writes a list. */
+    inclusions: string;
+    exclusions: string;
+    deposit_amount: string;
+    payment_terms: string;
   };
 
   // The detail payloads stay loose: both consumers keep their own, stricter idea
@@ -75,7 +81,11 @@
     currency: 'USD',
     total_amount: '',
     valid_until: '',
-    notes: ''
+    notes: '',
+    inclusions: '',
+    exclusions: '',
+    deposit_amount: '',
+    payment_terms: ''
   });
 
   let form: Form = emptyForm();
@@ -136,6 +146,16 @@
     if (!$currency.loading && $currency.status === 'missing') void initCurrency();
   };
 
+  /** jsonb string array <-> one-per-line textarea, in both directions. */
+  const linesFrom = (value: unknown): string =>
+    Array.isArray(value) ? value.map((v) => String(v ?? '').trim()).filter(Boolean).join('\n') : '';
+
+  const linesTo = (value: string): string[] =>
+    value
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+
   const seed = () => {
     const source: Record<string, any> = quotation ?? prefill ?? {};
     current = quotation ? { ...quotation } : null;
@@ -154,7 +174,11 @@
       currency: text(source.currency) || 'USD',
       total_amount: numText(source.total_amount, ''),
       valid_until: dateOnly(source.valid_until),
-      notes: text(source.notes)
+      notes: text(source.notes),
+      inclusions: linesFrom(source.inclusions),
+      exclusions: linesFrom(source.exclusions),
+      deposit_amount: numText(source.deposit_amount, ''),
+      payment_terms: text(source.payment_terms)
     };
     const existing = Array.isArray(quotation?.items) ? (quotation?.items as Array<Record<string, any>>) : [];
     lines = existing.length
@@ -311,7 +335,13 @@
     items: cleanItems(),
     total_amount: totalValue,
     notes: form.notes.trim() || null,
-    valid_until: form.valid_until || null
+    valid_until: form.valid_until || null,
+    inclusions: linesTo(form.inclusions),
+    exclusions: linesTo(form.exclusions),
+    // An empty box means "not stated", which is not the same as a deposit of
+    // zero — the traveller's page hides the block entirely for null.
+    deposit_amount: form.deposit_amount.trim() === '' ? null : Number(form.deposit_amount),
+    payment_terms: form.payment_terms.trim() || null
   });
 
   const persist = async () => {
@@ -630,6 +660,67 @@
           {/if}
         </section>
 
+        <section class="grid gap-4 border-t border-ink/10 p-5">
+          <div>
+            <p class={labelClass}>What the price covers</p>
+            <p class="mt-1 {hintClass}">
+              One per line. Leave either box empty to hide it on the traveller's page — an empty heading is worse than no heading.
+            </p>
+          </div>
+          <div class="grid gap-4 md:grid-cols-2">
+            <AdminTextArea
+              label="Included"
+              name="inclusions"
+              rows={5}
+              bind:value={form.inclusions}
+              placeholder={'All park fees\nFull-board accommodation\nPrivate 4x4 with a guide'}
+            />
+            <!-- The list that prevents arguments. Worth its own box rather than
+                 a line buried in the notes, where it reads as small print. -->
+            <AdminTextArea
+              label="Not included"
+              name="exclusions"
+              rows={5}
+              bind:value={form.exclusions}
+              placeholder={'International flights\nVisas\nTravel insurance\nTips'}
+            />
+          </div>
+        </section>
+
+        <section class="grid gap-4 border-t border-ink/10 p-5">
+          <div>
+            <p class={labelClass}>Payment</p>
+            <p class="mt-1 {hintClass}">
+              Shown on the quotation so accepting is an informed decision. Nothing here takes money — it states what will be asked for.
+            </p>
+          </div>
+          <div class="grid gap-4 md:grid-cols-[10rem_1fr]">
+            <!-- A raw input rather than AdminFormInput: money needs step="0.01",
+                 which that component does not take — the same reason the total
+                 above is written out longhand. -->
+            <label class="grid min-w-0 gap-1.5">
+              <span class="text-[13px] font-semibold text-ink/65">Deposit to confirm</span>
+              <input
+                class={fieldClass}
+                name="deposit_amount"
+                type="number"
+                step="0.01"
+                min="0"
+                inputmode="decimal"
+                value={form.deposit_amount}
+                placeholder="Optional"
+                on:input={(event) => (form.deposit_amount = event.currentTarget.value)}
+              />
+            </label>
+            <AdminFormInput
+              label="Terms"
+              name="payment_terms"
+              bind:value={form.payment_terms}
+              placeholder="e.g. 30% deposit to confirm, balance due 60 days before travel"
+            />
+          </div>
+        </section>
+
         <section class="grid gap-2 border-t border-ink/10 p-5">
           <p class={labelClass}>Notes</p>
           <AdminTextArea
@@ -637,7 +728,7 @@
             name="notes"
             rows={3}
             bind:value={form.notes}
-            placeholder="Anything worth saying alongside the price — what is not included, how flexible the dates are."
+            placeholder="Anything worth saying alongside the price — how flexible the dates are, what happens next."
           />
         </section>
       </div>

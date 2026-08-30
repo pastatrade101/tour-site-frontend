@@ -375,7 +375,21 @@ export const api = {
     create: (body: Record<string, unknown>) => apiRequest<Record<string, unknown>>('/quotations', { method: 'POST', body }),
     update: (id: string, body: Record<string, unknown>) => apiRequest<Record<string, unknown>>(`/quotations/${id}`, { method: 'PUT', body }),
     send: (id: string, body: Record<string, unknown> = {}) => apiRequest<Record<string, unknown>>(`/quotations/${id}/send`, { method: 'POST', body }),
-    setStatus: (id: string, status: string) => apiRequest<Record<string, unknown>>(`/quotations/${id}/status`, { method: 'PATCH', body: { status } }),
+    /** Produce the next version. Archives the current one first. */
+    revise: (id: string, body: Record<string, unknown> = {}) =>
+      apiRequest<Record<string, unknown>>(`/quotations/${id}/revise`, { method: 'POST', body }),
+    // A reason is required by the API, not optional here: forcing a status puts
+    // words in the traveller's mouth, and the record has to say who did it.
+    setStatus: (id: string, status: string, reason: string) =>
+      apiRequest<Record<string, unknown>>(`/quotations/${id}/status`, { method: 'PATCH', body: { status, reason } }),
+    thread: (id: string) =>
+      apiRequest<{ revision: number; comments: Record<string, unknown>[]; revisions: Record<string, unknown>[] }>(
+        `/quotations/${id}/thread`
+      ),
+    comment: (id: string, body: string) =>
+      apiRequest<Record<string, unknown>>(`/quotations/${id}/comments`, { method: 'POST', body: { body } }),
+    resolveComment: (id: string, commentId: string) =>
+      apiRequest<Record<string, unknown>>(`/quotations/${id}/comments/${commentId}/resolve`, { method: 'PATCH' }),
     remove: (id: string) => apiRequest(`/quotations/${id}`, { method: 'DELETE' })
   },
   whatsapp: {

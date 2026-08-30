@@ -9,12 +9,13 @@
    */
   import { onDestroy, onMount } from 'svelte';
   import { page } from '$app/stores';
-  import { Edit, ExternalLink, FileText, Link as LinkIcon, MessageCircle, Plus, Search, Trash2 } from '@lucide/svelte';
+  import { Edit, ExternalLink, FileText, History, Link as LinkIcon, MessageCircle, Plus, Search, Trash2 } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import { quotationMoney, quotationStatusChip, quotationStatusLabel, quotationStatusMeta } from '$lib/quotations';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminQuotationEditor from '$lib/components/admin/AdminQuotationEditor.svelte';
+  import AdminQuotationThread from '$lib/components/admin/AdminQuotationThread.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
   import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
@@ -136,6 +137,28 @@
   const openCreate = () => { editing = null; editorOpen = true; };
   const openEdit = (row: Quotation) => { editing = row; editorOpen = true; };
   const closeEditor = () => { editorOpen = false; editing = null; };
+
+  let threadOpen = false;
+  let threadRow: null | Quotation = null;
+  const openThread = (row: Quotation) => { threadRow = row; threadOpen = true; };
+
+  /**
+   * A new revision exists but has not been sent. Go straight into the editor on
+   * it — the version was bumped precisely so the figures could be changed, and
+   * making the agent find the row again would be a step for nothing.
+   */
+  const onRevised = (e: CustomEvent<Record<string, unknown>>) => {
+    threadOpen = false;
+    showToast(`Revision v${e.detail?.revision ?? ''} started — edit it, then send.`);
+    load();
+    if (e.detail?.id) { editing = e.detail as Quotation; editorOpen = true; }
+  };
+
+  const onOverridden = () => {
+    threadOpen = false;
+    showToast('Status set by hand. The reason is recorded on the quotation.');
+    load();
+  };
 
   const onSaved = (e: CustomEvent<{ quotation: Quotation }>) => {
     // Keep the editor pointed at the row it has just written, so a second save
@@ -359,6 +382,16 @@
                     <button class={iconButton} type="button" aria-label="Copy quotation link" on:click={() => copyLink(row)}><LinkIcon size={15} /></button>
                     <button class={iconButton} type="button" aria-label="Open the traveller's quotation" on:click={() => openLink(row)}><ExternalLink size={15} /></button>
                     <button class={iconButton} type="button" aria-label="Edit quotation" on:click={() => openEdit(row)}><Edit size={15} /></button>
+                    <!-- Badged when the traveller is waiting on us, so the queue
+                         is visible from the list rather than only once opened. -->
+                    <span class="relative inline-flex">
+                      <button class={iconButton} type="button" aria-label="History and traveller requests" on:click={() => openThread(row)}
+                        ><History size={15} /></button
+                      >
+                      {#if row.status === 'changes_requested'}
+                        <span class="pointer-events-none absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-orange-500 ring-2 ring-surface"></span>
+                      {/if}
+                    </span>
                     <!-- The reason lives on the wrapper: `iconButton` disables
                          pointer events, so a title on the button itself can
                          never be hovered and the agent would see a greyed-out
@@ -392,6 +425,14 @@
   on:saved={onSaved}
   on:sent={onSent}
   on:close={closeEditor}
+/>
+
+<AdminQuotationThread
+  open={threadOpen}
+  quotation={threadRow}
+  on:close={() => { threadOpen = false; threadRow = null; }}
+  on:revised={onRevised}
+  on:changed={onOverridden}
 />
 
 <ConfirmModal

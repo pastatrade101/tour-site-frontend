@@ -45,7 +45,7 @@ const respond = async (
   fetchFn: typeof fetch,
   origin: string,
   token: string,
-  action: 'accept' | 'decline',
+  action: 'accept' | 'decline' | 'request-changes',
   body: Record<string, string | null>
 ) => {
   try {
@@ -85,5 +85,14 @@ export const actions: Actions = {
   decline: async ({ fetch, params, request, url }) => {
     const form = await request.formData();
     return respond(fetch, url.origin, params.token, 'decline', { reason: field(form, 'reason') });
+  },
+
+  // Neither yes nor no. The quotation stays live and acceptable; this only says
+  // the traveller wants something different first.
+  requestChanges: async ({ fetch, params, request, url }) => {
+    const form = await request.formData();
+    const comment = field(form, 'comment');
+    if (!comment) return fail(422, { message: 'Tell us what you would like changed.' });
+    return respond(fetch, url.origin, params.token, 'request-changes', { comment });
   }
 };
