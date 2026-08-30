@@ -91,7 +91,11 @@
       { key: 'booking_success_message', label: 'Booking success message', type: 'textarea', public: true },
       { key: 'default_response_time_message', label: 'Response time message', type: 'text', public: true },
       { key: 'require_phone_number', label: 'Require phone number', type: 'boolean', public: true },
-      { key: 'allow_general_plan_my_trip', label: 'Allow general Plan My Trip', type: 'boolean', public: true, default: true }
+      { key: 'allow_general_plan_my_trip', label: 'Allow general Plan My Trip', type: 'boolean', public: true, default: true },
+      // Not public: these are composing defaults for the team, not something a
+      // website visitor should be able to read off the settings endpoint.
+      { key: 'default_deposit_percent', label: 'Default deposit %', type: 'number', public: false, default: 30, helper: 'Pre-fills the deposit on a new quotation from its total. The agent can always change it.' },
+      { key: 'default_payment_terms', label: 'Default payment terms', type: 'textarea', public: false, helper: 'Pre-fills the payment terms on a new quotation, and the how-to-pay text when you request payment. e.g. 30% deposit to confirm, balance due 60 days before travel. M-Pesa to 0754 000 000.' }
     ] },
     { key: 'currencies', label: 'Currencies', icon: Coins, note: 'All package prices stay stored in USD. Enabled currencies are fetched from Open Exchange Rates during the scheduled backend refresh.', fields: [
       { key: 'default_currency', label: 'Default currency', type: 'select', public: true, default: 'USD', helper: 'Used only when a visitor has not chosen a currency yet.' },

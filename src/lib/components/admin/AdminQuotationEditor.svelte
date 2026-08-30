@@ -146,6 +146,71 @@
     if (!$currency.loading && $currency.status === 'missing') void initCurrency();
   };
 
+  /**
+   * The operator's own deposit policy, and their standard terms.
+   *
+   * A quotation that goes out with no deposit and no terms cannot later be
+   * turned into a payment request — there is nothing to ask for and nothing to
+   * tell the traveller about how to pay. That was only discovered days later,
+   * on a booking nobody could chase.
+   *
+   * So the fields fill themselves from a policy set once in Settings. Not a
+   * number invented here: 30% is the seeded default, and it is the operator's
+   * to change. Everything below stays overridable per quotation.
+   */
+  let depositPercent = 30;
+  let defaultTerms = '';
+  let policyLoaded = false;
+
+  /** True once the agent types in the deposit box — after that, hands off. */
+  let depositTouched = false;
+
+  const loadPolicy = async () => {
+    if (policyLoaded) return;
+    policyLoaded = true;
+    try {
+      const rows = (await api.settings.byGroup('booking')).data ?? [];
+      for (const row of rows as Array<Record<string, any>>) {
+        if (row.setting_key === 'default_deposit_percent') {
+          const parsed = Number(row.setting_value);
+          if (Number.isFinite(parsed) && parsed > 0 && parsed <= 100) depositPercent = parsed;
+        }
+        if (row.setting_key === 'default_payment_terms' && typeof row.setting_value === 'string') {
+          defaultTerms = row.setting_value;
+        }
+      }
+    } catch {
+      // Keep the built-in default. A settings hiccup must not stop an agent
+      // writing a quotation.
+    }
+  };
+
+  const roundMoney = (value: number) => Math.round(value * 100) / 100;
+
+  /** Set the deposit to a percentage of the current total. */
+  const applyPercent = (percent: number) => {
+    if (!(totalValue > 0)) return;
+    form.deposit_amount = String(roundMoney((totalValue * percent) / 100));
+    depositTouched = true;
+  };
+
+  const useFullAmount = () => {
+    if (!(totalValue > 0)) return;
+    form.deposit_amount = String(roundMoney(totalValue));
+    depositTouched = true;
+  };
+
+  // Keep the deposit in step with the total until the agent takes it over.
+  // Without this, changing the price after setting a deposit silently leaves a
+  // figure that no longer matches the trip.
+  $: if (!depositTouched && totalValue > 0 && depositPercent > 0) {
+    form.deposit_amount = String(roundMoney((totalValue * depositPercent) / 100));
+  }
+
+  /** What the agent is about to send out, checked before they send it. */
+  $: depositMissing = String(form.deposit_amount ?? '').trim() === '';
+  $: termsMissing = form.payment_terms.trim() === '';
+
   /** jsonb string array <-> one-per-line textarea, in both directions. */
   const linesFrom = (value: unknown): string =>
     Array.isArray(value) ? value.map((v) => String(v ?? '').trim()).filter(Boolean).join('\n') : '';
@@ -178,8 +243,15 @@
       inclusions: linesFrom(source.inclusions),
       exclusions: linesFrom(source.exclusions),
       deposit_amount: numText(source.deposit_amount, ''),
-      payment_terms: text(source.payment_terms)
+      // A quotation that already carries terms keeps them; a new one starts
+      // from the operator's standard wording rather than an empty box that
+      // quietly ships as null.
+      payment_terms: text(source.payment_terms) || (quotation ? '' : defaultTerms)
     };
+    // An existing deposit is the agent's decision and must not be recomputed
+    // out from under them when the total is edited. A blank one is still ours
+    // to fill.
+    depositTouched = source.deposit_amount != null && String(source.deposit_amount).trim() !== '';
     const existing = Array.isArray(quotation?.items) ? (quotation?.items as Array<Record<string, any>>) : [];
     lines = existing.length
       ? existing.map((item) => ({
@@ -228,7 +300,9 @@
   $: if (seedKey !== seededFor) {
     seededFor = seedKey;
     hydrated = false;
-    if (open) seed();
+    // Fetched before seeding so a new quotation is painted with the operator's
+    // standard terms rather than briefly showing an empty box.
+    if (open) void loadPolicy().then(seed);
   }
 
   $: busy = saving || sending;
@@ -691,9 +765,37 @@
           <div>
             <p class={labelClass}>Payment</p>
             <p class="mt-1 {hintClass}">
-              Shown on the quotation so accepting is an informed decision. Nothing here takes money — it states what will be asked for.
+              Shown on the quotation so accepting is an informed decision, and reused when you request payment on the booking. Nothing
+              here takes money — it states what will be asked for.
             </p>
           </div>
+
+          {#if totalValue > 0}
+            <!-- One tap instead of arithmetic. The first is the operator's own
+                 policy from Settings, not a figure invented here. -->
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-[12px] font-semibold text-ink/50">Deposit:</span>
+              {#each [depositPercent, 50].filter((p, i, a) => p > 0 && p < 100 && a.indexOf(p) === i) as percent}
+                <button
+                  type="button"
+                  class="inline-flex h-8 items-center rounded-xl border border-ink/15 bg-surface px-3 text-xs font-semibold text-heading shadow-sm transition hover:bg-sand"
+                  on:click={() => applyPercent(percent)}
+                >{percent}% · {money(roundMoney((totalValue * percent) / 100))}</button>
+              {/each}
+              <button
+                type="button"
+                class="inline-flex h-8 items-center rounded-xl border border-ink/15 bg-surface px-3 text-xs font-semibold text-heading shadow-sm transition hover:bg-sand"
+                on:click={useFullAmount}
+              >Full amount</button>
+              {#if !depositMissing}
+                <button
+                  type="button"
+                  class="inline-flex h-8 items-center rounded-xl px-2.5 text-xs font-semibold text-ink/45 transition hover:text-red-600"
+                  on:click={() => { form.deposit_amount = ''; depositTouched = true; }}
+                >Clear</button>
+              {/if}
+            </div>
+          {/if}
           <div class="grid gap-4 md:grid-cols-[10rem_1fr]">
             <!-- A raw input rather than AdminFormInput: money needs step="0.01",
                  which that component does not take — the same reason the total
@@ -709,7 +811,13 @@
                 inputmode="decimal"
                 value={form.deposit_amount}
                 placeholder="Optional"
-                on:input={(event) => (form.deposit_amount = event.currentTarget.value)}
+                on:input={(event) => {
+                  form.deposit_amount = event.currentTarget.value;
+                  // Typing here is the agent taking the figure over. Without
+                  // this the next edit to the total would recompute their
+                  // deposit out from under them.
+                  depositTouched = true;
+                }}
               />
             </label>
             <AdminFormInput
@@ -719,6 +827,24 @@
               placeholder="e.g. 30% deposit to confirm, balance due 60 days before travel"
             />
           </div>
+
+          {#if depositMissing || termsMissing}
+            <!-- A nudge, not a block. Taking the full amount up front is a real
+                 way to run a business, and so is settling the details on a
+                 call. But leaving both blank is almost always an oversight —
+                 and it only shows up days later, on a booking nobody can
+                 chase for money it never named. -->
+            <p class="rounded-md bg-amber-50 px-3 py-2 text-xs leading-6 text-amber-800 ring-1 ring-amber-200/70">
+              {#if depositMissing && termsMissing}
+                No deposit or payment terms. The traveller won't see what's due, and you won't be able to request a deposit on the
+                booking until one is set.
+              {:else if depositMissing}
+                No deposit set — requesting payment on this booking will ask for the full {money(totalValue)}.
+              {:else}
+                No payment terms, so the quotation won't say how to pay. You can still add them when you request payment.
+              {/if}
+            </p>
+          {/if}
         </section>
 
         <section class="grid gap-2 border-t border-ink/10 p-5">
