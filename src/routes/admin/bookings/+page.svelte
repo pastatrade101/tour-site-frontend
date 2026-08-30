@@ -26,6 +26,7 @@
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
+  import AdminBookingAmendments from '$lib/components/admin/AdminBookingAmendments.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
   import AdminQuotationEditor from '$lib/components/admin/AdminQuotationEditor.svelte';
@@ -336,6 +337,20 @@ import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
     }
   };
   const closeView = () => { viewing = null; };
+
+  /**
+   * Re-read the booking after something below it changed. Only refreshes the
+   * open drawer — a stale row behind a dialog is harmless, and reloading the
+   * whole list would scroll the agent away from what they were doing.
+   */
+  const refreshViewing = async (id: string) => {
+    try {
+      const res = await api.bookings.get(id);
+      if (viewing && String(viewing.id) === id) viewing = res.data as Booking;
+    } catch {
+      // The panel below already shows its own error; the drawer stays as it is.
+    }
+  };
 
   const openCreate = () => { editingId = null; form = emptyForm(); formOpen = true; };
 
@@ -727,6 +742,14 @@ import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
             </select>
           </div>
         </div>
+
+        <!-- Where a confirmed trip changes. The accepted quotation behind it is
+             frozen, so this is the only place those changes can be recorded. -->
+        <AdminBookingAmendments
+          bookingId={String(viewing.id)}
+          bookingStatus={String(viewing.status ?? '')}
+          on:changed={() => viewing && refreshViewing(String(viewing.id))}
+        />
 
         <div>
           <p class="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">Internal notes</p>

@@ -205,9 +205,18 @@
                explanation reads as a broken page. -->
           <p class="flex items-start gap-2 border-b border-ink/10 bg-emerald-50/60 px-5 py-3 text-xs leading-6 text-emerald-800">
             <ShieldAlert size={15} class="mt-0.5 shrink-0" />
-            {quotation.status === 'accepted'
-              ? 'Accepted and locked. This is the agreement as it stood — changes now go on the booking as an amendment.'
-              : 'Declined and closed. Create a new quotation rather than reopening this one.'}
+            {#if quotation.status === 'accepted'}
+              <span>
+                Accepted and locked. This is the agreement as it stood — changes now go on the booking as an amendment.
+                <!-- Names the booking where there is one. "Raise an amendment"
+                     with nowhere to raise it is an instruction, not a route. -->
+                {#if quotation.lead?.booking_code}
+                  Open <span class="font-mono font-bold">{quotation.lead.booking_code}</span> under Bookings and record it there.
+                {/if}
+              </span>
+            {:else}
+              <span>Declined and closed. Create a new quotation rather than reopening this one.</span>
+            {/if}
           </p>
         {/if}
 

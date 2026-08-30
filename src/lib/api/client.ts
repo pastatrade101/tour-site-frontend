@@ -450,7 +450,26 @@ export const api = {
       apiRequest(`/bookings/${id}/status`, { method: 'PUT', body }),
     assign: (id: string, body: Record<string, unknown>) => apiRequest(`/bookings/${id}/assign`, { method: 'PUT', body }),
     updateNotes: (id: string, body: Record<string, unknown>) => apiRequest(`/bookings/${id}/notes`, { method: 'PUT', body }),
-    remove: (id: string) => apiRequest(`/bookings/${id}`, { method: 'DELETE' })
+    remove: (id: string) => apiRequest(`/bookings/${id}`, { method: 'DELETE' }),
+
+    /** Changes agreed after the quotation was accepted and frozen. */
+    amendments: {
+      list: (bookingId: string) =>
+        apiRequest<{
+          amendments: Record<string, unknown>[];
+          currency: string;
+          original_amount: number | null;
+          applied_delta: number;
+          revised_amount: number | null;
+          open_count: number;
+        }>(`/bookings/${bookingId}/amendments`),
+      create: (bookingId: string, body: Record<string, unknown>) =>
+        apiRequest<Record<string, unknown>>(`/bookings/${bookingId}/amendments`, { method: 'POST', body }),
+      update: (bookingId: string, amendmentId: string, body: Record<string, unknown>) =>
+        apiRequest<Record<string, unknown>>(`/bookings/${bookingId}/amendments/${amendmentId}`, { method: 'PATCH', body }),
+      remove: (bookingId: string, amendmentId: string) =>
+        apiRequest(`/bookings/${bookingId}/amendments/${amendmentId}`, { method: 'DELETE' })
+    }
   },
   trip: {
     // Public magic-link portal (cookie session; apiRequest already sends credentials).
