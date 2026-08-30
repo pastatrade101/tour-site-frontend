@@ -56,7 +56,7 @@
       if (!days.trim()) return (error = 'How many days?');
     }
     if (step === 2) {
-      if (!startPoint) return (error = 'Where are you starting from?');
+      if (hasStartPoints && !startPoint) return (error = 'Where are you starting from?');
       if (!comfort) return (error = 'Choose a comfort level.');
       if (!interest) return (error = 'Choose a main interest.');
     }
@@ -116,9 +116,11 @@
     'h-11 w-full min-w-0 rounded-[10px] border border-white/20 bg-white px-3.5 text-[15px] text-heading outline-none transition placeholder:text-ink/45 focus:border-goldfinch-gold focus:ring-2 focus:ring-goldfinch-gold/25';
   const selectClass = `${fieldClass} appearance-none pr-10`;
   const labelClass = 'mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.10em] text-white/70';
-  $: usableStartPoints = startPoints.length
-    ? startPoints
-    : ['Arusha', 'Zanzibar', 'Kilimanjaro Airport', 'Dar es Salaam', 'Nairobi', 'Moshi'].map((name) => ({ name }));
+  // No fallback list. The loader already filters to points whose role is start
+  // or both, so an empty array means the CMS genuinely has none — and offering
+  // a gateway this operator may not run from would put a preference in the
+  // inbox that nobody can honour.
+  $: hasStartPoints = startPoints.length > 0;
 </script>
 
 <section class="bg-surface py-10 md:py-14">
@@ -184,20 +186,22 @@
               </label>
             </div>
           {:else if step === 2}
-            <div class="grid gap-4 sm:grid-cols-3">
-              <label>
-                <span class={labelClass}>Starting point</span>
-                <span class="relative block">
-                  <select class={selectClass} bind:value={startPoint}>
-                    <option value="">Select</option>
-                    {#each usableStartPoints as point}
-                      <option value={String(point.name)}>{point.name}</option>
-                    {/each}
-                    <option value="Not sure yet">Not sure yet</option>
-                  </select>
-                  <ChevronDown class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/65" size={18} />
-                </span>
-              </label>
+            <div class="grid gap-4 {hasStartPoints ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}">
+              {#if hasStartPoints}
+                <label>
+                  <span class={labelClass}>Starting point</span>
+                  <span class="relative block">
+                    <select class={selectClass} bind:value={startPoint}>
+                      <option value="">Select</option>
+                      {#each startPoints as point}
+                        <option value={String(point.name)}>{point.name}</option>
+                      {/each}
+                      <option value="Not sure yet">Not sure yet</option>
+                    </select>
+                    <ChevronDown class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/65" size={18} />
+                  </span>
+                </label>
+              {/if}
               <label>
                 <span class={labelClass}>Comfort level</span>
                 <span class="relative block">
