@@ -1,756 +1,556 @@
 <script lang="ts">
+  /**
+   * The overview.
+   *
+   * The previous version described the website — tours published, images
+   * missing, posts written. All true, none of it what someone opens the CMS to
+   * find out. The questions that actually bring people here are: is money owed
+   * to us, is anybody waiting on a reply, and did the messages we sent this
+   * week arrive.
+   *
+   * So it is ordered by those. Money first, then the work waiting on a human,
+   * then where deals stand, then whether the plumbing is working. Content
+   * health is kept but demoted — it matters, it just is not urgent.
+   *
+   * Every figure is derived from a record that exists. Nothing is projected,
+   * estimated or smoothed: a number here either happened or is absent.
+   */
   import { onMount } from 'svelte';
   import type { Component } from 'svelte';
   import {
     AlertTriangle,
-    Bot,
+    ArrowRight,
+    Ban,
+    BellRing,
     CalendarCheck,
-    ChartBar,
-    ChartPie,
-    CheckCircle,
-    CircleDollarSign,
+    CheckCircle2,
     ClipboardList,
     Clock,
-    FileClock,
-    ImagePlus,
+    FileText,
     Images,
     Mail,
-    Map,
-    MapPin,
     MessageSquare,
     Newspaper,
     Plus,
-    Route,
-    SearchCheck,
-    ShieldCheck,
+    Send,
     Sparkles,
-    Tags,
-    Upload
+    TrendingUp,
+    Wallet
   } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import ChartCanvas from '$lib/components/admin/ChartCanvas.svelte';
-  import { barConfig, doughnutConfig } from '$lib/charts';
+  import { funnelConfig, lineConfig } from '$lib/charts';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
 
-  type CountStats = {
-    aiConversations: number;
-    blogPosts: number;
-    confirmedBookings: number;
-    destinations: number;
-    draftTours: number;
-    mediaFiles: number;
-    pendingBookings: number;
-    publishedTours: number;
-    totalBookings: number;
-    totalRevenue: number;
-    totalTours: number;
-    unreadMessages: number;
-  };
-
-  type BookingPipeline = {
-    cancelled: number;
-    completed: number;
-    confirmed: number;
-    pending: number;
-    rejected: number;
-  };
-
-  type ContentHealth = {
-    publishedBlogPosts: number;
-    publishedDestinations: number;
-    publishedFaqs: number;
-    publishedTestimonials: number;
-    toursMissingImages: number;
-    toursWithSeo: number;
-    toursWithoutAvailableDates: number;
-    toursWithoutItinerary: number;
-  };
-
-  type DashboardRow = Record<string, unknown>;
-
-  type DashboardStats = {
-    bookingPipeline: BookingPipeline;
-    contentHealth: ContentHealth;
-    counts: CountStats;
-    featured: {
-      blogPosts: DashboardRow[];
-      destinations: DashboardRow[];
-      tours: DashboardRow[];
+  type Money = { received: number; refunded: number; outstanding: number };
+  type Commerce = {
+    days: number;
+    money: Record<string, Money>;
+    currencies: string[];
+    series: Array<{ date: string; received: number; enquiries: number; accepted: number }>;
+    pipeline: Record<string, number>;
+    quotedValue: number;
+    acceptedValue: number;
+    winRate: number | null;
+    attention: {
+      quotationsAwaitingReply: number;
+      quotationsToSend: number;
+      paymentClaimsToVerify: number;
+      paymentRequestsOpen: number;
+      paymentRequestsOverdue: number;
+      amendmentsOpen: number;
+      unpaidConfirmed: number;
     };
-    recent: {
-      auditLogs: DashboardRow[];
-      bookings: DashboardRow[];
-      media: DashboardRow[];
-      messages: DashboardRow[];
-      tours: DashboardRow[];
-    };
+    delivery: { sent: number; skipped: number; failed: number };
   };
 
-  type KpiCard = {
-    accent: string;
-    helper: string;
-    icon: Component;
-    label: string;
-    trend?: string;
-    value: string | number;
-  };
-
-  type ActionItem = {
-    description: string;
-    href: string;
-    icon: Component;
-    label: string;
-  };
-
-  const emptyStats: DashboardStats = {
-    counts: {
-      aiConversations: 0,
-      blogPosts: 0,
-      confirmedBookings: 0,
-      destinations: 0,
-      draftTours: 0,
-      mediaFiles: 0,
-      pendingBookings: 0,
-      publishedTours: 0,
-      totalBookings: 0,
-      totalRevenue: 0,
-      totalTours: 0,
-      unreadMessages: 0
-    },
-    bookingPipeline: {
-      pending: 0,
-      confirmed: 0,
-      cancelled: 0,
-      completed: 0,
-      rejected: 0
-    },
-    contentHealth: {
-      toursWithSeo: 0,
-      toursMissingImages: 0,
-      toursWithoutItinerary: 0,
-      toursWithoutAvailableDates: 0,
-      publishedDestinations: 0,
-      publishedBlogPosts: 0,
-      publishedFaqs: 0,
-      publishedTestimonials: 0
-    },
-    recent: {
-      bookings: [],
-      messages: [],
-      tours: [],
-      media: [],
-      auditLogs: []
-    },
-    featured: {
-      tours: [],
-      destinations: [],
-      blogPosts: []
-    }
-  };
-
-  const quickActions: ActionItem[] = [
-    { label: 'Create New Tour', description: 'Build a new travel product', href: '/admin/tours/new', icon: Plus },
-    { label: 'Add Destination', description: 'Manage countries and regions', href: '/admin/destinations', icon: MapPin },
-    { label: 'Add Category', description: 'Organize tour experiences', href: '/admin/categories', icon: Tags },
-    { label: 'Upload Media', description: 'Add reusable CMS assets', href: '/admin/media', icon: Upload },
-    { label: 'Add Blog Post', description: 'Publish travel guidance', href: '/admin/blog', icon: Newspaper },
-    { label: 'View Messages', description: 'Respond to customer leads', href: '/admin/messages', icon: Mail },
-    { label: 'Review Bookings', description: 'Track booking requests', href: '/admin/bookings', icon: ClipboardList },
-    { label: 'AI Conversations', description: 'Review travel advisor sessions', href: '/admin/ai-conversations', icon: Bot }
-  ];
-
-  let stats: DashboardStats = emptyStats;
+  let stats: Record<string, any> | null = null;
+  let commerce: Commerce | null = null;
   let loading = true;
   let error = '';
-  let adminName = 'Goldfinch Super Admin';
-
-  const numberValue = (source: Record<string, unknown>, key: string) => Number(source[key] ?? 0) || 0;
-
-  const arrayValue = (source: Record<string, unknown>, key: string) => {
-    const value = source[key];
-    return Array.isArray(value) ? (value as DashboardRow[]) : [];
-  };
-
-  const normalizeStats = (data: Record<string, unknown>): DashboardStats => {
-    const countsSource = (data.counts && typeof data.counts === 'object' ? data.counts : data) as Record<string, unknown>;
-    const bookingSource = (data.bookingPipeline && typeof data.bookingPipeline === 'object' ? data.bookingPipeline : {}) as Record<string, unknown>;
-    const healthSource = (data.contentHealth && typeof data.contentHealth === 'object' ? data.contentHealth : {}) as Record<string, unknown>;
-    const recentSource = (data.recent && typeof data.recent === 'object' ? data.recent : {}) as Record<string, unknown>;
-    const featuredSource = (data.featured && typeof data.featured === 'object' ? data.featured : {}) as Record<string, unknown>;
-
-    return {
-      counts: {
-        totalTours: numberValue(countsSource, 'totalTours') || numberValue(countsSource, 'tours'),
-        publishedTours: numberValue(countsSource, 'publishedTours'),
-        draftTours: numberValue(countsSource, 'draftTours'),
-        destinations: numberValue(countsSource, 'destinations'),
-        totalBookings: numberValue(countsSource, 'totalBookings') || numberValue(countsSource, 'bookings'),
-        pendingBookings: numberValue(countsSource, 'pendingBookings'),
-        confirmedBookings: numberValue(countsSource, 'confirmedBookings'),
-        totalRevenue: numberValue(countsSource, 'totalRevenue'),
-        unreadMessages: numberValue(countsSource, 'unreadMessages') || numberValue(countsSource, 'newMessages'),
-        mediaFiles: numberValue(countsSource, 'mediaFiles'),
-        blogPosts: numberValue(countsSource, 'blogPosts') || numberValue(countsSource, 'posts'),
-        aiConversations: numberValue(countsSource, 'aiConversations')
-      },
-      bookingPipeline: {
-        pending: numberValue(bookingSource, 'pending'),
-        confirmed: numberValue(bookingSource, 'confirmed'),
-        cancelled: numberValue(bookingSource, 'cancelled'),
-        completed: numberValue(bookingSource, 'completed'),
-        rejected: numberValue(bookingSource, 'rejected')
-      },
-      contentHealth: {
-        toursWithSeo: numberValue(healthSource, 'toursWithSeo'),
-        toursMissingImages: numberValue(healthSource, 'toursMissingImages'),
-        toursWithoutItinerary: numberValue(healthSource, 'toursWithoutItinerary'),
-        toursWithoutAvailableDates: numberValue(healthSource, 'toursWithoutAvailableDates'),
-        publishedDestinations: numberValue(healthSource, 'publishedDestinations'),
-        publishedBlogPosts: numberValue(healthSource, 'publishedBlogPosts'),
-        publishedFaqs: numberValue(healthSource, 'publishedFaqs'),
-        publishedTestimonials: numberValue(healthSource, 'publishedTestimonials')
-      },
-      recent: {
-        bookings: arrayValue(recentSource, 'bookings'),
-        messages: arrayValue(recentSource, 'messages'),
-        tours: arrayValue(recentSource, 'tours'),
-        media: arrayValue(recentSource, 'media'),
-        auditLogs: arrayValue(recentSource, 'auditLogs')
-      },
-      featured: {
-        tours: arrayValue(featuredSource, 'tours'),
-        destinations: arrayValue(featuredSource, 'destinations'),
-        blogPosts: arrayValue(featuredSource, 'blogPosts')
-      }
-    };
-  };
-
-  const formatMoney = (value: number) => `USD ${value.toLocaleString()}`;
-
-  const formatDate = (value?: unknown) => {
-    if (!value) return 'No date';
-    return new Intl.DateTimeFormat('en', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(String(value)));
-  };
-
-  const textValue = (row: DashboardRow, key: string, fallback = '-') => String(row[key] ?? fallback);
-
-  const relationText = (row: DashboardRow, key: string, childKey = 'title') => {
-    const value = row[key];
-    if (Array.isArray(value)) return String((value[0] as DashboardRow | undefined)?.[childKey] ?? '');
-    if (value && typeof value === 'object') return String((value as DashboardRow)[childKey] ?? '');
-    return '';
-  };
-
-  const percent = (value: number, total: number) => {
-    if (total <= 0) return 0;
-    return Math.min(Math.round((value / total) * 100), 100);
-  };
-
-  const statusClass = (count: number) =>
-    count > 0 ? 'bg-goldfinch-gold/15 text-heading ring-goldfinch-gold/25' : 'bg-forest/10 text-forest ring-forest/20';
-
-  $: kpiCards = [
-    { label: 'Total Tours', value: stats.counts.totalTours, helper: 'All CMS tour packages', trend: `${stats.counts.publishedTours} published`, icon: Map, accent: 'from-forest/12 to-forest/5 text-forest' },
-    { label: 'Published Tours', value: stats.counts.publishedTours, helper: 'Visible on website', trend: 'Public inventory', icon: CheckCircle, accent: 'from-forest/12 to-forest/5 text-forest' },
-    { label: 'Draft Tours', value: stats.counts.draftTours, helper: 'Waiting for publishing', trend: stats.counts.draftTours ? 'Needs review' : 'Clear', icon: FileClock, accent: 'from-goldfinch-gold/20 to-goldfinch-gold/5 text-heading' },
-    { label: 'Destinations', value: stats.counts.destinations, helper: 'CMS destinations', trend: `${stats.contentHealth.publishedDestinations} published`, icon: MapPin, accent: 'from-savanna/50 to-savanna/15 text-heading' },
-    { label: 'Bookings', value: stats.counts.totalBookings, helper: 'Total booking requests', trend: `${stats.counts.pendingBookings} pending`, icon: ClipboardList, accent: 'from-forest/12 to-forest/5 text-forest' },
-    { label: 'Pending Bookings', value: stats.counts.pendingBookings, helper: 'Need response', trend: stats.counts.pendingBookings ? 'Action needed' : 'No backlog', icon: Clock, accent: 'from-goldfinch-gold/20 to-goldfinch-gold/5 text-heading' },
-    { label: 'Revenue', value: formatMoney(stats.counts.totalRevenue), helper: 'Paid booking records', trend: 'Finance view', icon: CircleDollarSign, accent: 'from-forest/12 to-forest/5 text-forest' },
-    { label: 'Messages', value: stats.counts.unreadMessages, helper: 'Unread customer messages', trend: stats.counts.unreadMessages ? 'Follow up' : 'Inbox clear', icon: Mail, accent: 'from-goldfinch-gold/20 to-goldfinch-gold/5 text-heading' },
-    { label: 'Media Files', value: stats.counts.mediaFiles, helper: 'Reusable CMS assets', trend: 'Image library', icon: Images, accent: 'from-savanna/50 to-savanna/15 text-heading' },
-    { label: 'Blog Posts', value: stats.counts.blogPosts, helper: 'Published and draft posts', trend: `${stats.contentHealth.publishedBlogPosts} published`, icon: Newspaper, accent: 'from-forest/12 to-forest/5 text-forest' },
-    { label: 'AI Conversations', value: stats.counts.aiConversations, helper: 'Travel advisor sessions', trend: 'Lead intelligence', icon: Bot, accent: 'from-goldfinch-gold/20 to-goldfinch-gold/5 text-heading' },
-    { label: 'Confirmed Bookings', value: stats.counts.confirmedBookings, helper: 'Ready for operations', trend: 'Operations queue', icon: CalendarCheck, accent: 'from-forest/12 to-forest/5 text-forest' }
-  ] satisfies KpiCard[];
-
-  $: operationalItems = [
-    { label: 'Pending bookings', value: stats.counts.pendingBookings, href: '/admin/bookings', icon: ClipboardList },
-    { label: 'Unread messages', value: stats.counts.unreadMessages, href: '/admin/messages', icon: Mail },
-    { label: 'Draft tours', value: stats.counts.draftTours, href: '/admin/tours', icon: FileClock },
-    { label: 'Tours missing images', value: stats.contentHealth.toursMissingImages, href: '/admin/tours', icon: ImagePlus },
-    { label: 'Tours need itinerary', value: stats.contentHealth.toursWithoutItinerary, href: '/admin/itineraries', icon: Route },
-    { label: 'Tours need dates', value: stats.contentHealth.toursWithoutAvailableDates, href: '/admin/available-dates', icon: CalendarCheck }
-  ];
-
-  $: pipelineTotal = Object.values(stats.bookingPipeline).reduce((sum, value) => sum + value, 0);
-
-  $: pipelineItems = [
-    { label: 'Pending', value: stats.bookingPipeline.pending, color: 'bg-goldfinch-gold' },
-    { label: 'Confirmed', value: stats.bookingPipeline.confirmed, color: 'bg-forest' },
-    { label: 'Cancelled', value: stats.bookingPipeline.cancelled, color: 'bg-slate-400' },
-    { label: 'Completed', value: stats.bookingPipeline.completed, color: 'bg-deep-green' },
-    { label: 'Rejected', value: stats.bookingPipeline.rejected, color: 'bg-red-400' }
-  ];
-
-  $: healthItems = [
-    {
-      label: 'SEO completed',
-      helper: `${stats.contentHealth.toursWithSeo} of ${stats.counts.totalTours} tours`,
-      value: percent(stats.contentHealth.toursWithSeo, stats.counts.totalTours),
-      icon: SearchCheck
-    },
-    {
-      label: 'Tour images added',
-      helper: `${Math.max(stats.counts.totalTours - stats.contentHealth.toursMissingImages, 0)} of ${stats.counts.totalTours} tours`,
-      value: percent(Math.max(stats.counts.totalTours - stats.contentHealth.toursMissingImages, 0), stats.counts.totalTours),
-      icon: Images
-    },
-    {
-      label: 'Destinations published',
-      helper: `${stats.contentHealth.publishedDestinations} of ${stats.counts.destinations} destinations`,
-      value: percent(stats.contentHealth.publishedDestinations, stats.counts.destinations),
-      icon: MapPin
-    },
-    {
-      label: 'Blog content added',
-      helper: `${stats.contentHealth.publishedBlogPosts} published posts`,
-      value: percent(stats.contentHealth.publishedBlogPosts, Math.max(stats.counts.blogPosts, 1)),
-      icon: Newspaper
-    },
-    {
-      label: 'FAQs ready',
-      helper: `${stats.contentHealth.publishedFaqs} published FAQs`,
-      value: stats.contentHealth.publishedFaqs > 0 ? 100 : 0,
-      icon: ShieldCheck
-    },
-    {
-      label: 'Testimonials ready',
-      helper: `${stats.contentHealth.publishedTestimonials} published testimonials`,
-      value: stats.contentHealth.publishedTestimonials > 0 ? 100 : 0,
-      icon: MessageSquare
-    }
-  ];
-
-  $: currentPeriod = new Intl.DateTimeFormat('en', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric'
-  }).format(new Date());
-
-  // ── Chart.js configs (brand-coloured, animated) ──────────────────────────
-  $: pipelineDonutCfg = doughnutConfig(
-    [
-      { label: 'Pending', value: stats.bookingPipeline.pending },
-      { label: 'Confirmed', value: stats.bookingPipeline.confirmed },
-      { label: 'Cancelled', value: stats.bookingPipeline.cancelled },
-      { label: 'Completed', value: stats.bookingPipeline.completed },
-      { label: 'Rejected', value: stats.bookingPipeline.rejected }
-    ].filter((x) => x.value > 0),
-    ' requests'
-  );
-
-  $: contentBarCfg = barConfig([
-    { label: 'Tours', value: stats.counts.totalTours },
-    { label: 'Destinations', value: stats.counts.destinations },
-    { label: 'Bookings', value: stats.counts.totalBookings },
-    { label: 'Blog', value: stats.counts.blogPosts },
-    { label: 'Media', value: stats.counts.mediaFiles }
-  ]);
 
   onMount(async () => {
-    loading = true;
-    error = '';
-
     try {
-      const [statsResponse, userResponse] = await Promise.all([
-        api.dashboard.stats(),
-        api.auth.me().catch(() => null)
-      ]);
-
-      stats = normalizeStats(statsResponse.data);
-
-      if (userResponse?.data && typeof userResponse.data === 'object') {
-        const user = userResponse.data as Record<string, unknown>;
-        adminName = String(user.name ?? user.email ?? adminName);
-      }
-    } catch (requestError) {
-      error = requestError instanceof Error ? requestError.message : 'Unable to load dashboard stats.';
+      const res = await api.dashboard.stats();
+      stats = res.data as Record<string, any>;
+      commerce = (stats?.commerce ?? null) as Commerce | null;
+    } catch (err) {
+      error = err instanceof Error ? err.message : 'Unable to load the dashboard.';
     } finally {
       loading = false;
     }
   });
+
+  const money = (value: unknown, code = 'USD') =>
+    `${code} ${Number(value ?? 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+
+  const exact = (value: unknown, code = 'USD') =>
+    `${code} ${Number(value ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  /** Short labels; a 30-point axis has no room for years. */
+  const tick = (iso: string) =>
+    new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${iso}T00:00:00Z`));
+
+  const hour = new Date().getHours();
+  $: greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+
+  /** The trading currency: whichever has seen the most money. */
+  $: primary = (commerce?.currencies ?? []).slice().sort((a, b) => {
+    const m = commerce!.money;
+    return (m[b].received + m[b].outstanding) - (m[a].received + m[a].outstanding);
+  })[0] ?? 'USD';
+  $: pot = commerce?.money?.[primary] ?? { received: 0, refunded: 0, outstanding: 0 };
+
+  /**
+   * Only what someone can act on, and only when there is something to act on.
+   * A permanent row of zeroes trains people to stop reading the section.
+   */
+  $: todo = !commerce
+    ? []
+    : [
+        {
+          key: 'claims',
+          count: commerce.attention.paymentClaimsToVerify,
+          label: 'said they paid — verify',
+          detail: 'A traveller tapped “I have paid”. Nothing is recorded until you check the account.',
+          href: '/admin/bookings?payment_status=unpaid',
+          icon: Wallet,
+          tone: 'urgent'
+        },
+        {
+          key: 'changes',
+          count: commerce.attention.quotationsAwaitingReply,
+          label: 'quotations awaiting your reply',
+          detail: 'The traveller asked for changes and the ball is with us.',
+          href: '/admin/quotations?status=changes_requested',
+          icon: MessageSquare,
+          tone: 'urgent'
+        },
+        {
+          key: 'overdue',
+          count: commerce.attention.paymentRequestsOverdue,
+          label: 'payment requests past their due date',
+          detail: 'Asked for, due date passed, nothing received.',
+          href: '/admin/bookings?payment_status=unpaid',
+          icon: Clock,
+          tone: 'urgent'
+        },
+        {
+          key: 'tosend',
+          count: commerce.attention.quotationsToSend,
+          label: 'quotations ready but not sent',
+          detail: 'Written and waiting. Nobody has seen these yet.',
+          href: '/admin/quotations',
+          icon: Send,
+          tone: 'warn'
+        },
+        {
+          key: 'amend',
+          count: commerce.attention.amendmentsOpen,
+          label: 'booking amendments open',
+          detail: 'Proposed or agreed, not yet applied.',
+          href: '/admin/bookings?status=confirmed',
+          icon: FileText,
+          tone: 'warn'
+        },
+        {
+          key: 'unpaid',
+          count: commerce.attention.unpaidConfirmed,
+          label: 'confirmed trips not fully paid',
+          detail: 'Agreed and going ahead, money still outstanding.',
+          href: '/admin/bookings?status=confirmed&payment_status=unpaid',
+          icon: CalendarCheck,
+          tone: 'warn'
+        },
+        {
+          key: 'open',
+          count: commerce.attention.paymentRequestsOpen,
+          label: 'payment requests still open',
+          detail: 'Sent, not yet due, no response.',
+          href: '/admin/payments',
+          icon: BellRing,
+          tone: 'calm'
+        }
+      ].filter((row) => row.count > 0);
+
+  $: urgentCount = todo.filter((t) => t.tone === 'urgent').reduce((n, t) => n + t.count, 0);
+
+  // ── Charts ──────────────────────────────────────────────────────────────
+  $: series = commerce?.series ?? [];
+  $: hasMoneyHistory = series.some((d) => d.received > 0);
+  $: hasEnquiryHistory = series.some((d) => d.enquiries > 0);
+
+  $: moneyChart = lineConfig(series.map((d) => tick(d.date)), series.map((d) => d.received), primary);
+  $: enquiryChart = lineConfig(series.map((d) => tick(d.date)), series.map((d) => d.enquiries));
+
+  const STAGE_LABELS: Record<string, string> = {
+    draft: 'Draft',
+    sent: 'Sent',
+    viewed: 'Viewed',
+    changes_requested: 'Changes asked',
+    revised: 'Revised',
+    accepted: 'Accepted',
+    declined: 'Declined',
+    expired: 'Expired'
+  };
+
+  /** The live funnel only — settled outcomes are reported as numbers, not bars. */
+  $: funnelStages = ['draft', 'sent', 'viewed', 'changes_requested', 'revised', 'accepted']
+    .map((key) => ({ label: STAGE_LABELS[key], value: commerce?.pipeline?.[key] ?? 0 }));
+  $: hasFunnel = funnelStages.some((s) => s.value > 0);
+  $: funnelChart = funnelConfig(funnelStages);
+
+  // ── Delivery ────────────────────────────────────────────────────────────
+  $: delivery = commerce?.delivery ?? { sent: 0, skipped: 0, failed: 0 };
+  $: deliveryTotal = delivery.sent + delivery.skipped + delivery.failed;
+  $: deliveryRate = deliveryTotal ? Math.round((delivery.sent / deliveryTotal) * 100) : null;
+
+  $: counts = (stats?.counts ?? {}) as Record<string, number>;
+  $: recentBookings = (stats?.recent?.bookings ?? []) as Array<Record<string, any>>;
+  $: recentMessages = (stats?.recent?.messages ?? []) as Array<Record<string, any>>;
+
+  const when = (value: unknown) =>
+    value
+      ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(String(value)))
+      : '';
+
+  const QUICK: Array<{ label: string; href: string; icon: Component }> = [
+    { label: 'New quotation', href: '/admin/quotations', icon: Plus },
+    { label: 'Record a payment', href: '/admin/payments', icon: Wallet },
+    { label: 'Bookings', href: '/admin/bookings', icon: ClipboardList },
+    { label: 'Inbox', href: '/admin/messages', icon: Mail }
+  ];
+
+  const card = 'rounded-[10px] border border-ink/10 bg-surface p-5 shadow-sm';
+  const eyebrow = 'text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70';
 </script>
 
-{#if loading}
-  <div class="mx-auto grid w-full max-w-[1500px] gap-6">
-    <div class="min-h-[260px] animate-pulse rounded-[10px] bg-gradient-to-br from-forest/80 to-deep-green"></div>
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {#each Array(12) as _}
-        <div class="h-36 animate-pulse rounded-[8px] border border-ink/10 bg-surface/80"></div>
-      {/each}
-    </div>
-  </div>
-{:else if error}
+{#if error}
   <ErrorState message={error} />
+{:else if loading}
+  <div class="grid gap-4">
+    {#each Array(3) as _}
+      <div class="h-32 animate-pulse rounded-[10px] border border-ink/10 bg-sand/30"></div>
+    {/each}
+  </div>
 {:else}
-  <div class="mx-auto grid w-full max-w-[1500px] gap-6">
-    <section class="relative overflow-hidden rounded-[10px] border border-white/10 bg-gradient-to-br from-deep-green via-forest to-[#232620] p-6 text-white shadow-[0_26px_80px_rgba(57,61,50,0.18)] lg:p-8">
-      <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-goldfinch-gold/25 blur-3xl"></div>
-      <div class="pointer-events-none absolute bottom-0 left-1/3 h-44 w-44 rounded-full bg-savanna/10 blur-3xl"></div>
+  <div class="grid gap-5">
+    <!-- ── The band: money, and whether anyone is waiting ──────────────── -->
+    <section
+      class="relative overflow-hidden rounded-[10px] border border-white/10 bg-gradient-to-br from-deep-green via-forest to-[#232620] p-6 text-white shadow-[0_26px_80px_rgba(57,61,50,0.18)] lg:p-8"
+    >
+      <div class="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-goldfinch-gold/10 blur-3xl"></div>
 
-      <div class="relative grid gap-8 xl:grid-cols-[1fr_360px] xl:items-end">
-        <div>
-          <div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-surface/10 px-3 py-1.5 text-xs font-semibold text-savanna backdrop-blur">
-            <Sparkles size={14} />
-            Goldfinch Travel Platform
-          </div>
-          <h1 class="mt-5 max-w-4xl text-3xl font-bold tracking-normal text-white sm:text-4xl lg:text-5xl">
-            Welcome back, {adminName}
+      <div class="relative grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:items-end">
+        <div class="min-w-0">
+          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-goldfinch-gold">{greeting}</p>
+          <h1 class="mt-2 font-serif text-3xl font-semibold leading-[1.1] md:text-[38px]">
+            {#if urgentCount > 0}
+              {urgentCount} {urgentCount === 1 ? 'thing needs' : 'things need'} you today
+            {:else if todo.length}
+              Nothing urgent — {todo.length} {todo.length === 1 ? 'item' : 'items'} in hand
+            {:else}
+              Everything is clear
+            {/if}
           </h1>
-          <p class="mt-3 max-w-2xl text-base leading-7 text-savanna/85">
-            Here is what is happening across your travel platform today.
+          <p class="mt-2 max-w-lg text-sm leading-relaxed text-white/70">
+            {#if urgentCount > 0}
+              Someone is waiting on a reply or on money being checked. The list below is ordered by who has been waiting longest for a decision.
+            {:else if todo.length}
+              Nothing is blocked. What is below is work in flight, not work overdue.
+            {:else}
+              No open quotations, no unanswered payment requests, and nothing outstanding on a confirmed trip.
+            {/if}
           </p>
-          <p class="mt-4 max-w-2xl text-sm font-semibold leading-6 text-white/80">
-            Travelers do not need more options. They need more confidence.
-          </p>
-
-          <div class="mt-6 flex flex-wrap gap-3">
-            <a class="inline-flex h-11 items-center gap-2 rounded-2xl bg-goldfinch-gold px-4 text-sm font-bold text-heading shadow-lg shadow-black/10 transition hover:bg-savanna focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-savanna" href="/admin/tours/new">
-              <Plus size={16} />
-              Add Tour
-            </a>
-            <a class="inline-flex h-11 items-center gap-2 rounded-2xl border border-white/15 bg-surface/10 px-4 text-sm font-bold text-white backdrop-blur transition hover:bg-surface/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-savanna" href="/admin/bookings">
-              <ClipboardList size={16} />
-              View Bookings
-            </a>
-            <a class="inline-flex h-11 items-center gap-2 rounded-2xl border border-white/15 bg-surface/10 px-4 text-sm font-bold text-white backdrop-blur transition hover:bg-surface/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-savanna" href="/admin/media">
-              <Upload size={16} />
-              Upload Media
-            </a>
-          </div>
         </div>
 
-        <div class="rounded-[10px] border border-white/10 bg-surface/10 p-5 backdrop-blur">
-          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-savanna/80">Current period</p>
-          <p class="mt-2 text-2xl font-bold text-white">{currentPeriod}</p>
-          <div class="mt-5 grid grid-cols-2 gap-3">
-            <div class="rounded-2xl bg-surface/10 p-3">
-              <p class="text-xs text-savanna/75">Pending bookings</p>
-              <p class="mt-1 text-2xl font-bold">{stats.counts.pendingBookings}</p>
-            </div>
-            <div class="rounded-2xl bg-surface/10 p-3">
-              <p class="text-xs text-savanna/75">Unread messages</p>
-              <p class="mt-1 text-2xl font-bold">{stats.counts.unreadMessages}</p>
-            </div>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div class="rounded-[8px] bg-white/[0.07] p-4 ring-1 ring-white/10">
+            <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-white/55">Received</p>
+            <p class="mt-1 font-serif text-3xl font-semibold leading-none text-goldfinch-gold">{money(pot.received, primary)}</p>
+            <p class="mt-1.5 text-[11px] text-white/50">
+              {#if pot.refunded > 0}less {money(pot.refunded, primary)} refunded{:else}all time{/if}
+            </p>
+          </div>
+          <div class="rounded-[8px] bg-white/[0.07] p-4 ring-1 ring-white/10">
+            <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-white/55">Outstanding</p>
+            <p class="mt-1 font-serif text-3xl font-semibold leading-none text-white">{money(pot.outstanding, primary)}</p>
+            <p class="mt-1.5 text-[11px] text-white/50">
+              {commerce?.attention.unpaidConfirmed ?? 0} confirmed {(commerce?.attention.unpaidConfirmed ?? 0) === 1 ? 'trip' : 'trips'}
+            </p>
           </div>
         </div>
       </div>
+
+      {#if commerce && commerce.currencies.length > 1}
+        <!-- Only when there genuinely is more than one. Currencies are never
+             added together — a combined figure reconciles against nothing. -->
+        {@const others = commerce.currencies.filter((c) => c !== primary)}
+        <p class="relative mt-4 text-[11px] text-white/50">
+          Also holding
+          {#each others as code, i}
+            {i > 0 ? ' · ' : ' '}{exact(commerce.money[code].received, code)}
+          {/each}
+        </p>
+      {/if}
     </section>
 
-    <section aria-labelledby="dashboard-kpis">
-      <div class="mb-4 flex items-end justify-between gap-4">
-        <div>
-          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Platform pulse</p>
-          <h2 id="dashboard-kpis" class="mt-1 text-xl font-bold text-ink">Key metrics</h2>
-        </div>
-      </div>
-
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {#each kpiCards as card}
-          {@const Icon = card.icon}
-          <article class="group rounded-[8px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.055)] transition hover:-translate-y-0.5 hover:border-goldfinch-gold/35 hover:shadow-[0_24px_70px_rgba(57,61,50,0.1)]">
-            <div class="flex items-start justify-between gap-4">
-              <div class={`grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br ${card.accent} ring-1 ring-ink/5 dark:text-goldfinch-gold`}>
-                <Icon size={21} />
-              </div>
-              {#if card.trend}
-                <span class="rounded-full bg-sand/70 px-2.5 py-1 text-[11px] font-bold text-ink/58 ring-1 ring-ink/5">{card.trend}</span>
-              {/if}
-            </div>
-            <p class="mt-4 text-sm font-semibold text-ink/58">{card.label}</p>
-            <p class="mt-2 text-3xl font-bold tracking-normal text-ink">{card.value}</p>
-            <p class="mt-2 text-sm leading-5 text-ink/55">{card.helper}</p>
-          </article>
-        {/each}
-      </div>
-    </section>
-
-    <!-- Analytics charts (Chart.js) -->
-    <section class="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-      <div class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-card">
-        <div class="flex items-start justify-between gap-4">
+    <!-- ── What needs a human ──────────────────────────────────────────── -->
+    {#if todo.length}
+      <section class="grid gap-3">
+        <div class="flex items-baseline justify-between gap-3">
           <div>
-            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Booking pipeline</p>
-            <h2 class="mt-1 text-xl font-bold text-ink">Requests by status</h2>
+            <p class={eyebrow}>Waiting on you</p>
+            <h2 class="mt-1 text-xl font-bold text-ink">Where the work is</h2>
           </div>
-          <ChartPie class="text-goldfinch-gold" size={22} />
         </div>
-        <div class="mt-4">
-          {#if pipelineTotal > 0}
-            <ChartCanvas {...pipelineDonutCfg} height={300} />
-          {:else}
-            <p class="grid h-[260px] place-items-center text-sm text-ink/45">No booking requests yet.</p>
-          {/if}
-        </div>
-      </div>
-
-      <div class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-card">
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Content overview</p>
-            <h2 class="mt-1 text-xl font-bold text-ink">Inventory at a glance</h2>
-          </div>
-          <ChartBar class="text-goldfinch-gold" size={22} />
-        </div>
-        <div class="mt-4">
-          <ChartCanvas {...contentBarCfg} height={300} />
-        </div>
-      </div>
-    </section>
-
-    <section class="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-      <div class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Operational snapshot</p>
-            <h2 class="mt-1 text-xl font-bold text-ink">What needs attention</h2>
-          </div>
-          <AlertTriangle class="text-goldfinch-gold" size={22} />
-        </div>
-
-        <div class="mt-5 grid gap-3 sm:grid-cols-2">
-          {#each operationalItems as item}
-            {@const Icon = item.icon}
-            <a class="flex items-center gap-3 rounded-2xl border border-ink/10 bg-sand/25 p-4 transition hover:border-goldfinch-gold/35 hover:bg-sand/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/20" href={item.href}>
-              <span class="grid h-10 w-10 place-items-center rounded-xl bg-surface text-forest ring-1 ring-ink/10 dark:text-goldfinch-gold">
-                <Icon size={17} />
+        <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+          {#each todo as row (row.key)}
+            <a
+              class="group flex items-start gap-3 rounded-[10px] border bg-surface p-4 shadow-sm transition hover:shadow-md
+                {row.tone === 'urgent' ? 'border-clay/30' : row.tone === 'warn' ? 'border-goldfinch-gold/35' : 'border-ink/10'}"
+              href={row.href}
+            >
+              <span
+                class="grid h-10 w-10 shrink-0 place-items-center rounded-xl
+                  {row.tone === 'urgent' ? 'bg-clay/10 text-clay' : row.tone === 'warn' ? 'bg-goldfinch-gold/15 text-heading' : 'bg-sand/60 text-ink/60'}"
+              >
+                <svelte:component this={row.icon} size={18} />
               </span>
               <span class="min-w-0 flex-1">
-                <span class="block text-sm font-bold text-ink">{item.label}</span>
-                <span class="mt-1 block text-xs text-ink/55">{item.value > 0 ? `${item.value} item${item.value === 1 ? '' : 's'} need review` : 'Clear'}</span>
-              </span>
-              <span class={`rounded-full px-2.5 py-1 text-xs font-bold ring-1 ${statusClass(item.value)}`}>{item.value}</span>
-            </a>
-          {/each}
-        </div>
-      </div>
-
-      <div class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Quick actions</p>
-            <h2 class="mt-1 text-xl font-bold text-ink">Move faster</h2>
-          </div>
-          <Sparkles class="text-goldfinch-gold" size={22} />
-        </div>
-
-        <div class="mt-5 grid gap-3 sm:grid-cols-2">
-          {#each quickActions as action}
-            {@const Icon = action.icon}
-            <a class="group flex items-center gap-3 rounded-2xl border border-ink/10 bg-surface p-3 shadow-sm transition hover:border-goldfinch-gold/35 hover:bg-sand/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/20" href={action.href} aria-label={action.label}>
-              <span class="grid h-10 w-10 place-items-center rounded-xl bg-forest/10 text-forest transition group-hover:bg-forest group-hover:text-white dark:text-goldfinch-gold dark:group-hover:text-white">
-                <Icon size={17} />
-              </span>
-              <span class="min-w-0">
-                <span class="block truncate text-sm font-bold text-ink">{action.label}</span>
-                <span class="mt-0.5 block truncate text-xs text-ink/55">{action.description}</span>
-              </span>
-            </a>
-          {/each}
-        </div>
-      </div>
-    </section>
-
-    <section class="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-      <div class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
-        <div>
-          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Booking pipeline</p>
-          <h2 class="mt-1 text-xl font-bold text-ink">Request status</h2>
-        </div>
-
-        <div class="mt-5 grid gap-4">
-          {#each pipelineItems as item}
-            {@const width = percent(item.value, Math.max(pipelineTotal, 1))}
-            <div>
-              <div class="flex items-center justify-between gap-3 text-sm">
-                <span class="font-semibold text-ink">{item.label}</span>
-                <span class="font-bold text-ink/65">{item.value}</span>
-              </div>
-              <div class="mt-2 h-2.5 overflow-hidden rounded-full bg-sand">
-                <div class={`h-full rounded-full ${item.color}`} style={`width: ${width}%`}></div>
-              </div>
-            </div>
-          {/each}
-        </div>
-      </div>
-
-      <div class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
-        <div>
-          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Content health</p>
-          <h2 class="mt-1 text-xl font-bold text-ink">Publishing readiness</h2>
-        </div>
-
-        <div class="mt-5 grid gap-4 md:grid-cols-2">
-          {#each healthItems as item}
-            {@const Icon = item.icon}
-            <div class="rounded-2xl border border-ink/10 bg-sand/20 p-4">
-              <div class="flex items-start gap-3">
-                <span class="grid h-10 w-10 place-items-center rounded-xl bg-surface text-forest ring-1 ring-ink/10 dark:text-goldfinch-gold">
-                  <Icon size={17} />
+                <span class="flex items-baseline gap-1.5">
+                  <span class="text-2xl font-extrabold leading-none text-ink">{row.count}</span>
+                  <span class="text-sm font-semibold text-ink/80">{row.label}</span>
                 </span>
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center justify-between gap-3">
-                    <p class="text-sm font-bold text-ink">{item.label}</p>
-                    <p class="text-xs font-bold text-forest">{item.value}%</p>
-                  </div>
-                  <p class="mt-1 text-xs text-ink/55">{item.helper}</p>
-                  <div class="mt-3 h-2 overflow-hidden rounded-full bg-surface">
-                    <div class="h-full rounded-full bg-gradient-to-r from-forest to-goldfinch-gold" style={`width: ${item.value}%`}></div>
-                  </div>
-                </div>
-              </div>
+                <span class="mt-1 block text-xs leading-5 text-ink/55">{row.detail}</span>
+              </span>
+              <ArrowRight size={15} class="mt-1 shrink-0 text-ink/25 transition group-hover:translate-x-0.5 group-hover:text-ink/50" />
+            </a>
+          {/each}
+        </div>
+      </section>
+    {:else}
+      <section class="flex items-center gap-3 rounded-[10px] border border-emerald-200/60 bg-emerald-50/60 p-4">
+        <CheckCircle2 size={20} class="shrink-0 text-emerald-600" />
+        <p class="text-sm text-emerald-900">
+          Nothing is waiting on a decision — no unanswered quotations, no open payment requests, no amendments in flight.
+        </p>
+      </section>
+    {/if}
+
+    <!-- ── Trend ───────────────────────────────────────────────────────── -->
+    <section class="grid gap-4 xl:grid-cols-2">
+      <div class={card}>
+        <div class="flex items-baseline justify-between gap-3">
+          <div>
+            <p class={eyebrow}><TrendingUp size={12} class="mr-1 inline" /> Last {commerce?.days ?? 30} days</p>
+            <h2 class="mt-1 text-xl font-bold text-ink">Money received</h2>
+          </div>
+          <p class="text-right text-sm font-bold text-ink">
+            {exact(series.reduce((n, d) => n + d.received, 0), primary)}
+          </p>
+        </div>
+        {#if hasMoneyHistory}
+          <div class="mt-4"><ChartCanvas {...moneyChart} height={220} /></div>
+        {:else}
+          <!-- An empty chart implies a measured zero. This says there is no
+               history yet, which is a different thing. -->
+          <p class="mt-6 rounded-[8px] border border-dashed border-ink/15 px-4 py-8 text-center text-sm text-ink/45">
+            No payments recorded in this period yet.
+          </p>
+        {/if}
+      </div>
+
+      <div class={card}>
+        <div class="flex items-baseline justify-between gap-3">
+          <div>
+            <p class={eyebrow}>Last {commerce?.days ?? 30} days</p>
+            <h2 class="mt-1 text-xl font-bold text-ink">Enquiries</h2>
+          </div>
+          <p class="text-right text-sm font-bold text-ink">{series.reduce((n, d) => n + d.enquiries, 0)}</p>
+        </div>
+        {#if hasEnquiryHistory}
+          <div class="mt-4"><ChartCanvas {...enquiryChart} height={220} /></div>
+        {:else}
+          <p class="mt-6 rounded-[8px] border border-dashed border-ink/15 px-4 py-8 text-center text-sm text-ink/45">
+            No enquiries in this period.
+          </p>
+        {/if}
+      </div>
+    </section>
+
+    <!-- ── Deals ───────────────────────────────────────────────────────── -->
+    <section class="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+      <div class={card}>
+        <div class="flex items-baseline justify-between gap-3">
+          <div>
+            <p class={eyebrow}>Quotations</p>
+            <h2 class="mt-1 text-xl font-bold text-ink">Where deals stand</h2>
+          </div>
+          <a class="text-xs font-semibold text-forest underline underline-offset-4 hover:no-underline" href="/admin/quotations">Open</a>
+        </div>
+        {#if hasFunnel}
+          <div class="mt-4"><ChartCanvas {...funnelChart} height={240} /></div>
+        {:else}
+          <p class="mt-6 rounded-[8px] border border-dashed border-ink/15 px-4 py-8 text-center text-sm text-ink/45">
+            No quotations raised yet.
+          </p>
+        {/if}
+      </div>
+
+      <div class="grid gap-3">
+        <div class={card}>
+          <p class={eyebrow}>Accepted value</p>
+          <p class="mt-1 font-serif text-3xl font-semibold leading-none text-heading">{money(commerce?.acceptedValue, primary)}</p>
+          <p class="mt-1.5 text-xs text-ink/50">Across {commerce?.pipeline?.accepted ?? 0} accepted {(commerce?.pipeline?.accepted ?? 0) === 1 ? 'quotation' : 'quotations'}</p>
+        </div>
+        <div class={card}>
+          <p class={eyebrow}>Still deciding</p>
+          <p class="mt-1 font-serif text-3xl font-semibold leading-none text-heading">{money(commerce?.quotedValue, primary)}</p>
+          <p class="mt-1.5 text-xs text-ink/50">Sent and not yet answered</p>
+        </div>
+        <div class={card}>
+          <p class={eyebrow}>Acceptance rate</p>
+          {#if commerce?.winRate == null}
+            <!-- No decided quotations, so any percentage would be invented. -->
+            <p class="mt-1 font-serif text-3xl font-semibold leading-none text-ink/35">—</p>
+            <p class="mt-1.5 text-xs text-ink/50">Nothing has been decided yet</p>
+          {:else}
+            <p class="mt-1 font-serif text-3xl font-semibold leading-none text-emerald-600">{commerce.winRate}%</p>
+            <p class="mt-1.5 text-xs text-ink/50">
+              Of quotations that got an answer. Undecided ones are excluded — a quote sent yesterday is not a refusal.
+            </p>
+          {/if}
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Did our messages land ───────────────────────────────────────── -->
+    <section class={card}>
+      <div class="flex flex-wrap items-baseline justify-between gap-3">
+        <div>
+          <p class={eyebrow}>Last {commerce?.days ?? 30} days</p>
+          <h2 class="mt-1 text-xl font-bold text-ink">Message delivery</h2>
+        </div>
+        {#if deliveryRate != null}
+          <p class="text-sm font-bold {deliveryRate >= 90 ? 'text-emerald-600' : deliveryRate >= 60 ? 'text-amber-600' : 'text-clay'}">
+            {deliveryRate}% delivered
+          </p>
+        {/if}
+      </div>
+
+      {#if deliveryTotal === 0}
+        <p class="mt-4 rounded-[8px] border border-dashed border-ink/15 px-4 py-6 text-center text-sm text-ink/45">
+          Nothing has been sent in this period.
+        </p>
+      {:else}
+        <div class="mt-4 grid gap-3 sm:grid-cols-3">
+          {#each [['Delivered', delivery.sent, 'text-emerald-600', 'bg-emerald-500', CheckCircle2], ['Skipped', delivery.skipped, 'text-amber-600', 'bg-amber-400', Ban], ['Failed', delivery.failed, 'text-clay', 'bg-clay', AlertTriangle]] as [label, value, tone, accent, icon]}
+            <div class="flex items-center gap-3 rounded-[8px] border border-ink/10 px-3.5 py-3">
+              <span class={`h-9 w-1 shrink-0 rounded-full ${accent}`}></span>
+              <span class="min-w-0">
+                <span class={`block text-2xl font-extrabold leading-none ${tone}`}>{value}</span>
+                <span class="mt-0.5 block text-[11px] font-semibold text-ink/50">{label}</span>
+              </span>
             </div>
+          {/each}
+        </div>
+
+        {#if delivery.skipped > 0 || delivery.failed > 0}
+          <!-- The reason this section exists. A provider rejecting everything
+               looks exactly like nobody having sent anything, and the only
+               place that difference shows is here. -->
+          <p class="mt-3 flex items-start gap-2 rounded-[8px] bg-sand/40 px-3.5 py-2.5 text-xs leading-6 text-ink/70">
+            <AlertTriangle size={14} class="mt-1 shrink-0 text-amber-600" />
+            <span>
+              {#if delivery.failed > 0}<strong>{delivery.failed} failed</strong> outright — usually the email provider rejecting the send.{/if}
+              {#if delivery.skipped > 0}
+                {delivery.skipped} were skipped, which is deliberate: outside the 24-hour WhatsApp window with no approved template, the message is refused rather than faked.
+              {/if}
+            </span>
+          </p>
+        {/if}
+      {/if}
+    </section>
+
+    <!-- ── Movement ────────────────────────────────────────────────────── -->
+    <section class="grid gap-4 xl:grid-cols-[1fr_1fr_0.7fr]">
+      <div class={card}>
+        <div class="flex items-baseline justify-between gap-3">
+          <h2 class="text-base font-bold text-ink">Latest enquiries</h2>
+          <a class="text-xs font-semibold text-forest underline underline-offset-4 hover:no-underline" href="/admin/bookings">All</a>
+        </div>
+        {#if recentBookings.length}
+          <ul class="mt-3 grid gap-2">
+            {#each recentBookings.slice(0, 5) as b}
+              <li class="flex items-baseline justify-between gap-3 border-b border-ink/[0.06] pb-2 last:border-0 last:pb-0">
+                <span class="min-w-0">
+                  <span class="block truncate text-sm font-semibold text-heading">{b.full_name}</span>
+                  <span class="font-mono text-[11px] text-ink/45">{b.booking_code}</span>
+                </span>
+                <span class="shrink-0 text-[11px] text-ink/45">{when(b.created_at)}</span>
+              </li>
+            {/each}
+          </ul>
+        {:else}
+          <p class="mt-4 text-sm text-ink/45">No enquiries yet.</p>
+        {/if}
+      </div>
+
+      <div class={card}>
+        <div class="flex items-baseline justify-between gap-3">
+          <h2 class="text-base font-bold text-ink">Unread messages</h2>
+          <a class="text-xs font-semibold text-forest underline underline-offset-4 hover:no-underline" href="/admin/messages">Inbox</a>
+        </div>
+        {#if recentMessages.length}
+          <ul class="mt-3 grid gap-2">
+            {#each recentMessages.slice(0, 5) as m}
+              <li class="flex items-baseline justify-between gap-3 border-b border-ink/[0.06] pb-2 last:border-0 last:pb-0">
+                <span class="min-w-0">
+                  <span class="block truncate text-sm font-semibold text-heading">{m.name ?? m.full_name ?? 'Someone'}</span>
+                  <span class="block truncate text-[11px] text-ink/45">{m.subject ?? m.email ?? ''}</span>
+                </span>
+                <span class="shrink-0 text-[11px] text-ink/45">{when(m.created_at)}</span>
+              </li>
+            {/each}
+          </ul>
+        {:else}
+          <p class="mt-4 text-sm text-ink/45">Nothing unread.</p>
+        {/if}
+      </div>
+
+      <div class={card}>
+        <h2 class="text-base font-bold text-ink">Jump to</h2>
+        <div class="mt-3 grid gap-2">
+          {#each QUICK as q}
+            <a
+              class="flex items-center gap-2.5 rounded-xl border border-ink/10 px-3 py-2.5 text-sm font-semibold text-heading transition hover:bg-sand/40"
+              href={q.href}
+            >
+              <svelte:component this={q.icon} size={15} class="text-ink/45" />
+              {q.label}
+            </a>
           {/each}
         </div>
       </div>
     </section>
 
-    <section class="grid gap-6 xl:grid-cols-3">
-      <div class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)] xl:col-span-2">
+    <!-- ── The website itself. Kept, deliberately last. ─────────────────── -->
+    <section class={card}>
+      <div class="flex items-baseline justify-between gap-3">
         <div>
-          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Recent activity</p>
-          <h2 class="mt-1 text-xl font-bold text-ink">Latest movement</h2>
+          <p class={eyebrow}><Sparkles size={12} class="mr-1 inline" /> The website</p>
+          <h2 class="mt-1 text-xl font-bold text-ink">Content</h2>
         </div>
-
-        <div class="mt-5 grid gap-4 md:grid-cols-2">
-          <div class="rounded-2xl bg-sand/25 p-4">
-            <h3 class="text-sm font-bold text-ink">Recent bookings</h3>
-            <div class="mt-3 grid gap-3">
-              {#if stats.recent.bookings.length}
-                {#each stats.recent.bookings as booking}
-                  <div class="rounded-xl bg-surface p-3 ring-1 ring-ink/10">
-                    <p class="text-sm font-semibold text-ink">{textValue(booking, 'full_name', 'Guest')}</p>
-                    <p class="mt-1 text-xs text-ink/55">{relationText(booking, 'tours') || textValue(booking, 'booking_code')} · {textValue(booking, 'status')}</p>
-                  </div>
-                {/each}
-              {:else}
-                <p class="rounded-xl bg-surface p-3 text-sm text-ink/55 ring-1 ring-ink/10">No booking activity yet.</p>
-              {/if}
-            </div>
-          </div>
-
-          <div class="rounded-2xl bg-sand/25 p-4">
-            <h3 class="text-sm font-bold text-ink">Recent messages</h3>
-            <div class="mt-3 grid gap-3">
-              {#if stats.recent.messages.length}
-                {#each stats.recent.messages as message}
-                  <div class="rounded-xl bg-surface p-3 ring-1 ring-ink/10">
-                    <p class="text-sm font-semibold text-ink">{textValue(message, 'full_name', 'Visitor')}</p>
-                    <p class="mt-1 text-xs text-ink/55">{textValue(message, 'subject', 'General inquiry')} · {textValue(message, 'status')}</p>
-                  </div>
-                {/each}
-              {:else}
-                <p class="rounded-xl bg-surface p-3 text-sm text-ink/55 ring-1 ring-ink/10">No recent messages.</p>
-              {/if}
-            </div>
-          </div>
-
-          <div class="rounded-2xl bg-sand/25 p-4">
-            <h3 class="text-sm font-bold text-ink">Recently added tours</h3>
-            <div class="mt-3 grid gap-3">
-              {#if stats.recent.tours.length}
-                {#each stats.recent.tours as tour}
-                  <div class="rounded-xl bg-surface p-3 ring-1 ring-ink/10">
-                    <p class="text-sm font-semibold text-ink">{textValue(tour, 'title', 'Untitled tour')}</p>
-                    <p class="mt-1 text-xs text-ink/55">{textValue(tour, 'status')} · {formatDate(tour.created_at)}</p>
-                  </div>
-                {/each}
-              {:else}
-                <p class="rounded-xl bg-surface p-3 text-sm text-ink/55 ring-1 ring-ink/10">No tours have been added yet.</p>
-              {/if}
-            </div>
-          </div>
-
-          <div class="rounded-2xl bg-sand/25 p-4">
-            <h3 class="text-sm font-bold text-ink">Recent media uploads</h3>
-            <div class="mt-3 grid gap-3">
-              {#if stats.recent.media.length}
-                {#each stats.recent.media as media}
-                  <div class="rounded-xl bg-surface p-3 ring-1 ring-ink/10">
-                    <p class="truncate text-sm font-semibold text-ink">{textValue(media, 'file_name', 'Media file')}</p>
-                    <p class="mt-1 text-xs text-ink/55">{textValue(media, 'file_type')} · {formatDate(media.created_at)}</p>
-                  </div>
-                {/each}
-              {:else}
-                <p class="rounded-xl bg-surface p-3 text-sm text-ink/55 ring-1 ring-ink/10">No media uploads yet.</p>
-              {/if}
-            </div>
-          </div>
-        </div>
+        <a class="text-xs font-semibold text-forest underline underline-offset-4 hover:no-underline" href="/admin/tours">Manage</a>
       </div>
-
-      <div class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
-        <div>
-          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Audit trail</p>
-          <h2 class="mt-1 text-xl font-bold text-ink">Admin actions</h2>
-        </div>
-        <div class="mt-5 grid gap-3">
-          {#if stats.recent.auditLogs.length}
-            {#each stats.recent.auditLogs as log}
-              <div class="rounded-2xl border border-ink/10 bg-sand/25 p-3">
-                <p class="text-sm font-bold capitalize text-ink">{textValue(log, 'action')}</p>
-                <p class="mt-1 text-xs text-ink/55">{textValue(log, 'entity_type')} · {formatDate(log.created_at)}</p>
-              </div>
-            {/each}
-          {:else}
-            <div class="rounded-2xl border border-dashed border-forest/20 bg-sand/25 p-5 text-center">
-              <ShieldCheck class="mx-auto text-forest" size={24} />
-              <p class="mt-3 text-sm font-bold text-ink">No audit logs yet</p>
-              <p class="mt-1 text-xs leading-5 text-ink/55">Admin actions will appear here once CMS activity is recorded.</p>
-            </div>
-          {/if}
-        </div>
-      </div>
-    </section>
-
-    <section class="grid gap-6 xl:grid-cols-3">
-      <div class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
-        <h2 class="text-xl font-bold text-ink">Featured tours</h2>
-        <div class="mt-4 grid gap-3">
-          {#if stats.featured.tours.length}
-            {#each stats.featured.tours as tour}
-              <a class="block rounded-2xl border border-ink/10 bg-sand/25 p-4 transition hover:border-goldfinch-gold/35 hover:bg-sand/50" href="/admin/tours">
-                <p class="font-semibold text-ink">{textValue(tour, 'title', 'Untitled tour')}</p>
-                <p class="mt-1 text-xs text-ink/55">{formatMoney(Number(tour.price_from ?? 0))} · {textValue(tour, 'status')}</p>
-              </a>
-            {/each}
-          {:else}
-            <a class="block rounded-2xl border border-dashed border-forest/20 bg-sand/25 p-4 text-sm font-semibold text-forest" href="/admin/tours">Mark tours as featured</a>
-          {/if}
-        </div>
-      </div>
-
-      <div class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
-        <h2 class="text-xl font-bold text-ink">Featured destinations</h2>
-        <div class="mt-4 grid gap-3">
-          {#if stats.featured.destinations.length}
-            {#each stats.featured.destinations as destination}
-              <a class="block rounded-2xl border border-ink/10 bg-sand/25 p-4 transition hover:border-goldfinch-gold/35 hover:bg-sand/50" href="/admin/destinations">
-                <p class="font-semibold text-ink">{textValue(destination, 'name', 'Untitled destination')}</p>
-                <p class="mt-1 text-xs text-ink/55">{textValue(destination, 'country', 'East Africa')} · {textValue(destination, 'status')}</p>
-              </a>
-            {/each}
-          {:else}
-            <a class="block rounded-2xl border border-dashed border-forest/20 bg-sand/25 p-4 text-sm font-semibold text-forest" href="/admin/destinations">Feature destination content</a>
-          {/if}
-        </div>
-      </div>
-
-      <div class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
-        <h2 class="text-xl font-bold text-ink">Latest blog posts</h2>
-        <div class="mt-4 grid gap-3">
-          {#if stats.featured.blogPosts.length}
-            {#each stats.featured.blogPosts as post}
-              <a class="block rounded-2xl border border-ink/10 bg-sand/25 p-4 transition hover:border-goldfinch-gold/35 hover:bg-sand/50" href="/admin/blog">
-                <p class="font-semibold text-ink">{textValue(post, 'title', 'Untitled post')}</p>
-                <p class="mt-1 text-xs text-ink/55">{textValue(post, 'status')} · {formatDate(post.published_at ?? post.created_at)}</p>
-              </a>
-            {/each}
-          {:else}
-            <a class="block rounded-2xl border border-dashed border-forest/20 bg-sand/25 p-4 text-sm font-semibold text-forest" href="/admin/blog">Create the first blog post</a>
-          {/if}
-        </div>
+      <div class="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-5">
+        {#each [['Published tours', counts.publishedTours, Newspaper], ['Drafts', counts.draftTours, FileText], ['Destinations', counts.destinations, Images], ['Blog posts', counts.blogPosts, Newspaper], ['Media', counts.mediaFiles, Images]] as [label, value, icon]}
+          <div class="rounded-[8px] border border-ink/10 px-3 py-2.5">
+            <span class="block text-xl font-extrabold leading-none text-ink">{value ?? 0}</span>
+            <span class="mt-1 block text-[11px] font-semibold text-ink/50">{label}</span>
+          </div>
+        {/each}
       </div>
     </section>
   </div>
