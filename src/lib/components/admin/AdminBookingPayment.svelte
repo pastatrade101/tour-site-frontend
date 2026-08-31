@@ -8,17 +8,24 @@
    * times. This shows the position and sends the ask through the same outbox as
    * every other message.
    *
-   * Nothing here takes money. Payments are recorded under Payments, or arrive
-   * from Connect, and the booking's status follows from those.
+   * Nothing here takes money. Recording says money already arrived — by
+   * M-Pesa, by bank transfer, in cash — and the booking's payment status is
+   * derived from what is recorded, never set by hand.
    */
   import { createEventDispatcher } from 'svelte';
-  import { BadgeCheck, Loader2, Send, Wallet, X } from '@lucide/svelte';
+  import { BadgeCheck, Loader2, Plus, Send, Wallet, X } from '@lucide/svelte';
   import { api } from '$lib/api/client';
+  import AdminPaymentRecorder from './AdminPaymentRecorder.svelte';
 
   export let bookingId: string;
   export let bookingStatus = '';
+  /** Shown in the recorder so it names the booking it is writing against. */
+  export let bookingLabel = '';
 
-  const dispatch = createEventDispatcher<{ sent: string }>();
+  const dispatch = createEventDispatcher<{ sent: string; recorded: void }>();
+
+  /** The dialog that records money as having arrived. */
+  let recording = false;
 
   type Req = {
     id: string;
@@ -47,7 +54,8 @@
 
   let composing = false;
   let kind: 'deposit' | 'balance' | 'full' = 'deposit';
-  let amount = '';
+  /** Number input: Svelte binds a number, so never call .trim() on it. */
+  let amount: string | number | null = '';
   let dueDate = '';
   let instructions = '';
 
@@ -57,6 +65,7 @@
   }
 
   $: confirmed = bookingStatus === 'confirmed' || bookingStatus === 'completed';
+  $: hasAmount = String(amount ?? '').trim() !== '' && Number(amount) > 0;
 
   const money = (value: unknown, code = currency) =>
     `${code} ${Number(value ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -99,13 +108,13 @@
   };
 
   const send = async () => {
-    if (busy || !amount.trim()) return;
+    if (busy || !hasAmount) return;
     busy = 'send';
     error = '';
     try {
       const res = await api.bookings.payment.request(bookingId, {
         kind,
-        amount: amount.trim(),
+        amount: String(amount ?? '').trim(),
         due_date: dueDate || null,
         instructions: instructions.trim() || null
       });
@@ -141,12 +150,23 @@
 <div class="grid gap-3">
   <div class="flex flex-wrap items-center justify-between gap-2">
     <p class={labelClass}><Wallet size={12} class="mr-1 inline" /> Payment</p>
-    {#if confirmed && !composing}
-      <button
-        class="inline-flex h-8 items-center gap-1.5 rounded-xl border border-ink/15 bg-surface px-3 text-xs font-semibold text-heading shadow-sm transition hover:bg-sand"
-        type="button"
-        on:click={open}><Send size={13} /> Request payment</button
-      >
+    {#if !composing}
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Recording comes first: money arrives more often than it is chased,
+             and this is the action that actually moves the booking. -->
+        <button
+          class="inline-flex h-8 items-center gap-1.5 rounded-xl bg-forest px-3 text-xs font-bold text-white shadow-sm transition hover:brightness-110"
+          type="button"
+          on:click={() => (recording = true)}><Plus size={13} /> Record payment</button
+        >
+        {#if confirmed}
+          <button
+            class="inline-flex h-8 items-center gap-1.5 rounded-xl border border-ink/15 bg-surface px-3 text-xs font-semibold text-heading shadow-sm transition hover:bg-sand"
+            type="button"
+            on:click={open}><Send size={13} /> Request payment</button
+          >
+        {/if}
+      </div>
     {/if}
   </div>
 
@@ -228,7 +248,7 @@
           <button
             class="inline-flex h-9 items-center gap-1.5 rounded-xl bg-forest px-4 text-xs font-bold text-white transition hover:brightness-110 disabled:opacity-50"
             type="button"
-            disabled={!amount.trim() || busy === 'send'}
+            disabled={!hasAmount || busy === 'send'}
             on:click={send}
           >
             {#if busy === 'send'}<Loader2 size={13} class="animate-spin" />{:else}<Send size={13} />{/if}
@@ -283,3 +303,17 @@
     {/if}
   {/if}
 </div>
+
+<AdminPaymentRecorder
+  open={recording}
+  {bookingId}
+  {bookingLabel}
+  {currency}
+  {outstanding}
+  on:close={() => (recording = false)}
+  on:saved={async () => {
+    recording = false;
+    await load();
+    dispatch('recorded');
+  }}
+/>

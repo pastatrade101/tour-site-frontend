@@ -749,7 +749,9 @@ import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
         <AdminBookingPayment
           bookingId={String(viewing.id)}
           bookingStatus={String(viewing.status ?? '')}
+          bookingLabel={`${String(viewing.full_name ?? '')} · ${String(viewing.booking_code ?? '')}`}
           on:sent={(e) => showToast(e.detail ? `Payment request sent by ${e.detail}.` : 'Recorded, but not delivered.', e.detail ? 'success' : 'error')}
+          on:recorded={() => { showToast('Payment recorded.'); viewing && refreshViewing(String(viewing.id)); }}
         />
 
         <!-- Where a confirmed trip changes. The accepted quotation behind it is

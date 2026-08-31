@@ -13,14 +13,24 @@
    * statement against, not what you scan a list for.
    */
   import { onMount } from 'svelte';
-  import { ArrowDownLeft, ArrowUpRight, Receipt, Search, Wallet } from '@lucide/svelte';
+  import { ArrowDownLeft, ArrowUpRight, Plus, Receipt, Search, Wallet } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
+  import AdminPaymentRecorder from '$lib/components/admin/AdminPaymentRecorder.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
+  import ToastStack from '$lib/components/admin/ToastStack.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
+
+  let recording = false;
+  let toasts: Array<{ id: string; message: string; type: 'success' | 'error' }> = [];
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    const id = `${Date.now()}-${Math.random()}`;
+    toasts = [{ id, message, type }, ...toasts].slice(0, 4);
+    setTimeout(() => (toasts = toasts.filter((t) => t.id !== id)), 3500);
+  };
 
   type Booking = { booking_code?: string; full_name?: string; email?: string; status?: string };
   type Payment = {
@@ -153,6 +163,9 @@
     eyebrow="Finance"
     title="Payments"
     description="Every payment recorded against a booking — deposits, balances and refunds. Recording one here moves that booking's payment status."
+    actionLabel="Record payment"
+    actionIcon={Plus}
+    on:action={() => (recording = true)}
   />
 
   {#if loading}
@@ -289,3 +302,15 @@
     {/if}
   {/if}
 </div>
+
+<AdminPaymentRecorder
+  open={recording}
+  on:close={() => (recording = false)}
+  on:saved={async () => {
+    recording = false;
+    showToast('Payment recorded. The booking’s status has been updated.');
+    await load();
+  }}
+/>
+
+<ToastStack {toasts} on:dismiss={(e) => (toasts = toasts.filter((t) => t.id !== e.detail))} />
