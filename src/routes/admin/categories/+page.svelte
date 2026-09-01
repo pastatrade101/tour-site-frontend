@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
-  import { ArrowDown, ArrowUp, Braces, Check, ChevronDown, Copy, Edit, Plus, Search, Trash2, X } from '@lucide/svelte';
+  import { ArrowDown, ArrowUp, ChevronDown, Edit, Plus, Search, Trash2, X } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
@@ -10,6 +10,7 @@
   import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
+  import AdminStyleLandingEditor from '$lib/components/admin/AdminStyleLandingEditor.svelte';
   import AdminRichText from '$lib/components/admin/AdminRichText.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
@@ -328,30 +329,19 @@
   $: landingPageValidation = parseStyleLandingJson(form.landing_page_json);
   $: landingPageError = landingPageValidation.errors[0] ?? '';
 
-  const generateLandingPageTemplate = () => {
-    form.landing_page_json = JSON.stringify(
-      defaultStyleLandingContent({
-        name: form.name,
-        short_description: form.short_description,
-        description: form.description,
-        highlights: cleanHighlights(),
-        image_url: form.image_url,
-        best_months: form.best_months,
-        planning_notes: { costs: form.planning_costs, route: form.planning_route }
-      }),
-      null,
-      2
-    );
-    showToast('Complete landing-page template generated. Review the copy before publishing.');
-  };
-
-  const copyLandingPageJson = async () => {
-    try {
-      await navigator.clipboard.writeText(form.landing_page_json);
-      showToast('Landing-page JSON copied.');
-    } catch {
-      showToast('Unable to copy. Select the JSON and copy it manually.', 'error');
-    }
+  /**
+   * What a generated template is built from. Everything already typed into the
+   * form above, so "start from a template" produces a page about THIS style
+   * rather than a generic one the operator has to rewrite from scratch.
+   */
+  $: landingSeed = {
+    name: form.name,
+    short_description: form.short_description,
+    description: form.description,
+    highlights: cleanHighlights(),
+    image_url: form.image_url,
+    best_months: form.best_months,
+    planning_notes: { costs: form.planning_costs, route: form.planning_route }
   };
 
   // Legacy `fitness` free text is deliberately absent: the API no longer
@@ -602,57 +592,12 @@
           <p class="-mt-1 text-xs text-ink/55">Both optional, and both take bullets. Each appears as its own card on the style page; leave one blank and it is hidden.</p>
         </section>
 
-        <!-- ── 2 · Exact safari-style landing-page document ─────────────── -->
-        <section class="grid gap-4 rounded-[8px] border border-goldfinch-gold/35 bg-goldfinch-gold/[0.06] p-4">
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <div class="flex items-center gap-2">
-                <Braces size={17} class="text-forest" />
-                <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Safari-style page UI content</p>
-              </div>
-              <p class="mt-2 max-w-3xl text-sm leading-6 text-ink/60">
-                This JSON maps one-to-one to the shared safari-style layout. Paste a complete page document here, or generate a valid template from the category fields and edit its copy. Published categories require every section.
-              </p>
-            </div>
-            <div class="flex shrink-0 flex-wrap gap-2">
-              <button class="inline-flex h-10 items-center gap-2 rounded-md border border-forest/25 bg-surface px-3 text-xs font-bold text-forest transition hover:bg-sand/60" type="button" on:click={generateLandingPageTemplate}>
-                <Braces size={14} /> Generate template
-              </button>
-              <button class="inline-flex h-10 items-center gap-2 rounded-md border border-ink/10 bg-surface px-3 text-xs font-bold text-ink transition hover:bg-sand/60" type="button" on:click={copyLandingPageJson}>
-                <Copy size={14} /> Copy JSON
-              </button>
-            </div>
-          </div>
-
-          <label class="grid gap-1.5">
-            <span class="text-[13px] font-semibold text-ink/65">Complete landing-page JSON</span>
-            <textarea
-              class={`min-h-[520px] w-full resize-y rounded-md border bg-[#20231d] px-4 py-3 font-mono text-[12px] leading-5 text-[#f3efe7] outline-none transition focus:ring-2 ${landingPageError ? 'border-red-400 focus:border-red-400 focus:ring-red-300/30' : 'border-ink/15 focus:border-goldfinch-gold focus:ring-goldfinch-gold/20'}`}
-              name="landing_page_content"
-              bind:value={form.landing_page_json}
-              spellcheck="false"
-              aria-invalid={Boolean(landingPageError)}
-              aria-describedby="landing-page-validation"
-            ></textarea>
-          </label>
-
-          <div id="landing-page-validation" class={`flex items-start gap-2 rounded-md border px-3 py-2.5 text-xs ${landingPageError ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
-            {#if landingPageError}
-              <X size={15} class="mt-0.5 shrink-0" />
-              <span><strong>Not ready to publish:</strong> {landingPageError}{landingPageValidation.errors.length > 1 ? ` (+${landingPageValidation.errors.length - 1} more)` : ''}</span>
-            {:else}
-              <Check size={15} class="mt-0.5 shrink-0" />
-              <span>Valid and complete. The public page can render every supplied UI section directly from CMS.</span>
-            {/if}
-          </div>
-
-          <details class="rounded-md border border-ink/10 bg-surface px-4 py-3 text-sm text-ink/65">
-            <summary class="cursor-pointer font-semibold text-heading">Required document structure</summary>
-            <p class="mt-2 leading-6">
-              hero · trustChips (4) · overview · planner · tourCollection · planningGuide (4 blocks) · advisor (4 big + 4 quiet) · howItsPlanned (4 steps) · reviews · faq · finalCta (4 proofs).
-            </p>
-          </details>
-        </section>
+        <!-- ── 2 · The safari-style page, as a form ─────────────────────── -->
+        <AdminStyleLandingEditor
+          bind:json={form.landing_page_json}
+          seed={landingSeed}
+          on:toast={(e) => showToast(e.detail.message, e.detail.tone)}
+        />
 
         <!-- ── 3 · Travel information ────────────────────────────────────── -->
         <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
