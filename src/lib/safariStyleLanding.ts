@@ -129,7 +129,10 @@ export const defaultStyleLandingContent = (category: CategorySeed = {}): StyleLa
         {
           title: 'Best time to go',
           body: bestMonths.length
-            ? `${bestMonths.join(', ')} are highlighted in the CMS for this safari style. We refine the timing around wildlife, weather and availability.`
+            // Written for the traveller reading it, not the person filling it
+            // in. The old wording told visitors what was "highlighted in the
+            // CMS", which names our admin tool on a public sales page.
+            ? `${bestMonths.join(', ')} are the strongest months for this kind of trip. We refine the timing around wildlife, weather and availability.`
             : `The best season for ${lower} depends on wildlife, weather and availability. We match your dates to the strongest route for that time of year.`,
           links: [{ label: 'Read our Tanzania travel advice', href: '/expert-advice' }]
         },

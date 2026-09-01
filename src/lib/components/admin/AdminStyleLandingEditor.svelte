@@ -14,8 +14,9 @@
    * The JSON has not gone anywhere — it is the last section, collapsed, for
    * pasting a page in wholesale or checking what was produced.
    */
-  import { createEventDispatcher } from 'svelte';
+  import { afterUpdate, createEventDispatcher } from 'svelte';
   import { AlertTriangle, Braces, Check, ChevronDown, Copy, GripVertical, Plus, Sparkles, X } from '@lucide/svelte';
+  import AdminRichText from './AdminRichText.svelte';
   import {
     defaultStyleLandingContent,
     parseStyleLandingJson,
@@ -51,12 +52,31 @@
     lastPushed = json;
   }
 
-  /** Push edits back up as JSON, which is still what gets saved. */
-  const push = () => {
+  /**
+   * Serialise on ANY change to the document, not only on inputs that remember
+   * to call push().
+   *
+   * The rich-text fields propagate through bind:value rather than events, so an
+   * explicit handler on them does nothing — their edits would reach `content`
+   * and never reach the JSON that actually gets saved. Watching the object
+   * itself covers every field the same way.
+   */
+  // Deliberately afterUpdate rather than a reactive statement: `json` feeds
+  // `content` above, so serialising reactively would close the loop and Svelte
+  // refuses to compile it. Running after the update breaks the cycle, and the
+  // equality check stops the write from causing another pass.
+  afterUpdate(() => {
     const next = JSON.stringify(content, null, 2);
-    lastPushed = next;
-    json = next;
-    dispatch('change', next);
+    if (next !== lastPushed) {
+      lastPushed = next;
+      json = next;
+      dispatch('change', next);
+    }
+  });
+
+  /** Kept so list edits mutate-then-notify in one step. */
+  const push = () => {
+    content = content;
   };
 
   $: errors = styleLandingContentErrors(content);
@@ -286,7 +306,18 @@
             <span class={label}>Paragraphs</span>
             {#each content.overview.paragraphs as _, i}
               <div class="flex items-start gap-2">
-                <textarea class={area} rows="3" bind:value={content.overview.paragraphs[i]} on:input={push}></textarea>
+                <div class="min-w-0 flex-1">
+                  <!-- Rich text, because the public page renders these through
+                       <RichText>. A plain box here would show the operator raw
+                       tags for formatting the page is already applying. -->
+                  <AdminRichText
+                    label=""
+                    name={`overview_paragraph_${i}`}
+                    rows={4}
+                    headings="none"
+                    bind:value={content.overview.paragraphs[i]}
+                  />
+                </div>
                 <button class="mt-1 shrink-0 rounded-md p-2 text-ink/35 transition hover:text-red-600" type="button" aria-label="Remove" on:click={() => removeAt(content.overview.paragraphs, i)}>
                   <X size={15} />
                 </button>
@@ -397,7 +428,14 @@
                 </button>
               </div>
               <input class={field} bind:value={block.title} on:input={push} placeholder="Card heading, e.g. Travel costs" />
-              <textarea class={area} rows="2" bind:value={block.body} on:input={push} placeholder="What someone needs to know"></textarea>
+              <AdminRichText
+                label=""
+                name={`guide_block_${i}`}
+                rows={4}
+                headings="none"
+                placeholder="What someone needs to know. Bullet lists work well here."
+                bind:value={block.body}
+              />
 
               {#each block.links as link, li}
                 <div class="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
