@@ -10,6 +10,7 @@
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminRichText from '$lib/components/admin/AdminRichText.svelte';
+  import AdminItineraryTranslations from '$lib/components/admin/AdminItineraryTranslations.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
   import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
   import StatusBadge from '$lib/components/admin/StatusBadge.svelte';
@@ -594,6 +595,16 @@
         {/each}
       </div>
     {/if}
+
+      <!-- Translating the whole trip at once, rather than a separate editor
+           per day. An itinerary only makes sense read in order. -->
+      {#if selectedTourId && sortedDays.length}
+        <AdminItineraryTranslations
+          days={sortedDays}
+          on:toast={(event) => showToast(event.detail.message, event.detail.type ?? 'success')}
+        />
+      {/if}
+
   {/if}
 </div>
 
