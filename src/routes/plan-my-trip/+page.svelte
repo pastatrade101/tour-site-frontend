@@ -42,7 +42,7 @@
 
 <div class="planning-dialog fixed inset-0 z-[200] overflow-y-auto overflow-x-hidden bg-black/45 backdrop-blur-md" transition:fade={{ duration: 150 }}>
   <div class="planning-dialog-inner flex min-h-full items-center justify-center p-4 py-10 sm:py-14">
-    <div class="planning-dialog-panel relative w-full max-w-2xl" transition:scale={{ duration: 180, start: 0.98 }}>
+    <div class="planning-dialog-panel relative w-full max-w-[560px]" transition:scale={{ duration: 180, start: 0.98 }}>
       <button
         class="absolute -top-3 right-0 z-10 grid h-10 w-10 place-items-center rounded-full bg-surface text-ink shadow-lg ring-1 ring-ink/10 transition hover:bg-sand sm:-right-3"
         type="button"
