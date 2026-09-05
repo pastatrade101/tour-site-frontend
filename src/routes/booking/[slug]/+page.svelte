@@ -5,7 +5,7 @@
   import { api } from '$lib/api/client';
   import { revealHeading } from '$lib/animations';
   import { currency, formatUsd } from '$lib/currency';
-  import BookingForm from '$lib/components/public/BookingForm.svelte';
+  import TripRequestForm from '$lib/components/public/TripRequestForm.svelte';
   import Img from '$lib/components/public/Img.svelte';
   import type { Tour } from '$lib/types';
 
@@ -92,7 +92,7 @@
 
   <!-- booking form -->
   <div>
-    <BookingForm {tour} />
+    <TripRequestForm {tour} />
   </div>
 </section>
 {:else if !loading}

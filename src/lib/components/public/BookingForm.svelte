@@ -76,11 +76,12 @@
   let bodyEl: HTMLDivElement;
 
   // ── Stepper ──────────────────────────────────────────────────────────────────
+  // Two steps: what the trip is, then who is going. Four steps meant four
+  // chances to abandon, and the middle two were a split that only made sense
+  // to whoever built the form.
   const STEPS = [
-    { key: 'contact', label: 'Contact' },
-    { key: 'trip', label: 'Trip' },
-    { key: 'prefs', label: 'Preferences' },
-    { key: 'review', label: 'Review' }
+    { key: 'trip', label: 'Trip basics' },
+    { key: 'details', label: 'Your details' }
   ];
   const LAST = STEPS.length - 1;
   let step = 0;
@@ -115,23 +116,23 @@
     const e: Record<string, string> = { ...errors };
     const only = (keys: string[]) => keys.forEach((k) => delete e[k]);
     if (index === 0) {
-      only(['full_name', 'email', 'phone']);
-      if (full_name.trim().length < 2) e.full_name = 'Please enter your full name.';
-      if (!email.trim()) e.email = 'Email is required.';
-      else if (!isEmail(email.trim())) e.email = 'Please enter a valid email address.';
-      if (phone.trim().length < 6) e.phone = 'A phone or WhatsApp number is required.';
-    } else if (index === 1) {
       only(['travel_date', 'date_flexibility', 'budget_range', 'number_of_adults', 'number_of_children']);
       if (travel_date && travel_date < todayStr) e.travel_date = "Travel date can't be in the past.";
       if (!date_flexibility) e.date_flexibility = 'Let us know if your dates are flexible.';
       if (!budget_range) e.budget_range = 'Please choose a budget range.';
       if (Number(number_of_adults) < 1) e.number_of_adults = 'At least one adult is required.';
       if (number_of_children === '' || Number(number_of_children) < 0) e.number_of_children = "Can't be negative.";
+    } else if (index === 1) {
+      only(['full_name', 'email', 'phone']);
+      if (full_name.trim().length < 2) e.full_name = 'Please enter your full name.';
+      if (!email.trim()) e.email = 'Email is required.';
+      else if (!isEmail(email.trim())) e.email = 'Please enter a valid email address.';
+      if (phone.trim().length < 6) e.phone = 'A phone or WhatsApp number is required.';
     }
     errors = e;
     const stepErrs = Object.keys(errors).filter((k) => {
-      if (index === 0) return ['full_name', 'email', 'phone'].includes(k);
-      if (index === 1) return ['travel_date', 'date_flexibility', 'budget_range', 'number_of_adults', 'number_of_children'].includes(k);
+      if (index === 0) return ['travel_date', 'date_flexibility', 'budget_range', 'number_of_adults', 'number_of_children'].includes(k);
+      if (index === 1) return ['full_name', 'email', 'phone'].includes(k);
       return false;
     });
     return stepErrs.length === 0;
@@ -447,6 +448,78 @@
     <div class="grid min-h-0 flex-1 gap-3 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5 md:px-6" bind:this={bodyEl}>
       {#if step === 0}
         <fieldset class="grid gap-3">
+          <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Trip details</legend>
+          <div class="booking-field-grid">
+            <label class="grid gap-1.5">
+              <span class="gf-label">Preferred travel date</span>
+              <input class={cls('travel_date')} type="date" min={todayStr} bind:value={travel_date} on:input={() => clearErr('travel_date')} />
+              {#if errors.travel_date}<span class="text-xs text-red-600">{errors.travel_date}</span>{/if}
+            </label>
+            <label class="grid gap-1.5">
+              <span class="gf-label">Are your dates flexible?</span>
+              <select class={cls('date_flexibility')} bind:value={date_flexibility} on:change={() => clearErr('date_flexibility')}>
+                <option value="" disabled>Select…</option>
+                {#each FLEX_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
+              </select>
+              {#if errors.date_flexibility}<span class="text-xs text-red-600">{errors.date_flexibility}</span>{/if}
+            </label>
+          </div>
+          <div class="booking-field-grid">
+            <label class="grid gap-1.5">
+              <span class="gf-label">Trip duration</span>
+              <input class={cls('trip_duration')} bind:value={trip_duration} placeholder="e.g. 5 days / 4 nights" />
+            </label>
+            <label class="grid gap-1.5">
+              <span class="gf-label">Estimated budget per person</span>
+              <select class={cls('budget_range')} bind:value={budget_range} on:change={() => clearErr('budget_range')}>
+                <option value="" disabled>Select budget…</option>
+                {#each BUDGET_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
+              </select>
+              {#if errors.budget_range}<span class="text-xs text-red-600">{errors.budget_range}</span>{/if}
+            </label>
+          </div>
+          <div class="booking-count-grid">
+            <label class="grid gap-1.5">
+              <span class="gf-label">Adults</span>
+              <input class={cls('number_of_adults')} type="number" min="1" bind:value={number_of_adults} on:input={() => clearErr('number_of_adults')} />
+              {#if errors.number_of_adults}<span class="text-xs text-red-600">{errors.number_of_adults}</span>{/if}
+            </label>
+            <label class="grid gap-1.5">
+              <span class="gf-label">Children</span>
+              <input class={cls('number_of_children')} type="number" min="0" bind:value={number_of_children} on:input={() => clearErr('number_of_children')} />
+              {#if errors.number_of_children}<span class="text-xs text-red-600">{errors.number_of_children}</span>{/if}
+            </label>
+          </div>
+        </fieldset>
+        <fieldset class="grid gap-3">
+          <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Preferences</legend>
+          <div class="grid gap-2">
+            <span class="gf-label">What are you interested in? <span class="gf-hint">(select any)</span></span>
+            <CategoryPicker
+              selected={travel_interests}
+              fallbackOptions={INTERESTS}
+              tone="dark"
+              onToggle={toggleInterest}
+            />
+          </div>
+          <label class="grid gap-1.5">
+            <span class="gf-label">Accommodation preference</span>
+            <select class={cls('accommodation_preference')} bind:value={accommodation_preference}>
+              <option value="">No preference</option>
+              {#each ACCOMMODATION_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
+            </select>
+          </label>
+          <label class="grid gap-1.5">
+            <span class="gf-label">Special requests</span>
+            <textarea class="gf-textarea booking-textarea-short" rows={2} bind:value={special_requests} placeholder="Dietary needs, accessibility, celebrations, room preferences..."></textarea>
+          </label>
+          <label class="grid gap-1.5">
+            <span class="gf-label">Anything else we should know?</span>
+            <textarea class="gf-textarea booking-textarea" rows={3} bind:value={message} placeholder="Must-see places, special occasions, group details..."></textarea>
+          </label>
+        </fieldset>
+      {:else}
+        <fieldset class="grid gap-3">
           <legend class="mb-1 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">
             <User size={13} /> Contact details
           </legend>
@@ -500,80 +573,6 @@
             </label>
           </div>
         </fieldset>
-      {:else if step === 1}
-        <fieldset class="grid gap-3">
-          <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Trip details</legend>
-          <div class="booking-field-grid">
-            <label class="grid gap-1.5">
-              <span class="gf-label">Preferred travel date</span>
-              <input class={cls('travel_date')} type="date" min={todayStr} bind:value={travel_date} on:input={() => clearErr('travel_date')} />
-              {#if errors.travel_date}<span class="text-xs text-red-600">{errors.travel_date}</span>{/if}
-            </label>
-            <label class="grid gap-1.5">
-              <span class="gf-label">Are your dates flexible?</span>
-              <select class={cls('date_flexibility')} bind:value={date_flexibility} on:change={() => clearErr('date_flexibility')}>
-                <option value="" disabled>Select…</option>
-                {#each FLEX_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
-              </select>
-              {#if errors.date_flexibility}<span class="text-xs text-red-600">{errors.date_flexibility}</span>{/if}
-            </label>
-          </div>
-          <div class="booking-field-grid">
-            <label class="grid gap-1.5">
-              <span class="gf-label">Trip duration</span>
-              <input class={cls('trip_duration')} bind:value={trip_duration} placeholder="e.g. 5 days / 4 nights" />
-            </label>
-            <label class="grid gap-1.5">
-              <span class="gf-label">Estimated budget per person</span>
-              <select class={cls('budget_range')} bind:value={budget_range} on:change={() => clearErr('budget_range')}>
-                <option value="" disabled>Select budget…</option>
-                {#each BUDGET_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
-              </select>
-              {#if errors.budget_range}<span class="text-xs text-red-600">{errors.budget_range}</span>{/if}
-            </label>
-          </div>
-          <div class="booking-count-grid">
-            <label class="grid gap-1.5">
-              <span class="gf-label">Adults</span>
-              <input class={cls('number_of_adults')} type="number" min="1" bind:value={number_of_adults} on:input={() => clearErr('number_of_adults')} />
-              {#if errors.number_of_adults}<span class="text-xs text-red-600">{errors.number_of_adults}</span>{/if}
-            </label>
-            <label class="grid gap-1.5">
-              <span class="gf-label">Children</span>
-              <input class={cls('number_of_children')} type="number" min="0" bind:value={number_of_children} on:input={() => clearErr('number_of_children')} />
-              {#if errors.number_of_children}<span class="text-xs text-red-600">{errors.number_of_children}</span>{/if}
-            </label>
-          </div>
-        </fieldset>
-      {:else if step === 2}
-        <fieldset class="grid gap-3">
-          <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Preferences</legend>
-          <div class="grid gap-2">
-            <span class="gf-label">What are you interested in? <span class="gf-hint">(select any)</span></span>
-            <CategoryPicker
-              selected={travel_interests}
-              fallbackOptions={INTERESTS}
-              tone="dark"
-              onToggle={toggleInterest}
-            />
-          </div>
-          <label class="grid gap-1.5">
-            <span class="gf-label">Accommodation preference</span>
-            <select class={cls('accommodation_preference')} bind:value={accommodation_preference}>
-              <option value="">No preference</option>
-              {#each ACCOMMODATION_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
-            </select>
-          </label>
-          <label class="grid gap-1.5">
-            <span class="gf-label">Special requests</span>
-            <textarea class="gf-textarea booking-textarea-short" rows={2} bind:value={special_requests} placeholder="Dietary needs, accessibility, celebrations, room preferences..."></textarea>
-          </label>
-          <label class="grid gap-1.5">
-            <span class="gf-label">Anything else we should know?</span>
-            <textarea class="gf-textarea booking-textarea" rows={3} bind:value={message} placeholder="Must-see places, special occasions, group details..."></textarea>
-          </label>
-        </fieldset>
-      {:else}
         <!-- Review -->
         <div class="grid gap-4">
           <!--
@@ -604,7 +603,7 @@
                       <span class="inline-flex rounded-md bg-goldfinch-gold/15 px-2 py-0.5 text-xs font-bold text-goldfinch-gold">{r.value}</span>
                     {:else}
                       {r.value}
-                    {/if}
+      {/if}
                   </dd>
                 </div>
               {/each}

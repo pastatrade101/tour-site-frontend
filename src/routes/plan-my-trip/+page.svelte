@@ -6,7 +6,7 @@
   import { brand } from '$lib/brand';
   import { publicSettings, settingText } from '$lib/settings';
   import Img from '$lib/components/public/Img.svelte';
-  import PlanMyTripForm from '$lib/components/public/PlanMyTripForm.svelte';
+  import TripRequestForm from '$lib/components/public/TripRequestForm.svelte';
 
   // The planning request opens immediately as a focused dialog over a blurred
   // backdrop — the surrounding "how it works" copy made the page cluttered and
@@ -41,7 +41,7 @@
 </div>
 
 <div class="planning-dialog fixed inset-0 z-[200] overflow-y-auto overflow-x-hidden bg-black/45 backdrop-blur-md" transition:fade={{ duration: 150 }}>
-  <div class="planning-dialog-inner flex min-h-full items-start justify-center p-4 py-10 sm:py-14">
+  <div class="planning-dialog-inner flex min-h-full items-center justify-center p-4 py-10 sm:py-14">
     <div class="planning-dialog-panel relative w-full max-w-2xl" transition:scale={{ duration: 180, start: 0.98 }}>
       <button
         class="absolute -top-3 right-0 z-10 grid h-10 w-10 place-items-center rounded-full bg-surface text-ink shadow-lg ring-1 ring-ink/10 transition hover:bg-sand sm:-right-3"
@@ -52,7 +52,7 @@
         <X size={20} />
       </button>
 
-      <PlanMyTripForm />
+      <TripRequestForm source="plan_my_trip" heading="Plan My Trip" intro="Tell us the basics and a local specialist will shape a confident East Africa plan." />
     </div>
   </div>
 </div>
@@ -65,13 +65,17 @@
     }
 
     .planning-dialog-inner {
-      min-height: 0;
-      height: 100%;
-      padding: 0.5rem;
+      min-height: 100%;
+      padding: 0.75rem;
     }
 
+    /*
+      Auto height, not full height. The old form was tall enough to want the
+      whole screen; the trimmed one is not, and stretching the panel pinned a
+      short card to the top of an otherwise empty overlay.
+    */
     .planning-dialog-panel {
-      height: 100%;
+      height: auto;
       min-width: 0;
     }
   }

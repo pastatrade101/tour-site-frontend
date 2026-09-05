@@ -249,10 +249,12 @@
   });
 
   // ── Stepper ────────────────────────────────────────────────────────────────
+  // Two steps: what the trip is, then who is going. "Trip details" and
+  // "Preferences" were a split that only made sense to whoever built the form —
+  // a traveller filling it in reads both as the same question.
   const STEPS = [
-    { key: 'trip', label: 'Trip details' },
-    { key: 'prefs', label: 'Preferences' },
-    { key: 'contact', label: 'About you' }
+    { key: 'trip', label: 'Trip basics' },
+    { key: 'details', label: 'Your details' }
   ];
   const steps = STEPS;
   const LAST = STEPS.length - 1;
@@ -260,8 +262,7 @@
 
   // Which fields belong to which step, so we can validate one step at a time.
   const STEP_FIELDS: string[][] = [
-    ['experience_interests', 'exact_start_date'],
-    ['budget_per_person', 'traveller_type', 'number_of_adults', 'number_of_children'],
+    ['experience_interests', 'exact_start_date', 'budget_per_person', 'traveller_type', 'number_of_adults', 'number_of_children'],
     ['full_name', 'email', 'phone']
   ];
 
@@ -571,7 +572,7 @@
 
     <div class="planning-form-body mt-3 grid min-h-0 flex-1 gap-3 overflow-y-auto overscroll-contain" bind:this={bodyEl}>
       <!-- ── Contact details ───────────────────────────────────────────────── -->
-      <fieldset class="grid gap-3" class:hidden={step !== 2}>
+      <fieldset class="grid gap-3" class:hidden={step !== 1}>
         <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Contact details</legend>
         <div class="planning-field-grid">
           <label class="grid gap-1.5">
@@ -649,7 +650,7 @@
       </fieldset>
 
       <!-- ── Travel preferences ────────────────────────────────────────────── -->
-      <fieldset class="grid gap-3" class:hidden={step !== 1}>
+      <fieldset class="grid gap-3" class:hidden={step !== 0}>
         <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Travel preferences</legend>
         <div class="planning-field-grid">
           <label class="grid gap-1.5">
@@ -700,7 +701,7 @@
       </fieldset>
 
       <!-- ── Notes ─────────────────────────────────────────────────────────── -->
-      <fieldset class="grid gap-3" class:hidden={step !== 1}>
+      <fieldset class="grid gap-3" class:hidden={step !== 0}>
         <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Notes</legend>
         <label class="grid gap-1.5">
           <span class="gf-label">Trip notes</span>

@@ -13,13 +13,12 @@
   import { onDestroy, tick } from 'svelte';
   import { fade } from 'svelte/transition';
   import { page } from '$app/stores';
-  import BookingForm from '$lib/components/public/BookingForm.svelte';
+  import TripRequestForm from '$lib/components/public/TripRequestForm.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import HomeTravellerStories from '$lib/components/public/home/HomeTravellerStories.svelte';
   import Img from '$lib/components/public/Img.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
-  import StylePlannerBand from '$lib/components/public/StylePlannerBand.svelte';
   import TravellerMomentsMarquee from '$lib/components/public/TravellerMomentsMarquee.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { currency, formatUsd } from '$lib/currency';
@@ -276,16 +275,27 @@
     </div>
   </section>
 
-  <!-- 5 · Three-step mid-page CTA -->
-  <StylePlannerBand
-    eyebrow={landing.planner.label}
-    title={landing.planner.headline}
-    description={landing.planner.intro}
-    startPoints={data.startPoints ?? []}
-    interests={[{ name: category.name, slug: category.slug }, ...otherStyles.map((style) => ({ name: style.name, slug: style.slug }))]}
-    categoryName={category.name}
-    categorySlug={category.slug}
-  />
+  <!-- 5 · Mid-page CTA. The same form as everywhere else, in a band. -->
+  <section class="bg-surface py-10 md:py-14">
+    <div class="container-shell">
+      <div class="grid gap-6 rounded-[12px] bg-deep-green p-6 md:p-8 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-10">
+        <div class="min-w-0">
+          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{landing.planner.label}</p>
+          <h2 class="mt-2 font-serif text-2xl font-semibold leading-[1.15] text-white md:text-[30px]">{landing.planner.headline}</h2>
+          <p class="mt-2 text-[14px] leading-relaxed text-white/70">{landing.planner.intro}</p>
+        </div>
+        <div class="min-w-0">
+          <TripRequestForm
+            panel={false}
+            source="category_enquiry"
+            heading={landing.planner.headline}
+            intro={landing.planner.intro}
+            leadContext={{ safari_style: category.name, safari_style_slug: category.slug, form_type: 'style_planner' }}
+          />
+        </div>
+      </div>
+    </div>
+  </section>
 
   <!-- 6 · Tour collection / itinerary fallback -->
   <section id="trip-ideas" class="scroll-mt-24 bg-surface py-14 md:py-16">
@@ -431,7 +441,7 @@
     <dialog bind:this={enquiryDialog} class="enquiry-dialog" aria-label={`Plan ${category.name}`} transition:fade={{ duration: 140 }} on:cancel|preventDefault={closeEnquiry} on:click|self={closeEnquiry}>
       <div class="relative my-5 w-[min(94vw,576px)] shadow-[0_30px_100px_rgba(0,0,0,0.55)]">
         <button type="button" aria-label="Close enquiry form" on:click={closeEnquiry} class="absolute right-2 top-2 z-20 grid h-10 w-10 place-items-center rounded-full border border-white/25 bg-deep-green text-white shadow-lg transition hover:bg-forest sm:-right-3 sm:-top-3"><X size={18} /></button>
-        <BookingForm source="category_enquiry" leadContext={{ safari_style: category.name, safari_style_slug: category.slug }} />
+        <TripRequestForm source="category_enquiry" leadContext={{ safari_style: category.name, safari_style_slug: category.slug }} />
       </div>
     </dialog>
   {/if}

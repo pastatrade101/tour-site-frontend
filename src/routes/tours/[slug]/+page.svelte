@@ -23,7 +23,7 @@
   import { trackEvent } from '$lib/analytics';
   import { currency, formatUsd } from '$lib/currency';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
-  import BookingForm from '$lib/components/public/BookingForm.svelte';
+  import TripRequestForm from '$lib/components/public/TripRequestForm.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import Img from '$lib/components/public/Img.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
@@ -1121,7 +1121,7 @@
 
       <aside id="plan-this-trip" class="hidden self-stretch transition lg:block">
         <div class="tour-planner-sticky">
-          <BookingForm {tour} />
+          <TripRequestForm {tour} />
           {#if tourSpecialist}
             <button
               type="button"
@@ -1233,7 +1233,7 @@
           <X class="h-4 w-4" />
         </button>
         <div class="flex-1 overflow-hidden">
-          <BookingForm {tour} />
+          <TripRequestForm {tour} />
         </div>
       </div>
     </div>

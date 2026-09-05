@@ -25,7 +25,9 @@
   export let categoryName = '';
   export let categorySlug = '';
 
-  const TOTAL = 3;
+  // Two steps everywhere: what the trip is, then who is going. Three short
+  // rows made this band feel longer to complete than the form it feeds.
+  const TOTAL = 2;
   let step = 1;
   let submitting = false;
   let submitted = false;
@@ -54,8 +56,6 @@
       if (!travellers) return (error = 'How many travellers?');
       if (!travelDate.trim()) return (error = 'Add a travel date or month.');
       if (!days.trim()) return (error = 'How many days?');
-    }
-    if (step === 2) {
       if (hasStartPoints && !startPoint) return (error = 'Where are you starting from?');
       if (!comfort) return (error = 'Choose a comfort level.');
       if (!interest) return (error = 'Choose a main interest.');
@@ -185,8 +185,7 @@
                 <input class={fieldClass} type="text" inputmode="numeric" bind:value={days} placeholder="7" />
               </label>
             </div>
-          {:else if step === 2}
-            <div class="grid gap-4 {hasStartPoints ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}">
+            <div class="mt-4 grid gap-4 {hasStartPoints ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}">
               {#if hasStartPoints}
                 <label>
                   <span class={labelClass}>Starting point</span>
