@@ -189,18 +189,28 @@
   };
 
   $: dark = tone === 'dark';
-  $: labelCls = `text-[13px] font-bold ${dark ? 'text-white' : 'text-heading'}`;
-  $: hintCls = `text-[12px] ${dark ? 'text-white/55' : 'text-ink/55'}`;
-  $: fieldCls =
-    'h-12 w-full min-w-0 rounded-[10px] border bg-white pl-11 pr-3 text-[15px] text-heading outline-none transition placeholder:text-ink/40 focus:border-goldfinch-gold focus:ring-2 focus:ring-goldfinch-gold/25 border-transparent';
-  const iconCls = 'pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/45';
-  const errCls = 'text-xs font-medium text-red-400';
+
+  /*
+   * Everything below is the site's own form vocabulary from app.css — gf-label,
+   * gf-input, gf-textarea, gf-btn-primary — rather than one-off pixel values.
+   * The first version invented its own scale (13px labels, 15px fields, 48px
+   * controls) and sat visibly larger than every other form on the site.
+   *
+   * gf-panel-dark restyles labels and controls for the green panel on its own,
+   * so the dark variant needs no parallel set of classes here.
+   */
+  const labelCls = 'gf-label';
+  const hintCls = 'gf-hint';
+  /* gf-input plus room for the leading icon. */
+  const fieldCls = 'gf-input pl-10';
+  const iconCls = 'trip-icon pointer-events-none absolute left-3 top-1/2 -translate-y-1/2';
+  const errCls = 'text-[11px] font-medium text-red-400';
 </script>
 
 <div
-  class={`trip-request ${dark ? 'is-dark' : 'is-light'} ${
+  class={`trip-request ${dark ? 'gf-panel-dark' : ''} ${
     panel
-      ? `mx-auto w-full max-w-[560px] rounded-[14px] p-5 sm:p-6 md:p-7 ${dark ? 'bg-deep-green shadow-[0_24px_70px_rgba(57,61,50,0.22)]' : 'border border-ink/10 bg-surface shadow-sm'}`
+      ? `mx-auto w-full max-w-[540px] rounded-[10px] p-5 sm:p-6 ${dark ? 'shadow-[0_24px_70px_rgba(57,61,50,0.22)]' : 'border border-ink/10 bg-surface shadow-sm'}`
       : ''
   }`}
 >
@@ -217,7 +227,7 @@
     </div>
   {:else}
     <div class="grid gap-1">
-      <h3 class={`font-serif text-[28px] font-semibold leading-tight ${dark ? 'text-white' : 'text-heading'}`}>{heading}</h3>
+      <h3 class={`font-serif text-2xl font-semibold leading-tight ${dark ? 'text-white' : 'text-heading'}`}>{heading}</h3>
       <p class={`${hintCls} leading-6`}>{intro}</p>
     </div>
 
@@ -227,7 +237,7 @@
       {#each STEPS as label, index}
         <button
           type="button"
-          class={`flex h-11 items-center justify-center gap-2 rounded-[10px] text-[13px] font-bold uppercase tracking-[0.06em] transition ${
+          class={`flex h-11 items-center justify-center gap-2 rounded-[8px] text-[11px] font-bold uppercase tracking-[0.12em] transition ${
             step === index
               ? 'bg-goldfinch-gold text-heading'
               : dark
@@ -251,18 +261,18 @@
 
       {#if step === 0}
         <label class="grid gap-1.5">
-          <span class={labelCls}>Preferred start date <span class="text-goldfinch-gold">*</span></span>
+          <span class={labelCls}>Preferred start date <span class="gf-req">*</span></span>
           <span class="relative block">
-            <CalendarDays size={17} class={iconCls} />
+            <CalendarDays size={16} class={iconCls} />
             <input class={fieldCls} type="date" min={todayStr} bind:value={travel_date} on:input={() => clearErr('travel_date')} />
           </span>
           {#if errors.travel_date}<span class={errCls}>{errors.travel_date}</span>{/if}
         </label>
 
         <label class="grid gap-1.5">
-          <span class={labelCls}>Adults <span class="text-goldfinch-gold">*</span></span>
+          <span class={labelCls}>Adults <span class="gf-req">*</span></span>
           <span class="relative block">
-            <User size={17} class={iconCls} />
+            <User size={16} class={iconCls} />
             <select class={`${fieldCls} appearance-none`} bind:value={adults} on:change={() => clearErr('adults')}>
               {#each ADULTS as n}<option value={n}>{n}</option>{/each}
             </select>
@@ -271,9 +281,9 @@
         </label>
 
         <label class="grid gap-1.5">
-          <span class={labelCls}>Children and ages <span class={`font-medium ${dark ? 'text-white/50' : 'text-ink/45'}`}>(optional)</span></span>
+          <span class={labelCls}>Children and ages <span class="gf-hint">(optional)</span></span>
           <span class="relative block">
-            <Users size={17} class={iconCls} />
+            <Users size={16} class={iconCls} />
             <!-- Free text on purpose. Ages drive park fees and room
                  configuration, and "2 children, ages 7 and 11" tells a
                  specialist far more than a number in a stepper. -->
@@ -282,9 +292,9 @@
         </label>
 
         <label class="grid gap-1.5">
-          <span class={labelCls}>Preferred language <span class="text-goldfinch-gold">*</span></span>
+          <span class={labelCls}>Preferred language <span class="gf-req">*</span></span>
           <span class="relative block">
-            <Globe size={17} class={iconCls} />
+            <Globe size={16} class={iconCls} />
             <select class={`${fieldCls} appearance-none`} bind:value={language} on:change={() => clearErr('language')}>
               <option value="" disabled>Select language</option>
               {#each LANGUAGES as l}<option value={l.code}>{l.label}</option>{/each}
@@ -295,33 +305,33 @@
         </label>
       {:else}
         <label class="grid gap-1.5">
-          <span class={labelCls}>Full name <span class="text-goldfinch-gold">*</span></span>
+          <span class={labelCls}>Full name <span class="gf-req">*</span></span>
           <span class="relative block">
-            <User size={17} class={iconCls} />
+            <User size={16} class={iconCls} />
             <input class={fieldCls} autocomplete="name" bind:value={full_name} on:input={() => clearErr('full_name')} placeholder="Your full name" />
           </span>
           {#if errors.full_name}<span class={errCls}>{errors.full_name}</span>{/if}
         </label>
 
         <label class="grid gap-1.5">
-          <span class={labelCls}>Email <span class="text-goldfinch-gold">*</span></span>
+          <span class={labelCls}>Email <span class="gf-req">*</span></span>
           <span class="relative block">
-            <Mail size={17} class={iconCls} />
+            <Mail size={16} class={iconCls} />
             <input class={fieldCls} type="email" autocomplete="email" bind:value={email} on:input={() => clearErr('email')} placeholder="you@example.com" />
           </span>
           {#if errors.email}<span class={errCls}>{errors.email}</span>{/if}
         </label>
 
         <div class="grid gap-1.5">
-          <span class={labelCls}>WhatsApp <span class={`font-medium ${dark ? 'text-white/50' : 'text-ink/45'}`}>(optional)</span></span>
+          <span class={labelCls}>WhatsApp <span class="gf-hint">(optional)</span></span>
           <div class="grid grid-cols-[7.5rem_1fr] gap-2.5">
             <span class="relative block">
-              <select class={`${fieldCls} appearance-none !pl-3 pr-2 text-[14px]`} bind:value={dialCode}>
+              <select class="gf-input appearance-none pr-2 text-xs" bind:value={dialCode}>
                 {#each DIAL_CODES as d}<option value={d.code}>{d.label}</option>{/each}
               </select>
             </span>
             <input
-              class="h-12 w-full min-w-0 rounded-[10px] border border-transparent bg-white px-3.5 text-[15px] text-heading outline-none transition placeholder:text-ink/40 focus:border-goldfinch-gold focus:ring-2 focus:ring-goldfinch-gold/25"
+              class="gf-input"
               type="tel"
               autocomplete="tel"
               bind:value={phone}
@@ -331,11 +341,11 @@
         </div>
 
         <label class="grid gap-1.5">
-          <span class={labelCls}>Special requests <span class={`font-medium ${dark ? 'text-white/50' : 'text-ink/45'}`}>(optional)</span></span>
+          <span class={labelCls}>Special requests <span class="gf-hint">(optional)</span></span>
           <span class="relative block">
-            <PencilLine size={17} class="pointer-events-none absolute left-3.5 top-3.5 text-ink/45" />
+            <PencilLine size={16} class="trip-icon pointer-events-none absolute left-3 top-3" />
             <textarea
-              class="w-full rounded-[10px] border border-transparent bg-white py-3 pl-11 pr-3 text-[15px] leading-6 text-heading outline-none transition placeholder:text-ink/40 focus:border-goldfinch-gold focus:ring-2 focus:ring-goldfinch-gold/25"
+              class="gf-textarea pl-10"
               rows="3"
               bind:value={special_requests}
               placeholder="Dietary needs, hotel pickup details, honeymoon, room preference, budget range, or anything else we should know."
@@ -351,7 +361,7 @@
       <button
         type="submit"
         disabled={submitting}
-        class="flex h-13 items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-6 py-3.5 text-[15px] font-bold text-heading transition hover:brightness-105 disabled:opacity-60"
+        class="gf-btn-primary w-full"
       >
         {#if submitting}
           <Loader2 size={17} class="animate-spin" /> Sending…
@@ -361,7 +371,7 @@
       </button>
 
       {#if step === 1}
-        <button type="button" class={`flex items-center justify-center gap-2 text-sm font-semibold ${dark ? 'text-white/70 hover:text-white' : 'text-ink/60 hover:text-heading'}`} on:click={back}>
+        <button type="button" class="gf-btn-ghost w-full" on:click={back}>
           <ArrowLeft size={15} /> Back
         </button>
         <p class={`flex items-center justify-center gap-1.5 ${hintCls}`}>
@@ -373,14 +383,26 @@
 </div>
 
 <style>
+  /*
+    gf-panel-dark turns the controls dark, so an ink-coloured icon disappears
+    into the field it is supposed to label. Colour follows the panel instead of
+    being fixed to one surface.
+  */
+  .trip-request :global(.trip-icon) {
+    color: rgb(57 61 50 / 0.45);
+  }
+  .trip-request.gf-panel-dark :global(.trip-icon) {
+    color: rgb(255 255 255 / 0.5);
+  }
+
   .trip-request :global(select) {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23393D32' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.9rem center;
     padding-right: 2.5rem;
   }
-  /* Tailwind has no h-13; the button is deliberately taller than a field. */
-  .trip-request :global(.h-13) {
-    height: 3.25rem;
+  /* Same reason as the icons: a dark chevron on a dark control is invisible. */
+  .trip-request.gf-panel-dark :global(select) {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-opacity='0.55' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   }
 </style>
