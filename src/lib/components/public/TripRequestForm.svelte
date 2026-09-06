@@ -270,11 +270,21 @@
         <input type="text" name="gf-x1" tabindex="-1" autocomplete="off" bind:value={hp_company} />
       </div>
 
-      <!-- One field per row in the card; a single row in a band. -->
-      <div class={inline ? 'grid gap-3 sm:grid-cols-2 lg:grid-cols-4' : 'grid gap-4'}>
+      <!--
+        One field per row in the card. In a band: proportioned columns rather
+        than four equal ones — a date and a language need different room than a
+        traveller count — aligned on the bottom edge so labels of different
+        lengths cannot leave the controls stepped, with the action as the last
+        column so the whole thing reads as one strip.
+      -->
+      <div
+        class={inline
+          ? 'grid items-end gap-x-3 gap-y-3 sm:grid-cols-2 lg:grid-cols-[1fr_.55fr_1fr_1.35fr_auto]'
+          : 'grid gap-4'}
+      >
       {#if step === 0}
         <label class="grid gap-1.5">
-          <span class={labelCls}>Preferred start date <span class="gf-req">*</span></span>
+          <span class={labelCls}>{inline ? 'Start date' : 'Preferred start date'} <span class="gf-req">*</span></span>
           <span class="relative block">
             <CalendarDays size={16} class={iconCls} />
             <input class={fieldCls} type="date" min={todayStr} bind:value={travel_date} on:input={() => clearErr('travel_date')} />
@@ -294,27 +304,29 @@
         </label>
 
         <label class="grid gap-1.5">
-          <span class={labelCls}>Children and ages <span class="gf-hint">(optional)</span></span>
+          <span class={labelCls}>{inline ? 'Children' : 'Children and ages'} <span class="gf-hint">(optional)</span></span>
           <span class="relative block">
             <Users size={16} class={iconCls} />
             <!-- Free text on purpose. Ages drive park fees and room
                  configuration, and "2 children, ages 7 and 11" tells a
                  specialist far more than a number in a stepper. -->
-            <input class={fieldCls} bind:value={children_note} placeholder="e.g. 2 children, ages 7 and 11" />
+            <input class={fieldCls} bind:value={children_note} placeholder={inline ? '2, ages 7 & 11' : 'e.g. 2 children, ages 7 and 11'} />
           </span>
         </label>
 
         <label class="grid gap-1.5">
-          <span class={labelCls}>Preferred language <span class="gf-req">*</span></span>
+          <span class={labelCls}>{inline ? 'Language' : 'Preferred language'} <span class="gf-req">*</span></span>
           <span class="relative block">
             <Globe size={16} class={iconCls} />
             <select class={`${fieldCls} appearance-none`} bind:value={language} on:change={() => clearErr('language')}>
-              <option value="" disabled>Select language</option>
+              <option value="" disabled>{inline ? 'Select' : 'Select language'}</option>
               {#each LANGUAGES as l}<option value={l.code}>{l.label}</option>{/each}
             </select>
           </span>
           {#if errors.language}<span class={errCls}>{errors.language}</span>{/if}
-          <span class={hintCls}>This helps us prepare the best options in your language.</span>
+          <!-- Only in the card. In a band this one hint sat under a single
+               column and pushed that field out of line with its neighbours. -->
+          {#if !inline}<span class={hintCls}>This helps us prepare the best options in your language.</span>{/if}
         </label>
       {:else}
         <label class="grid gap-1.5">
@@ -366,25 +378,44 @@
           </span>
         </label>
       {/if}
+
+        {#if inline}
+          <button
+            type="submit"
+            disabled={submitting}
+            class="gf-btn-primary w-full whitespace-nowrap px-6 sm:col-span-2 lg:col-span-1 lg:w-auto"
+          >
+            {#if submitting}
+              <Loader2 size={16} class="animate-spin" /> Sending…
+            {:else}
+              {step === 0 ? 'Next' : 'Send'} <ArrowRight size={16} strokeWidth={2.6} />
+            {/if}
+          </button>
+        {/if}
       </div>
 
       {#if errorMessage}
         <p class="rounded-[8px] bg-red-500/15 px-3 py-2.5 text-sm text-red-300" role="alert">{errorMessage}</p>
       {/if}
 
-      <button
-        type="submit"
-        disabled={submitting}
-        class={`gf-btn-primary ${inline ? 'w-full sm:w-auto sm:px-8 sm:justify-self-start' : 'w-full'}`}
-      >
-        {#if submitting}
-          <Loader2 size={17} class="animate-spin" /> Sending…
-        {:else}
-          {step === 0 ? 'Next Step' : 'Send Request'} <ArrowRight size={17} strokeWidth={2.6} />
-        {/if}
-      </button>
+      {#if !inline}
+        <button type="submit" disabled={submitting} class="gf-btn-primary w-full">
+          {#if submitting}
+            <Loader2 size={17} class="animate-spin" /> Sending…
+          {:else}
+            {step === 0 ? 'Next Step' : 'Send Request'} <ArrowRight size={17} strokeWidth={2.6} />
+          {/if}
+        </button>
+      {/if}
 
-      {#if step === 1}
+      {#if step === 1 && inline}
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <button type="button" class={`flex items-center gap-1.5 text-[13px] font-semibold ${dark ? 'text-white/70 hover:text-white' : 'text-ink/60 hover:text-heading'}`} on:click={back}>
+            <ArrowLeft size={14} /> Back
+          </button>
+          <p class={`flex items-center gap-1.5 ${hintCls}`}><Lock size={12} /> Your info is never shared with third parties.</p>
+        </div>
+      {:else if step === 1}
         <button type="button" class="gf-btn-ghost w-full" on:click={back}>
           <ArrowLeft size={15} /> Back
         </button>
