@@ -275,23 +275,29 @@
     </div>
   </section>
 
-  <!-- 5 · Mid-page CTA. The same form as everywhere else, in a band. -->
-  <section class="bg-surface py-10 md:py-14">
+  <!--
+    Mid-page CTA. A short band, not a second landing page: the heading sits on
+    the left, the form lays its fields across one row on the right, and the
+    stacked card layout is left for the pages that have room for it.
+  -->
+  <section class="bg-surface py-10 md:py-12">
     <div class="container-shell">
-      <div class="grid gap-6 rounded-[12px] bg-deep-green p-6 md:p-8 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-10">
-        <div class="min-w-0">
-          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{landing.planner.label}</p>
-          <h2 class="mt-2 font-serif text-2xl font-semibold leading-[1.15] text-white md:text-[30px]">{landing.planner.headline}</h2>
-          <p class="mt-2 text-[14px] leading-relaxed text-white/70">{landing.planner.intro}</p>
-        </div>
-        <div class="min-w-0">
-          <TripRequestForm
-            panel={false}
-            source="category_enquiry"
-            heading={landing.planner.headline}
-            intro={landing.planner.intro}
-            leadContext={{ safari_style: category.name, safari_style_slug: category.slug, form_type: 'style_planner' }}
-          />
+      <div class="rounded-[12px] bg-deep-green p-6 md:p-7">
+        <div class="grid gap-5 lg:grid-cols-[minmax(0,22rem)_1fr] lg:items-start lg:gap-8">
+          <div class="min-w-0">
+            <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{landing.planner.label}</p>
+            <h2 class="mt-2 font-serif text-2xl font-semibold leading-[1.15] text-white md:text-[28px]">{landing.planner.headline}</h2>
+            <p class="mt-2 text-[14px] leading-relaxed text-white/70">{landing.planner.intro}</p>
+          </div>
+          <div class="min-w-0">
+            <TripRequestForm
+              panel={false}
+              layout="inline"
+              showHeader={false}
+              source="category_enquiry"
+              leadContext={{ safari_style: category.name, safari_style_slug: category.slug, form_type: 'style_planner' }}
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -46,6 +46,14 @@
    * inside a card.
    */
   export let panel = true;
+  /**
+   * 'stacked' is the card — one field per row. 'inline' lays the same fields
+   * across a single row for a mid-page band, where a tall stacked form would
+   * double the height of a section that is meant to be a short interruption.
+   */
+  export let layout: 'stacked' | 'inline' = 'stacked';
+  /** Off where the surrounding section already states the heading. */
+  export let showHeader = true;
   export let heading = 'Plan This Trip';
   export let intro = "Share a few details about your trip and we'll check availability for you.";
 
@@ -189,6 +197,7 @@
   };
 
   $: dark = tone === 'dark';
+  $: inline = layout === 'inline';
 
   /*
    * Everything below is the site's own form vocabulary from app.css — gf-label,
@@ -226,14 +235,16 @@
       <p class={hintCls}>A local specialist will come back to you shortly, in the language you chose.</p>
     </div>
   {:else}
-    <div class="grid gap-1">
-      <h3 class={`font-serif text-2xl font-semibold leading-tight ${dark ? 'text-white' : 'text-heading'}`}>{heading}</h3>
-      <p class={`${hintCls} leading-6`}>{intro}</p>
-    </div>
+    {#if showHeader}
+      <div class="grid gap-1">
+        <h3 class={`font-serif text-2xl font-semibold leading-tight ${dark ? 'text-white' : 'text-heading'}`}>{heading}</h3>
+        <p class={`${hintCls} leading-6`}>{intro}</p>
+      </div>
+    {/if}
 
     <!-- Two tabs, both always visible. A stepper that hides where you are
          going reads as a form of unknown length. -->
-    <div class="mt-4 grid grid-cols-2 gap-2.5">
+    <div class={`grid grid-cols-2 gap-2.5 ${showHeader ? 'mt-4' : ''} ${inline ? 'max-w-md' : ''}`}>
       {#each STEPS as label, index}
         <button
           type="button"
@@ -259,6 +270,8 @@
         <input type="text" name="gf-x1" tabindex="-1" autocomplete="off" bind:value={hp_company} />
       </div>
 
+      <!-- One field per row in the card; a single row in a band. -->
+      <div class={inline ? 'grid gap-3 sm:grid-cols-2 lg:grid-cols-4' : 'grid gap-4'}>
       {#if step === 0}
         <label class="grid gap-1.5">
           <span class={labelCls}>Preferred start date <span class="gf-req">*</span></span>
@@ -353,6 +366,7 @@
           </span>
         </label>
       {/if}
+      </div>
 
       {#if errorMessage}
         <p class="rounded-[8px] bg-red-500/15 px-3 py-2.5 text-sm text-red-300" role="alert">{errorMessage}</p>
@@ -361,7 +375,7 @@
       <button
         type="submit"
         disabled={submitting}
-        class="gf-btn-primary w-full"
+        class={`gf-btn-primary ${inline ? 'w-full sm:w-auto sm:px-8 sm:justify-self-start' : 'w-full'}`}
       >
         {#if submitting}
           <Loader2 size={17} class="animate-spin" /> Sending…
