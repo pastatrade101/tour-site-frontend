@@ -248,6 +248,22 @@ select {
   }
 }
 
+/* Safari on iOS sizes a native date control from its own date text and ignores
+   the width we set, so a date field styled to fill its row rendered wider than
+   the row and hung off the right edge of the panel. Dropping the native
+   appearance hands the sizing back to CSS. Site-wide rather than per-form:
+   every date field on the site has the same liability, and the next one added
+   would inherit it too. */
+input[type='date'] {
+  -webkit-appearance: none;
+  appearance: none;
+  max-width: 100%;
+}
+/* iOS centres the value in the box; every other field here is left-aligned. */
+input[type='date']::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 /* ── Shared public form language ──────────────────────────────────────────
    One vocabulary for every visitor-facing form (plan a trip, request a tour,
    contact, lead capture) so they read as one product: micro uppercase labels,
