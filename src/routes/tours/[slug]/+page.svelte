@@ -26,6 +26,7 @@
   import TripRequestForm from '$lib/components/public/TripRequestForm.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import Img from '$lib/components/public/Img.svelte';
+  import ItineraryDays from '$lib/components/public/ItineraryDays.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import ReviewsWidget from '$lib/components/public/ReviewsWidget.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
@@ -829,109 +830,10 @@
           </p>
 
           {#if itineraryDays.length}
-            <div class="tour-day-list mt-6 space-y-2.5">
-              {#each itineraryDays as day, index (day.day_number)}
-                {@const image = dayImage(day)}
-                {@const details = detailsForDay(day)}
-                <details id={`day-${day.day_number}`} class="tour-day-card group overflow-hidden rounded-[12px] border border-ink/10 bg-surface" open={index === 0}>
-                  <summary class="tour-day-toggle flex w-full cursor-pointer list-none items-center gap-4 px-4 py-4 text-left marker:content-none md:px-5 [&::-webkit-details-marker]:hidden" on:click={animateDayDisclosure}>
-                    <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-deep-green text-[13px] font-bold text-white">
-                      {day.day_number}
-                    </span>
-                    <span class="min-w-0 flex-1">
-                      <span class="block text-[10.5px] font-bold uppercase tracking-[0.14em] text-clay/80">Day {day.day_number}</span>
-                      <span class="mt-0.5 block font-serif text-[16.5px] font-bold leading-snug text-heading md:text-[18px]">{day.title}</span>
-                      <span class="mt-0.5 block text-[12.5px] text-ink/55">
-                        {[day.lodge?.name || day.accommodation || '', day.meals || ''].filter(Boolean).join(' / ')}
-                      </span>
-                    </span>
-                    <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full text-ink/60 transition-transform duration-200 group-open:rotate-180">
-                      <ChevronDown class="h-5 w-5" />
-                    </span>
-                  </summary>
-
-                    <div class="tour-day-body border-t border-ink/10 px-4 pb-8 pt-6 md:px-8 md:pt-8">
-                      {#if image}
-                        <Img
-                          src={image.record ? '' : image.src}
-                          record={image.record}
-                          fields={image.fields ?? []}
-                          alt={image.caption}
-                          width={1000}
-                          sizes="(max-width: 768px) 92vw, 700px"
-                          className="tour-day-image mb-6 h-[220px] w-full rounded-[12px] object-cover sm:h-[280px] md:mb-8 md:h-[380px]"
-                        />
-                      {/if}
-
-                      {#if day.description}
-                        <RichText value={day.description} className="space-y-4 text-[14.5px] leading-[1.65] text-ink/70 md:text-[16px]" />
-                      {/if}
-
-                      {#if details.length}
-                        <ul class="tour-day-details mb-7 mt-6 rounded-[12px] border border-ink/10 bg-sand/45 p-5 md:p-[22px]">
-                          {#each details as detail, detailIndex}
-                            <li class={`flex items-start gap-3 text-[14.5px] leading-[1.55] md:text-[15px] ${detailIndex > 0 ? 'mt-2.5' : ''}`}>
-                              <svelte:component this={detail.icon} size={16} class="mt-[2px] shrink-0 text-clay" />
-                              <span class="min-w-0 flex-1">
-                                <span class="font-semibold text-heading">{detail.label}:</span>
-                                <span class="text-ink/70"> {detail.value}</span>
-                              </span>
-                            </li>
-                          {/each}
-                        </ul>
-                      {/if}
-
-                      {#if day.lodge}
-                        {@const stay = day.lodge}
-                        {@const gallery = galleryForStay(stay)}
-                        <div class="tour-day-accommodation">
-                          <div class="mb-3.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink/60 md:text-[11px]">Accommodation - {stay.name}</div>
-                          <div class="tour-day-accommodation-card overflow-hidden rounded-[12px] border border-ink/10 bg-surface">
-                            {#if gallery.length}
-                              <div class="tour-day-accommodation-gallery grid grid-cols-4 gap-1 overflow-hidden rounded-t-[11px] bg-sand p-1">
-                                {#each gallery.slice(0, 4) as image, imageIndex}
-                                  <div class={`relative aspect-[4/3] min-w-0 overflow-hidden bg-sand ${imageIndex === 0 ? 'rounded-tl-[8px]' : ''} ${imageIndex === Math.min(gallery.length, 4) - 1 ? 'rounded-tr-[8px]' : ''}`}>
-                                    <Img
-                                      src={image.record ? '' : image.src}
-                                      record={image.record}
-                                      fields={image.fields ?? []}
-                                      alt={image.caption}
-                                      width={360}
-                                      sizes="(max-width: 768px) 23vw, 175px"
-                                      className="h-full w-full object-cover transition duration-500 hover:scale-[1.03]"
-                                    />
-                                    {#if imageIndex === 3 && gallery.length > 4}
-                                      <div class="pointer-events-none absolute inset-0 grid place-items-center bg-heading/55 px-2 text-center text-xs font-extrabold tracking-wide text-white backdrop-blur-[1px] sm:text-sm">
-                                        +{gallery.length - 4} {gallery.length - 4 === 1 ? 'photo' : 'photos'}
-                                      </div>
-                                    {/if}
-                                  </div>
-                                {/each}
-                              </div>
-                            {/if}
-                            <div class="p-4 md:p-5">
-                              <div class="flex flex-wrap items-start justify-between gap-3">
-                                <div class="min-w-0">
-                                  <h4 class="font-serif text-[19px] font-semibold leading-snug text-heading">{stay.name}</h4>
-                                  <p class="mt-1 text-[13px] font-medium text-ink/60">
-                                    {[LODGE_TYPES[String(stay.lodge_type)] ?? '', stay.accommodation_level ? normaliseLabel(stay.accommodation_level) : '', stay.destinations?.name ?? ''].filter(Boolean).join(' / ')}
-                                  </p>
-                                </div>
-                                <a
-                                  class="inline-flex shrink-0 items-center gap-1 rounded-[6px] border border-ink/10 px-3 py-2 text-[12px] font-bold text-forest transition hover:border-goldfinch-gold hover:text-heading"
-                                  href={`/accommodation/${stay.slug}`}
-                                  data-sveltekit-preload-data="hover"
-                                >
-                                  View accommodation <ArrowRight size={13} />
-                                </a>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      {/if}
-                    </div>
-                </details>
-              {/each}
+            <!-- The same renderer the safari-package pages use, so a day card
+                 cannot drift between the tour and the page selling it. -->
+            <div class="mt-6">
+              <ItineraryDays days={itineraryDays} {lodgeMedia} />
             </div>
           {:else}
             <div class="mt-6 rounded-[12px] border border-ink/10 bg-sand/35 p-5 text-[14px] leading-6 text-ink/70">
@@ -1645,62 +1547,6 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
       column-gap: 0.9rem;
       row-gap: 0.7rem;
-    }
-
-    .tour-day-list {
-      margin-top: 1.15rem;
-      display: grid;
-      gap: 0.75rem;
-    }
-
-    .tour-day-card {
-      border-radius: 14px;
-    }
-
-    .tour-day-toggle {
-      gap: 0.75rem;
-      padding: 0.95rem;
-    }
-
-    .tour-day-toggle > span:first-child {
-      height: 2rem;
-      width: 2rem;
-      font-size: 0.78rem;
-    }
-
-    .tour-day-body {
-      padding: 0.9rem 0.9rem 1rem;
-    }
-
-    :global(.tour-day-image) {
-      aspect-ratio: 16 / 10;
-      height: auto;
-      margin-bottom: 1rem;
-      border-radius: 12px;
-    }
-
-    .tour-day-details {
-      margin-block: 1rem 1.1rem;
-      border-radius: 12px;
-      padding: 0.9rem;
-    }
-
-    .tour-day-accommodation-card {
-      border-radius: 12px;
-    }
-
-    :global(.tour-day-accommodation-image) {
-      aspect-ratio: 16 / 9;
-      height: auto;
-    }
-
-    .tour-day-accommodation-card :global(.p-4) {
-      padding: 0.9rem;
-    }
-
-    .tour-day-accommodation-card a {
-      width: 100%;
-      justify-content: center;
     }
 
     .tour-accommodation-grid {

@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { API_URL } from '$lib/config/env';
 import type { EntityTranslations, Language, TranslationRecord } from '$lib/types';
-import type { Activity, AdvisorDonePayload, AdvisorMeta, AdvisorPageContext, AdvisorRecommendation, AiChatResponse, ApiResponse, BlogPost, Comparison, CurrencyApiState, Destination, FAQ, Lodge, MigrationEntry, PageSeo, Paginated, Review, ReviewSummary, SafetyTopic, Specialist, Testimonial, Tour, TourCategory, TravelStyle, TripPoint } from '$lib/types';
+import type { Activity, AdvisorDonePayload, AdvisorMeta, AdvisorPageContext, AdvisorRecommendation, AiChatResponse, ApiResponse, BlogPost, Comparison, CurrencyApiState, Destination, FAQ, Lodge, MigrationEntry, PageSeo, Paginated, Review, ReviewSummary, SafariPackage, SafetyTopic, Specialist, Testimonial, Tour, TourCategory, TravelStyle, TripPoint } from '$lib/types';
 
 type QueryValue = string | number | boolean | undefined | null;
 type RequestOptions = Omit<RequestInit, 'body'> & {
@@ -361,6 +361,20 @@ export const api = {
     create: (body: Record<string, unknown>) => apiRequest<TravelStyle>('/travel-styles', { method: 'POST', body }),
     update: (id: string, body: Record<string, unknown>) => apiRequest<TravelStyle>(`/travel-styles/${id}`, { method: 'PUT', body }),
     remove: (id: string) => apiRequest(`/travel-styles/${id}`, { method: 'DELETE' })
+  },
+  safariPackages: {
+    list: (params?: Record<string, QueryValue>) =>
+      apiRequest<Paginated<SafariPackage>>(`/safari-packages${queryString(params)}`),
+    /**
+     * The FULL record, with the linked tour and its days. The edit form must
+     * load through this and never from `list` — the list projection omits
+     * `sections`, and a form seeded from it would save the page back empty.
+     */
+    get: (slug: string) => apiRequest<SafariPackage>(`/safari-packages/${slug}`),
+    create: (body: Record<string, unknown>) => apiRequest<SafariPackage>('/safari-packages', { method: 'POST', body }),
+    update: (id: string, body: Record<string, unknown>) =>
+      apiRequest<SafariPackage>(`/safari-packages/${id}`, { method: 'PUT', body }),
+    remove: (id: string) => apiRequest(`/safari-packages/${id}`, { method: 'DELETE' })
   },
   comparisons: {
     list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Comparison>>(`/comparisons${queryString(params)}`),

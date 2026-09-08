@@ -41,6 +41,7 @@
   // shorter footer instead of dead links.
   let destinations: Item[] = [];
   let experiences: Item[] = [];
+  let packages: Item[] = [];
 
   onMount(() => {
     void (async () => {
@@ -59,6 +60,16 @@
           label: String(c.name ?? c.slug),
           href: `/safari-styles/${c.slug}`
         }));
+      } catch {
+        // leave empty — the column self-hides
+      }
+      try {
+        // Only pages a crawler is allowed on. A draft or a not-yet-indexable
+        // page has no business being linked from every page of the site.
+        const res = await api.safariPackages.list({ status: 'published', limit: 8 });
+        packages = (res.data.items ?? [])
+          .filter((row) => row?.slug && row.indexable === true)
+          .map((row) => ({ label: String(row.name ?? row.slug), href: `/${row.slug}` }));
       } catch {
         // leave empty — the column self-hides
       }
@@ -141,6 +152,20 @@
           </div>
           <ul class="mt-4 space-y-2.5 text-sm">
             {#each experiences as item (item.href)}
+              <li><a class="transition hover:text-white" href={item.href}>{item.label}</a></li>
+            {/each}
+          </ul>
+        </div>
+      {/if}
+
+      {#if packages.length}
+        <div>
+          <div class="inline-flex items-center gap-2">
+            <span class="h-px w-6 bg-goldfinch-gold" aria-hidden="true"></span>
+            <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">Safari Packages</span>
+          </div>
+          <ul class="mt-4 space-y-2.5 text-sm">
+            {#each packages as item (item.href)}
               <li><a class="transition hover:text-white" href={item.href}>{item.label}</a></li>
             {/each}
           </ul>

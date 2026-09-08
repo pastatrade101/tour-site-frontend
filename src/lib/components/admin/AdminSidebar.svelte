@@ -13,6 +13,7 @@
     ClipboardList,
     Compass,
     GitCompare,
+    LayoutTemplate,
     Heart,
     CreditCard,
     FileText,
@@ -111,6 +112,7 @@
         { href: '/admin/faqs', label: 'FAQs', icon: CircleHelp },
         { href: '/admin/safety', label: 'Safety Guide', icon: ShieldCheck },
         { href: '/admin/travel-styles', label: 'Travel Styles', icon: Heart },
+        { href: '/admin/safari-packages', label: 'Safari Packages', icon: LayoutTemplate },
         { href: '/admin/comparisons', label: 'Comparisons', icon: GitCompare },
         { href: '/admin/homepage', label: 'Homepage', icon: Home }
       ]

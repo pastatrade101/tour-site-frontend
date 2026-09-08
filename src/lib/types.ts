@@ -405,6 +405,39 @@ export type TravelStyle = {
   meta_description?: string;
 };
 
+/**
+ * One safari-package landing page.
+ *
+ * `sections` is an ordered array of content blocks — see $lib/safariPackageBlocks
+ * for the vocabulary. Loose on purpose: the block types grow without a
+ * migration, and the renderer skips one it does not know.
+ */
+export type SafariPackage = {
+  id: string;
+  name: string;
+  slug: string;
+  tour_id?: string | null;
+  category_id?: string | null;
+  hero_eyebrow?: string | null;
+  hero_title?: string | null;
+  hero_subtitle?: string | null;
+  hero_image_url?: string | null;
+  sections?: Array<Record<string, unknown>> | null;
+  status?: string;
+  /** Off by default. Nothing is offered to a crawler until an editor says so. */
+  indexable?: boolean;
+  is_featured?: boolean;
+  sort_order?: number | null;
+  seo_title?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  og_image_url?: string | null;
+  /** Joined by the detail endpoint — the trip whose days the page renders. */
+  tours?: (Partial<Tour> & { itinerary_days?: ItineraryDay[] }) | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
 export type ComparisonDimension = { label: string; a: string; b: string };
 export type ComparisonFaq = { q: string; a: string };
 
