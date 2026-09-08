@@ -28,6 +28,7 @@
   import { cachedJson } from '$lib/cache';
   import { attachResolvedVariantFields, imgUrl, srcsetFor, variantFromMap, variantSrc, type ImageVariantMap } from '$lib/img';
   import { toMetaText } from '$lib/richText';
+  import { categoryAudience, categoryHighlights, categoryMeta } from '$lib/categoryFacts';
   import type { BlogPost, Destination, FAQ, MigrationEntry, Review, ReviewSummary, Tour } from '$lib/types';
   import type { PageData } from './$types';
 
@@ -198,6 +199,10 @@
   // short_description is written for exactly this compact card context, so it
   // wins over truncating the long description. Featured categories lead;
   // within each group the API's sort_order holds (Array.sort is stable).
+  // meta / tags / bestFor are the category's own columns — duration, fitness
+  // level, best months, highlights and who it's for. Each is absent on plenty
+  // of records, and the section renders nothing for the ones it does not have
+  // rather than filling the gap.
   $: experienceItems = categories
     .map((c) => ({
       name: String(c.name ?? c.slug ?? ''),
@@ -205,6 +210,9 @@
       description: toMetaText(c.short_description ?? c.description ?? c.who_its_for ?? '', 170),
       image: String(c.image_url ?? ''),
       href: `/safari-styles/${String(c.slug ?? '')}`,
+      meta: categoryMeta(c),
+      tags: categoryHighlights(c.highlights),
+      bestFor: categoryAudience(c.who_its_for),
       featured: Boolean(c.is_featured)
     }))
     .filter((c) => c.name && c.slug)

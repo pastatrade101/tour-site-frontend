@@ -1,13 +1,19 @@
 <script lang="ts">
-  import { ArrowRight, Compass, Plane, Heart, Waves, Users, Sparkles, Mountain, TreePine, Camera, MapPin } from '@lucide/svelte';
+  import { ArrowRight, Check } from '@lucide/svelte';
   import Img from '../Img.svelte';
   import type { ImageVariantMap } from '$lib/img';
 
-  // "What Kind of Tanzania Trip Are You Imagining?" — an interactive list of
-  // experience types (Goldfinch tour categories) on the left, with a large
-  // preview panel on the right. Everything renders from `items`; nothing is
-  // fabricated. Optional per-item `tags` / `bestFor` / `short` are shown only
-  // when the CMS actually supplies them.
+  /**
+   * "Ways to Travel" — the experience picker below the hero.
+   *
+   * Two ways into the same choice: a tab strip for people reading, and a grid
+   * of photographs for people looking. Both drive one detail card, so whichever
+   * a visitor uses, the answer appears in the same place.
+   *
+   * Everything renders from `items`, which are published tour categories.
+   * Nothing here is invented — a category with no duration shows no duration,
+   * one with no highlights shows no chips, and the card simply gets shorter.
+   */
   type ExperienceItem = {
     name: string;
     slug: string;
@@ -15,6 +21,8 @@
     image?: string;
     href?: string;
     short?: string;
+    /** "3–10 days · Easy · Jan–Feb, Jun–Oct", pre-formatted by the caller. */
+    meta?: string;
     tags?: string[];
     bestFor?: string[];
     ctaLabel?: string;
@@ -29,222 +37,230 @@
   export let moreLabel = 'More experiences';
   export let bestForLabel = 'Best for';
   export let primaryCtaPrefix = 'Explore';
-  export let secondaryCtaLabel = 'View Safari Itineraries';
-  export let secondaryCtaHref = '#featured-itineraries';
 
-  // Fixed icon rotation — assigned by index so each card gets a sensible mark.
-  const icons = [Compass, Plane, Heart, Waves, Users, Sparkles, Mountain, TreePine, Camera, MapPin];
-  const iconAt = (i: number) => icons[i % icons.length];
+  /** Six in the strip and the photo grid; the rest are named underneath. */
+  const PRIMARY_COUNT = 6;
 
   let activeIndex = 0;
   $: if (activeIndex >= items.length) activeIndex = 0;
-  $: primary = items.slice(0, 6);
-  $: secondary = items.slice(6);
+
+  $: primary = items.slice(0, PRIMARY_COUNT);
+  $: secondary = items.slice(PRIMARY_COUNT);
   $: active = items[activeIndex] ?? items[0];
-  $: activeHref = active ? active.href || (active.slug ? `/tours/${active.slug}` : '') : '';
+
+  $: activeHref = active ? active.href || (active.slug ? `/safari-styles/${active.slug}` : '') : '';
+  $: activeBlurb = active ? active.short || active.description || '' : '';
+  $: activeTags = (active?.tags ?? []).filter(Boolean);
+  $: activeBestFor = (active?.bestFor ?? []).map((entry) => entry.trim()).filter(Boolean);
+  $: metaParts = (active?.meta ?? '')
+    .split('·')
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  /*
+   * Initials in circles only make sense for a list of short audience labels,
+   * which is how `who_its_for` is written now — one per line. Older records
+   * hold a single sentence, and a sentence gets one letter and reads as a
+   * mistake, so prose renders as prose.
+   */
+  $: bestForAsList = activeBestFor.length > 1 && activeBestFor.every((entry) => entry.length <= 44);
+  $: bestForShown = activeBestFor.slice(0, 3);
 </script>
 
 {#if items.length}
-  <section id="experiences" class="home-experiences py-20 scroll-mt-20 bg-surface">
+  <section id="experiences" class="home-experiences scroll-mt-20 bg-surface py-14 md:py-20">
     <div class="container-shell">
-      <div class="home-experiences-head max-w-[1180px] mx-auto text-center">
-        <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">
-          {eyebrow}
-        </span>
+      <div class="home-experiences-head mx-auto max-w-[720px] text-center">
+        <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{eyebrow}</span>
         <h2 class="font-serif mt-3 text-3xl leading-[1.1] tracking-tight text-heading sm:text-4xl md:text-[40px]">
           {title}
         </h2>
-        <p class="mt-3 max-w-[820px] mx-auto text-base leading-relaxed text-ink/70">
-          {subtitle}
-        </p>
+        <p class="mt-3 text-base leading-relaxed text-ink/70">{subtitle}</p>
       </div>
 
-      <div class="home-experiences-layout mt-8 grid min-w-0 max-w-full gap-8 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:items-start">
-        <!-- Left: interactive experience list (~35%) -->
-        <div class="min-w-0 max-w-full overflow-hidden sm:overflow-visible flex flex-col gap-3">
-          <div class="home-experience-tabs flex flex-col space-y-3">
-            {#each primary as opt, i (opt.slug || i)}
-              <button
-                type="button"
-                on:click={() => (activeIndex = i)}
-                aria-pressed={activeIndex === i}
-                class="home-experience-tab group relative grid w-full max-w-full grid-cols-[40px_minmax(0,1fr)_20px] items-center gap-3 rounded-xl px-5 py-4 text-left transition-all sm:grid-cols-[44px_minmax(0,1fr)_24px]"
-                style={activeIndex === i
-                  ? 'background: rgb(var(--c-surface)); border: 1px solid rgb(var(--c-goldfinch-gold) / 0.35); box-shadow: inset 3px 0 0 0 rgb(var(--c-goldfinch-gold)), 0 6px 20px -4px rgb(var(--c-ink) / 0.14), -10px 0 24px -14px rgb(var(--c-goldfinch-gold) / 0.45);'
-                  : 'background: rgb(var(--c-surface)); border: 1px solid rgb(var(--c-ink) / 0.08); box-shadow: 0 2px 8px -2px rgb(var(--c-ink) / 0.08);'}
-              >
-                <span
-                  class="flex h-10 w-10 items-center justify-center rounded-md border bg-surface sm:h-11 sm:w-11 {activeIndex === i
-                    ? 'border-goldfinch-gold'
-                    : 'border-ink/10'}"
-                >
-                  <svelte:component this={iconAt(i)} strokeWidth={1.5} size={18} class="text-goldfinch-gold" />
-                </span>
-                <span class="min-w-0">
-                  <span class="font-serif block text-[15px] font-medium leading-tight text-heading md:text-base">
-                    {opt.name}
-                  </span>
-                  {#if opt.short || opt.description}
-                    <!-- no `block` here: line-clamp needs display:-webkit-box, which `block` would override -->
-                    <span class="mt-1 line-clamp-3 text-[14px] leading-snug text-ink/70 break-words">
-                      {opt.short || opt.description}
-                    </span>
-                  {/if}
-                </span>
-                <ArrowRight
-                  class="h-4 w-4 justify-self-end transition-transform duration-200 {activeIndex === i
-                    ? 'text-goldfinch-gold translate-x-1'
-                    : 'text-ink/50 group-hover:text-goldfinch-gold group-hover:translate-x-1'}"
-                />
-              </button>
-            {/each}
-          </div>
-
-          <!-- More experiences -->
-          {#if secondary.length}
-            <details class="group rounded-xl border border-ink/10 bg-surface/70 px-3 py-2 text-sm">
-              <summary class="flex cursor-pointer list-none items-center justify-between text-[13px] font-semibold uppercase tracking-[0.12em] text-ink/70">
-                {moreLabel}
-                <ArrowRight class="h-4 w-4 transition-transform group-open:rotate-90" />
-              </summary>
-              <ul class="mt-2 flex flex-col gap-1">
-                {#each secondary as opt, j (opt.slug || j)}
-                  <li>
-                    <button
-                      type="button"
-                      on:click={() => (activeIndex = j + 6)}
-                      class="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors {activeIndex === j + 6
-                        ? 'bg-sand'
-                        : 'hover:bg-sand/60'}"
-                    >
-                      <svelte:component this={iconAt(j + 6)} size={16} strokeWidth={1.5} class="text-ink/70" />
-                      <span class="font-serif text-[14px] text-heading">{opt.name}</span>
-                    </button>
-                  </li>
-                {/each}
-              </ul>
-            </details>
-          {/if}
+      <!-- The strip scrolls rather than wrapping, so the row stays one line at
+           every width. `w-max` inside the scroller is what lets it centre when
+           it fits and still scroll from the first item when it does not. -->
+      <div class="exp-tabs mt-8 overflow-x-auto border-b border-ink/15 pb-px">
+        <div class="mx-auto flex w-max items-center gap-6 sm:gap-7">
+          {#each primary as opt, i (opt.slug || i)}
+            <button
+              type="button"
+              on:click={() => (activeIndex = i)}
+              aria-pressed={activeIndex === i}
+              class="shrink-0 whitespace-nowrap border-b-2 pb-3 text-sm transition-colors {activeIndex === i
+                ? 'border-goldfinch-gold font-semibold text-heading'
+                : 'border-transparent font-medium text-ink/65 hover:text-heading'}"
+            >
+              {opt.name}
+            </button>
+          {/each}
         </div>
+      </div>
 
-        <!-- Right: dynamic preview panel (~65%) -->
+      <div class="mt-9 grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,7fr)] lg:items-stretch">
         {#if active}
-          <div class="home-experience-preview flex min-w-0 max-w-full flex-col overflow-hidden">
-            <div class="home-experience-image relative aspect-[3/2] w-full min-w-0 max-w-full overflow-hidden rounded-2xl bg-sand">
-              {#if active.image}
-                {#key active.image}
-                  <Img
-                    src={active.image}
-                    variantsMap={imageVariants}
-                    alt={active.name}
-                    width={1200}
-                    sizes="(max-width: 479px) calc(100vw - 32px), (max-width: 767px) calc(100vw - 48px), (max-width: 1024px) 100vw, 65vw"
-                    pictureClass="block h-full w-full max-w-full"
-                    className="exp-fade block h-full w-full max-w-full object-cover"
-                  />
-                {/key}
-              {/if}
-              <div class="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent"></div>
-              {#if active.tags?.length}
-                <div class="absolute inset-x-0 bottom-0 flex flex-wrap gap-2 p-4">
-                  {#each active.tags as t (t)}
-                    <span
-                      class="rounded-full px-3.5 py-1.5 text-[11px] font-medium text-white"
-                      style="background: rgba(20,25,20,0.78); border: 1px solid rgba(255,255,255,0.2);"
-                    >
-                      {t}
-                    </span>
-                  {/each}
-                </div>
-              {/if}
-            </div>
-            <div class="flex flex-1 flex-col pt-6">
-              {#if active.bestFor?.length}
-                <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                  <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
-                    {bestForLabel}
+          <div class="flex min-w-0 flex-col rounded-[20px] border border-ink/15 bg-surface p-5 sm:p-6 lg:min-h-[430px]">
+            <h3 class="font-serif text-[26px] font-bold leading-tight text-heading sm:text-[30px] lg:text-[34px]">
+              {active.name}
+            </h3>
+
+            {#if metaParts.length}
+              <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink/50">
+                {#each metaParts as part, i (part)}
+                  <span class="flex items-center gap-2">
+                    {part}
+                    {#if i < metaParts.length - 1}<span class="text-ink/40">·</span>{/if}
                   </span>
-                  <div class="flex flex-wrap gap-1.5">
-                    {#each active.bestFor as b (b)}
-                      <span class="rounded-full border border-ink/10 bg-transparent px-2.5 py-0.5 text-[11px] font-medium text-heading">
-                        {b}
+                {/each}
+              </div>
+            {/if}
+
+            {#if activeBlurb}
+              <p class="mt-3.5 text-[15px] leading-relaxed text-ink/70">{activeBlurb}</p>
+            {/if}
+
+            {#if activeTags.length}
+              <div class="mt-4 flex flex-wrap gap-1.5">
+                {#each activeTags as tag (tag)}
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-canvas px-3.5 py-2 text-[13px] font-medium text-heading">
+                    <Check class="h-3 w-3 shrink-0 text-clay" />
+                    {tag}
+                  </span>
+                {/each}
+              </div>
+            {/if}
+
+            {#if activeHref}
+              <a
+                href={activeHref}
+                data-cta={`experience-${active.slug}-primary`}
+                class="mt-5 inline-flex w-fit items-center justify-center gap-2 rounded-md bg-goldfinch-gold px-6 py-3 text-base font-semibold text-heading transition-colors hover:bg-goldfinch-gold/85"
+              >
+                {active.ctaLabel || `${primaryCtaPrefix} ${active.name}`}
+                <ArrowRight class="h-4 w-4" />
+              </a>
+            {/if}
+
+            {#if activeBestFor.length}
+              <!-- Holds the footer against the bottom of a tall card without
+                   collapsing the gap when the content already fills it. -->
+              <div class="grow" aria-hidden="true"></div>
+              <div class="mt-6 flex items-center gap-2.5 border-t border-dashed border-ink/15 pt-4">
+                {#if bestForAsList}
+                  <span class="flex shrink-0">
+                    {#each bestForShown as entry, i (entry)}
+                      <span
+                        class="-ml-2 flex h-7 w-7 items-center justify-center rounded-full border-2 border-surface text-xs font-semibold first:ml-0 {i % 2 === 0
+                          ? 'bg-goldfinch-gold text-heading'
+                          : 'bg-clay text-white'}"
+                      >
+                        {entry.charAt(0)}
                       </span>
                     {/each}
-                  </div>
-                </div>
-              {/if}
-
-              <h3 class="font-serif mt-4 text-2xl leading-tight text-heading md:text-[26px]">
-                {active.name}
-              </h3>
-              {#if active.description}
-                <p class="mt-3 text-[15px] leading-relaxed text-ink/85">
-                  {active.description}
-                </p>
-              {/if}
-
-              <div class="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center">
-                {#if activeHref}
-                  <a
-                    href={activeHref}
-                    data-cta={`experience-${active.slug}-primary`}
-                    class="inline-flex items-center justify-center gap-2 rounded-md bg-goldfinch-gold px-5 py-2.5 text-sm font-semibold text-heading transition-colors hover:bg-goldfinch-gold/85"
-                  >
-                    {active.ctaLabel || `${primaryCtaPrefix} ${active.name}`}
-                    <ArrowRight class="h-4 w-4" />
-                  </a>
-                {/if}
-                {#if secondaryCtaLabel && secondaryCtaHref}
-                  <a
-                    href={secondaryCtaHref}
-                    data-cta={`experience-${active.slug}-secondary`}
-                    class="inline-flex items-center justify-center gap-2 rounded-md border border-ink/15 bg-surface/95 px-5 py-2.5 text-sm font-semibold text-heading transition-colors hover:bg-surface"
-                  >
-                    {secondaryCtaLabel}
-                  </a>
+                  </span>
+                  <p class="text-sm leading-snug text-ink/70">
+                    {bestForLabel}
+                    <span class="font-semibold text-heading">{bestForShown.join(', ').toLowerCase()}</span>
+                  </p>
+                {:else}
+                  <p class="text-sm leading-snug text-ink/70">
+                    {bestForLabel}
+                    <span class="font-semibold text-heading">{activeBestFor.join(' ')}</span>
+                  </p>
                 {/if}
               </div>
-            </div>
+            {/if}
           </div>
         {/if}
+
+        <!-- Two rows that divide the column's height rather than fixing their
+             own, so the photographs finish level with the card instead of
+             leaving a band of empty space under them. -->
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-rows-2">
+          {#each primary as opt, i (opt.slug || i)}
+            <button
+              type="button"
+              on:click={() => (activeIndex = i)}
+              aria-pressed={activeIndex === i}
+              class="exp-tile group relative aspect-[4/3] overflow-hidden rounded-2xl transition-all duration-300 lg:aspect-auto lg:min-h-[190px] {activeIndex === i
+                ? 'exp-tile-active z-10 scale-[1.04] ring-4 ring-goldfinch-gold/70'
+                : ''}"
+            >
+              {#if opt.image}
+                <Img
+                  src={opt.image}
+                  variantsMap={imageVariants}
+                  alt={opt.name}
+                  width={520}
+                  sizes="(max-width: 639px) 45vw, (max-width: 1023px) 31vw, 22vw"
+                  pictureClass="block h-full w-full"
+                  className={`h-full w-full object-cover transition-all duration-300 ${
+                    activeIndex === i
+                      ? 'scale-105 opacity-100 saturate-100'
+                      : 'scale-100 opacity-55 saturate-[0.5] group-hover:opacity-80 group-hover:saturate-75'
+                  }`}
+                />
+              {:else}
+                <span class="block h-full w-full bg-sand"></span>
+              {/if}
+              <span class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent"></span>
+              <span class="absolute inset-x-2.5 bottom-2.5 text-left text-[13px] font-semibold leading-tight text-white sm:text-sm md:text-base">
+                {opt.name}
+              </span>
+            </button>
+          {/each}
+        </div>
       </div>
+
+      {#if secondary.length}
+        <p class="mt-5 text-center text-[13px] leading-6 text-ink/50">
+          {moreLabel}:
+          {#each secondary as opt, i (opt.slug || i)}<span
+              ><button
+                type="button"
+                on:click={() => (activeIndex = i + PRIMARY_COUNT)}
+                class="underline-offset-2 hover:underline {activeIndex === i + PRIMARY_COUNT
+                  ? 'font-semibold text-heading'
+                  : 'font-medium text-clay'}">{opt.name}</button
+              >{#if i < secondary.length - 1}<span class="px-2 text-ink/40">·</span>{/if}</span
+            >{/each}
+        </p>
+      {/if}
     </div>
   </section>
 {/if}
 
 <style>
-  /* Matches the source's fade-in-0 / zoom-in-95 / duration-300 entry on the
-     preview image each time the active experience changes. */
-  :global(.exp-fade) {
-    animation: exp-fade-in 300ms ease-out both;
+  /* The strip is scrollable, but a visible scrollbar under the tabs reads as
+     a broken border rather than an affordance. */
+  .exp-tabs {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
-  @keyframes exp-fade-in {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
+  .exp-tabs::-webkit-scrollbar {
+    display: none;
   }
+
+  /* Brand-token glow: a Tailwind arbitrary value cannot carry the runtime
+     colour variable the Branding page rewrites, so it lives here. */
+  .exp-tile-active {
+    box-shadow: 0 0 28px rgb(var(--c-goldfinch-gold) / 0.5);
+  }
+
+  /* The browser's default outline is a dark ring, which disappears against a
+     photograph — and these tiles are all photograph. */
+  .exp-tile:focus-visible,
+  .exp-tabs button:focus-visible {
+    outline: 2px solid rgb(var(--c-goldfinch-gold));
+    outline-offset: 2px;
+  }
+
   @media (max-width: 639px) {
     .home-experiences {
       padding-block: 3.25rem;
-      background: rgb(var(--c-surface));
       max-width: 100vw;
       overflow-x: clip;
-    }
-
-    .home-experiences :global(.container-shell) {
-      width: calc(100vw - 32px);
-      max-width: 430px;
-      min-width: 0;
-    }
-
-    .home-experiences-head {
-      margin-inline: 0;
-      text-align: left;
     }
 
     .home-experiences-head h2 {
@@ -257,177 +273,15 @@
       font-size: 0.95rem;
       line-height: 1.65;
     }
-
-    .home-experiences-layout {
-      margin-top: 1.5rem;
-      gap: 1rem;
-      min-width: 0;
-    }
-
-    .home-experience-tabs {
-      display: grid;
-      grid-auto-flow: column;
-      grid-auto-columns: minmax(236px, 78%);
-      gap: 0.75rem;
-      margin-inline: -16px;
-      overflow-x: auto;
-      padding-inline: 16px;
-      padding-bottom: 0.35rem;
-      scroll-padding-inline: 16px;
-      scroll-snap-type: x mandatory;
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-      max-width: calc(100vw - 32px);
-    }
-
-    .home-experience-tabs::-webkit-scrollbar {
-      display: none;
-    }
-
-    .home-experience-tab {
-      min-height: 126px;
-      align-items: start;
-      grid-template-columns: 38px minmax(0, 1fr);
-      padding: 1rem;
-      scroll-snap-align: start;
-    }
-
-    .home-experience-tab > :global(svg:last-child) {
-      display: none;
-    }
-
-    .home-experience-image {
-      aspect-ratio: 16 / 9;
-      width: 100%;
-      max-width: 100%;
-      min-width: 0;
-      height: auto;
-      border-radius: 12px;
-      border: 1px solid rgb(var(--c-ink) / 0.1);
-      background: rgb(var(--c-sand));
-    }
-
-    .home-experience-preview {
-      width: 100%;
-      max-width: 100%;
-      min-width: 0;
-      overflow: hidden;
-    }
-
-    .home-experience-image :global(img) {
-      display: block;
-      width: 100%;
-      max-width: 100%;
-      object-fit: cover;
-      object-position: center center;
-    }
-
-    .home-experience-image :global(picture) {
-      display: block;
-      height: 100%;
-      width: 100%;
-      max-width: 100%;
-    }
-
-    .home-experience-image :global(.exp-fade) {
-      transform: none;
-    }
-
-    .home-experience-preview > :global(div:last-child) {
-      padding-top: 1rem;
-    }
-
-    .home-experience-preview h3 {
-      margin-top: 0.75rem;
-      font-size: 1.45rem;
-      line-height: 1.08;
-    }
-
-    .home-experience-preview p {
-      display: -webkit-box;
-      overflow: hidden;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 4;
-      line-clamp: 4;
-    }
   }
-  @media (min-width: 480px) and (max-width: 767px) {
-    .home-experiences :global(.container-shell) {
-      width: calc(100vw - 48px);
-      max-width: none;
-    }
 
-    .home-experience-tabs {
-      max-width: calc(100vw - 48px);
-    }
-  }
-  @media (min-width: 640px) and (max-width: 767px) {
-    .home-experiences {
-      padding-block: 4rem;
-      max-width: 100vw;
-      overflow-x: clip;
-    }
-
-    .home-experiences-head {
-      margin-inline: 0;
-      text-align: left;
-    }
-
-    .home-experiences-layout {
-      margin-top: 1.75rem;
-      gap: 1.25rem;
-      min-width: 0;
-    }
-
-    .home-experience-tabs {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.75rem;
-      margin-inline: 0;
-      max-width: 100%;
-      overflow: visible;
-      padding: 0;
-      scroll-snap-type: none;
-    }
-
-    .home-experience-tab {
-      min-height: 118px;
-      align-items: start;
-      grid-template-columns: 40px minmax(0, 1fr);
-      padding: 1rem;
-    }
-
-    .home-experience-tab > :global(svg:last-child) {
-      display: none;
-    }
-
-    .home-experience-image {
-      aspect-ratio: 16 / 9;
-      width: 100%;
-      max-width: 100%;
-      min-width: 0;
-      border-radius: 14px;
-      border: 1px solid rgb(var(--c-ink) / 0.1);
-    }
-
-    .home-experience-preview {
-      width: 100%;
-      max-width: 100%;
-      min-width: 0;
-      overflow: hidden;
-    }
-
-    .home-experience-image :global(picture),
-    .home-experience-image :global(img) {
-      display: block;
-      height: 100%;
-      width: 100%;
-      max-width: 100%;
-    }
-  }
   @media (prefers-reduced-motion: reduce) {
-    :global(.exp-fade) {
-      animation: none;
+    .exp-tile,
+    .exp-tile :global(img) {
+      transition: none;
+    }
+    .exp-tile-active {
+      transform: none;
     }
   }
 </style>
