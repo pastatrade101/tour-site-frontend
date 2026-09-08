@@ -19,6 +19,13 @@
   export let open = false;
   export let config: FormConfig;
   export let context: EnquiryContext = {};
+  /** Render in the page rather than in a dialog. See EnquiryModal. */
+  export let inline = false;
+
+  // An inline form has no open/close: it is simply there. Flipping `open` once
+  // keeps the tracking below — which fires "form_opened" on the transition —
+  // working the same way for both.
+  $: if (inline && !open) open = true;
 
   const dispatch = createEventDispatcher<{ close: void; submitted: { booking_code?: string | null } }>();
 
@@ -82,12 +89,21 @@
     }
   }
 
-  /** Budget labels are authored in USD; show them in the visitor's currency. */
+  /**
+   * Budget labels are authored in USD; show them in the visitor's currency.
+   *
+   * The open-ended bands are worded, not bounded: the lowest band read
+   * "$0.00–$2,000.00", which is not how anyone says "under two thousand", and
+   * "Not sure yet" fell through to its raw value and rendered as "not_sure".
+   */
   const budgetLabel = (raw: string): string => {
     const band = BUDGET_BANDS_USD.find((item) => item.value === raw || item.label === raw);
-    if (!band || band.value === 'not_sure') return raw;
+    if (!band) return raw;
+    if (band.value === 'not_sure') return band.label;
+    const to = band.to ? formatUsd(band.to, $currency) : '';
+    if (!band.from) return to ? `Under ${to}` : band.label;
     const from = formatUsd(band.from, $currency);
-    return band.to ? `${from}–${formatUsd(band.to, $currency)}` : `${from}+`;
+    return to ? `${from}–${to}` : `${from}+`;
   };
 
   $: visibleFields = (step?.fields ?? []).filter((field) => !field.showIf || field.showIf(values));
@@ -199,6 +215,8 @@
 
 <EnquiryModal
   {open}
+  {inline}
+  labelledBy={inline ? 'enquiry-title-inline' : 'enquiry-title'}
   title={done ? 'Thank you — request received' : config.title}
   description={done ? '' : config.description}
   steps={done ? [] : steps.map((item) => item.label)}
@@ -305,15 +323,18 @@
             Continue on WhatsApp
           </a>
         {/if}
-        <button
-          type="button"
-          class="h-11 w-full rounded-full px-6 text-[14px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white {waHref
-            ? 'border border-white/25 text-white hover:bg-white/10'
-            : 'bg-goldfinch-gold text-heading hover:brightness-105'}"
-          on:click={close}
-        >
-          Close
-        </button>
+        <!-- Nothing to close when the form is part of the page. -->
+        {#if !inline}
+          <button
+            type="button"
+            class="h-11 w-full rounded-full px-6 text-[14px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white {waHref
+              ? 'border border-white/25 text-white hover:bg-white/10'
+              : 'bg-goldfinch-gold text-heading hover:brightness-105'}"
+            on:click={close}
+          >
+            Close
+          </button>
+        {/if}
       </div>
     {:else}
       <div class="flex items-center gap-3">

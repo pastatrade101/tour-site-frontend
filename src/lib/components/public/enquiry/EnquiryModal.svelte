@@ -18,8 +18,24 @@
   export let steps: string[] = [];
   export let stepIndex = 0;
   export let labelledBy = 'enquiry-title';
+  /**
+   * Sit in the page instead of over it — same header, steps, body and footer,
+   * but no backdrop, no focus trap, no scroll lock and nothing to close.
+   *
+   * A section that already invites someone to plan a trip should not make them
+   * open a dialog to start; the form is the invitation.
+   */
+  export let inline = false;
 
   const dispatch = createEventDispatcher<{ close: void }>();
+
+  /**
+   * Dialog semantics belong to the dialog. Inline, the panel is an ordinary
+   * part of the page — announcing it as a modal would tell a screen reader the
+   * rest of the page had gone away. Spread rather than three conditional
+   * attributes so the element is either a dialog or nothing, never half of one.
+   */
+  $: dialogAttrs = inline ? {} : { role: 'dialog', 'aria-modal': true, tabindex: -1 };
 
   let dialog: HTMLDivElement;
   let previouslyFocused: HTMLElement | null = null;
@@ -34,7 +50,7 @@
   const close = () => dispatch('close');
 
   const onKeydown = (event: KeyboardEvent) => {
-    if (!open) return;
+    if (inline || !open) return;
 
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -75,7 +91,7 @@
     window.scrollTo(0, scrollY);
   };
 
-  $: if (typeof document !== 'undefined') {
+  $: if (typeof document !== 'undefined' && !inline) {
     if (open) {
       previouslyFocused = (document.activeElement as HTMLElement) ?? null;
       lockScroll();
@@ -96,25 +112,31 @@
   onDestroy(() => {
     if (typeof document === 'undefined') return;
     document.removeEventListener('keydown', onKeydown);
-    if (open) unlockScroll();
+    if (open && !inline) unlockScroll();
   });
 </script>
 
-{#if open}
-  <!-- Dimmed page behind. Clicking it closes; it is not a focus target. -->
-  <div
-    class="fixed inset-0 z-[200] bg-black/60 backdrop-blur-[2px]"
-    aria-hidden="true"
-    on:click={close}
-  ></div>
-
-  <div class="pointer-events-none fixed inset-0 z-[201] flex items-end justify-center p-0 sm:items-center sm:p-4">
+{#if inline || open}
+  {#if !inline}
+    <!-- Dimmed page behind. Clicking it closes; it is not a focus target. -->
     <div
-      class="pointer-events-auto flex max-h-[94svh] w-full max-w-[680px] flex-col overflow-hidden rounded-t-[18px] bg-deep-green text-white shadow-[0_30px_90px_rgba(0,0,0,0.45)] outline-none sm:max-h-[92svh] sm:rounded-[18px]"
-      role="dialog"
-      aria-modal="true"
+      class="fixed inset-0 z-[200] bg-black/60 backdrop-blur-[2px]"
+      aria-hidden="true"
+      on:click={close}
+    ></div>
+  {/if}
+
+  <div
+    class={inline
+      ? 'w-full'
+      : 'pointer-events-none fixed inset-0 z-[201] flex items-end justify-center p-0 sm:items-center sm:p-4'}
+  >
+    <div
+      class="flex w-full flex-col text-white {inline
+        ? 'rounded-[18px] border border-white/12 bg-black/15'
+        : 'pointer-events-auto max-h-[94svh] max-w-[680px] overflow-hidden rounded-t-[18px] bg-deep-green shadow-[0_30px_90px_rgba(0,0,0,0.45)] outline-none sm:max-h-[92svh] sm:rounded-[18px]'}"
+      {...dialogAttrs}
       aria-labelledby={labelledBy}
-      tabindex="-1"
       bind:this={dialog}
     >
       <!-- header: title, progress, close ------------------------------------->
@@ -126,14 +148,16 @@
               <p class="mt-1 line-clamp-2 text-[12.5px] leading-[1.45] text-white/65">{description}</p>
             {/if}
           </div>
-          <button
-            type="button"
-            class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green"
-            aria-label="Close this form"
-            on:click={close}
-          >
-            <X size={17} />
-          </button>
+          {#if !inline}
+            <button
+              type="button"
+              class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green"
+              aria-label="Close this form"
+              on:click={close}
+            >
+              <X size={17} />
+            </button>
+          {/if}
         </div>
 
         {#if steps.length > 1}
@@ -177,13 +201,14 @@
         {/if}
       </div>
 
-      <!-- body: the only scrolling region ------------------------------------>
-      <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 sm:px-6">
+      <!-- body: the only scrolling region in the dialog. Inline it is part of
+           the page, which does the scrolling itself. -->
+      <div class="px-5 py-4 sm:px-6 {inline ? '' : 'min-h-0 flex-1 overflow-y-auto overscroll-contain'}">
         <slot />
       </div>
 
       <!-- footer: sticky, ~70px --------------------------------------------->
-      <div class="shrink-0 border-t border-white/12 bg-black/15 px-5 py-3 sm:px-6">
+      <div class="shrink-0 border-t border-white/12 px-5 py-3 sm:px-6 {inline ? '' : 'bg-black/15'}">
         <slot name="footer" />
       </div>
     </div>

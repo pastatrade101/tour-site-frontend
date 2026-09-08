@@ -13,12 +13,25 @@
   import { ArrowRight, MessageCircle } from '@lucide/svelte';
   import EnquiryForm from './enquiry/EnquiryForm.svelte';
   import { configFor } from '$lib/enquiry/configs';
+  import type { Option } from '$lib/enquiry/types';
 
   export let title = 'Plan your East Africa trip';
   export let compact = false;
+  /**
+   * Show the form itself instead of a card that opens it.
+   *
+   * For a section whose whole job is to invite someone to plan a trip — the
+   * closing band on the homepage — a button to open a dialog is one click
+   * between the invitation and the first question.
+   */
+  export let inline = false;
+  /** Trip types offered on the first step. Real published categories. */
+  export let tripTypes: Option[] = [];
+  /** Comfort level → a real property photograph at that level. */
+  export let styleImages: Record<string, string> = {};
 
   let open = false;
-  const config = configFor('homepage_trip_planner');
+  $: config = configFor('homepage_trip_planner', {}, [], { tripTypes, styleImages });
 
   const POINTS = [
     'A route and pace built around your dates',
@@ -27,6 +40,9 @@
   ];
 </script>
 
+{#if inline}
+  <EnquiryForm inline {config} />
+{:else}
 <div
   class={`relative grid gap-5 overflow-hidden rounded-[10px] border border-ink/10 bg-surface p-5 shadow-card ${compact ? '' : 'md:p-6'}`}
 >
@@ -70,3 +86,4 @@
 </div>
 
 <EnquiryForm bind:open {config} on:close={() => (open = false)} />
+{/if}

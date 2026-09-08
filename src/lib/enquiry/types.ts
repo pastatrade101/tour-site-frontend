@@ -13,18 +13,34 @@ export type FieldKind =
   | 'text'
   | 'email'
   | 'tel'
+  /** Dial-code picker beside the number, as the trip request form uses. */
+  | 'phone'
   | 'textarea'
+  /** Hidden behind an "add" button until someone wants it. */
+  | 'textarea-optional'
   | 'select'
   | 'chips'
   | 'chips-multi'
+  /** Chips with a picture and a line of explanation — for a choice worth looking at. */
+  | 'cards'
+  /** Stepper, for counts of one or two taps. */
   | 'number'
+  /** Plain box, for a number you would rather type than tap up to. */
+  | 'number-plain'
   | 'date'
   | 'month'
   | 'country'
   | 'child-ages'
   | 'checkbox';
 
-export type Option = { label: string; value: string };
+export type Option = {
+  label: string;
+  value: string;
+  /** 'cards' only: the line under the title. */
+  description?: string;
+  /** 'cards' only. Absent is normal — the card then renders as text alone. */
+  image?: string;
+};
 
 /** Every answer we hold. Child ages are the only array of numbers. */
 export type FormValues = Record<string, string | string[] | number | number[] | boolean | undefined>;

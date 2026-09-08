@@ -95,6 +95,19 @@
   let migrationEntries: MigrationEntry[] = data.migrationEntries ?? [];
   let galleryItems: GalleryCardItem[] = (data.galleryItems ?? []) as GalleryCardItem[];
   let categories: Record<string, unknown>[] = (data.categories ?? []) as Record<string, unknown>[];
+  /**
+   * Travel-style card → the accommodation level that stands for it in the
+   * lodge inventory. The card labels are the site's own words for the tier; the
+   * levels are the enum the records actually store.
+   */
+  const STYLE_LEVELS = [
+    ['Value', 'BUDGET'],
+    ['Mid-range', 'MID_RANGE'],
+    ['Luxury', 'LUXURY']
+  ] as const;
+  /** Filled after paint. Cards render as text until then, and if a level has no
+      published property with a photograph they stay that way. */
+  let styleImages: Record<string, string> = {};
   let imageVariants: ImageVariantMap = (data.imageVariants ?? {}) as ImageVariantMap;
   let deferredLoading = true;
   let sections: Record<string, HomeSection> = Object.fromEntries(
@@ -289,7 +302,8 @@
       featuredReviewResult,
       allReviewResult,
       migrationResult,
-      galleryResult
+      galleryResult,
+      ...styleLodgeResults
     ] = await Promise.allSettled([
       api.tours.list({ status: 'published', limit: 6 }),
       api.destinations.list({ status: 'published', limit: 8 }),
@@ -299,8 +313,21 @@
       api.reviews.list({ status: 'approved', is_featured: true, limit: 6 }),
       api.reviews.list({ status: 'approved', limit: 6 }),
       api.migrationCalendar.list({ is_published: true, limit: 24 }),
-      api.gallery.list({ status: 'published', media_type: 'image', limit: 7 })
+      api.gallery.list({ status: 'published', media_type: 'image', limit: 7 }),
+      // One real property per comfort level, for the travel-style cards in the
+      // closing form. A photograph of an actual lodge at that level says more
+      // than the word does — and there is nothing else honest to show, since
+      // every published tour is mid-range.
+      ...STYLE_LEVELS.map(([, level]) => api.lodges.list({ status: 'published', accommodation_level: level, limit: 1 }))
     ]);
+
+    styleImages = Object.fromEntries(
+      STYLE_LEVELS.map(([style], index) => {
+        const lodge = deferredItems<Record<string, unknown>>(styleLodgeResults[index])[0];
+        const image = String(lodge?.image_url ?? lodge?.hero_image_url ?? '');
+        return [style, image];
+      }).filter(([, image]) => image)
+    );
 
     const nextTours = deferredItems<Tour>(tourResult);
     const nextDestinations = deferredItems<Destination>(destinationResult);
@@ -584,7 +611,11 @@
     subtitle={cms('plan_dream', 'subtitle', "Share your travel dates, group size and the experiences you are considering. We'll help you understand the best route, timing, pace and logistics.")}
     {...clean({ points: planDreamPoints })}
   >
-    <LeadCaptureForm compact title={cms('plan_dream', 'button_text', 'Start your trip plan')} />
+    <LeadCaptureForm
+      inline
+      tripTypes={experienceItems.map((item) => ({ label: item.name, value: item.name }))}
+      {styleImages}
+    />
   </HomePlanningBand>
 {/if}
 </main>

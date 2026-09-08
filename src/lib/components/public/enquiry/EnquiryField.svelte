@@ -6,8 +6,10 @@
    * never the only label, because it disappears the moment someone types and
    * leaves screen-reader users with an unnamed box.
    */
-  import { Minus, Plus } from '@lucide/svelte';
+  import { Check, Minus, Plus } from '@lucide/svelte';
   import CountrySelect from '$lib/components/public/CountrySelect.svelte';
+  import Img from '$lib/components/public/Img.svelte';
+  import { DIAL_CODES, splitDialCode } from '$lib/dialCodes';
   import type { Field, FormValues } from '$lib/enquiry/types';
 
   export let field: Field;
@@ -20,6 +22,10 @@
 
   $: value = values[field.key];
   $: describedBy = [field.hint ? hintId : '', error ? errorId : ''].filter(Boolean).join(' ') || undefined;
+
+  /** An optional textarea shows only its "add" button until it is opened. */
+  let expanded = false;
+  $: collapsedOptional = field.kind === 'textarea-optional' && !expanded && !String(value ?? '').length;
 
   const setValue = (next: FormValues[string]) => {
     values = { ...values, [field.key]: next };
@@ -47,6 +53,22 @@
     }
   };
 
+  /*
+   * The dial code and the number are one answer — the column stores "+255 712…"
+   * — so they are written back joined. Split on the way in as well, or reopening
+   * a part-filled form would silently reset the code to Tanzania.
+   */
+  // The code is held here rather than read back out of the stored value: an
+  // empty phone stores nothing at all, so a code chosen before the number was
+  // typed would otherwise snap back to the default on the next keystroke.
+  let dialCode = splitDialCode(String(values[field.key] ?? '')).code;
+  $: phoneNumber = splitDialCode(String(value ?? '')).number;
+  const setPhone = (code: string, number: string) => {
+    dialCode = code;
+    const digits = number.trim();
+    setValue(digits ? `${code} ${digits}` : '');
+  };
+
   const setAge = (index: number, raw: string) => {
     const ages = Array.isArray(values.child_ages) ? ([...values.child_ages] as (number | undefined)[]) : [];
     ages[index] = raw === '' ? undefined : Math.max(0, Math.min(17, Number(raw)));
@@ -62,7 +84,7 @@
 </script>
 
 <div class="grid gap-1.5 content-start" class:sm:col-span-1={field.half} class:sm:col-span-2={!field.half} data-field={field.key}>
-  {#if field.kind !== 'checkbox'}
+  {#if field.kind !== 'checkbox' && !collapsedOptional}
     <label class="text-[13px] font-semibold text-white/90" for={id}>
       {field.label}
       {#if field.required}<span class="text-goldfinch-gold" aria-hidden="true">*</span><span class="sr-only">(required)</span>{/if}
@@ -102,6 +124,82 @@
     </div>
     <!-- A hidden input keeps the group reachable by its label id. -->
     <span {id} class="sr-only">{field.label}</span>
+
+  {:else if field.kind === 'cards'}
+    <!-- A choice worth looking at rather than reading: the picture carries the
+         difference between comfort levels faster than any label can. Cards with
+         no image are not a fallback state — plenty of choices have no
+         photograph, and the card is complete without one. -->
+    <div class="grid grid-cols-3 gap-2" role="radiogroup" aria-labelledby={id} aria-describedby={describedBy}>
+      {#each field.options ?? [] as option (option.value)}
+        {@const active = value === option.value}
+        <button
+          type="button"
+          role="radio"
+          aria-checked={active}
+          class="group relative overflow-hidden rounded-[10px] border text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green {active
+            ? 'border-goldfinch-gold bg-goldfinch-gold/10 ring-2 ring-goldfinch-gold/30'
+            : 'border-white/20 hover:border-goldfinch-gold/70'}"
+          on:click={() => setValue(option.value)}
+        >
+          {#if option.image}
+            <span class="relative block h-[72px] w-full overflow-hidden sm:h-[82px]">
+              <Img
+                src={option.image}
+                alt=""
+                width={320}
+                pictureClass="block h-full w-full"
+                className="h-full w-full object-cover"
+              />
+              {#if active}
+                <span class="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-goldfinch-gold text-heading shadow">
+                  <Check size={12} strokeWidth={3} />
+                </span>
+              {/if}
+            </span>
+          {/if}
+          <span class="block px-2.5 py-2">
+            <span class="flex items-center gap-1.5">
+              <span class="text-[13px] font-semibold leading-tight text-white">{option.label}</span>
+              {#if active && !option.image}
+                <Check size={13} strokeWidth={3} class="shrink-0 text-goldfinch-gold" />
+              {/if}
+            </span>
+            {#if option.description}
+              <span class="mt-0.5 block text-[11px] leading-snug text-white/60">{option.description}</span>
+            {/if}
+          </span>
+        </button>
+      {/each}
+    </div>
+    <span {id} class="sr-only">{field.label}</span>
+
+  {:else if field.kind === 'phone'}
+    <div class="grid grid-cols-[112px_minmax(0,1fr)] gap-2">
+      <select
+        class="{INPUT} {H} appearance-none border-transparent px-2.5 font-semibold"
+        aria-label="Country dialling code"
+        value={dialCode}
+        on:change={(event) => setPhone(event.currentTarget.value, phoneNumber)}
+      >
+        {#each DIAL_CODES as entry (entry.code + entry.label)}
+          <option value={entry.code}>{entry.label}</option>
+        {/each}
+      </select>
+      <input
+        {id}
+        class="{INPUT} {H}"
+        class:border-transparent={!error}
+        class:border-red-400={error}
+        type="tel"
+        inputmode="tel"
+        placeholder={field.placeholder ?? '712 345 678'}
+        aria-describedby={describedBy}
+        aria-invalid={error ? 'true' : undefined}
+        value={phoneNumber}
+        on:input={(event) => setPhone(dialCode, event.currentTarget.value)}
+      />
+    </div>
 
   {:else if field.kind === 'number'}
     <div class="flex items-center gap-2">
@@ -156,6 +254,46 @@
         </label>
       {/each}
     </div>
+
+  {:else if field.kind === 'number-plain'}
+    <input
+      {id}
+      class="{INPUT} {H}"
+      class:border-transparent={!error}
+      class:border-red-400={error}
+      type="number"
+      inputmode="numeric"
+      min={field.min ?? 0}
+      max={field.max ?? 99}
+      placeholder={field.placeholder ?? ''}
+      aria-describedby={describedBy}
+      aria-invalid={error ? 'true' : undefined}
+      value={value === undefined || value === '' ? '' : String(value)}
+      on:input={(event) => setValue(event.currentTarget.value === '' ? '' : Number(event.currentTarget.value))}
+    />
+
+  {:else if field.kind === 'textarea-optional'}
+    <!-- Optional and out of the way until it is wanted. A textarea sitting open
+         on a form reads as another thing to fill in. -->
+    {#if expanded || String(value ?? '').length}
+      <textarea
+        {id}
+        class="{INPUT} min-h-[80px] py-2 resize-y border-transparent"
+        rows="3"
+        placeholder={field.placeholder ?? ''}
+        aria-describedby={describedBy}
+        value={String(value ?? '')}
+        on:input={(event) => setValue(event.currentTarget.value)}
+      ></textarea>
+    {:else}
+      <button
+        type="button"
+        class="inline-flex w-fit items-center gap-1.5 rounded-[10px] border border-dashed border-white/35 px-3 py-2 text-[13px] font-semibold text-white/75 transition hover:border-goldfinch-gold hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
+        on:click={() => (expanded = true)}
+      >
+        <Plus size={14} /> Add {field.label.toLowerCase()}
+      </button>
+    {/if}
 
   {:else if field.kind === 'textarea'}
     <textarea

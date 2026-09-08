@@ -11,11 +11,17 @@ import {
   YES_NO,
   aboutYouFields,
   accommodationField,
+  adultsField,
   budgetField,
+  childrenField,
   durationField,
+  emailField,
   exactDateField,
   flexibilityField,
+  languageField,
   monthField,
+  nameField,
+  phoneField,
   specialRequestsField,
   timingField,
   travellerFields
@@ -41,10 +47,52 @@ const TRIP_INTERESTS = opts(
   NOT_SURE
 );
 
-/** Already-coastal interests — asking these travellers about Zanzibar is noise. */
-const COASTAL = ['Safari from Zanzibar', 'Safari and Zanzibar beach'];
+const RECOMMEND = 'Not sure yet — recommend something';
 
-export const homepageConfig = (): FormConfig => ({
+/**
+ * The three comfort levels, as cards.
+ *
+ * Values match ACCOMMODATION so an answer here means the same thing as the one
+ * given on a category or tour form. The pictures are optional and arrive from
+ * the caller: they are real properties at that level from our own inventory, so
+ * there is nothing to show until the caller has looked them up.
+ */
+const styleCards = (images: Record<string, string> = {}): Option[] => [
+  {
+    value: 'Value',
+    label: 'Value',
+    description: 'Simple, well-run stays and practical routing.',
+    image: images.Value
+  },
+  {
+    value: 'Mid-range',
+    label: 'Mid-range',
+    description: 'Comfortable lodges and tented camps.',
+    image: images['Mid-range']
+  },
+  {
+    value: 'Luxury',
+    label: 'Luxury',
+    description: 'Premium camps and smoother logistics.',
+    image: images.Luxury
+  }
+];
+
+/** Only asked of travellers who said they want the coast. */
+const wantsZanzibar = (values: FormValues) => values.include_zanzibar === 'Yes please';
+
+export type HomepageFormOptions = {
+  /**
+   * Trip types offered in the first question. Pass the published categories so
+   * the list is what the business actually sells; without them it falls back to
+   * the general interest list.
+   */
+  tripTypes?: Option[];
+  /** Comfort level → a real property photograph at that level. */
+  styleImages?: Record<string, string>;
+};
+
+export const homepageConfig = ({ tripTypes, styleImages }: HomepageFormOptions = {}): FormConfig => ({
   formType: 'homepage_trip_planner',
   title: 'Plan Your East Africa Trip',
   description:
@@ -57,24 +105,46 @@ export const homepageConfig = (): FormConfig => ({
       label: 'Trip details',
       heading: 'What kind of trip are you imagining?',
       fields: [
+        tripTypes?.length
+          ? {
+              key: 'trip_type',
+              label: 'Trip type',
+              hint: 'Choose the closest match — you are not committing to it.',
+              kind: 'select',
+              // The real published categories, plus an honest way out for
+              // someone who has not decided yet.
+              options: [...tripTypes, { label: RECOMMEND, value: RECOMMEND }],
+              required: true
+            }
+          : {
+              key: 'trip_interests',
+              label: 'What interests you?',
+              hint: 'Choose as many as you like.',
+              kind: 'chips-multi',
+              options: TRIP_INTERESTS,
+              required: true,
+              validate: (value) => ((value as string[])?.length ? '' : 'Pick at least one — or “Not sure yet”')
+            },
         {
-          key: 'trip_interests',
-          label: 'What interests you?',
-          hint: 'Choose as many as you like.',
-          kind: 'chips-multi',
-          options: TRIP_INTERESTS,
+          key: 'trip_days',
+          label: 'Number of days',
+          kind: 'number-plain',
+          placeholder: 'e.g. 6',
+          min: 1,
+          max: 60,
+          half: true,
           required: true,
-          validate: (value) => ((value as string[])?.length ? '' : 'Pick at least one — or “Not sure yet”')
+          validate: (value) => {
+            const days = Number(value ?? 0);
+            return days >= 1 && days <= 60 ? '' : 'Enter between 1 and 60 days';
+          }
         },
-        durationField,
-        timingField,
-        exactDateField,
-        monthField,
+        { ...exactDateField, label: 'Travel date', showIf: undefined },
         {
           // Deliberately not "Starting from", which reads as a price.
           key: 'trip_start_location',
           label: 'Where will your trip start?',
-          kind: 'chips',
+          kind: 'select',
           options: opts(
             'Zanzibar',
             'Arusha',
@@ -93,27 +163,66 @@ export const homepageConfig = (): FormConfig => ({
       label: 'Preferences',
       heading: 'How would you like to travel?',
       fields: [
-        accommodationField,
-        budgetField,
+        { ...accommodationField, label: 'Preferred travel style', kind: 'cards', options: styleCards(styleImages) },
         {
           key: 'include_zanzibar',
-          label: 'Would you like to include Zanzibar?',
+          label: 'Combine safari with a Zanzibar beach stay?',
           kind: 'chips',
-          options: YES_NO,
-          // Only for travellers whose plan does not already include the coast.
-          showIf: (values) => {
-            const interests = (values.trip_interests as string[]) ?? [];
-            return interests.length > 0 && !interests.some((item) => COASTAL.includes(item));
-          }
+          options: opts('Yes please', 'Only safari', NOT_SURE),
+          required: true
         },
-        specialRequestsField
+        {
+          key: 'zanzibar_stay_length',
+          label: 'Beach stay length',
+          kind: 'chips',
+          options: opts('2 nights', '3 nights', '4–5 nights', '6+ nights', NOT_SURE),
+          showIf: wantsZanzibar
+        },
+        {
+          key: 'zanzibar_beach_style',
+          label: 'Beach style',
+          kind: 'chips',
+          options: opts(
+            'Quiet and romantic',
+            'Family-friendly resort',
+            'Luxury beach stay',
+            'Stone Town and beach',
+            'Active — diving or kite-surfing',
+            NOT_SURE
+          ),
+          showIf: wantsZanzibar
+        },
+        {
+          key: 'zanzibar_area',
+          label: 'Preferred Zanzibar area',
+          // Same options the safari-and-beach category form asks, so the answer
+          // means the same thing wherever it was given.
+          kind: 'chips',
+          options: opts('North (Nungwi/Kendwa)', 'East coast', 'South (Paje/Jambiani)', 'Stone Town', 'Recommend the best'),
+          showIf: wantsZanzibar
+        },
+        // Out of the way behind a button: an open textarea reads as one more
+        // thing to fill in, and almost nobody needs it at this stage.
+        { ...specialRequestsField, label: 'Special requests', kind: 'textarea-optional' }
       ]
     },
     {
       key: 'about',
       label: 'About you',
       heading: 'Who should we send this to?',
-      fields: [...travellerFields(), ...aboutYouFields()]
+      fields: [
+        nameField,
+        emailField,
+        // The dial code is its own control here, so the placeholder is the
+        // number alone — "+255 …" beside a picker already showing +255 reads
+        // as an instruction to type the code twice.
+        { ...phoneField, label: 'WhatsApp (optional)', kind: 'phone', placeholder: '712 345 678', half: false },
+        // Chips rather than a dropdown, and full width: seven languages wrapped
+        // into a half-column stack four rows deep.
+        { ...languageField, kind: 'chips', half: false },
+        adultsField,
+        childrenField
+      ]
     }
   ]
 });
@@ -353,9 +462,10 @@ export const tourConfig = (context: EnquiryContext, departures: Option[] = []): 
 export const configFor = (
   formType: 'homepage_trip_planner' | 'category_enquiry' | 'tour_enquiry',
   context: EnquiryContext = {},
-  departures: Option[] = []
+  departures: Option[] = [],
+  homepage: HomepageFormOptions = {}
 ): FormConfig => {
   if (formType === 'category_enquiry') return categoryConfig(context);
   if (formType === 'tour_enquiry') return tourConfig(context, departures);
-  return homepageConfig();
+  return homepageConfig(homepage);
 };
