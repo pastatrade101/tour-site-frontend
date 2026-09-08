@@ -35,6 +35,10 @@
   let travellers = '2';
   let travelDate = '';
   let days = '';
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  /** The lengths we actually sell — a free-text box invited "a couple of weeks". */
+  const DAY_OPTIONS = Array.from({ length: 21 }, (_, index) => String(index + 1));
   let startPoint = '';
   let comfort = '';
   let interest = '';
@@ -52,8 +56,8 @@
     error = '';
     if (step === 1) {
       if (!travellers) return (error = 'How many travellers?');
-      if (!travelDate.trim()) return (error = 'Add a travel date or month.');
-      if (!days.trim()) return (error = 'How many days?');
+      if (!travelDate) return (error = 'Choose a travel date.');
+      if (!days) return (error = 'How many days?');
     }
     if (step === 2) {
       if (hasStartPoints && !startPoint) return (error = 'Where are you starting from?');
@@ -83,9 +87,9 @@
         phone: phone.trim(),
         number_of_adults: Number(travellers) || 1,
         number_of_children: 0,
-        // Free text: travellers write "August" as readily as a date, and
-        // forcing a picker here loses the ones who do not know yet.
-        travel_date: /^\d{4}-\d{2}-\d{2}$/.test(travelDate) ? travelDate : null,
+        // A real date from the picker, so the column gets one every time
+        // rather than only when somebody happened to type one.
+        travel_date: travelDate || null,
         source: 'category_enquiry',
         whatsapp_opt_in: whatsappOptIn,
         lead_context: {
@@ -93,8 +97,7 @@
           form_type: 'style_planner',
           safari_style: categoryName || undefined,
           safari_style_slug: categorySlug || undefined,
-          travel_when: travelDate.trim() || undefined,
-          trip_days: days.trim() || undefined,
+          trip_days: days || undefined,
           starting_point: startPoint || undefined,
           comfort_level: comfort || undefined,
           main_interest: interest || undefined,
@@ -177,12 +180,22 @@
                 <input class={fieldClass} type="number" min="1" inputmode="numeric" bind:value={travellers} />
               </label>
               <label class="grid gap-1.5">
-                <span class={labelClass}>Travel date / month</span>
-                <input class={fieldClass} type="text" bind:value={travelDate} placeholder="August, or 12/08/2026" />
+                <span class={labelClass}>Travel date</span>
+                <!-- A picker rather than free text. Nothing in the past, since
+                     a trip cannot start before today. -->
+                <input class={fieldClass} type="date" min={todayStr} bind:value={travelDate} />
               </label>
               <label class="grid gap-1.5">
                 <span class={labelClass}>Number of days</span>
-                <input class={fieldClass} type="text" inputmode="numeric" bind:value={days} placeholder="7" />
+                <span class="relative block">
+                  <select class={selectClass} bind:value={days}>
+                    <option value="">Select</option>
+                    {#each DAY_OPTIONS as option (option)}
+                      <option value={option}>{option} {option === '1' ? 'day' : 'days'}</option>
+                    {/each}
+                  </select>
+                  <ChevronDown class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/65" size={18} />
+                </span>
               </label>
             </div>
           {:else if step === 2}
