@@ -61,6 +61,23 @@ export const localizeHref = (pathname: string, locale: string): string => {
 };
 
 /**
+ * The flag for a locale, from the region in the locale itself.
+ *
+ * Every language row stores one — en-US, sw-TZ, de-DE — so the flag is read
+ * from the record rather than from a table of guesses kept in the markup. A
+ * locale with no region subtag gets nothing, and the caller shows the code
+ * instead.
+ *
+ * Regional indicator pairs: 'TZ' becomes U+1F1F9 U+1F1FF, which a font renders
+ * as one flag.
+ */
+export const localeFlag = (locale: string): string => {
+  const region = String(locale ?? '').split('-').pop()?.toUpperCase() ?? '';
+  if (!/^[A-Z]{2}$/.test(region)) return '';
+  return String.fromCodePoint(...[...region].map((char) => 0x1f1e6 + char.charCodeAt(0) - 65));
+};
+
+/**
  * The chosen language, remembered between visits.
  *
  * The locale lives in the address, which survives a refresh and a shared link

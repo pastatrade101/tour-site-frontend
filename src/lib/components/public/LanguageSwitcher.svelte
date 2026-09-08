@@ -9,7 +9,7 @@
    */
   import { Check, ChevronDown, Globe } from '@lucide/svelte';
   import { page } from '$app/stores';
-  import { localizeHref, rememberLocale, type KnownLocale } from '$lib/i18n';
+  import { localeFlag, localizeHref, rememberLocale, type KnownLocale } from '$lib/i18n';
   import type { Language } from '$lib/types';
 
   export let languages: Language[] = [];
@@ -25,6 +25,7 @@
     .filter((language) => language.enabled)
     .filter((language) => !availableLocales || availableLocales.includes(language.code));
   $: activeLanguage = options.find((language) => language.code === current);
+  $: activeFlag = localeFlag(activeLanguage?.locale ?? '');
 
   const close = () => (open = false);
 
@@ -108,7 +109,13 @@
       aria-label="Change language"
       on:click={() => (open = !open)}
     >
-      <Globe size={bare ? 13 : 16} class={bare ? '' : 'text-forest/70'} />
+      <!-- The flag, with the globe kept as the fallback for a language whose
+           locale carries no region to draw one from. -->
+      {#if activeFlag}
+        <span class="flag leading-none" style={bare ? 'font-size:14px' : 'font-size:17px'} aria-hidden="true">{activeFlag}</span>
+      {:else}
+        <Globe size={bare ? 13 : 16} class={bare ? '' : 'text-forest/70'} />
+      {/if}
       <span class={bare ? 'text-[12px] font-medium uppercase' : 'uppercase'}>{current}</span>
       {#if bare}<ChevronDown size={12} class={`opacity-80 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />{/if}
     </button>
@@ -133,11 +140,16 @@
               data-locale-switch
               on:click={() => rememberLocale(language.code)}
             >
-              <span>
-                {language.native_name}
-                {#if language.native_name !== language.name}
-                  <span class="text-ink/45">· {language.name}</span>
+              <span class="flex min-w-0 items-center gap-2.5">
+                {#if localeFlag(language.locale)}
+                  <span class="flag shrink-0 text-[17px] leading-none" aria-hidden="true">{localeFlag(language.locale)}</span>
                 {/if}
+                <span class="min-w-0">
+                  {language.native_name}
+                  {#if language.native_name !== language.name}
+                    <span class="text-ink/45">· {language.name}</span>
+                  {/if}
+                </span>
               </span>
               {#if language.code === current}<Check size={15} class="shrink-0 text-forest" />{/if}
             </a>

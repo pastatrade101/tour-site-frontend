@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Check, ChevronDown, RefreshCw } from '@lucide/svelte';
   import { currency, initCurrency, setCurrency } from '$lib/currency';
+  import { localeFlag } from '$lib/i18n';
 
   export let compact = false;
   export let mobile = false;
@@ -27,13 +28,10 @@
     CAD: '🇨🇦'
   };
 
-  const regionFlag = (locale: string) => {
-    const region = locale.split('-').pop()?.toUpperCase() ?? '';
-    if (!/^[A-Z]{2}$/.test(region)) return '';
-    return String.fromCodePoint(...[...region].map((char) => 0x1f1e6 + char.charCodeAt(0) - 65));
-  };
-
-  const flagFor = (code: string, locale: string) => flags[code] ?? regionFlag(locale);
+  // The named ones win — the euro has no country — and everything else takes
+  // the flag of the region in its own locale. Shared with the language
+  // switcher, which derives its flags the same way.
+  const flagFor = (code: string, locale: string) => flags[code] ?? localeFlag(locale);
 
   const ensureReady = () => {
     if (!$currency.loading && $currency.status === 'missing') void initCurrency();
@@ -190,7 +188,7 @@
     {#if flagOnly && $currency.loading}
       <RefreshCw size={15} class="animate-spin text-ink/40" />
     {:else}
-      <span class="text-base leading-none" aria-hidden="true">{selected ? flagFor(selected.code, selected.locale) : '🌍'}</span>
+      <span class="flag text-base leading-none" aria-hidden="true">{selected ? flagFor(selected.code, selected.locale) : '🌍'}</span>
     {/if}
     {#if !flagOnly}
       <span class={`min-w-0 truncate ${bare ? 'text-[12px] font-medium' : 'text-sm font-extrabold'}`}>{selected?.code ?? 'USD'}</span>
@@ -241,7 +239,7 @@
           on:click={() => !unavailable && choose(item.code)}
           on:mouseenter={() => (activeIndex = index)}
         >
-          <span class="text-lg leading-none" aria-hidden="true">{flagFor(item.code, item.locale)}</span>
+          <span class="flag text-lg leading-none" aria-hidden="true">{flagFor(item.code, item.locale)}</span>
           <span class="min-w-0 flex-1">
             <span class="block text-sm font-extrabold text-heading">{item.code}</span>
             <span class="block truncate text-xs text-ink/50">{item.name}</span>

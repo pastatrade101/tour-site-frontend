@@ -248,6 +248,16 @@ select {
   }
 }
 
+/* Flag emoji, in the language and currency switchers.
+   Inter has no flag glyphs, so without naming the emoji fonts the browser falls
+   back per-platform and the pair of regional indicators can come out as bare
+   letters. Note that Windows renders country flags as letters regardless — the
+   code beside each flag is what carries the meaning there. */
+.flag {
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif;
+  letter-spacing: 0;
+}
+
 /* Safari on iOS sizes a native date control from its own date text and ignores
    the width we set, so a date field styled to fill its row rendered wider than
    the row and hung off the right edge of the panel. Dropping the native
