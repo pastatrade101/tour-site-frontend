@@ -423,7 +423,13 @@
   });
 </script>
 
-<header bind:this={headerEl} class={`mobile-nav-header sticky top-0 z-40 border-b bg-forest text-white transition-[box-shadow,border-color] duration-[400ms] ease-out ${scrolled ? 'border-white/10 shadow-[0_4px_18px_rgba(0,0,0,0.22)]' : 'border-white/[0.08]'}`} use:navbarEntrance>
+<!--
+  The white text belongs to the dark bars, not to the header. On the header it
+  was inherited by everything inside it — including the mega menu and the mobile
+  drawer, which are light panels — so any text in them without a colour of its
+  own turned white on white.
+-->
+<header bind:this={headerEl} class={`mobile-nav-header sticky top-0 z-40 border-b bg-forest transition-[box-shadow,border-color] duration-[400ms] ease-out ${scrolled ? 'border-white/10 shadow-[0_4px_18px_rgba(0,0,0,0.22)]' : 'border-white/[0.08]'}`} use:navbarEntrance>
   <!-- ── utility strip (collapses smoothly on scroll) ────────────────────── -->
   <div
     class={`overflow-hidden bg-deep-green transition-[max-height,opacity] duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${scrolled ? 'max-h-0 opacity-0' : 'max-h-10 opacity-100'}`}
@@ -433,7 +439,7 @@
   </div>
 
   <!-- ── main row: logo · navigation · actions ───────────────────────────── -->
-  <div class="mx-auto flex h-16 w-full max-w-[1500px] items-stretch justify-between gap-4 px-4">
+  <div class="mx-auto flex h-16 w-full max-w-[1500px] items-stretch justify-between gap-4 px-4 text-white">
     <a href="/" class="flex shrink-0 items-center gap-2.5" aria-label="Goldfinch Adventures home" on:click={() => activateLink('/')}>
       <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-9 w-9 shrink-0 object-contain" />
       <span class="text-lg font-extrabold tracking-normal text-white">Goldfinch</span>
@@ -485,9 +491,12 @@
                 {@const featureLink = links.find((l) => l.image)}
                 {@const featureImg = featureLink?.image || ''}
                 {@const previewLinks = links.slice(0, 6)}
+                <!-- text-ink on the panel itself: it is a light card rendered
+                     inside the white-text nav row, so it states its own colour
+                     rather than depending on where it happens to be mounted. -->
                 <div
                   id={`dd-${item.dropdown}`}
-                  class="fixed z-50 grid w-[min(1000px,calc(100vw-2rem))] grid-cols-[minmax(0,1fr)_340px] overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-[0_26px_76px_rgba(57,61,50,0.22)]"
+                  class="fixed z-50 grid w-[min(1000px,calc(100vw-2rem))] grid-cols-[minmax(0,1fr)_340px] overflow-hidden rounded-[8px] border border-ink/10 bg-surface text-ink shadow-[0_26px_76px_rgba(57,61,50,0.22)]"
                   style={`left:${ddLeft}px;top:${ddTop}px`}
                   role="menu"
                   transition:fly={{ y: 6, duration: 140 }}
@@ -533,7 +542,11 @@
                           </span>
                           <span class="min-w-0 flex-1">
                             <span class="block text-[14px] font-extrabold leading-5 text-heading transition group-hover/li:text-forest">{link.label}</span>
-                            {#if link.description}<span class="mega-menu-subtitle mt-1 block text-[12px] font-medium leading-[18px] text-ink/58" title={link.description}>{link.description}</span>{/if}
+                            <!-- A rounded opacity step on purpose: this build only
+                                 emits Tailwind's own scale, so an off-scale value
+                                 produces no rule at all and the text is left
+                                 inheriting whatever colour it happens to sit in. -->
+                            {#if link.description}<span class="mega-menu-subtitle mt-1 block text-[12px] font-medium leading-[18px] text-ink/60" title={link.description}>{link.description}</span>{/if}
                           </span>
                         </a>
                       {/each}
@@ -569,7 +582,7 @@
                     <div class="absolute inset-x-0 bottom-0 p-6 text-white">
                       <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-goldfinch-gold">{feat.eyebrow}</p>
                       <p class="mt-2 text-2xl font-extrabold leading-tight">{feat.title}</p>
-                      <p class="mt-2.5 text-sm leading-6 text-white/82">{feat.blurb}</p>
+                      <p class="mt-2.5 text-sm leading-6 text-white/80">{feat.blurb}</p>
                       <span class="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-4 text-sm font-bold text-heading transition group-hover/feat:brightness-105">
                         {feat.cta} <ArrowRight size={15} strokeWidth={2.6} class="transition-transform group-hover/feat:translate-x-0.5" />
                       </span>
@@ -642,7 +655,7 @@
 
   <!-- ── search row ──────────────────────────────────────────────────────── -->
   {#if searchOpen}
-    <div class="hidden border-t border-white/10 bg-deep-green lg:block" transition:fly={{ y: -6, duration: 160 }}>
+    <div class="hidden border-t border-white/10 bg-deep-green text-white lg:block" transition:fly={{ y: -6, duration: 160 }}>
       <form class="mx-auto flex h-14 w-full max-w-[1500px] items-center gap-2 px-4" on:submit|preventDefault={submitSearch} role="search">
         <Search size={18} strokeWidth={2.4} class="shrink-0 text-white/60" />
         <!-- svelte-ignore a11y-autofocus -->
