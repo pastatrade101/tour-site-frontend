@@ -59,3 +59,26 @@ export const localizeHref = (pathname: string, locale: string): string => {
   if (locale === DEFAULT_LOCALE) return base;
   return base === '/' ? `/${locale}` : `/${locale}${base}`;
 };
+
+/**
+ * The chosen language, remembered between visits.
+ *
+ * The locale lives in the address, which survives a refresh and a shared link
+ * on its own. What it cannot survive is arriving at the site without a prefix —
+ * typing the domain, or following an old bookmark — so the choice is also kept
+ * in a cookie and applied on arrival. Same shape as the currency cookie beside
+ * it: readable by the visitor, no personal data, a year long.
+ */
+export const LOCALE_COOKIE = 'gf_locale';
+
+export const rememberLocale = (locale: string): void => {
+  if (typeof document === 'undefined' || !isKnownLocale(locale)) return;
+  document.cookie = `${LOCALE_COOKIE}=${locale};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
+};
+
+export const rememberedLocale = (): KnownLocale | null => {
+  if (typeof document === 'undefined') return null;
+  const match = new RegExp(`(?:^|;\\s*)${LOCALE_COOKIE}=([^;]*)`).exec(document.cookie);
+  const value = match ? decodeURIComponent(match[1]) : '';
+  return isKnownLocale(value) ? value : null;
+};

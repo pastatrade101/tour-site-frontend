@@ -9,7 +9,7 @@
    */
   import { Check, ChevronDown, Globe } from '@lucide/svelte';
   import { page } from '$app/stores';
-  import { localizeHref, type KnownLocale } from '$lib/i18n';
+  import { localizeHref, rememberLocale, type KnownLocale } from '$lib/i18n';
   import type { Language } from '$lib/types';
 
   export let languages: Language[] = [];
@@ -27,13 +27,78 @@
   $: activeLanguage = options.find((language) => language.code === current);
 
   const close = () => (open = false);
+
+  let root: HTMLElement | null = null;
+  let trigger: HTMLButtonElement | null = null;
+  let panel: HTMLElement | null = null;
+  let pos = { top: 0, left: 0, width: 224 };
+
+  /*
+   * The switcher sits in the header's utility strip, which is `overflow-hidden`
+   * so it can animate its max-height on scroll. An absolutely-positioned list
+   * was therefore clipped to the 32px strip: it opened, and 192 of its 194
+   * pixels were cut off, so the language menu looked like it did nothing.
+   *
+   * Rendering the list on <body> at fixed coordinates escapes both the clip and
+   * the header's stacking context — the same fix the currency selector beside
+   * it already carries.
+   */
+  const place = () => {
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    const width = 224;
+    const gap = 8;
+    const height = panel?.offsetHeight || 200;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const flipUp = spaceBelow < height + gap && rect.top > spaceBelow;
+    pos = {
+      top: flipUp ? Math.max(8, rect.top - height - gap) : rect.bottom + gap,
+      left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)),
+      width
+    };
+  };
+
+  const portalPanel = (node: HTMLElement) => {
+    document.body.appendChild(node);
+    panel = node;
+    place();
+    return {
+      destroy: () => {
+        panel = null;
+        node.remove();
+      }
+    };
+  };
+
+  const onWindowPointerDown = (event: PointerEvent) => {
+    if (!open) return;
+    const target = event.target as Node;
+    // The list is portalled out of `root`, so it needs checking separately.
+    if (root?.contains(target) || panel?.contains(target)) return;
+    close();
+  };
+
+  /*
+   * The list is positioned in viewport coordinates, so it has to follow the
+   * trigger as the page scrolls. Closing on any scroll instead was too blunt:
+   * a scroll-restoration jump right after opening shut the menu before it could
+   * be seen. It closes only once the trigger itself is gone — which is what
+   * happens when the utility strip folds away.
+   */
+  const onWindowScroll = () => {
+    if (!open) return;
+    const rect = trigger?.getBoundingClientRect();
+    if (!rect || rect.height === 0) close();
+    else place();
+  };
 </script>
 
-<svelte:window on:click={close} />
+<svelte:window on:pointerdown={onWindowPointerDown} on:scroll={onWindowScroll} on:resize={place} />
 
 {#if options.length > 1}
-  <div class="relative" on:click|stopPropagation role="presentation">
+  <div class="relative" bind:this={root} role="presentation">
     <button
+      bind:this={trigger}
       class={bare
         ? 'inline-flex items-center gap-1.5 rounded text-inherit transition hover:text-white'
         : 'inline-flex h-11 items-center gap-2 rounded-xl border border-ink/15 bg-surface px-3 text-sm font-semibold text-heading transition hover:border-goldfinch-gold/60'}
@@ -50,7 +115,9 @@
 
     {#if open}
       <ul
-        class="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-[10px] border border-ink/10 bg-surface p-1.5 shadow-[0_20px_50px_rgba(57,61,50,0.18)]"
+        use:portalPanel
+        class="fixed z-[130] max-h-[min(60vh,340px)] overflow-y-auto rounded-[10px] border border-ink/10 bg-surface p-1.5 shadow-[0_20px_50px_rgba(57,61,50,0.18)]"
+        style={`top:${pos.top}px; left:${pos.left}px; width:${pos.width}px;`}
         role="listbox"
         aria-label="Language"
       >
@@ -63,6 +130,8 @@
               role="option"
               aria-selected={language.code === current}
               data-sveltekit-reload
+              data-locale-switch
+              on:click={() => rememberLocale(language.code)}
             >
               <span>
                 {language.native_name}

@@ -24,7 +24,7 @@
   import { initCurrency } from '$lib/currency';
   import { cdnUrl } from '$lib/img';
   import LanguageSwitcher from '$lib/components/public/LanguageSwitcher.svelte';
-  import { DEFAULT_LOCALE, localeFromPath, localizeHref } from '$lib/i18n';
+  import { DEFAULT_LOCALE, localeFromPath, localizeHref, rememberedLocale } from '$lib/i18n';
   import { locale as localeStore } from '$lib/i18n/ui';
   import type { LayoutData } from './$types';
 
@@ -36,6 +36,11 @@
   // One assignment drives every static UI string on the page.
   $: activeLocale = data.locale ?? DEFAULT_LOCALE;
   $: localeStore.set(activeLocale);
+  // The server stamps <html lang> for the address it rendered. A client-side
+  // move between locales — the remembered-language redirect below — does not go
+  // back through it, so the attribute is kept in step here. A document that
+  // says it is English while showing German is what a screen reader reads out.
+  $: if (typeof document !== 'undefined') document.documentElement.lang = activeLocale;
   $: languages = data.languages ?? [];
   // Entity pages publish the locales they actually exist in; everything else
   // (static pages, listings) is available in every enabled language because its
@@ -64,6 +69,11 @@
     // Leave downloads, new tabs, API routes and already-localised links alone.
     if (anchor.target && anchor.target !== '_self') return;
     if (anchor.hasAttribute('download') || href.startsWith('/api')) return;
+    // The language switcher's own links are the one place an unprefixed href is
+    // a deliberate request for the default language. Rewriting those sent every
+    // "English" click straight back to the language it was leaving, which made
+    // it impossible to switch back at all.
+    if (anchor.hasAttribute('data-locale-switch')) return;
     if (localeFromPath(href) !== DEFAULT_LOCALE) return;
 
     event.preventDefault();
@@ -212,12 +222,38 @@
     if (!isAdmin) trackPageView();
   });
 
+  /**
+   * Arrive in the language you last chose.
+   *
+   * The prefix in the address already carries the locale through refreshes,
+   * shared links and browsing. What it cannot carry is an arrival with no
+   * prefix at all — the bare domain, an old bookmark, a link from elsewhere —
+   * so the remembered choice is applied once, on load.
+   *
+   * An address that names its own locale always wins, and this never runs for
+   * the default language, so nobody who switched back to English is dragged
+   * away from it.
+   */
+  const applyRememberedLocale = () => {
+    if (isAdmin) return;
+    const stored = rememberedLocale();
+    if (!stored || stored === DEFAULT_LOCALE || stored === activeLocale) return;
+    if (localeFromPath($page.url.pathname) !== DEFAULT_LOCALE) return;
+    // Entity pages publish the locales they exist in; do not send anyone to one
+    // this page has no translation for.
+    if (pageLocales && !pageLocales.includes(stored)) return;
+
+    const target = localizeHref($page.url.pathname, stored) + $page.url.search;
+    if (target !== $page.url.pathname + $page.url.search) void goto(target, { replaceState: true });
+  };
+
   onMount(() => {
     runWhenIdle(() => void setupGsap());
     void loadBranding();
     void loadPublicSettings();
     void initCurrency();
     setupPwaInstall();
+    applyRememberedLocale();
     if (!isAdmin) trackSession(); // fire-and-forget attribution beacon (public only)
     return () => {
       smoothScrollCleanup?.();
