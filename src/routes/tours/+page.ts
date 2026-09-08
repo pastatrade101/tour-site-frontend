@@ -18,7 +18,7 @@ export const load: PageLoad = async ({ fetch, url }) => {
   // Active locale from the URL prefix; the API merges published
   // translations and falls back per field to the default language.
   const locale = localeFromPath(url.pathname);
-  const [tours, destinations, reviews, reviewSummary, faqs, gallery, travelStyles] = await Promise.allSettled([
+  const [tours, destinations, reviews, reviewSummary, faqs, gallery, travelStyles, homeSections] = await Promise.allSettled([
     cachedJson<{ data?: { items?: Tour[] } }>(withLocale(`${API_URL}/tours?status=published&limit=100`, locale), fetch),
     cachedJson<{ data?: { items?: Destination[] } }>(withLocale(`${API_URL}/destinations?status=published&limit=8`, locale), fetch),
     cachedJson<{ data?: { items?: Review[] } }>(`${API_URL}/reviews?status=approved&limit=6`, fetch),
@@ -31,7 +31,10 @@ export const load: PageLoad = async ({ fetch, url }) => {
     cachedJson<{ data?: { items?: TravelStyle[] } }>(
       `${API_URL}/travel-styles?status=published&limit=100`,
       fetch
-    )
+    ),
+    // The Advisor's Note is one section, edited on the homepage and shown here
+    // too — so this page reads the same record rather than restating it.
+    cachedJson<{ data?: Record<string, unknown>[] }>(withLocale(`${API_URL}/homepage`, locale), fetch)
   ]);
 
   return {
@@ -41,6 +44,7 @@ export const load: PageLoad = async ({ fetch, url }) => {
     reviewSummary: value<ReviewSummary>(reviewSummary),
     faqs: items<FAQ>(faqs),
     galleryItems: items<Record<string, unknown>>(gallery),
-    travelStyles: items<TravelStyle>(travelStyles)
+    travelStyles: items<TravelStyle>(travelStyles),
+    homeSections: homeSections.status === 'fulfilled' ? homeSections.value?.data ?? [] : []
   };
 };

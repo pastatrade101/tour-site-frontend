@@ -1,8 +1,13 @@
 <script lang="ts">
+  /**
+   * The Advisor's Note — the same section wherever it appears: the homepage,
+   * the tours listing, a safari-style page, About. Content comes from the one
+   * `advisor_note` homepage section via advisorNoteProps(), so there is one
+   * note to edit and one promise being made.
+   */
   import { Check, Compass, SlidersHorizontal } from '@lucide/svelte';
   import Img from '../Img.svelte';
-
-  type AdvisorColumn = { icon_url?: string; items: string[]; title: string };
+  import type { AdvisorColumn } from '$lib/advisorNote';
 
   export let eyebrow = "Advisor's Note";
   export let title = 'The Trip Is Won or Lost in the Planning Details';

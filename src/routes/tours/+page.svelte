@@ -18,6 +18,7 @@
   import LeadCaptureForm from '$lib/components/public/LeadCaptureForm.svelte';
   import HomeDestinationsCarousel from '$lib/components/public/home/HomeDestinationsCarousel.svelte';
   import HomeAdvisorNote from '$lib/components/public/home/HomeAdvisorNote.svelte';
+  import { advisorNoteEnabled, advisorNoteProps, type AdvisorNoteSection } from '$lib/advisorNote';
   import HomeHowPlanned from '$lib/components/public/home/HomeHowPlanned.svelte';
   import HomeTravellerStories from '$lib/components/public/home/HomeTravellerStories.svelte';
   import HomePlanningBand from '$lib/components/public/home/HomePlanningBand.svelte';
@@ -41,6 +42,11 @@
   };
 
   export let data: PageData;
+
+  /** The homepage sections, keyed — the Advisor's Note reads its record here. */
+  $: homeByKey = Object.fromEntries(
+    ((data.homeSections ?? []) as Array<Record<string, unknown>>).map((section) => [String(section.section_key), section])
+  ) as Record<string, AdvisorNoteSection | undefined>;
   let allTours: Tour[] = data.tours ?? [];
   let heroIndex = 0;
   $: heroSlides = allTours
@@ -527,11 +533,9 @@
   />
 {/if}
 
-<HomeAdvisorNote
-  eyebrow="Advisor's note"
-  title="What We Help You Get Right"
-  body="Most travel mistakes happen before arrival. The wrong route, too many one-night stops, poor lodge locations or badly timed transfers can make even a beautiful trip feel tiring."
-/>
+{#if advisorNoteEnabled(homeByKey)}
+  <HomeAdvisorNote {...advisorNoteProps(homeByKey)} />
+{/if}
 
 <HomeHowPlanned
   eyebrow="How your trip is planned"

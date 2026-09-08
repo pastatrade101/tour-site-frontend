@@ -9,10 +9,17 @@
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
   import Img from '$lib/components/public/Img.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
+  import HomeAdvisorNote from '$lib/components/public/home/HomeAdvisorNote.svelte';
+  import { advisorNoteEnabled, advisorNoteProps, type AdvisorNoteSection } from '$lib/advisorNote';
   import type { Specialist } from '$lib/types';
   import type { PageData } from './$types';
 
   export let data: PageData;
+
+  /** The homepage sections, keyed — the Advisor's Note reads its record here. */
+  $: homeByKey = Object.fromEntries(
+    ((data.homeSections ?? []) as Array<Record<string, unknown>>).map((section) => [String(section.section_key), section])
+  ) as Record<string, AdvisorNoteSection | undefined>;
 
   $: s = $publicSettings;
   $: heroImage = settingText(s, 'about_hero_image') || '/images/surf-hero.jpg';
@@ -272,6 +279,13 @@
       </div>
     </div>
   </section>
+{/if}
+
+<!-- ── Advisor's Note — the homepage section, unchanged ─────────────────── -->
+{#if advisorNoteEnabled(homeByKey)}
+  <div class="bg-surface">
+    <HomeAdvisorNote {...advisorNoteProps(homeByKey)} />
+  </div>
 {/if}
 
 <!-- ── Partners + guest reviews ─────────────────────────────────────────── -->

@@ -3,7 +3,6 @@
     ArrowRight,
     CalendarRange,
     Check,
-    Compass,
     MapPinned,
     Route,
     ShieldCheck,
@@ -15,7 +14,9 @@
   import { page } from '$app/stores';
   import TripRequestForm from '$lib/components/public/TripRequestForm.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
+  import HomeAdvisorNote from '$lib/components/public/home/HomeAdvisorNote.svelte';
   import HomeTravellerStories from '$lib/components/public/home/HomeTravellerStories.svelte';
+  import { advisorNoteEnabled, advisorNoteProps } from '$lib/advisorNote';
   import Img from '$lib/components/public/Img.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
@@ -40,7 +41,6 @@
     extra_data?: Record<string, unknown> | null;
   };
   type PlanningStep = { title: string; body: string };
-  type AdvisorColumn = { title: string; items: string[] };
 
   const DAY_BUCKETS = [
     { key: '3-4', label: '3–4 Days', test: (days: number) => days >= 3 && days <= 4 },
@@ -138,23 +138,6 @@
     : cmsPlanningSteps.length
       ? cmsPlanningSteps.map((step) => ({ title: String(step.title ?? ''), body: String(step.body ?? step.text ?? '') }))
       : landing.howItsPlanned.steps.map((step) => ({ title: step.title, body: step.text }))) as PlanningStep[];
-
-  $: advisorSection = homeByKey.advisor_note;
-  $: advisorExtra = (advisorSection?.extra_data ?? {}) as Record<string, unknown>;
-  $: cmsAdvisorColumns = Array.isArray(advisorExtra.columns) ? advisorExtra.columns as Array<Record<string, unknown>> : [];
-  $: advisorColumns = (category?.landing_page_content?.advisor
-    ? [
-        { title: 'The big choices', items: category.landing_page_content.advisor.big },
-        { title: 'The quiet details', items: category.landing_page_content.advisor.quiet }
-      ]
-    : cmsAdvisorColumns.length >= 2
-      ? cmsAdvisorColumns.map((column) => ({
-          title: String(column.title ?? ''), items: Array.isArray(column.items) ? column.items.map(String) : []
-        }))
-      : [
-          { title: 'The big choices', items: landing.advisor.big },
-          { title: 'The quiet details', items: landing.advisor.quiet }
-        ]) as AdvisorColumn[];
 
   let duration = 'all';
   let comfort = 'all';
@@ -381,24 +364,12 @@
     </div>
   </section>
 
-  <!-- 8 · Advisor -->
-  <section class="bg-surface py-14 md:py-20">
-    <div class="container-shell">
-      <div class="relative overflow-hidden rounded-xl border border-ink/10 bg-canvas p-6 md:p-12 lg:p-16">
-        <Compass class="pointer-events-none absolute right-8 top-8 h-32 w-32 text-clay opacity-[0.08] md:h-48 md:w-48" strokeWidth={0.8} />
-        <div class="relative max-w-[820px]">
-          <div class="flex items-center gap-3"><span class="h-8 w-[3px] rounded-full bg-goldfinch-gold"></span><span class="text-xs font-semibold uppercase tracking-[0.18em] text-ink/65">Advisor's Note</span></div>
-          <h2 class="mt-5 font-serif text-3xl font-semibold leading-[1.1] tracking-tight text-heading sm:text-4xl md:text-[42px]">{category.landing_page_content?.advisor.headline || advisorSection?.title || landing.advisor.headline}</h2>
-          <p class="mt-4 text-base leading-relaxed text-ink/65 md:text-lg">{category.landing_page_content?.advisor.intro || advisorSection?.subtitle || landing.advisor.intro}</p>
-        </div>
-        <div class="relative mt-10 grid gap-10 md:mt-14 md:grid-cols-2 md:gap-14">
-          {#each advisorColumns as column}
-            <div><h3 class="font-serif text-xl font-semibold text-heading md:text-2xl">{column.title}</h3><div class="mt-3 h-px w-10 bg-goldfinch-gold"></div><ul class="mt-5 space-y-3.5">{#each column.items as item}<li class="flex items-start gap-3.5 text-[15px] leading-relaxed text-heading"><span class="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-goldfinch-gold"></span><span>{item}</span></li>{/each}</ul></div>
-          {/each}
-        </div>
-      </div>
+  <!-- 8 · Advisor — the homepage section, not a second version of it. -->
+  {#if advisorNoteEnabled(homeByKey)}
+    <div class="bg-surface">
+      <HomeAdvisorNote {...advisorNoteProps(homeByKey)} />
     </div>
-  </section>
+  {/if}
 
   <!-- 9 · How it is planned -->
   <section class="bg-surface py-14 md:py-20">

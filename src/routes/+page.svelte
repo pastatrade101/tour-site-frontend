@@ -29,6 +29,7 @@
   import { attachResolvedVariantFields, imgUrl, srcsetFor, variantFromMap, variantSrc, type ImageVariantMap } from '$lib/img';
   import { toMetaText } from '$lib/richText';
   import { categoryAudience, categoryHighlights, categoryMeta } from '$lib/categoryFacts';
+  import { advisorNoteProps } from '$lib/advisorNote';
   import type { BlogPost, Destination, FAQ, MigrationEntry, Review, ReviewSummary, Tour } from '$lib/types';
   import type { PageData } from './$types';
 
@@ -469,18 +470,10 @@
 
 <!-- 6 · Advisor's note -->
 {#if isSectionActive('advisor_note')}
-  <HomeAdvisorNote
-    eyebrow={cmsExtra('advisor_note', 'eyebrow', "Advisor's Note")}
-    title={cms('advisor_note', 'title', 'The Trip Is Won or Lost in the Planning Details')}
-    body={cms('advisor_note', 'subtitle', 'Most travel mistakes happen before arrival. The wrong route, too many one-night stops, poor lodge locations or badly timed transfers can make even a beautiful trip feel tiring.')}
-    imageUrl={cms('advisor_note', 'image_url', '')}
-    authorName={cmsExtra('advisor_note', 'author_name', 'Deo Robert')}
-    authorRole={cmsExtra('advisor_note', 'author_role', 'Founder & Advisor, Goldfinch Adventures')}
-    {...clean({
-      columns: arr<{ icon_url?: string; title: string; items: string[] }>(advisorExtra.columns),
-      footnote: typeof advisorExtra.footnote === 'string' ? advisorExtra.footnote : ''
-    })}
-  />
+  <!-- Resolved through the shared helper, the same one the tours listing, the
+       safari-style pages and About use, so the note reads identically wherever
+       a visitor meets it. -->
+  <HomeAdvisorNote {...advisorNoteProps(sections)} />
 {/if}
 
 <!-- 7 · How your trip is planned -->
