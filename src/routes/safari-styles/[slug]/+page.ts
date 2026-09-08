@@ -1,6 +1,7 @@
 import type { PageLoad } from './$types';
 import { API_URL } from '$lib/config/env';
 import { cachedJson } from '$lib/cache';
+import { attachedFaqQuery, generalFaqQuery, mergeFaqs } from '$lib/faqEntities';
 import { DEFAULT_LOCALE, localeFromPath, withLocale } from '$lib/i18n';
 import type { FAQ, Review, ReviewSummary, Tour, TourCategory } from '$lib/types';
 
@@ -38,13 +39,16 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
 
   // Everything below is section data and fails soft. The shared page supplies
   // truthful CMS-derived fallbacks so one failed list never takes the route down.
-  const [tours, otherStyles, faqs, featuredReviews, allReviews, reviewSummary, homeSections, startPoints, galleryItems] = await Promise.allSettled([
+  const [tours, otherStyles, styleFaqs, generalFaqs, featuredReviews, allReviews, reviewSummary, homeSections, startPoints, galleryItems] = await Promise.allSettled([
     // 24 rather than 9: the tours grid now filters client-side (days, comfort,
     // price), and a filter over a truncated list would quietly lie about what
     // is available.
     cachedJson<Items<Tour>>(withLocale(`${API_URL}/tours?category_id=${encodeURIComponent(category.id)}&status=published&limit=24`, locale), fetch),
     cachedJson<Items<TourCategory>>(withLocale(`${API_URL}/categories?status=published&limit=30`, locale), fetch),
-    cachedJson<Items<FAQ>>(withLocale(`${API_URL}/faqs?limit=6`, locale), fetch),
+    // The questions attached to this travel style, then the general library to
+    // fill the rest of the section.
+    cachedJson<Items<FAQ>>(withLocale(`${API_URL}/faqs?${attachedFaqQuery('tour_categories', category.id, 6)}`, locale), fetch),
+    cachedJson<Items<FAQ>>(withLocale(`${API_URL}/faqs?${generalFaqQuery(6)}`, locale), fetch),
     cachedJson<Items<Review>>(`${API_URL}/reviews?status=approved&is_featured=true&limit=6`, fetch),
     cachedJson<Items<Review>>(`${API_URL}/reviews?status=approved&limit=6`, fetch),
     cachedJson<{ data?: ReviewSummary }>(`${API_URL}/reviews/summary`, fetch),
@@ -62,7 +66,7 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     availableLocales: (category as { available_locales?: string[] }).available_locales ?? null,
     tours: items(tours),
     otherStyles: items(otherStyles).filter((style) => style.slug !== category?.slug),
-    faqs: items(faqs),
+    faqs: mergeFaqs(items(styleFaqs), items(generalFaqs), 6),
     // Reviews is the single source of truth for this slider. Featured approved
     // records lead; when none are featured, the latest approved CMS records do.
     reviews: featured.length ? featured : items(allReviews),

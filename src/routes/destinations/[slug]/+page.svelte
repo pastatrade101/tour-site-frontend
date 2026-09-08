@@ -21,6 +21,7 @@
     ShieldCheck
   } from '@lucide/svelte';
   import { api } from '$lib/api/client';
+  import { loadEntityFaqs } from '$lib/faqEntities';
   import { trackEvent } from '$lib/analytics';
   import { fadeUpOnScroll, revealHeading, staggeredCardReveal } from '$lib/animations';
   import ActivityCard from '$lib/components/public/ActivityCard.svelte';
@@ -625,7 +626,9 @@
       api.activities.list({ destination_id: current.id, status: 'published', limit: 6 }),
       api.tripPoints.list({ destination_id: current.id, status: 'published', limit: 4 }),
       api.gallery.list({ destination_id: current.id, media_type: 'image', status: 'published', limit: 10 }),
-      api.faqs.list({ destination_id: current.id, status: 'published', limit: 8 })
+      // This destination's own questions first, topped up with the general ones
+      // so the section is worth reading even before any are attached.
+      loadEntityFaqs('destinations', current.id, 8)
     ]);
 
     if (destination?.id !== current.id) return;
@@ -639,7 +642,7 @@
     activities = deferredItems<Activity>(activityResult);
     tripPoints = deferredItems<TripPoint>(tripPointResult);
     galleryImages = deferredItems<DestinationGalleryImage>(galleryResult);
-    faqs = deferredItems<FAQ>(faqResult);
+    faqs = faqResult.status === 'fulfilled' ? faqResult.value : [];
 
     requestAnimationFrame(() => {
       updateActiveDestinationTab(visibleTabs);
@@ -1509,7 +1512,10 @@
         <div class="max-w-3xl">
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">FAQ</p>
           <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">Questions about {destination.name}</h2>
-          <p class="mt-4 text-base leading-8 text-ink/68">Destination-specific FAQs from the CMS.</p>
+          <!-- The list now leads with this destination's own questions and only
+               then falls back to the general ones, so it can no longer claim
+               every answer is destination-specific. -->
+          <p class="mt-4 text-base leading-8 text-ink/68">What travellers ask us most about this destination.</p>
         </div>
         <ol class="relative mt-10 md:mt-12">
           {#each faqs as item, index (item.id)}

@@ -1,7 +1,8 @@
 import { error } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
+import { attachedFaqQuery, generalFaqQuery, mergeFaqs } from '$lib/faqEntities';
 import { localeFromPath, withLocale } from '$lib/i18n';
-import type { SafariPackage, Tour } from '$lib/types';
+import type { FAQ, SafariPackage, Tour } from '$lib/types';
 
 /**
  * Safari-package landing pages, served straight off the root: /2-day-safari.
@@ -55,5 +56,34 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     }
   }
 
-  return { package: record, related };
+  // A `faq` block with no questions typed into it falls back to whatever the
+  // FAQ module has attached to this package, so questions can be managed in one
+  // place instead of being retyped per landing page. No empty block, no request.
+  const hasEmptyFaqBlock = (record.sections ?? []).some((block) => {
+    const candidate = block as { items?: unknown; type?: string };
+    if (candidate?.type !== 'faq') return false;
+    const items = Array.isArray(candidate.items) ? candidate.items : [];
+    return !items.some((item) => {
+      const row = (item ?? {}) as { answer?: unknown; question?: unknown };
+      return String(row.question ?? '').trim() && String(row.answer ?? '').trim();
+    });
+  });
+
+  let moduleFaqs: FAQ[] = [];
+  if (hasEmptyFaqBlock && record.id) {
+    const [attached, general] = await Promise.allSettled([
+      fetch(withLocale(`/api/faqs?${attachedFaqQuery('safari_packages', record.id, 8)}`, locale)),
+      fetch(withLocale(`/api/faqs?${generalFaqQuery(8)}`, locale))
+    ]);
+
+    const read = async (result: PromiseSettledResult<Response>): Promise<FAQ[]> => {
+      if (result.status !== 'fulfilled' || !result.value.ok) return [];
+      const payload = (await result.value.json()) as { data?: { items?: FAQ[] } };
+      return payload?.data?.items ?? [];
+    };
+
+    moduleFaqs = mergeFaqs(await read(attached), await read(general), 8);
+  }
+
+  return { package: record, related, moduleFaqs };
 };

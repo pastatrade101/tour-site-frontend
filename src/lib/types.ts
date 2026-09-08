@@ -553,10 +553,27 @@ export type MigrationEntry = {
   is_published?: boolean;
 };
 
+/** The collections an FAQ can be attached to — the database's table names. */
+export type FaqEntityType =
+  | 'destinations'
+  | 'tours'
+  | 'tour_categories'
+  | 'safari_packages'
+  | 'lodges'
+  | 'activities';
+
 export type FAQ = {
   id: string;
   question: string;
   answer: string;
+  category?: string | null;
+  status?: 'archived' | 'draft' | 'published';
+  sort_order?: number;
+  /** Null on both halves means a general question, shown wherever nothing more specific is attached. */
+  entity_type?: FaqEntityType | null;
+  entity_id?: string | null;
+  /** Resolved by the API so a list can show a name instead of a uuid. Null if the record is gone. */
+  entity?: { id: string; type: FaqEntityType; label: string; slug: string | null } | null;
 };
 
 export type AiChatResponse = {

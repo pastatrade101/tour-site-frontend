@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade, scale, slide } from 'svelte/transition';
-  import { ChevronDown, CircleHelp, Edit, Plus, Search, Trash2, X } from '@lucide/svelte';
+  import { ChevronDown, CircleHelp, Edit, ExternalLink, Plus, Search, Trash2, X } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
@@ -16,12 +16,17 @@
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
+  import { FAQ_ENTITY_TYPES, faqEntityHref, faqEntityLabel, loadFaqEntityRecords } from '$lib/faqEntities';
   import { toMetaText } from '$lib/richText';
+  import type { FaqEntityType } from '$lib/types';
 
   type Faq = {
     answer: string;
     category?: string | null;
     created_at?: string;
+    entity?: { id: string; label: string; slug: string | null; type: FaqEntityType } | null;
+    entity_id?: string | null;
+    entity_type?: FaqEntityType | null;
     id: string;
     question: string;
     sort_order: number;
@@ -56,9 +61,29 @@
     ...recommendedCategories.map((c) => ({ label: c, value: c }))
   ];
 
+  // An FAQ either belongs to one record or is general. "General" is the default
+  // and behaves exactly as every FAQ did before attachments existed.
+  const entityTypeFormOptions: Option[] = [
+    { label: 'General — shown site-wide', value: '' },
+    ...FAQ_ENTITY_TYPES.map((entry) => ({ label: entry.label, value: entry.value }))
+  ];
+
+  const attachmentFilterOptions: Option[] = [
+    { label: 'All attachments', value: 'all' },
+    { label: 'General only', value: 'null' },
+    ...FAQ_ENTITY_TYPES.map((entry) => ({ label: entry.plural, value: entry.value }))
+  ];
+
+  const groupModes = [
+    { label: 'Attached to', value: 'entity' },
+    { label: 'Category', value: 'category' }
+  ] as const;
+
   const emptyForm = () => ({
     answer: '',
     category: '',
+    entity_id: '',
+    entity_type: '',
     question: '',
     sort_order: '0',
     status: 'draft' as Faq['status']
@@ -72,6 +97,8 @@
   let search = '';
   let statusFilter = 'all';
   let categoryFilter = 'all';
+  let attachmentFilter = 'all';
+  let groupMode: 'category' | 'entity' = 'entity';
   let modalOpen = false;
   let confirmOpen = false;
   let editingFaq: Faq | null = null;
@@ -87,16 +114,52 @@
     ...[...seenCategories].sort((a, b) => a.localeCompare(b)).map((c) => ({ label: c, value: c }))
   ];
 
-  // group by category, then sort each group by sort_order
+  // What a row is attached to, as an editor reads it. An attachment whose
+  // target no longer exists says so rather than showing a bare uuid.
+  const attachmentOf = (faq: Faq) => {
+    if (!faq.entity_type) return { kind: 'General', name: '', href: '' };
+    const kind = faqEntityLabel(faq.entity_type) || faq.entity_type;
+    if (!faq.entity) return { kind, name: 'Missing record', href: '' };
+    return { kind, name: faq.entity.label, href: faqEntityHref(faq.entity_type, faq.entity.slug) };
+  };
+
+  // Group by whichever axis is selected, then sort each group by sort_order.
+  // "Attached to" is the default: it is the one view that answers "which
+  // questions does this destination show?" at a glance.
   $: grouped = (() => {
-    const map = new Map<string, Faq[]>();
+    const map = new Map<string, { heading: string; href: string; items: Faq[]; label: string }>();
+
     for (const faq of rows) {
-      const key = faq.category?.trim() || 'Uncategorized';
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)?.push(faq);
+      const attachment = attachmentOf(faq);
+      const key =
+        groupMode === 'category'
+          ? `c:${faq.category?.trim() || 'Uncategorized'}`
+          : `e:${faq.entity_type ?? ''}:${faq.entity_id ?? ''}`;
+
+      if (!map.has(key)) {
+        map.set(
+          key,
+          groupMode === 'category'
+            ? { heading: 'Category', label: faq.category?.trim() || 'Uncategorized', href: '', items: [] }
+            : { heading: attachment.kind, label: attachment.name || 'Every page', href: attachment.href, items: [] }
+        );
+      }
+      map.get(key)?.items.push(faq);
     }
-    for (const list of map.values()) list.sort((a, b) => a.sort_order - b.sort_order);
-    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+
+    for (const group of map.values()) group.items.sort((a, b) => a.sort_order - b.sort_order);
+
+    // General first when grouping by attachment — it is the fallback set, so it
+    // reads best at the top; the rest alphabetically.
+    return [...map.entries()].sort(([keyA, a], [keyB, b]) => {
+      if (groupMode === 'entity') {
+        const generalA = keyA === 'e::';
+        const generalB = keyB === 'e::';
+        if (generalA !== generalB) return generalA ? -1 : 1;
+        if (a.heading !== b.heading) return a.heading.localeCompare(b.heading);
+      }
+      return a.label.localeCompare(b.label);
+    });
   })();
 
   const showToast = (message: string, type: Toast['type'] = 'success') => {
@@ -121,6 +184,8 @@
         search,
         status: statusFilter,
         category: categoryFilter === 'all' ? undefined : categoryFilter,
+        // "null" is the API's spelling for IS NULL — the general questions.
+        entity_type: attachmentFilter === 'all' ? undefined : attachmentFilter,
         limit: 200
       });
       rows = res.data.items as unknown as Faq[];
@@ -135,9 +200,59 @@
     }
   };
 
+  // Records available to attach to, for the type currently chosen in the form.
+  // Cached per type so switching back and forth doesn't refetch, and loaded
+  // only when a type is picked — a general FAQ never touches these endpoints.
+  const entityCache = new Map<FaqEntityType, Array<{ id: string; label: string }>>();
+  let entityRecords: Array<{ id: string; label: string }> = [];
+  let entityLoading = false;
+  let entityError = '';
+
+  const loadEntityOptions = async (type: string) => {
+    entityError = '';
+    if (!type) { entityRecords = []; return; }
+
+    const cached = entityCache.get(type as FaqEntityType);
+    if (cached) { entityRecords = cached; return; }
+
+    entityLoading = true;
+    entityRecords = [];
+    try {
+      const list = await loadFaqEntityRecords(type as FaqEntityType);
+      entityCache.set(type as FaqEntityType, list);
+      // Guard against a slow response landing after the editor moved on.
+      if (form.entity_type === type) entityRecords = list;
+    } catch {
+      if (form.entity_type === type) entityError = 'Unable to load records for this type.';
+    } finally {
+      entityLoading = false;
+    }
+  };
+
+  // Changing the type invalidates whichever record was chosen under the old one.
+  const onEntityTypeChange = () => {
+    form.entity_id = '';
+    void loadEntityOptions(form.entity_type);
+  };
+
+  $: entityRecordOptions = (() => {
+    const list = entityRecords.map((record) => ({ label: record.label, value: record.id }));
+    // Keep an existing attachment selectable even if the record falls outside
+    // the fetched page — saving must never silently detach an FAQ.
+    if (form.entity_id && !list.some((option) => option.value === form.entity_id)) {
+      list.unshift({ label: editingFaq?.entity?.label ?? 'Currently attached record', value: form.entity_id });
+    }
+    return [
+      { label: entityLoading ? 'Loading records...' : 'Select a record', value: '' },
+      ...list
+    ];
+  })();
+
   const openCreate = () => {
     editingFaq = null;
     form = emptyForm();
+    entityRecords = [];
+    entityError = '';
     modalOpen = true;
   };
 
@@ -146,22 +261,35 @@
     form = {
       answer: faq.answer,
       category: faq.category ?? '',
+      entity_id: faq.entity_id ?? '',
+      entity_type: faq.entity_type ?? '',
       question: faq.question,
       sort_order: String(faq.sort_order ?? 0),
       status: faq.status
     };
+    entityRecords = [];
+    entityError = '';
     modalOpen = true;
+    void loadEntityOptions(form.entity_type);
   };
 
-  const closeModal = () => { modalOpen = false; editingFaq = null; form = emptyForm(); };
+  const closeModal = () => { modalOpen = false; editingFaq = null; form = emptyForm(); entityRecords = []; };
 
   const save = async () => {
     if (form.question.trim().length < 5) { showToast('Question must be at least 5 characters.', 'error'); return; }
     if (form.answer.trim().length < 5) { showToast('Answer must be at least 5 characters.', 'error'); return; }
+    // Half an attachment is worse than none: a type with no record would be
+    // saved as a question that belongs nowhere and shows nowhere.
+    if (form.entity_type && !form.entity_id) {
+      showToast(`Choose which ${faqEntityLabel(form.entity_type).toLowerCase()} this FAQ belongs to.`, 'error');
+      return;
+    }
     saving = true;
     const payload = {
       answer: form.answer.trim(),
       category: form.category.trim() || null,
+      entity_type: form.entity_type || null,
+      entity_id: form.entity_type ? form.entity_id : null,
       question: form.question.trim(),
       sort_order: Number(form.sort_order || 0),
       status: form.status
@@ -216,14 +344,18 @@
     on:action={openCreate}
   />
 
-  <AdminToolbar className="grid gap-3 md:grid-cols-[1fr_200px_190px_auto] md:items-end">
-    <label class="grid gap-2 text-sm font-medium text-ink">
+  <!-- Four filters plus a button will not fit one row until the screen is very
+       wide: fixed tracks pushed the Apply button past the card. Same ladder the
+       tours toolbar uses — stack, then two up, then three, then one row. -->
+  <AdminToolbar className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-[minmax(200px,1fr)_minmax(150px,190px)_minmax(150px,190px)_minmax(140px,170px)_auto] 2xl:items-end">
+    <label class="grid min-w-0 gap-2 text-sm font-medium text-ink">
       <span>Search</span>
-      <span class="flex h-11 items-center gap-2 rounded-2xl border border-ink/10 bg-surface px-3 shadow-sm transition focus-within:border-forest/45 focus-within:ring-2 focus-within:ring-forest/10">
-        <Search size={16} class="text-ink/45" />
+      <span class="flex h-11 min-w-0 items-center gap-2 rounded-2xl border border-ink/10 bg-surface px-3 shadow-sm transition focus-within:border-forest/45 focus-within:ring-2 focus-within:ring-forest/10">
+        <Search size={16} class="shrink-0 text-ink/45" />
         <input class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink/35" bind:value={search} placeholder="Search question, answer, or category..." on:keydown={(e) => e.key === 'Enter' && load()} />
       </span>
     </label>
+    <AdminSelect label="Attached to" name="attachment_filter" bind:value={attachmentFilter} options={attachmentFilterOptions} />
     <AdminSelect label="Category" name="category_filter" bind:value={categoryFilter} options={categoryFilterOptions} />
     <AdminSelect label="Status" name="status_filter" bind:value={statusFilter} options={[{ label: 'All statuses', value: 'all' }, ...statusOptions]} />
     <AdminButton variant="secondary" on:click={load}>Apply</AdminButton>
@@ -243,18 +375,46 @@
     />
   {:else}
     <div class="grid gap-5">
-      {#each grouped as [category, items] (category)}
+      <!-- Two ways to read the same list: by what a question is attached to
+           (the default — it answers "what shows on this page?") or by the
+           editorial category the module has always grouped on. -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-[13px] font-semibold text-ink/60">Group by</span>
+        <div class="inline-flex rounded-xl border border-ink/10 bg-surface p-1 shadow-sm">
+          {#each groupModes as mode (mode.value)}
+            <button
+              class={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${groupMode === mode.value ? 'bg-forest text-white' : 'text-ink/60 hover:bg-sand/70'}`}
+              type="button"
+              on:click={() => (groupMode = mode.value)}
+            >
+              {mode.label}
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      {#each grouped as [key, group] (key)}
         <section class="overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
           <header class="flex items-center justify-between gap-3 border-b border-ink/10 bg-sand/40 px-5 py-3">
-            <div class="flex items-center gap-2">
-              <span class="text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">Category</span>
-              <h2 class="text-base font-bold text-ink">{category}</h2>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">{group.heading}</span>
+              <h2 class="text-base font-bold text-ink">{group.label}</h2>
+              {#if group.href}
+                <a
+                  class="inline-flex items-center gap-1 text-[11px] font-bold text-forest underline-offset-2 hover:underline"
+                  href={group.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View page<ExternalLink size={11} />
+                </a>
+              {/if}
             </div>
-            <span class="rounded-full bg-forest/10 px-2.5 py-0.5 text-xs font-bold text-forest">{items.length}</span>
+            <span class="rounded-full bg-forest/10 px-2.5 py-0.5 text-xs font-bold text-forest">{group.items.length}</span>
           </header>
 
           <div class="divide-y divide-ink/10">
-            {#each items as faq (faq.id)}
+            {#each group.items as faq (faq.id)}
               <article class="px-5 py-4">
                 <div class="flex items-start gap-3">
                   <button
@@ -271,7 +431,19 @@
                       <button class="min-w-0 flex-1 text-left" type="button" on:click={() => toggleExpand(faq.id)}>
                         <p class="font-semibold text-ink">{faq.question}</p>
                       </button>
-                      <div class="flex shrink-0 items-center gap-2">
+                      <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                        <!-- Whichever axis the list is NOT grouped by, so a row
+                             is never missing half its context. -->
+                        {#if groupMode === 'entity'}
+                          {#if faq.category?.trim()}
+                            <span class="rounded-full bg-sand/70 px-2 py-0.5 text-[11px] font-semibold text-ink/55">{faq.category}</span>
+                          {/if}
+                        {:else}
+                          {@const attachment = attachmentOf(faq)}
+                          <span class="rounded-full bg-forest/10 px-2 py-0.5 text-[11px] font-semibold text-forest">
+                            {attachment.name ? `${attachment.kind}: ${attachment.name}` : attachment.kind}
+                          </span>
+                        {/if}
                         <span class="rounded-full bg-sand/70 px-2 py-0.5 text-[11px] font-semibold text-ink/55">Sort {faq.sort_order}</span>
                         <StatusBadge status={faq.status} />
                       </div>
@@ -324,6 +496,35 @@
       <div class="mt-6 grid gap-4">
         <AdminFormInput label="Question" name="question" bind:value={form.question} placeholder="e.g. What is the best time for a Serengeti safari?" required />
         <AdminRichText label="Answer" name="answer" bind:value={form.answer} rows={8} headings="none" placeholder="Write a clear, helpful answer that builds trust and handles objections." />
+
+        <!-- Where this question belongs. Leaving it general is a real choice,
+             not an unfinished one: general questions fill out every page that
+             does not have enough of its own. -->
+        <div class="rounded-[10px] border border-ink/10 bg-sand/30 p-4">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <AdminSelect
+              label="Attach to"
+              name="entity_type"
+              bind:value={form.entity_type}
+              options={entityTypeFormOptions}
+              on:change={onEntityTypeChange}
+            />
+            {#if form.entity_type}
+              <AdminSelect label={faqEntityLabel(form.entity_type)} name="entity_id" bind:value={form.entity_id} options={entityRecordOptions} />
+            {/if}
+          </div>
+          {#if entityError}
+            <p class="mt-3 text-[13px] font-semibold text-red-700">{entityError}</p>
+          {:else}
+            <p class="mt-3 text-[13px] leading-5 text-ink/55">
+              {#if form.entity_type}
+                Shown first on that page, ahead of the general questions.
+              {:else}
+                Shown across the site wherever a page has room after its own questions.
+              {/if}
+            </p>
+          {/if}
+        </div>
 
         <div class="grid gap-4 sm:grid-cols-3">
           <AdminSelect label="Category" name="category" bind:value={form.category} options={categoryFormOptions} />

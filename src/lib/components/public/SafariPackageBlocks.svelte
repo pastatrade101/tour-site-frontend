@@ -18,13 +18,15 @@
   import RichText from './RichText.svelte';
   import TourCard from './TourCard.svelte';
   import { MONTHS, arr, lines, rows, str, type Block } from '$lib/safariPackageBlocks';
-  import type { ItineraryDay, Tour } from '$lib/types';
+  import type { FAQ, ItineraryDay, Tour } from '$lib/types';
 
   export let blocks: Block[] = [];
   /** The linked tour's real days — what the `itinerary` block renders. */
   export let itineraryDays: ItineraryDay[] = [];
   /** Resolved tours for `tours` blocks. Cards link to the canonical /tours/[slug]. */
   export let tours: Tour[] = [];
+  /** FAQs attached to this package, used only when a `faq` block has none of its own. */
+  export let moduleFaqs: FAQ[] = [];
 
   /** Alternating bands stop a long page reading as one flat slab. */
   const surface = (index: number) => (index % 2 === 0 ? 'bg-surface' : 'bg-canvas');
@@ -290,13 +292,18 @@
     {/if}
 
   {:else if block.type === 'faq'}
-    {@const items = rows<{ question?: string; answer?: string }>(block.items).filter((item) => str(item.question).trim() && str(item.answer).trim())}
-    {#if items.length}
+    {@const authored = rows<{ question?: string; answer?: string }>(block.items).filter((item) => str(item.question).trim() && str(item.answer).trim())}
+    <!-- Questions typed into the block win; an empty block falls back to the
+         ones attached to this package in the FAQ module. -->
+    {@const entries = authored.length
+      ? authored.map((item, n) => ({ id: `pkg-faq-${index}-${n}`, question: str(item.question), answer: str(item.answer) }))
+      : moduleFaqs.map((faq) => ({ id: faq.id, question: faq.question, answer: faq.answer }))}
+    {#if entries.length}
       <section class={`${surface(index)} py-14 md:py-20`}>
         <div class="container-shell max-w-[900px]">
           {#if title}<h2 class={`${HEADING} mt-0`}>{title}</h2>{/if}
           <div class="mt-8">
-            <FAQAccordion faqs={items.map((item, n) => ({ id: `pkg-faq-${index}-${n}`, question: str(item.question), answer: str(item.answer) }))} />
+            <FAQAccordion faqs={entries} />
           </div>
         </div>
       </section>

@@ -5,13 +5,14 @@
   import { SITE_URL } from '$lib/config/env';
   import { toMetaText } from '$lib/richText';
   import type { Block } from '$lib/safariPackageBlocks';
-  import type { ItineraryDay, SafariPackage, Tour } from '$lib/types';
+  import type { FAQ, ItineraryDay, SafariPackage, Tour } from '$lib/types';
   import type { PageData } from './$types';
 
   export let data: PageData;
 
   $: record = data.package as SafariPackage;
   $: related = (data.related ?? []) as Tour[];
+  $: moduleFaqs = (data.moduleFaqs ?? []) as FAQ[];
   $: blocks = ((record?.sections ?? []) as Block[]).filter((block) => block && typeof block.type === 'string');
 
   /** The linked tour's real days — what the itinerary block draws. */
@@ -92,5 +93,5 @@
     </div>
   </section>
 
-  <SafariPackageBlocks {blocks} {itineraryDays} tours={related} />
+  <SafariPackageBlocks {blocks} {itineraryDays} {moduleFaqs} tours={related} />
 {/if}

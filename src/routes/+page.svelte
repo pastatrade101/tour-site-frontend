@@ -309,7 +309,9 @@
       api.tours.list({ status: 'published', limit: 6 }),
       api.destinations.list({ status: 'published', limit: 8 }),
       api.blog.list({ limit: 3 }),
-      api.faqs.list({ limit: 5 }),
+      // The general library only. The homepage should not answer a question
+      // about one park to a visitor who has not chosen a destination yet.
+      api.faqs.list({ entity_type: 'null', limit: 5 }),
       api.reviews.summary(),
       api.reviews.list({ status: 'approved', is_featured: true, limit: 6 }),
       api.reviews.list({ status: 'approved', limit: 6 }),

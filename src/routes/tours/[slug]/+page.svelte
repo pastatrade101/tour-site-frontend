@@ -20,6 +20,7 @@
     X
   } from '@lucide/svelte';
   import { api } from '$lib/api/client';
+  import { loadEntityFaqs } from '$lib/faqEntities';
   import { trackEvent } from '$lib/analytics';
   import { currency, formatUsd } from '$lib/currency';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
@@ -464,7 +465,8 @@
     const [tourRes, postRes, faqRes] = await Promise.allSettled([
       api.tours.list(destId ? { destination_id: destId, limit: 7 } : { limit: 7 }),
       api.blog.list({ limit: 3 }),
-      api.faqs.list({ status: 'published', limit: 8 })
+      // This trip's own questions first, topped up with the general ones.
+      loadEntityFaqs('tours', current.id, 8)
     ]);
 
     if (tourRes.status === 'fulfilled') {
@@ -477,7 +479,7 @@
     }
     if (postRes.status === 'fulfilled') recentPosts = postRes.value.data.items ?? [];
     if (faqRes.status === 'fulfilled') {
-      faqs = faqRes.value.data.items ?? [];
+      faqs = faqRes.value;
       requestAnimationFrame(updateFaqTimeline);
     }
   };

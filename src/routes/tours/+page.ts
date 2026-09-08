@@ -3,6 +3,7 @@ import type { Destination, FAQ, Review, ReviewSummary, Tour, TravelStyle } from 
 import { API_URL } from '$lib/config/env';
 import { localeFromPath, withLocale } from '$lib/i18n';
 import { cachedJson } from '$lib/cache';
+import { generalFaqQuery } from '$lib/faqEntities';
 
 const items = <T>(r: PromiseSettledResult<{ data?: { items?: T[] } }>) =>
   r.status === 'fulfilled' ? r.value?.data?.items ?? [] : [];
@@ -23,7 +24,9 @@ export const load: PageLoad = async ({ fetch, url }) => {
     cachedJson<{ data?: { items?: Destination[] } }>(withLocale(`${API_URL}/destinations?status=published&limit=8`, locale), fetch),
     cachedJson<{ data?: { items?: Review[] } }>(`${API_URL}/reviews?status=approved&limit=6`, fetch),
     cachedJson<{ data?: ReviewSummary }>(`${API_URL}/reviews/summary`, fetch),
-    cachedJson<{ data?: { items?: FAQ[] } }>(`${API_URL}/faqs?limit=8`, fetch),
+    // General questions only: this is the index, so no single tour's or park's
+    // questions belong here.
+    cachedJson<{ data?: { items?: FAQ[] } }>(`${API_URL}/faqs?${generalFaqQuery(8)}`, fetch),
     cachedJson<{ data?: { items?: Record<string, unknown>[] } }>(
       `${API_URL}/gallery?status=published&media_type=image&limit=10`,
       fetch

@@ -29,7 +29,8 @@
   onMount(async () => {
     const [postRes, faqRes] = await Promise.allSettled([
       api.blog.list({ status: 'published', limit: 24 }),
-      api.faqs.list({ limit: 8 })
+      // General questions only — this page is advice for any trip, not one place.
+      api.faqs.list({ entity_type: 'null', limit: 8 })
     ]);
     posts = postRes.status === 'fulfilled' ? postRes.value.data.items : [];
     faqs = faqRes.status === 'fulfilled' ? faqRes.value.data.items : [];
