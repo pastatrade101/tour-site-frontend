@@ -46,7 +46,7 @@
   onMount(() => {
     void (async () => {
       try {
-        const res = await api.destinations.list({ status: 'published', limit: 7 });
+        const res = await api.destinations.list({ status: 'published', limit: 6 });
         destinations = (res.data.items ?? []).map((d) => ({
           label: String(d.name ?? d.slug),
           href: `/destinations/${d.slug}`
@@ -55,7 +55,7 @@
         // leave empty — the column self-hides
       }
       try {
-        const res = await api.categories.list({ status: 'published', limit: 12 });
+        const res = await api.categories.list({ status: 'published', limit: 6 });
         experiences = (res.data.items ?? []).map((c) => ({
           label: String(c.name ?? c.slug),
           href: `/safari-styles/${c.slug}`
@@ -66,7 +66,7 @@
       try {
         // Only pages a crawler is allowed on. A draft or a not-yet-indexable
         // page has no business being linked from every page of the site.
-        const res = await api.safariPackages.list({ status: 'published', limit: 8 });
+        const res = await api.safariPackages.list({ status: 'published', limit: 6 });
         packages = (res.data.items ?? [])
           .filter((row) => row?.slug && row.indexable === true)
           .map((row) => ({ label: String(row.name ?? row.slug), href: `/${row.slug}` }));
@@ -97,9 +97,16 @@
 
 <footer class="border-t border-white/5 bg-[#272B22] text-white/[0.72]">
   <div class="container-shell py-14 md:py-16">
-    <div class="grid gap-10 md:grid-cols-2 lg:grid-cols-6">
+    <!--
+      Brand on the left, link columns in their own grid on the right.
+      They used to share one six-track grid, and the unit count never fitted it:
+      brand spans two and there are five or six link groups depending on what
+      the CMS returns, so a column always dropped to a second row under a gap as
+      tall as the longest list. A nested grid arranges whatever it is given.
+    -->
+    <div class="grid gap-10 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)] lg:gap-14">
       <!-- Brand -->
-      <div class="lg:col-span-2">
+      <div>
         <a href="/" class="flex items-center gap-2.5" aria-label={`${siteName} home`}>
           <img src="/favicon1.png" alt={siteName} class="h-9 w-9 shrink-0 object-contain" />
           <span class="font-serif text-lg font-semibold text-goldfinch-gold">{siteName}</span>
@@ -128,8 +135,55 @@
             {/each}
           </div>
         {/if}
+
+        <!-- Contact sits with the name and the logo: it is who you are
+             reaching, not another list of places to click. -->
+        {#if address || contactEmail || contactPhone || waDigits}
+          <div class="mt-8">
+            <div class="inline-flex items-center gap-2">
+              <span class="h-px w-6 bg-goldfinch-gold" aria-hidden="true"></span>
+              <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">Contact</span>
+            </div>
+            <ul class="mt-4 space-y-2 text-sm">
+              {#if address}<li>{address}</li>{/if}
+              {#if contactEmail}
+                <li>
+                  <a class="transition hover:text-white" href={`mailto:${contactEmail}`} on:click={() => trackEvent('email_click')}>
+                    {contactEmail}
+                  </a>
+                </li>
+              {/if}
+              {#if contactPhone}
+                <li>
+                  <a
+                    class="transition hover:text-white"
+                    href={`tel:${contactPhone.replace(/\s+/g, '')}`}
+                    on:click={() => trackEvent('phone_click')}
+                  >
+                    {contactPhone}
+                  </a>
+                </li>
+              {/if}
+              {#if waDigits}
+                <li class="pt-1">
+                  <a
+                    class="inline-flex max-w-full flex-wrap items-center gap-2 break-all transition hover:text-white"
+                    href={waHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    on:click={() => trackEvent('whatsapp_click')}
+                  >
+                    <MessageCircle size={14} class="shrink-0" />
+                    <span>WhatsApp<span class="ml-1 text-white/55">{waNumber}</span></span>
+                  </a>
+                </li>
+              {/if}
+            </ul>
+          </div>
+        {/if}
       </div>
 
+      <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
       {#if destinations.length}
         <div>
           <div class="inline-flex items-center gap-2">
@@ -195,49 +249,8 @@
           {/each}
         </ul>
 
-        {#if address || contactEmail || contactPhone || waDigits}
-          <div class="mt-8">
-            <div class="inline-flex items-center gap-2">
-              <span class="h-px w-6 bg-goldfinch-gold" aria-hidden="true"></span>
-              <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">Contact</span>
-            </div>
-            <ul class="mt-4 space-y-2 text-sm">
-              {#if address}<li>{address}</li>{/if}
-              {#if contactEmail}
-                <li>
-                  <a class="transition hover:text-white" href={`mailto:${contactEmail}`} on:click={() => trackEvent('email_click')}>
-                    {contactEmail}
-                  </a>
-                </li>
-              {/if}
-              {#if contactPhone}
-                <li>
-                  <a
-                    class="transition hover:text-white"
-                    href={`tel:${contactPhone.replace(/\s+/g, '')}`}
-                    on:click={() => trackEvent('phone_click')}
-                  >
-                    {contactPhone}
-                  </a>
-                </li>
-              {/if}
-              {#if waDigits}
-                <li class="pt-1">
-                  <a
-                    class="inline-flex max-w-full flex-wrap items-center gap-2 break-all transition hover:text-white"
-                    href={waHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    on:click={() => trackEvent('whatsapp_click')}
-                  >
-                    <MessageCircle size={14} class="shrink-0" />
-                    <span>WhatsApp<span class="ml-1 text-white/55">{waNumber}</span></span>
-                  </a>
-                </li>
-              {/if}
-            </ul>
-          </div>
-        {/if}
+      </div>
+
       </div>
     </div>
 
