@@ -21,6 +21,12 @@
   export let context: EnquiryContext = {};
   /** Render in the page rather than in a dialog. See EnquiryModal. */
   export let inline = false;
+  /**
+   * Answers the page already knows — opening this from a safari-style page
+   * fills in that style as the trip type. Still editable; it is a head start,
+   * not a decision made on the visitor's behalf.
+   */
+  export let initialValues: FormValues = {};
 
   // An inline form has no open/close: it is simply there. Flipping `open` once
   // keeps the tracking below — which fires "form_opened" on the transition —
@@ -29,7 +35,8 @@
 
   const dispatch = createEventDispatcher<{ close: void; submitted: { booking_code?: string | null } }>();
 
-  let values: FormValues = { adults: 2, children: 0, child_ages: [], hp_company: '' };
+  const blankValues = (): FormValues => ({ adults: 2, children: 0, child_ages: [], hp_company: '', ...initialValues });
+  let values: FormValues = blankValues();
   let errors: Record<string, string> = {};
   let stepIndex = 0;
   let submitting = false;
@@ -202,7 +209,7 @@
 
   /** Reset only after a success, so reopening starts a genuinely new enquiry. */
   export const reset = () => {
-    values = { adults: 2, children: 0, child_ages: [], hp_company: '' };
+    values = blankValues();
     errors = {};
     stepIndex = 0;
     done = false;
@@ -307,7 +314,7 @@
       <div class="grid gap-2.5">
         {#if waHref}
           <a
-            class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 text-[14px] font-bold text-white transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            class="inline-flex h-11 w-full items-center justify-center gap-2 rounded bg-[#25D366] px-6 text-[14px] font-bold text-white transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             href={waHref}
             target="_blank"
             rel="noopener noreferrer"
@@ -327,7 +334,7 @@
         {#if !inline}
           <button
             type="button"
-            class="h-11 w-full rounded-full px-6 text-[14px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white {waHref
+            class="h-11 w-full rounded px-6 text-[14px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white {waHref
               ? 'border border-white/25 text-white hover:bg-white/10'
               : 'bg-goldfinch-gold text-heading hover:brightness-105'}"
             on:click={close}
@@ -341,7 +348,7 @@
         {#if stepIndex > 0}
           <button
             type="button"
-            class="inline-flex h-11 items-center gap-1.5 rounded-full border border-white/25 px-4 text-[14px] font-bold text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
+            class="inline-flex h-11 items-center gap-1.5 rounded border border-white/25 px-4 text-[14px] font-bold text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
             on:click={back}
           >
             <ArrowLeft size={16} /> Back
@@ -350,7 +357,7 @@
 
         <button
           type="button"
-          class="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-goldfinch-gold px-6 text-[14px] font-bold text-heading transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          class="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded bg-goldfinch-gold px-6 text-[14px] font-bold text-heading transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           disabled={submitting}
           on:click={isLast ? submit : next}
         >

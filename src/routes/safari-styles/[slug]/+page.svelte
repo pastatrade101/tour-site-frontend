@@ -9,11 +9,12 @@
     Wallet,
     X
   } from '@lucide/svelte';
-  import { onDestroy, tick } from 'svelte';
-  import { fade } from 'svelte/transition';
   import { page } from '$app/stores';
-  import TripRequestForm from '$lib/components/public/TripRequestForm.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
+  import StylePlannerBand from '$lib/components/public/StylePlannerBand.svelte';
+  import EnquiryForm from '$lib/components/public/enquiry/EnquiryForm.svelte';
+  import { configFor } from '$lib/enquiry/configs';
+  import { loadStyleImages } from '$lib/enquiry/styleImages';
   import HomeAdvisorNote from '$lib/components/public/home/HomeAdvisorNote.svelte';
   import HomeTravellerStories from '$lib/components/public/home/HomeTravellerStories.svelte';
   import { advisorNoteEnabled, advisorNoteProps } from '$lib/advisorNote';
@@ -147,7 +148,6 @@
   let appliedPrice = 'all';
   let visibleCount = 6;
   let enquiryOpen = false;
-  let enquiryDialog: HTMLDialogElement;
 
   $: filteredTours = tours.filter((tour) => {
     const days = Number(tour.duration_days ?? 0);
@@ -171,23 +171,33 @@
     visibleCount = 6;
   };
 
-  const lockPage = (locked: boolean) => {
-    if (typeof document === 'undefined') return;
-    document.documentElement.style.overflow = locked ? 'hidden' : '';
-    document.body.style.overflow = locked ? 'hidden' : '';
-  };
+  // The shared modal locks and restores the page scroll itself, and traps
+  // focus — which the hand-rolled <dialog> this replaced did not.
+  //
+  // The travel-style photographs are fetched when the planner is first opened
+  // rather than on page load: most visitors never open it, and the cards read
+  // perfectly well as text until the pictures arrive.
+  let styleImages: Record<string, string> = {};
   const openEnquiry = async () => {
     enquiryOpen = true;
-    lockPage(true);
-    await tick();
-    if (enquiryDialog && !enquiryDialog.open) enquiryDialog.showModal();
+    if (!Object.keys(styleImages).length) styleImages = await loadStyleImages();
   };
-  const closeEnquiry = () => {
-    if (enquiryDialog?.open) enquiryDialog.close();
-    enquiryOpen = false;
-    lockPage(false);
-  };
-  onDestroy(() => lockPage(false));
+  const closeEnquiry = () => (enquiryOpen = false);
+
+  /**
+   * The same trip planner the homepage closing band shows, opened as a popup.
+   *
+   * Trip types are the real published categories — this one first, since the
+   * visitor is standing on its page — and the category travels with the
+   * enquiry as context, so an admin still sees which style it came from even
+   * though the questions are the shared ones.
+   */
+  $: planTripTypes = [category, ...otherStyles]
+    .filter((style): style is TourCategory => Boolean(style?.name))
+    .map((style) => ({ label: style.name, value: style.name }));
+  $: planConfig = configFor('homepage_trip_planner', {}, [], { tripTypes: planTripTypes, styleImages });
+  $: planContext = { category: { id: category?.id, name: category?.name, slug: category?.slug } };
+  $: planInitialValues = category?.name ? { trip_type: category.name } : {};
 
   $: waDigits = (settingText($publicSettings, 'whatsapp_number') || settingText($publicSettings, 'contact_phone') || '255754600905').replace(/[^0-9]/g, '');
   $: whatsappHref = `https://wa.me/${waDigits}?text=${encodeURIComponent(`Hello Goldfinch Adventures, I would like help planning ${category?.name ?? 'my safari'}.`)}`;
@@ -220,7 +230,9 @@
         <h1 class="mt-5 font-serif text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl">{landing.hero.headline}</h1>
         <p class="mt-5 max-w-xl text-base leading-relaxed text-white/90 md:text-lg">{landing.hero.subheadline}</p>
         <div class="mt-7 flex flex-col gap-3 sm:flex-row">
-          <a href="#lead-form" class="inline-flex items-center justify-center rounded-md bg-goldfinch-gold px-5 py-3 text-sm font-semibold text-heading transition hover:brightness-95">{landing.hero.primaryCtaLabel}</a>
+          <!-- Opens the trip planner rather than scrolling to it: the ask is
+               "plan my trip", and a jump down the page is not an answer. -->
+          <button type="button" on:click={openEnquiry} class="inline-flex items-center justify-center rounded-md bg-goldfinch-gold px-5 py-3 text-sm font-semibold text-heading transition hover:brightness-95">{landing.hero.primaryCtaLabel}</button>
           <a href="#trip-ideas" class="inline-flex items-center justify-center rounded-md border border-white/35 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20">{landing.hero.secondaryCtaLabel}</a>
         </div>
         <p class="mt-5 text-sm text-white/80">{landing.hero.trustLine}</p>
@@ -263,28 +275,17 @@
     the left, the form lays its fields across one row on the right, and the
     stacked card layout is left for the pages that have room for it.
   -->
-  <section class="bg-surface py-10 md:py-12">
-    <div class="container-shell">
-      <div class="rounded-[12px] bg-deep-green p-6 md:p-7">
-        <div class="grid gap-5 lg:grid-cols-[minmax(0,22rem)_1fr] lg:items-start lg:gap-8">
-          <div class="min-w-0">
-            <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{landing.planner.label}</p>
-            <h2 class="mt-2 font-serif text-2xl font-semibold leading-[1.15] text-white md:text-[28px]">{landing.planner.headline}</h2>
-            <p class="mt-2 text-[14px] leading-relaxed text-white/70">{landing.planner.intro}</p>
-          </div>
-          <div class="min-w-0">
-            <TripRequestForm
-              panel={false}
-              layout="inline"
-              showHeader={false}
-              source="category_enquiry"
-              leadContext={{ safari_style: category.name, safari_style_slug: category.slug, form_type: 'style_planner' }}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+  <!-- The band's own three-step planner: copy on the left, one row of three
+       fields on the right. The page CTAs open the full planner in a popup. -->
+  <StylePlannerBand
+    eyebrow={landing.planner.label}
+    title={landing.planner.headline}
+    description={landing.planner.intro}
+    startPoints={data.startPoints ?? []}
+    interests={[{ name: category.name, slug: category.slug }, ...otherStyles.map((style) => ({ name: style.name, slug: style.slug }))]}
+    categoryName={category.name}
+    categorySlug={category.slug}
+  />
 
   <!-- 6 · Tour collection / itinerary fallback -->
   <section id="trip-ideas" class="scroll-mt-24 bg-surface py-14 md:py-16">
@@ -328,7 +329,7 @@
       {:else}
         <article class="mt-8 grid overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-sm md:grid-cols-2">
           <div class="relative min-h-[260px] bg-sand">{#if category.image_url}<Img record={category} fields={['image_url']} alt={category.name} width={1000} sizes="(max-width: 768px) 100vw, 50vw" className="absolute inset-0 h-full w-full object-cover" />{/if}<span class="absolute left-4 top-4 rounded-md bg-clay px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">Custom Safari</span></div>
-          <div class="flex flex-col justify-center p-6 md:p-9"><h3 class="font-serif text-2xl font-semibold text-heading">Custom {category.name}</h3><p class="mt-3 text-[15px] leading-7 text-ink/75">A route designed around your dates, starting point, budget and preferred pace.</p><p class="mt-5 font-semibold text-heading">Tailored quote</p><a href="#lead-form" class="mt-5 inline-flex w-fit items-center gap-2 rounded-md bg-goldfinch-gold px-4 py-2.5 text-sm font-semibold text-heading">Request a Plan <ArrowRight size={15} /></a></div>
+          <div class="flex flex-col justify-center p-6 md:p-9"><h3 class="font-serif text-2xl font-semibold text-heading">Custom {category.name}</h3><p class="mt-3 text-[15px] leading-7 text-ink/75">A route designed around your dates, starting point, budget and preferred pace.</p><p class="mt-5 font-semibold text-heading">Tailored quote</p><button type="button" on:click={openEnquiry} class="mt-5 inline-flex w-fit items-center gap-2 rounded-md bg-goldfinch-gold px-4 py-2.5 text-sm font-semibold text-heading">Request a Plan <ArrowRight size={15} /></button></div>
         </article>
       {/if}
     </div>
@@ -414,38 +415,14 @@
     </div>
   </section>
 
-  {#if enquiryOpen}
-    <dialog bind:this={enquiryDialog} class="enquiry-dialog" aria-label={`Plan ${category.name}`} transition:fade={{ duration: 140 }} on:cancel|preventDefault={closeEnquiry} on:click|self={closeEnquiry}>
-      <div class="relative my-5 w-[min(94vw,576px)] shadow-[0_30px_100px_rgba(0,0,0,0.55)]">
-        <button type="button" aria-label="Close enquiry form" on:click={closeEnquiry} class="absolute right-2 top-2 z-20 grid h-10 w-10 place-items-center rounded-full border border-white/25 bg-deep-green text-white shadow-lg transition hover:bg-forest sm:-right-3 sm:-top-3"><X size={18} /></button>
-        <TripRequestForm source="category_enquiry" leadContext={{ safari_style: category.name, safari_style_slug: category.slug }} />
-      </div>
-    </dialog>
-  {/if}
+  <EnquiryForm
+    bind:open={enquiryOpen}
+    config={planConfig}
+    context={planContext}
+    initialValues={planInitialValues}
+    on:close={closeEnquiry}
+  />
 {:else}
   <section class="container-shell py-20 text-center"><h1 class="text-2xl font-bold text-heading">Safari style not found</h1><a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-forest" href="/safari-styles">All safari styles <ArrowRight size={16} /></a></section>
 {/if}
 
-<style>
-  .enquiry-dialog {
-    inset: 0;
-    z-index: 200;
-    margin: 0;
-    height: 100dvh;
-    width: 100%;
-    max-height: none;
-    max-width: none;
-    overflow-y: auto;
-    border: 0;
-    background: transparent;
-    padding: 1rem;
-  }
-  .enquiry-dialog[open] {
-    display: grid;
-    place-items: center;
-  }
-  .enquiry-dialog::backdrop {
-    background: rgba(12, 14, 11, 0.82);
-    backdrop-filter: blur(7px);
-  }
-</style>

@@ -109,7 +109,7 @@
           type="button"
           role={multi ? 'checkbox' : 'radio'}
           aria-checked={active}
-          class="chip inline-flex h-9 items-center rounded-full border px-3.5 text-[12.5px] font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green"
+          class="enquiry-chip inline-flex h-9 items-center rounded border px-3.5 text-[12.5px] font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green"
           class:border-goldfinch-gold={active}
           class:bg-goldfinch-gold={active}
           class:text-heading={active}
@@ -377,15 +377,15 @@
 
   /* Chips get a small lift on press and a settle on selection — enough to
      confirm the tap without moving anything around it. */
-  .chip {
+  .enquiry-chip {
     will-change: transform;
   }
 
-  .chip:active {
+  .enquiry-chip:active {
     transform: scale(0.96);
   }
 
-  .chip[aria-checked='true'] {
+  .enquiry-chip[aria-checked='true'] {
     animation: chip-pick 180ms ease-out;
   }
 
@@ -402,9 +402,9 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .chip,
-    .chip:active,
-    .chip[aria-checked='true'] {
+    .enquiry-chip,
+    .enquiry-chip:active,
+    .enquiry-chip[aria-checked='true'] {
       animation: none;
       transform: none;
       transition: none;
