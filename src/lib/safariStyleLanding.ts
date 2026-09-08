@@ -221,7 +221,11 @@ export const styleLandingContentErrors = (value: unknown): string[] => {
   if (!isTextArray(data.trustChips, 4)) errors.push('trustChips must contain exactly 4 non-empty items.');
   requiredText('overview.label', data.overview?.label);
   requiredText('overview.headline', data.overview?.headline);
+  // Both ends, because the server enforces both. Checking only the lower bound
+  // let the editor call a section complete while the save was refused for
+  // having too many — the one disagreement this validator exists to prevent.
   if (!Array.isArray(data.overview?.paragraphs) || data.overview!.paragraphs.length < 1 || !data.overview!.paragraphs.every(isText)) errors.push('overview.paragraphs must contain at least 1 non-empty paragraph.');
+  else if (data.overview!.paragraphs.length > 4) errors.push('overview.paragraphs must contain at most 4 paragraphs.');
   for (const key of ['label', 'headline', 'intro'] as const) requiredText(`planner.${key}`, data.planner?.[key]);
   for (const key of ['label', 'headline', 'subheadline', 'resultsNoun', 'loadMoreLabel'] as const) requiredText(`tourCollection.${key}`, data.tourCollection?.[key]);
   for (const key of ['label', 'title', 'intro'] as const) requiredText(`planningGuide.${key}`, data.planningGuide?.[key]);
@@ -231,6 +235,8 @@ export const styleLandingContentErrors = (value: unknown): string[] => {
     requiredText(`planningGuide.blocks[${index}].body`, block?.body);
     if (!Array.isArray(block?.links) || block.links.length < 1) {
       errors.push(`planningGuide.blocks[${index}].links must contain at least 1 internal link.`);
+    } else if (block.links.length > 8) {
+      errors.push(`planningGuide.blocks[${index}].links must contain at most 8 links.`);
     } else {
       block.links.forEach((link, linkIndex) => {
         requiredText(`planningGuide.blocks[${index}].links[${linkIndex}].label`, link?.label);

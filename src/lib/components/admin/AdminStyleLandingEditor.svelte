@@ -106,6 +106,14 @@
   // of letting someone find out at save time.
   const EXACT_FOUR = 4;
 
+  // Two lists are a range rather than an exact count, and were the ones left
+  // without a guard: the overview paragraphs (1–4) and the links under a
+  // planning-guide block (1–8). Adding a fifth paragraph saved nothing and
+  // returned "Array must contain at most 4 element(s)" — an array-shaped
+  // complaint about a box the editor had just been invited to fill.
+  const MAX_PARAGRAPHS = 4;
+  const MAX_GUIDE_LINKS = 8;
+
   const addTo = (list: unknown[], item: unknown, max?: number) => {
     if (max !== undefined && list.length >= max) return;
     list.push(item);
@@ -303,7 +311,12 @@
             </label>
           </div>
           <div class="grid gap-2">
-            <span class={label}>Paragraphs</span>
+            <span class={label}>
+              Paragraphs
+              <span class={`font-normal ${content.overview.paragraphs.length > MAX_PARAGRAPHS ? 'text-red-600' : 'text-ink/40'}`}>
+                {content.overview.paragraphs.length} of {MAX_PARAGRAPHS} max
+              </span>
+            </span>
             {#each content.overview.paragraphs as _, i}
               <div class="flex items-start gap-2">
                 <div class="min-w-0 flex-1">
@@ -318,12 +331,12 @@
                     bind:value={content.overview.paragraphs[i]}
                   />
                 </div>
-                <button class="mt-1 shrink-0 rounded-md p-2 text-ink/35 transition hover:text-red-600" type="button" aria-label="Remove" on:click={() => removeAt(content.overview.paragraphs, i)}>
+                <button class="mt-1 shrink-0 rounded-md p-2 text-ink/35 transition hover:text-red-600 disabled:opacity-30" type="button" aria-label="Remove" disabled={content.overview.paragraphs.length <= 1} on:click={() => removeAt(content.overview.paragraphs, i, 1)}>
                   <X size={15} />
                 </button>
               </div>
             {/each}
-            <button class="inline-flex h-9 w-fit items-center gap-1.5 rounded-md border border-ink/15 px-3 text-xs font-semibold text-heading transition hover:bg-sand/50" type="button" on:click={() => addTo(content.overview.paragraphs, '')}>
+            <button class="inline-flex h-9 w-fit items-center gap-1.5 rounded-md border border-ink/15 px-3 text-xs font-semibold text-heading transition hover:bg-sand/50 disabled:opacity-40" type="button" disabled={content.overview.paragraphs.length >= MAX_PARAGRAPHS} on:click={() => addTo(content.overview.paragraphs, '', MAX_PARAGRAPHS)}>
               <Plus size={13} /> Add a paragraph
             </button>
           </div>
@@ -447,7 +460,7 @@
                 </div>
               {/each}
               <div class="flex items-center gap-3">
-                <button class="inline-flex h-8 w-fit items-center gap-1.5 rounded-md border border-ink/15 px-2.5 text-[11px] font-semibold text-heading transition hover:bg-surface" type="button" on:click={() => addTo(block.links, { label: '', href: '' })}>
+                <button class="inline-flex h-8 w-fit items-center gap-1.5 rounded-md border border-ink/15 px-2.5 text-[11px] font-semibold text-heading transition hover:bg-surface disabled:opacity-40" type="button" disabled={block.links.length >= MAX_GUIDE_LINKS} on:click={() => addTo(block.links, { label: '', href: '' }, MAX_GUIDE_LINKS)}>
                   <Plus size={12} /> Add a link
                 </button>
                 <span class={hint}>Each card needs at least one link. Use a path on this site like <code>/expert-advice</code>, or an anchor like <code>#lead-form</code>.</span>
