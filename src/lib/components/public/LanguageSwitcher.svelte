@@ -7,7 +7,7 @@
    * with a published translation, so a link never leads to a page that quietly
    * falls back to English.
    */
-  import { Check, Globe } from '@lucide/svelte';
+  import { Check, ChevronDown, Globe } from '@lucide/svelte';
   import { page } from '$app/stores';
   import { localizeHref, type KnownLocale } from '$lib/i18n';
   import type { Language } from '$lib/types';
@@ -16,6 +16,8 @@
   export let current: KnownLocale;
   /** Locales this page genuinely exists in; omit to offer every enabled one. */
   export let availableLocales: string[] | null = null;
+  /** No border or background — for the dark utility strip. */
+  export let bare = false;
 
   let open = false;
 
@@ -32,15 +34,18 @@
 {#if options.length > 1}
   <div class="relative" on:click|stopPropagation role="presentation">
     <button
-      class="inline-flex h-11 items-center gap-2 rounded-xl border border-ink/15 bg-surface px-3 text-sm font-semibold text-heading transition hover:border-goldfinch-gold/60"
+      class={bare
+        ? 'inline-flex items-center gap-1.5 rounded text-inherit transition hover:text-white'
+        : 'inline-flex h-11 items-center gap-2 rounded-xl border border-ink/15 bg-surface px-3 text-sm font-semibold text-heading transition hover:border-goldfinch-gold/60'}
       type="button"
       aria-haspopup="listbox"
       aria-expanded={open}
       aria-label="Change language"
       on:click={() => (open = !open)}
     >
-      <Globe size={16} class="text-forest/70" />
-      <span class="uppercase">{current}</span>
+      <Globe size={bare ? 13 : 16} class={bare ? '' : 'text-forest/70'} />
+      <span class={bare ? 'text-[12px] font-medium uppercase' : 'uppercase'}>{current}</span>
+      {#if bare}<ChevronDown size={12} class={`opacity-80 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />{/if}
     </button>
 
     {#if open}

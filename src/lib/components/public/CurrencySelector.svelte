@@ -10,6 +10,11 @@
    * 268px width and right-aligns to the trigger, so nothing is lost.
    */
   export let flagOnly = false;
+  /**
+   * No border, no background — for the dark utility strip, where a white pill
+   * would read as a form control rather than a quiet switch.
+   */
+  export let bare = false;
 
   const flags: Record<string, string> = {
     USD: '🇺🇸',
@@ -164,11 +169,14 @@
   <button
     type="button"
     bind:this={trigger}
-    class={`inline-flex min-w-0 items-center border bg-surface text-heading shadow-sm transition
-      ${open ? 'border-goldfinch-gold ring-2 ring-goldfinch-gold/25' : 'border-ink/12 hover:border-goldfinch-gold/60'}
-      ${flagOnly
-        ? 'h-11 w-11 justify-center rounded-xl border-ink/15'
-        : `gap-2 rounded-[8px] pl-2.5 pr-2 ${compact ? 'h-10' : 'h-11'}`}
+    class={`inline-flex min-w-0 items-center transition
+      ${bare
+        ? `gap-1.5 rounded text-inherit hover:text-white ${open ? 'text-white' : ''}`
+        : `border bg-surface text-heading shadow-sm
+           ${open ? 'border-goldfinch-gold ring-2 ring-goldfinch-gold/25' : 'border-ink/12 hover:border-goldfinch-gold/60'}
+           ${flagOnly
+             ? 'h-11 w-11 justify-center rounded-xl border-ink/15'
+             : `gap-2 rounded-[8px] pl-2.5 pr-2 ${compact ? 'h-10' : 'h-11'}`}`}
       ${mobile ? 'w-full justify-between' : ''}`}
     aria-haspopup="listbox"
     aria-expanded={open}
@@ -185,18 +193,18 @@
       <span class="text-base leading-none" aria-hidden="true">{selected ? flagFor(selected.code, selected.locale) : '🌍'}</span>
     {/if}
     {#if !flagOnly}
-      <span class="min-w-0 truncate text-sm font-extrabold">{selected?.code ?? 'USD'}</span>
-      {#if !compact && !mobile && selected?.symbol}
+      <span class={`min-w-0 truncate ${bare ? 'text-[12px] font-medium' : 'text-sm font-extrabold'}`}>{selected?.code ?? 'USD'}</span>
+      {#if !compact && !mobile && !bare && selected?.symbol}
         <span class="text-sm font-semibold text-ink/40">{selected.symbol}</span>
       {/if}
       {#if mobile && selected?.name}
         <span class="ml-1 min-w-0 flex-1 truncate text-left text-sm font-medium text-ink/50">{selected.name}</span>
       {/if}
-      <span class="ml-auto shrink-0 text-ink/40">
+      <span class={`shrink-0 ${bare ? 'text-current opacity-80' : 'ml-auto text-ink/40'}`}>
         {#if $currency.loading}
-          <RefreshCw size={14} class="animate-spin" />
+          <RefreshCw size={bare ? 12 : 14} class="animate-spin" />
         {:else}
-          <ChevronDown size={15} class={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+          <ChevronDown size={bare ? 12 : 15} class={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
         {/if}
       </span>
     {/if}

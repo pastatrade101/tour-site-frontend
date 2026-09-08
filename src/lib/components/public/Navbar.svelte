@@ -13,6 +13,7 @@
   import { canInstall, promptInstall } from '$lib/pwa';
   import CurrencySelector from './CurrencySelector.svelte';
   import LanguageSwitcher from './LanguageSwitcher.svelte';
+  import UtilityBar from './UtilityBar.svelte';
   import { DEFAULT_LOCALE } from '$lib/i18n';
   import { t } from '$lib/i18n/ui';
   import Img from './Img.svelte';
@@ -96,6 +97,7 @@
   let openDropdown: '' | DropdownKey = '';
   let mobileAccordion: '' | DropdownKey = '';
   let searchQuery = '';
+  let searchOpen = false;
   let scrolled = false;
   let headerEl: HTMLElement;
   let menuButton: HTMLButtonElement;
@@ -421,98 +423,26 @@
   });
 </script>
 
-<header bind:this={headerEl} class={`mobile-nav-header sticky top-0 z-40 border-b bg-surface transition-[box-shadow,border-color] duration-[400ms] ease-out ${scrolled ? 'border-transparent shadow-[0_8px_28px_rgba(57,61,50,0.10)]' : 'border-ink/10'}`} use:navbarEntrance>
-  <!-- ── mobile top bar ─────────────────────────────────────────────────── -->
-  <!-- Icon-only logo, absolutely centred so the wider right-hand cluster
-       (currency + WhatsApp) cannot push it off the true middle. -->
-  <div class="relative flex h-[70px] items-center justify-between gap-3 px-4 sm:px-5 lg:hidden">
-    <button
-      bind:this={menuButton}
-      class="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-ink/15 bg-surface text-ink"
-      type="button"
-      aria-label="Toggle menu"
-      aria-controls="mobile-navigation-drawer"
-      aria-expanded={menuOpen}
-      on:click={() => (menuOpen = !menuOpen)}
-    >
-      <Menu size={24} strokeWidth={2.4} />
-    </button>
+<header bind:this={headerEl} class={`mobile-nav-header sticky top-0 z-40 border-b bg-forest text-white transition-[box-shadow,border-color] duration-[400ms] ease-out ${scrolled ? 'border-white/10 shadow-[0_4px_18px_rgba(0,0,0,0.22)]' : 'border-white/[0.08]'}`} use:navbarEntrance>
+  <!-- ── utility strip (collapses smoothly on scroll) ────────────────────── -->
+  <div
+    class={`overflow-hidden bg-deep-green transition-[max-height,opacity] duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${scrolled ? 'max-h-0 opacity-0' : 'max-h-10 opacity-100'}`}
+    aria-hidden={scrolled}
+  >
+    <UtilityBar {waHref} waLabel={`${waButtonText} ${waNumber}`} />
+  </div>
 
-    <a href="/" class="absolute left-1/2 -translate-x-1/2" aria-label="Goldfinch Adventures home" on:click={() => activateLink('/')}>
-      <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-11 w-11 object-contain" />
+  <!-- ── main row: logo · navigation · actions ───────────────────────────── -->
+  <div class="mx-auto flex h-16 w-full max-w-[1500px] items-stretch justify-between gap-4 px-4">
+    <a href="/" class="flex shrink-0 items-center gap-2.5" aria-label="Goldfinch Adventures home" on:click={() => activateLink('/')}>
+      <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-9 w-9 shrink-0 object-contain" />
+      <span class="text-lg font-extrabold tracking-normal text-white">Goldfinch</span>
     </a>
 
-    <div class="flex shrink-0 items-center gap-2">
-      <CurrencySelector flagOnly />
-      <a
-        class="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 bg-surface text-[#25D366] transition hover:border-[#25D366]/45 hover:bg-[#25D366]/5"
-        href={waHref}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={`${waButtonText} ${waNumber}`}
-        on:click={() => trackEvent('whatsapp_click', { cta_location: 'mobile_navbar' })}
-      >
-        <MessageCircle size={21} strokeWidth={2.6} />
-      </a>
-    </div>
-  </div>
-
-  <!-- ── desktop top row (collapses smoothly on scroll) ──────────────────── -->
-  <div class={`hidden overflow-hidden transition-[max-height,opacity] duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] lg:block ${scrolled ? 'max-h-0 opacity-0' : 'max-h-[96px] opacity-100'}`}>
-    <div class="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-7 px-4 lg:h-[80px]">
-      <a href="/" class="flex min-w-[150px] items-center gap-2.5" aria-label="Goldfinch Adventures home" on:click={() => activateLink('/')}>
-        <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-12 w-12 shrink-0 object-contain" />
-        <div class="leading-none">
-          <p class="text-2xl font-extrabold tracking-normal text-heading">Goldfinch</p>
-          <p class="mt-1.5 text-sm font-semibold text-ink/70">Adventures</p>
-        </div>
-      </a>
-
-      <form class="flex h-[50px] w-full max-w-[640px] items-center rounded-full bg-[#f0f0f0] px-3 transition focus-within:ring-2 focus-within:ring-goldfinch-gold/30" on:submit|preventDefault={submitSearch} role="search">
-        <button class="grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink transition hover:text-forest" type="submit" aria-label="Search tours">
-          <Search size={19} strokeWidth={2.4} />
-        </button>
-        <input class="min-w-0 flex-1 bg-transparent px-2 text-sm font-medium text-[#222222] outline-none placeholder:text-[#a9a9a9]" aria-label="Search tour packages" placeholder="Search safaris, Kilimanjaro, Zanzibar..." bind:value={searchQuery} />
-      </form>
-
-      <div class="flex items-center gap-4 text-[13px] font-semibold">
-        <LanguageSwitcher
-          languages={($page.data as { languages?: never[] })?.languages ?? []}
-          current={($page.data as { locale?: typeof DEFAULT_LOCALE })?.locale ?? DEFAULT_LOCALE}
-          availableLocales={($page.data as { availableLocales?: string[] })?.availableLocales ?? null}
-        />
-        <CurrencySelector compact />
-        <a class="inline-flex items-center gap-1 text-forest transition hover:text-heading" href="/contact" on:click={() => activateLink('/contact')} on:focus={() => preloadRoute('/contact')}>
-          <CircleHelp size={15} strokeWidth={2.6} />
-          Need help?
-        </a>
-        {#if $canInstall}
-          <button type="button" class="inline-flex items-center gap-1.5 rounded-full bg-forest px-3 py-1.5 text-white transition hover:bg-deep-green" on:click={() => promptInstall()}>
-            <ArrowDownToLine size={14} strokeWidth={2.6} /> Install app
-          </button>
-        {/if}
-      </div>
-
-      <a href="/admin/login" class="inline-flex h-12 items-center gap-2.5 rounded-xl bg-deep-green px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-forest" on:click={() => activateLink('/admin/login')} on:focus={() => preloadRoute('/admin/login')}>
-        <User size={16} strokeWidth={2.6} />
-        Login
-      </a>
-    </div>
-  </div>
-
-  <!-- ── desktop nav row ────────────────────────────────────────────────── -->
-  <div class="hidden border-t border-ink/10 lg:block">
-    <!-- min-w-0 so the nav can shrink instead of pushing the WhatsApp button off
-         the right edge; Accommodation carries a dropdown chevron that Expert
+    <!-- min-w-0 so the nav can shrink instead of pushing the actions off the
+         right edge; Accommodation carries a dropdown chevron that Expert
          Advice did not, which was enough to overflow at 1280. -->
-    <div class="mx-auto flex w-full max-w-[1500px] items-stretch justify-between gap-2 px-4">
-      <nav class={`flex min-w-0 flex-1 items-center gap-1 ${scrolled ? 'justify-end' : 'justify-start'}`} aria-label="Primary" data-sveltekit-preload-code="hover" data-sveltekit-preload-data="hover">
-        {#if scrolled}
-          <a href="/" class="mr-auto flex shrink-0 items-center gap-2" aria-label="Goldfinch Adventures home" on:click={() => activateLink('/')} transition:fly={{ x: -14, duration: 320 }}>
-            <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-9 w-9 shrink-0 object-contain" />
-            <span class="text-lg font-extrabold tracking-normal text-heading">Goldfinch</span>
-          </a>
-        {/if}
+    <nav class="hidden min-w-0 flex-1 items-stretch justify-center gap-0.5 lg:flex" aria-label="Primary" data-sveltekit-preload-code="hover" data-sveltekit-preload-data="hover">
         {#each NAV as item}
           {@const active = isActive(path, item.href)}
           {@const links = item.dropdown === 'destinations' ? destinations : item.dropdown === 'tours' ? tours : item.dropdown === 'accommodation' ? lodges : item.dropdown === 'safariStyles' ? categories : []}
@@ -521,20 +451,21 @@
                swap from a plain link to a link+chevron after load. -->
           {#if item.dropdown}
             <!-- svelte-ignore a11y-no-static-element-interactions -->
-            <div class="nav-dropdown relative" on:mouseenter={(e) => openDropdownAt(item.dropdown, e.currentTarget)} on:mouseleave={() => (openDropdown = '')}>
+            <div class="nav-dropdown relative flex items-stretch" on:mouseenter={(e) => openDropdownAt(item.dropdown, e.currentTarget)} on:mouseleave={() => (openDropdown = '')}>
               <div class="flex items-center">
                 <a
-                  class={`relative inline-flex items-center gap-1 rounded px-3 py-[22px] text-[15px] font-semibold transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40 ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink/80'}`}
+                  class={`relative inline-flex h-16 items-center gap-1 rounded px-2.5 text-sm font-medium transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40 ${active ? 'text-white' : 'text-white/90'}`}
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
                   on:click={() => activateLink(item.href)}
                   on:focus={() => preloadRoute(item.href)}
                 >
                   {item.label}
-                  {#if active}<span class="absolute inset-x-2.5 bottom-0 h-[3px] rounded-t-full bg-goldfinch-gold"></span>{/if}
+                  <!-- Clay bar under the item that is open or current. -->
+                  <span class={`absolute inset-x-1.5 bottom-0 h-[2px] bg-clay transition-opacity duration-200 ${active || openDropdown === item.dropdown ? 'opacity-100' : 'opacity-0'}`} aria-hidden="true"></span>
                 </a>
                 <button
-                  class="grid h-8 w-7 place-items-center rounded text-ink/70 transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40"
+                  class="grid h-16 w-6 place-items-center rounded text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40"
                   type="button"
                   aria-haspopup="true"
                   aria-expanded={openDropdown === item.dropdown}
@@ -649,46 +580,86 @@
             </div>
           {:else}
             <a
-              class={`relative inline-flex items-center rounded px-3 py-[22px] text-[15px] font-semibold transition hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40 ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink/80'}`}
+              class={`relative inline-flex h-16 items-center rounded px-2.5 text-sm font-medium transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40 ${active ? 'text-white' : 'text-white/90'}`}
               href={item.href}
               aria-current={active ? 'page' : undefined}
               on:click={() => activateLink(item.href)}
               on:focus={() => preloadRoute(item.href)}
             >
               {item.label}
-              {#if active}<span class="absolute inset-x-2.5 bottom-0 h-[3px] rounded-t-full bg-goldfinch-gold"></span>{/if}
+              <span class={`absolute inset-x-1.5 bottom-0 h-[2px] bg-clay transition-opacity duration-200 ${active ? 'opacity-100' : 'opacity-0'}`} aria-hidden="true"></span>
             </a>
           {/if}
         {/each}
 
-        <!-- Plan My Trip CTA -->
-        <a
-          class={`${scrolled ? 'ml-3' : 'ml-auto'} inline-flex h-10 shrink-0 items-center gap-1.5 self-center whitespace-nowrap rounded-full px-5 text-[14px] font-bold tracking-tight shadow-[0_2px_10px_rgba(212,175,55,0.35)] transition duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/60 focus-visible:ring-offset-2 ${isActive(path, '/plan-my-trip') ? 'bg-deep-green text-white shadow-none' : 'bg-goldfinch-gold text-heading hover:shadow-[0_6px_18px_rgba(212,175,55,0.45)]'}`}
-          href="/plan-my-trip"
-          aria-current={isActive(path, '/plan-my-trip') ? 'page' : undefined}
-          on:click={() => activateLink('/plan-my-trip')}
-          on:focus={() => preloadRoute('/plan-my-trip')}
-        >
-          {brand.primaryCta}
-        </a>
-      </nav>
+    </nav>
 
-      <!-- WhatsApp icon only -->
-      <div class="flex min-h-[54px] shrink-0 items-center border-l border-ink/10 px-4 lg:px-5">
-        <a
-          class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#25D366] text-white shadow-sm ring-4 ring-[#25D366]/15 transition hover:brightness-105"
-          href={waHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          on:click={() => trackEvent('whatsapp_click')}
-          aria-label={`${waButtonText} ${waNumber}`}
-          title={`${waButtonText} — ${waNumber}`}
-        >
-          <MessageCircle size={20} strokeWidth={2.6} />
-        </a>
-      </div>
+    <div class="flex shrink-0 items-center gap-2">
+      <!-- Search keeps its own row rather than a 640px field in a 64px bar. -->
+      <button
+        type="button"
+        class="hidden h-10 w-10 place-items-center rounded-md text-white/85 transition hover:bg-white/10 hover:text-white lg:grid"
+        aria-label="Search tours"
+        aria-expanded={searchOpen}
+        on:click|stopPropagation={() => (searchOpen = !searchOpen)}
+      >
+        <Search size={19} strokeWidth={2.4} />
+      </button>
+
+      <a
+        href="/admin/login"
+        class="hidden h-10 items-center gap-2 rounded-md border border-white/25 px-3.5 text-sm font-semibold text-white/90 transition hover:bg-white/10 hover:text-white lg:inline-flex"
+        on:click={() => activateLink('/admin/login')}
+        on:focus={() => preloadRoute('/admin/login')}
+      >
+        <User size={15} strokeWidth={2.6} />
+        Login
+      </a>
+
+      <a
+        class={`hidden h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-md px-4 text-sm font-semibold transition sm:inline-flex ${isActive(path, '/plan-my-trip') ? 'bg-white/15 text-white' : 'bg-goldfinch-gold text-heading hover:brightness-105'}`}
+        href="/plan-my-trip"
+        aria-current={isActive(path, '/plan-my-trip') ? 'page' : undefined}
+        on:click={() => activateLink('/plan-my-trip')}
+        on:focus={() => preloadRoute('/plan-my-trip')}
+      >
+        {brand.primaryCta}
+      </a>
+
+      <button
+        bind:this={menuButton}
+        class="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-white/30 text-white lg:hidden"
+        type="button"
+        aria-label="Toggle menu"
+        aria-controls="mobile-navigation-drawer"
+        aria-expanded={menuOpen}
+        on:click={() => (menuOpen = !menuOpen)}
+      >
+        {#if menuOpen}<X size={20} strokeWidth={2.4} />{:else}<Menu size={20} strokeWidth={2.4} />{/if}
+      </button>
     </div>
   </div>
+
+  <!-- ── search row ──────────────────────────────────────────────────────── -->
+  {#if searchOpen}
+    <div class="hidden border-t border-white/10 bg-deep-green lg:block" transition:fly={{ y: -6, duration: 160 }}>
+      <form class="mx-auto flex h-14 w-full max-w-[1500px] items-center gap-2 px-4" on:submit|preventDefault={submitSearch} role="search">
+        <Search size={18} strokeWidth={2.4} class="shrink-0 text-white/60" />
+        <!-- svelte-ignore a11y-autofocus -->
+        <input
+          class="min-w-0 flex-1 bg-transparent text-sm font-medium text-white outline-none placeholder:text-white/45"
+          aria-label="Search tour packages"
+          placeholder="Search safaris, Kilimanjaro, Zanzibar..."
+          autofocus
+          bind:value={searchQuery}
+        />
+        <button type="submit" class="h-9 shrink-0 rounded-md bg-goldfinch-gold px-4 text-sm font-bold text-heading transition hover:brightness-105">Search</button>
+        <button type="button" class="grid h-9 w-9 shrink-0 place-items-center rounded-md text-white/70 transition hover:bg-white/10 hover:text-white" aria-label="Close search" on:click={() => (searchOpen = false)}>
+          <X size={17} strokeWidth={2.4} />
+        </button>
+      </form>
+    </div>
+  {/if}
 
   <!-- ── mobile drawer ──────────────────────────────────────────────────── -->
   {#if menuOpen}
