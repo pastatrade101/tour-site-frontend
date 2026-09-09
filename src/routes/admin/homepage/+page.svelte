@@ -24,6 +24,7 @@
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
+  import AdminRichText from '$lib/components/admin/AdminRichText.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
@@ -531,6 +532,19 @@
   let slides: SlideRow[] = [];
   let whyFeatures: WhyFeatureRow[] = [];
   let whyTitleHighlight = 'Tanzania';
+  /**
+   * The small label above a section heading. Ten sections use it, and it was
+   * reachable only by hand-editing the raw extra_data JSON below.
+   */
+  let sectionEyebrow = '';
+  /**
+   * The second button and the little reassurance chips. Both are rendered by
+   * the hero and the closing CTA band, and both were reachable only by hand
+   * editing the extra_data JSON.
+   */
+  let secondaryCtaText = '';
+  let secondaryCtaUrl = '';
+  let trustPointsText = '';
   let advisorColumns: AdvisorColumnRow[] = [];
   let advisorAuthorName = 'Deo Robert';
   let advisorAuthorRole = 'Founder & Advisor, Goldfinch Adventures';
@@ -540,7 +554,6 @@
   let howCaption = 'From first message to arrival, we shape it together.';
 
   // Shared media-library picker — targets either a logo row or a slide row.
-  let mediaPicker: { list: 'logos' | 'slides'; index: number } | null = null;
 
   const MANAGED_KEYS = [
     ...BG_KEYS,
@@ -556,7 +569,11 @@
     'footnote',
     'steps',
     'caption_eyebrow',
-    'caption'
+    'caption',
+    'eyebrow',
+    'secondary_cta_text',
+    'secondary_cta_url',
+    'trust_points'
   ];
 
   const defaultWhyFeatures = (): WhyFeatureRow[] => [
@@ -644,6 +661,14 @@
   const howStepsToExtra = () => howSteps.slice(0, 4).map((step) => ({ title: step.title.trim(), text: step.text.trim() }));
 
   const hydrateReferenceEditors = (key: string, ed: Record<string, unknown>) => {
+    sectionEyebrow = String(ed.eyebrow ?? '');
+    secondaryCtaText = String(ed.secondary_cta_text ?? '');
+    secondaryCtaUrl = String(ed.secondary_cta_url ?? '');
+    trustPointsText = (Array.isArray(ed.trust_points) ? ed.trust_points : [])
+      .map((point) => String(point ?? '').trim())
+      .filter(Boolean)
+      .join('\n');
+
     whyFeatures = extraToWhyFeatures(key === 'why_us' ? ed : {});
     whyTitleHighlight = key === 'why_us' ? String(ed.title_highlight ?? 'Tanzania') : 'Tanzania';
 
@@ -661,21 +686,6 @@
     howCaption = key === 'how_it_works'
       ? String(ed.caption ?? 'From first message to arrival, we shape it together.')
       : 'From first message to arrival, we shape it together.';
-  };
-
-  const openMediaPicker = async (list: 'logos' | 'slides', index: number) => {
-    mediaPicker = { list, index };
-    await loadMedia();
-  };
-  const pickMedia = (url: string) => {
-    if (mediaPicker?.list === 'logos' && logos[mediaPicker.index]) {
-      logos[mediaPicker.index].image_url = url;
-      logos = logos;
-    } else if (mediaPicker?.list === 'slides' && slides[mediaPicker.index]) {
-      slides[mediaPicker.index].image_url = url;
-      slides = slides;
-    }
-    mediaPicker = null;
   };
 
   const addLogo = () => {
@@ -967,7 +977,6 @@
     costRanges = [];
     faqRows = [];
     hydrateReferenceEditors('', {});
-    mediaPicker = null;
   };
 
   const save = async () => {
@@ -983,6 +992,22 @@
       showToast('Extra data must be valid JSON.', 'error');
       return;
     }
+
+    // The eyebrow belongs to whichever section is open — an empty box means the
+    // key is dropped rather than stored as "".
+    if (sectionEyebrow.trim()) extra = { ...extra, eyebrow: sectionEyebrow.trim() };
+    else { const { eyebrow: _drop, ...withoutEyebrow } = extra; extra = withoutEyebrow; }
+
+    // Same add-or-drop rule for the secondary button and the trust chips: an
+    // empty control removes the key so the page falls back to its own default.
+    if (secondaryCtaText.trim()) extra = { ...extra, secondary_cta_text: secondaryCtaText.trim() };
+    else { const { secondary_cta_text: _t, ...rest } = extra; extra = rest; }
+    if (secondaryCtaUrl.trim()) extra = { ...extra, secondary_cta_url: secondaryCtaUrl.trim() };
+    else { const { secondary_cta_url: _u, ...rest } = extra; extra = rest; }
+
+    const trustPoints = trustPointsText.split('\n').map((line) => line.trim()).filter(Boolean);
+    if (trustPoints.length) extra = { ...extra, trust_points: trustPoints };
+    else { const { trust_points: _p, ...rest } = extra; extra = rest; }
 
     // Merge the friendly background/overlay controls back into extra_data when
     // this section actually has a background image or video.
@@ -1390,12 +1415,42 @@
           </div>
         {/if}
 
-        <div class="grid gap-4 sm:grid-cols-2">
+        <!-- Above the heading on the page, so it sits above Title here too. -->
+        <AdminFormInput
+          label="Eyebrow"
+          name="eyebrow"
+          bind:value={sectionEyebrow}
+          placeholder={form.section_key.trim() === 'advisor_note' ? "Advisor's Note" : 'Small label above the heading'}
+        />
+
+        {#if form.section_key.trim() === 'advisor_note'}
+          <!-- `subtitle` is the note's body paragraph here, not a one-liner. -->
           <AdminFormInput label="Title" name="title" bind:value={form.title} placeholder="Section heading" />
-          <AdminFormInput label="Subtitle" name="subtitle" bind:value={form.subtitle} placeholder="Supporting line" />
-        </div>
+          <AdminRichText
+            label="Advisor's note"
+            name="subtitle"
+            bind:value={form.subtitle}
+            rows={5}
+            headings="none"
+            placeholder="The paragraph in the dark panel, under the heading."
+          />
+        {:else}
+          <div class="grid gap-4 sm:grid-cols-2">
+            <AdminFormInput label="Title" name="title" bind:value={form.title} placeholder="Section heading" />
+            <AdminFormInput label="Subtitle" name="subtitle" bind:value={form.subtitle} placeholder="Supporting line" />
+          </div>
+        {/if}
 
         <AdminTextArea label="Content" name="content" bind:value={form.content} rows={3} placeholder="Optional body text for this section." />
+
+        <!-- The short reassurance chips under the buttons. -->
+        <AdminTextArea
+          label="Trust points · one per line"
+          name="trust_points"
+          bind:value={trustPointsText}
+          rows={3}
+          placeholder={'Local Tanzanian team\nNo pressure to book\nHonest route advice'}
+        />
 
         <!-- image -->
         {#if !currentMeta || currentMeta.fields.includes('image')}
@@ -1473,7 +1528,7 @@
                 </div>
               {/each}
             </div>
-            <AdminTextArea label="Closing pull quote" name="advisor_footnote" bind:value={advisorFootnote} rows={3} />
+            <AdminRichText label="Closing pull quote" name="advisor_footnote" bind:value={advisorFootnote} rows={3} headings="none" />
           </div>
         {/if}
 
@@ -1555,22 +1610,13 @@
             {/if}
 
             {#each logos as logo, i (i)}
-              <div class="grid gap-3 rounded-[8px] border border-ink/10 bg-surface p-3 shadow-sm sm:grid-cols-[84px_1fr_auto] sm:items-start">
-                <div class="grid h-16 w-[84px] place-items-center overflow-hidden rounded-[6px] bg-sand/40 ring-1 ring-ink/10">
-                  {#if logo.image_url}
-                    <img class="max-h-11 max-w-[72px] object-contain" src={logo.image_url} alt={logo.name || 'Logo'} />
-                  {:else}
-                    <ImageIcon size={16} class="text-ink/30" />
-                  {/if}
-                </div>
+              <div class="grid gap-3 rounded-[8px] border border-ink/10 bg-surface p-3 shadow-sm sm:grid-cols-[150px_1fr_auto] sm:items-start">
+                <!-- object-contain: a partner logo must not be cropped to fill a box. -->
+                <MediaPicker label="Logo" uploadFolder="homepage/partners" aspect="aspect-[4/3]" fit="object-contain" bind:value={logo.image_url} />
                 <div class="grid gap-2">
                   <div class="grid gap-2 sm:grid-cols-[1fr_1fr]">
                     <input class="h-9 rounded-[8px] border border-ink/10 bg-surface px-3 text-sm outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" placeholder="Partner name" bind:value={logo.name} />
                     <input class="h-9 rounded-[8px] border border-ink/10 bg-surface px-3 text-sm outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" placeholder="Link URL (optional)" bind:value={logo.url} />
-                  </div>
-                  <div class="flex gap-2">
-                    <input class="h-9 min-w-0 flex-1 rounded-[8px] border border-ink/10 bg-surface px-3 text-sm outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" placeholder="Logo image URL" bind:value={logo.image_url} />
-                    <button type="button" class="inline-flex h-9 shrink-0 items-center gap-1 rounded-[8px] border border-ink/10 bg-surface px-2.5 text-xs font-semibold text-ink shadow-sm transition hover:bg-sand/60" on:click={() => openMediaPicker('logos', i)}><ImageIcon size={13} />Media</button>
                   </div>
                 </div>
                 <div class="flex items-center justify-end gap-1 sm:flex-col">
@@ -1604,19 +1650,10 @@
             {/if}
 
             {#each slides as slide, i (i)}
-              <div class="grid gap-2 rounded-xl border border-ink/10 bg-surface p-3 sm:grid-cols-[96px_1fr_auto] sm:items-start">
-                <div class="grid aspect-[4/3] w-full place-items-center overflow-hidden rounded-lg bg-sand/40 ring-1 ring-ink/10 sm:w-24">
-                  {#if slide.image_url}
-                    <img class="h-full w-full object-cover" src={slide.image_url} alt={slide.title || 'Slide'} />
-                  {:else}
-                    <ImageIcon size={16} class="text-ink/30" />
-                  {/if}
-                </div>
+              <div class="grid gap-2 rounded-xl border border-ink/10 bg-surface p-3 sm:grid-cols-[170px_1fr_auto] sm:items-start">
+                <!-- A full-bleed background photo behind the admin login. -->
+                <MediaPicker label="Slide image" uploadFolder="homepage/login-slider" aspect="aspect-[16/9]" bind:value={slide.image_url} />
                 <div class="grid gap-2">
-                  <div class="flex gap-2">
-                    <input class="h-9 min-w-0 flex-1 rounded-lg border border-ink/10 bg-surface px-3 text-sm outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" placeholder="Image URL" bind:value={slide.image_url} />
-                    <button type="button" class="inline-flex h-9 shrink-0 items-center gap-1 rounded-lg border border-ink/10 bg-surface px-2.5 text-xs font-semibold text-ink shadow-sm transition hover:bg-sand/60" on:click={() => openMediaPicker('slides', i)}><ImageIcon size={13} />Media</button>
-                  </div>
                   <input class="h-9 rounded-lg border border-ink/10 bg-surface px-3 text-sm outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" placeholder="Heading (e.g. Plan East Africa with confidence)" bind:value={slide.title} />
                   <input class="h-9 rounded-lg border border-ink/10 bg-surface px-3 text-sm outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" placeholder="Short line (optional)" bind:value={slide.subtitle} />
                 </div>
@@ -1690,6 +1727,10 @@
         <div class="grid gap-4 sm:grid-cols-2">
           <AdminFormInput label="Button text" name="button_text" bind:value={form.button_text} placeholder="e.g. Plan My Trip" />
           <AdminFormInput label="Button URL" name="button_url" bind:value={form.button_url} placeholder="e.g. /plan-my-trip" />
+          <!-- Rendered by the hero and the closing CTA band; leave blank to use
+               that section's own default. -->
+          <AdminFormInput label="Secondary button text" name="secondary_cta_text" bind:value={secondaryCtaText} placeholder="e.g. Talk to a Travel Advisor" />
+          <AdminFormInput label="Secondary button URL" name="secondary_cta_url" bind:value={secondaryCtaUrl} placeholder="e.g. /contact" />
         </div>
 
         <label class="grid gap-2 text-sm font-medium text-ink">
@@ -1755,46 +1796,3 @@
   </div>
 {/if}
 
-{#if mediaPicker}
-  <div
-    class="fixed inset-0 z-[60] grid place-items-center bg-black/45 p-4 backdrop-blur-sm"
-    transition:fade={{ duration: 140 }}
-  >
-    <div
-      class="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-[0_24px_80px_rgba(57,61,50,0.18)]"
-      transition:scale={{ duration: 160, start: 0.98 }}
-    >
-      <div class="flex items-center justify-between border-b border-ink/10 bg-sand/30 p-4">
-        <h3 class="text-base font-bold text-ink">Choose an image</h3>
-        <button
-          class="grid h-9 w-9 place-items-center rounded-xl border border-ink/10 bg-surface text-ink shadow-sm transition hover:bg-sand"
-          type="button"
-          aria-label="Close"
-          on:click={() => (mediaPicker = null)}
-        >
-          <X size={16} />
-        </button>
-      </div>
-      <div class="overflow-y-auto p-4">
-        {#if loadingMedia}
-          <p class="py-8 text-center text-sm text-ink/50">Loading media...</p>
-        {:else if mediaItems.length === 0}
-          <p class="py-8 text-center text-sm text-ink/50">No images in the Media Library yet.</p>
-        {:else}
-          <div class="grid grid-cols-3 gap-3 sm:grid-cols-4">
-            {#each mediaItems as m (m.id)}
-              <button
-                class="group grid aspect-square place-items-center overflow-hidden rounded-xl border border-ink/10 bg-sand/30 p-2 transition hover:border-goldfinch-gold/50 hover:bg-sand/60"
-                type="button"
-                title={m.file_name}
-                on:click={() => pickMedia(m.file_url)}
-              >
-                <img class="max-h-full max-w-full object-contain" src={imgUrl(m.thumbnail_url || m.file_url, 300)} alt={m.file_name} loading="lazy" />
-              </button>
-            {/each}
-          </div>
-        {/if}
-      </div>
-    </div>
-  </div>
-{/if}

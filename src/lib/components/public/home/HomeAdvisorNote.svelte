@@ -7,6 +7,7 @@
    */
   import { Check, Compass, SlidersHorizontal } from '@lucide/svelte';
   import Img from '../Img.svelte';
+  import RichText from '../RichText.svelte';
   import type { AdvisorColumn } from '$lib/advisorNote';
 
   export let eyebrow = "Advisor's Note";
@@ -69,7 +70,7 @@
           <h2 class="mt-3 font-serif text-[28px] font-semibold leading-[1.15] text-white md:text-[30px]">{title}</h2>
         {/if}
         {#if body}
-          <p class="mt-3.5 text-sm leading-relaxed text-white/70">{body}</p>
+          <RichText value={body} className="mt-3.5 text-sm leading-relaxed text-white/70" />
         {/if}
 
         <div class="mt-8 flex items-center gap-3 border-t border-white/[0.14] pt-6 sm:mt-auto">
@@ -110,7 +111,7 @@
                 </div>
                 <div class="mb-4 mt-2.5 h-[2px] w-7 bg-goldfinch-gold" aria-hidden="true"></div>
                 <ul class="flex flex-col gap-4">
-                  {#each column.items as item (item)}
+                  {#each column.items as item, itemIndex (itemIndex)}
                     <li class="flex gap-2.5 text-[13.5px] leading-relaxed text-ink/65">
                       <span class="mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border border-goldfinch-gold bg-white">
                         <Check size={10} strokeWidth={3} class="text-clay" aria-hidden="true" />
@@ -125,9 +126,11 @@
         {/if}
 
         {#if footnote}
-          <p class="mt-7 border-t border-dashed border-[#E3DCCB] pt-5 font-serif text-[15px] italic text-heading">
-            “{footnote}”
-          </p>
+          <div class="mt-7 flex gap-1 border-t border-dashed border-[#E3DCCB] pt-5 font-serif text-[15px] italic text-heading">
+            <span aria-hidden="true">“</span>
+            <RichText value={footnote} />
+            <span aria-hidden="true">”</span>
+          </div>
         {/if}
       </div>
     </div>

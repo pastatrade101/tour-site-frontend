@@ -80,8 +80,34 @@ export const advisorNoteProps = (
     columns: columnsFrom(extra.columns)
   };
 
-  // Undefined keys would override the component's defaults with nothing.
-  return Object.fromEntries(Object.entries(props).filter(([, value]) => value !== undefined)) as AdvisorNoteProps;
+  /**
+   * Once the section exists, the CMS is the whole truth — a field cleared in
+   * the admin renders as cleared.
+   *
+   * Every key used to be dropped when empty, which handed the field back to the
+   * component's own default. That made the copy overridable but not erasable:
+   * deleting the footnote in the CMS put the original footnote back on four
+   * pages, with nothing to explain why.
+   *
+   * When the section is ABSENT — the homepage fetch failed, or it was never
+   * created — nothing is returned and the component's defaults still stand in,
+   * so a transient error shows the note rather than an empty card.
+   */
+  if (!section) return {};
+
+  return {
+    ...props,
+    eyebrow: props.eyebrow ?? '',
+    title: props.title ?? '',
+    body: props.body ?? '',
+    authorName: props.authorName ?? '',
+    authorRole: props.authorRole ?? '',
+    footnote: props.footnote ?? '',
+    columns: props.columns ?? [],
+    // The portrait is the one exception: the component falls back to initials
+    // in a ring, which is a designed empty state rather than a hole.
+    ...(props.imageUrl === undefined ? {} : { imageUrl: props.imageUrl })
+  };
 };
 
 /** The homepage switch still governs it: off there means off everywhere. */
