@@ -172,6 +172,10 @@
       testing = false;
     }
   };
+
+  // `loading` starts true, so without this the page sat on "Loading
+  // redirects..." until someone happened to press Apply.
+  onMount(load);
 </script>
 
 <ToastStack {toasts} on:dismiss={dismissToast} />
