@@ -1,7 +1,19 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { ArrowLeft, Plus, Save, Trash2, X } from '@lucide/svelte';
+  import {
+    ArrowLeft,
+    Compass,
+    FileText,
+    Images,
+    Languages,
+    ListChecks,
+    Plus,
+    Save,
+    Search,
+    Trash2,
+    X
+  } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
@@ -41,6 +53,25 @@
 
   export let mode: 'create' | 'edit' = 'create';
   export let tourId = '';
+
+  type TabKey = 'basics' | 'trip' | 'highlights' | 'media' | 'seo' | 'translations';
+
+  /**
+   * Seven stacked sections were one long scroll with Save at the far bottom.
+   * Translations is listed here but only rendered once the tour has an id.
+   */
+  const TABS = [
+    ['basics', FileText, 'Basics'],
+    ['trip', Compass, 'Trip details'],
+    ['highlights', ListChecks, 'Highlights'],
+    ['media', Images, 'Media'],
+    ['seo', Search, 'SEO'],
+    ['translations', Languages, 'Translations']
+  ] as const;
+
+  let activeTab: TabKey = 'basics';
+  /** The required fields only go red once someone has tried to save. */
+  let attemptedSave = false;
 
   const statusOptions = [
     { label: 'Draft', value: 'draft' },
@@ -362,7 +393,56 @@
     title: String(form.title ?? '').trim()
   });
 
+  /**
+   * Title, slug and duration used to be gated by the browser's own `required`.
+   * That never covered both ways in: the page header's Save calls saveTour()
+   * directly, which is not a form submit, so those checks simply did not run.
+   * Splitting the form across tabs would have broken the other path too — a
+   * `required` control on an inactive panel is present but unfocusable, and
+   * Chrome then refuses to submit while reporting it only to the console.
+   *
+   * So the rules live here, in one place both paths go through, mirroring
+   * backend/src/schemas/tours.schema.ts.
+   */
+  $: titleError = form.title.trim().length < 2 ? 'Title must be at least 2 characters.' : '';
+  $: slugError = form.slug.trim().length < 2 ? 'Slug must be at least 2 characters.' : '';
+  $: durationError =
+    !Number.isInteger(Number(form.duration_days)) || Number(form.duration_days) < 1
+      ? 'Duration must be a whole number of days, at least 1.'
+      : '';
+  $: currencyError =
+    String(form.currency ?? '').trim().length !== 3 ? 'Currency must be a 3-letter code, e.g. USD.' : '';
+
+  $: tabError = {
+    basics: attemptedSave && Boolean(titleError || slugError),
+    trip: attemptedSave && Boolean(durationError || currencyError),
+    highlights: false,
+    media: false,
+    seo: false,
+    translations: false
+  } as Record<TabKey, boolean>;
+
+  const selectTab = (tab: TabKey) => {
+    activeTab = tab;
+    // `main` is the admin layout's scroll container, so each tab starts at its
+    // own top rather than inheriting the last one's scroll position.
+    if (typeof document !== 'undefined') document.querySelector('main')?.scrollTo({ top: 0 });
+  };
+
+  /** Save blocked by a field on a panel the editor cannot see: go there, then say why. */
+  const failOn = (tab: TabKey, message: string) => {
+    selectTab(tab);
+    showToast(message, 'error');
+  };
+
   const saveTour = async () => {
+    if (saving) return;
+    attemptedSave = true;
+    if (titleError) return failOn('basics', titleError);
+    if (slugError) return failOn('basics', slugError);
+    if (durationError) return failOn('trip', durationError);
+    if (currencyError) return failOn('trip', currencyError);
+
     saving = true;
 
     try {
@@ -409,7 +489,38 @@
   {:else if error}
     <ErrorState message={error} />
   {:else}
-    <form class="grid gap-6" on:submit|preventDefault={saveTour}>
+    <!--
+      Panels are CSS-hidden, never {#if}-unmounted. AdminTranslationTabs
+      refetches and replaces its draft on mount, so unmounting it would discard
+      a half-typed translation the moment someone clicked another tab.
+      The toggle sits on a bare wrapper: `hidden` on an element that also
+      carries a display utility would lose to it.
+    -->
+    <form class="grid gap-6" novalidate on:submit|preventDefault={saveTour}>
+      <div class="flex gap-1 overflow-x-auto rounded-2xl border border-ink/10 bg-surface p-1.5 shadow-sm">
+        {#each TABS as [tab, Icon, label] (tab)}
+          <!-- Translations needs a saved tour to attach to. -->
+          {#if tab !== 'translations' || (mode === 'edit' && tourId)}
+            <button
+              class={`flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/20 ${
+                activeTab === tab ? 'bg-forest text-white shadow-sm' : 'text-ink/55 hover:bg-sand/50 hover:text-ink'
+              }`}
+              type="button"
+              aria-current={activeTab === tab}
+              on:click={() => selectTab(tab)}
+            >
+              <Icon size={15} />
+              {label}
+              {#if tabError[tab]}
+                <span class="h-1.5 w-1.5 rounded-full bg-clay" title="Something here is blocking the save"></span>
+              {/if}
+            </button>
+          {/if}
+        {/each}
+      </div>
+
+      <!-- ── Basics ──────────────────────────────────────────────────────── -->
+      <div class="grid gap-6" class:hidden={activeTab !== 'basics'}>
       <section class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
         <div class="mb-5 flex items-start justify-between gap-4">
           <div>
@@ -423,16 +534,23 @@
         </div>
 
         <div class="grid gap-4 md:grid-cols-2">
-          <AdminFormInput label="Title" name="title" bind:value={form.title} required />
+          <div class="grid gap-1.5">
+            <AdminFormInput label="Title" name="title" bind:value={form.title} />
+            {#if attemptedSave && titleError}
+              <span class="text-[11px] font-semibold text-clay">{titleError}</span>
+            {/if}
+          </div>
           <label class="grid gap-2 text-sm font-medium text-ink">
             <span>Slug</span>
             <input
               class="h-11 rounded-2xl border border-ink/10 bg-surface px-3 text-sm outline-none shadow-sm transition focus:border-forest focus:ring-2 focus:ring-forest/15"
               name="slug"
               bind:value={form.slug}
-              required
               on:input={() => (slugManuallyEdited = true)}
             />
+            {#if attemptedSave && slugError}
+              <span class="text-[11px] font-semibold text-clay">{slugError}</span>
+            {/if}
           </label>
         </div>
 
@@ -514,6 +632,29 @@
         </div>
       </section>
 
+      <!-- Publishing flags sit with the status they qualify, not behind a tab
+           of their own — they are three checkboxes, not a section. -->
+      <section class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
+        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Publishing flags</p>
+        <div class="mt-5 grid gap-3 md:grid-cols-3">
+          <label class="flex items-center gap-3 rounded-2xl border border-ink/10 bg-sand/20 px-4 py-3 text-sm font-semibold text-ink">
+            <input class="h-4 w-4 rounded border-ink/20 text-forest focus:ring-forest" type="checkbox" bind:checked={form.is_available} />
+            Available for booking
+          </label>
+          <label class="flex items-center gap-3 rounded-2xl border border-ink/10 bg-sand/20 px-4 py-3 text-sm font-semibold text-ink">
+            <input class="h-4 w-4 rounded border-ink/20 text-forest focus:ring-forest" type="checkbox" bind:checked={form.is_featured} />
+            Featured tour
+          </label>
+          <label class="flex items-center gap-3 rounded-2xl border border-ink/10 bg-sand/20 px-4 py-3 text-sm font-semibold text-ink">
+            <input class="h-4 w-4 rounded border-ink/20 text-forest focus:ring-forest" type="checkbox" bind:checked={form.is_popular} />
+            Popular tour
+          </label>
+        </div>
+      </section>
+      </div>
+
+      <!-- ── Trip details ────────────────────────────────────────────────── -->
+      <div class="grid gap-6" class:hidden={activeTab !== 'trip'}>
       <section class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
         <div class="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -550,10 +691,20 @@
       <section class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
         <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Pricing and logistics</p>
         <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <AdminFormInput label="Duration days" name="duration_days" type="number" bind:value={form.duration_days} required />
+          <div class="grid gap-1.5">
+            <AdminFormInput label="Duration days" name="duration_days" type="number" min={1} bind:value={form.duration_days} />
+            {#if attemptedSave && durationError}
+              <span class="text-[11px] font-semibold text-clay">{durationError}</span>
+            {/if}
+          </div>
           <AdminFormInput label="Duration nights" name="duration_nights" type="number" bind:value={form.duration_nights} />
           <AdminFormInput label="Price from" name="price_from" type="number" bind:value={form.price_from} />
-          <AdminFormInput label="Currency" name="currency" bind:value={form.currency} />
+          <div class="grid gap-1.5">
+            <AdminFormInput label="Currency" name="currency" bind:value={form.currency} placeholder="USD" />
+            {#if attemptedSave && currencyError}
+              <span class="text-[11px] font-semibold text-clay">{currencyError}</span>
+            {/if}
+          </div>
         </div>
 
         <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -568,7 +719,10 @@
           <AdminFormInput label="End location" name="end_location" bind:value={form.end_location} />
         </div>
       </section>
+      </div>
 
+      <!-- ── Highlights ──────────────────────────────────────────────────── -->
+      <div class="grid gap-6" class:hidden={activeTab !== 'highlights'}>
       <section class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
         <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">AI matching</p>
         <div class="mt-5 grid gap-4 md:grid-cols-2">
@@ -638,7 +792,10 @@
           </div>
         </div>
       </section>
+      </div>
 
+      <!-- ── Media ───────────────────────────────────────────────────────── -->
+      <div class="grid gap-6" class:hidden={activeTab !== 'media'}>
       <section class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
         <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Media</p>
         <p class="mt-1 text-sm text-ink/60">Choose images from the Media Library or paste a URL manually.</p>
@@ -660,24 +817,10 @@
         </div>
       </section>
 
-      <section class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
-        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Publishing flags</p>
-        <div class="mt-5 grid gap-3 md:grid-cols-3">
-          <label class="flex items-center gap-3 rounded-2xl border border-ink/10 bg-sand/20 px-4 py-3 text-sm font-semibold text-ink">
-            <input class="h-4 w-4 rounded border-ink/20 text-forest focus:ring-forest" type="checkbox" bind:checked={form.is_available} />
-            Available for booking
-          </label>
-          <label class="flex items-center gap-3 rounded-2xl border border-ink/10 bg-sand/20 px-4 py-3 text-sm font-semibold text-ink">
-            <input class="h-4 w-4 rounded border-ink/20 text-forest focus:ring-forest" type="checkbox" bind:checked={form.is_featured} />
-            Featured tour
-          </label>
-          <label class="flex items-center gap-3 rounded-2xl border border-ink/10 bg-sand/20 px-4 py-3 text-sm font-semibold text-ink">
-            <input class="h-4 w-4 rounded border-ink/20 text-forest focus:ring-forest" type="checkbox" bind:checked={form.is_popular} />
-            Popular tour
-          </label>
-        </div>
-      </section>
+      </div>
 
+      <!-- ── SEO ─────────────────────────────────────────────────────────── -->
+      <div class="grid gap-6" class:hidden={activeTab !== 'seo'}>
       <section class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
         <div class="flex items-center justify-between">
           <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">SEO</p>
@@ -688,12 +831,21 @@
           <AdminTextArea label="Meta description" name="meta_description" bind:value={form.meta_description} rows={3} />
         </div>
       </section>
+      </div>
 
+      <!-- ── Translations (saved tours only — needs an id) ────────────────── -->
       {#if mode === 'edit' && tourId}
-        <AdminTranslationTabs entityType="tours" entityId={tourId} on:toast={(event) => showToast(event.detail.message, event.detail.type ?? 'success')} />
+        <div class:hidden={activeTab !== 'translations'}>
+          <AdminTranslationTabs entityType="tours" entityId={tourId} on:toast={(event) => showToast(event.detail.message, event.detail.type ?? 'success')} />
+        </div>
       {/if}
 
-      <AdminToolbar className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <!--
+        Sticky rather than pinned to a flex column: this is a page, and the
+        admin layout's <main> is the scroll container, so bottom-0 holds the
+        bar against the bottom of the visible area whichever tab is open.
+      -->
+      <AdminToolbar className="sticky bottom-0 z-20 flex flex-col gap-3 shadow-[0_-8px_24px_rgba(57,61,50,0.06)] sm:flex-row sm:items-center sm:justify-between">
         <p class="text-sm text-ink/60">Save changes to make this tour available in the CMS.</p>
         <div class="flex gap-3">
           <AdminButton variant="secondary" type="button" on:click={() => goto('/admin/tours')}>Cancel</AdminButton>
