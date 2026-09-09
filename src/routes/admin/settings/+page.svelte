@@ -7,7 +7,6 @@
     Bot,
     ClipboardList,
     Coins,
-    Image as ImageIcon,
     Info,
     MapPin,
     Palette,
@@ -28,12 +27,15 @@
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
+  import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import ToastStack from '$lib/components/admin/ToastStack.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
 
   type FieldType = 'boolean' | 'color' | 'currency-list' | 'email' | 'image' | 'json' | 'number' | 'phone' | 'select' | 'text' | 'textarea' | 'url';
-  type Field = { default?: unknown; helper?: string; key: string; label: string; options?: string[]; public: boolean; type: FieldType };
+  // `aspect`/`fit` only apply to type 'image' — a logo must not be cropped the
+  // way a social card should be.
+  type Field = { aspect?: string; default?: unknown; fit?: string; helper?: string; key: string; label: string; options?: string[]; public: boolean; type: FieldType };
   type Group = { fields: Field[]; icon: Component; key: string; label: string; note?: string };
   type Toast = { id: string; message: string; type: 'error' | 'success' };
   type CurrencySetting = { code: string; name: string; symbol: string; locale: string; decimalDigits: number; enabled: boolean };
@@ -55,8 +57,8 @@
       { key: 'company_name', label: 'Company name', type: 'text', public: true, default: 'Goldfinch Adventures Limited' },
       { key: 'tagline', label: 'Tagline', type: 'text', public: true, default: "Africa's Most Trusted Travel Planning Brand" },
       { key: 'brand_statement', label: 'Brand statement', type: 'textarea', public: true, default: 'Travelers do not need more options. They need more confidence.' },
-      { key: 'logo_url', label: 'Logo', type: 'image', public: true, helper: 'Public logo image.' },
-      { key: 'favicon_url', label: 'Favicon', type: 'image', public: true },
+      { key: 'logo_url', label: 'Logo', type: 'image', public: true, helper: 'Public logo image.', aspect: 'aspect-square', fit: 'object-contain' },
+      { key: 'favicon_url', label: 'Favicon', type: 'image', public: true, aspect: 'aspect-square', fit: 'object-contain' },
       { key: 'primary_color', label: 'Primary color', type: 'color', public: true, default: '#2D3027' },
       { key: 'secondary_color', label: 'Secondary color', type: 'color', public: true, default: '#393D32' },
       { key: 'accent_color', label: 'Accent color', type: 'color', public: true, default: '#E4A92E' }
@@ -82,7 +84,7 @@
     { key: 'seo', label: 'SEO', icon: Search, fields: [
       { key: 'default_meta_title', label: 'Default meta title', type: 'text', public: true },
       { key: 'default_meta_description', label: 'Default meta description', type: 'textarea', public: true },
-      { key: 'default_og_image_url', label: 'Default OG image', type: 'image', public: true },
+      { key: 'default_og_image_url', label: 'Default OG image', type: 'image', public: true, aspect: 'aspect-[1.91/1]' },
       { key: 'canonical_base_url', label: 'Canonical base URL', type: 'url', public: true },
       { key: 'robots_indexing_enabled', label: 'Allow search engine indexing', type: 'boolean', public: true, default: true }
     ] },
@@ -147,9 +149,6 @@
   let toasts: Toast[] = [];
 
   // media picker
-  let mediaPickerFor: null | string = null;
-  let mediaItems: { file_name: string; file_url: string; id: string }[] = [];
-  let loadingMedia = false;
 
   $: group = GROUPS.find((g) => g.key === activeGroup) ?? GROUPS[0];
   $: dirtyKeys = ALL_FIELDS.filter((f) => JSON.stringify(values[f.key]) !== originalSerialized[f.key]).map((f) => f.key);
@@ -323,26 +322,6 @@
     }
   };
 
-  const openMediaPicker = async (key: string) => {
-    mediaPickerFor = key;
-    if (mediaItems.length || loadingMedia) return;
-    loadingMedia = true;
-    try {
-      const res = await api.media.list({ file_type: 'image', limit: 200 });
-      mediaItems = (res.data.items as Array<Record<string, unknown>>)
-        .map((m) => ({ id: String(m.id ?? ''), file_name: String(m.file_name ?? 'Image'), file_url: String(m.file_url ?? '') }))
-        .filter((m) => m.file_url);
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Unable to load media.', 'error');
-    } finally {
-      loadingMedia = false;
-    }
-  };
-  const pickMedia = (url: string) => {
-    if (mediaPickerFor) values[mediaPickerFor] = url;
-    mediaPickerFor = null;
-  };
-
   onMount(load);
 </script>
 
@@ -479,17 +458,23 @@
                   </span>
                 </label>
               {:else if field.type === 'image'}
-                <label class="grid gap-2 text-sm font-medium text-ink">
-                  <span>{field.label}</span>
-                  <div class="flex items-center gap-3">
-                    <div class="grid h-14 w-20 shrink-0 place-items-center overflow-hidden rounded-xl border border-ink/10 bg-sand/40">
-                      {#if values[field.key]}<img class="h-full w-full object-cover" src={String(values[field.key])} alt={field.label} />{:else}<ImageIcon size={18} class="text-ink/30" />{/if}
-                    </div>
-                    <input class="h-11 min-w-0 flex-1 rounded-2xl border border-ink/10 bg-surface px-3 text-sm shadow-sm outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15" bind:value={values[field.key]} placeholder="https://..." />
-                    <button class="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-2xl border border-ink/10 bg-surface px-3 text-xs font-semibold text-ink shadow-sm transition hover:bg-sand/60" type="button" on:click={() => openMediaPicker(field.key)}><ImageIcon size={14} />Media</button>
-                  </div>
+                <!--
+                  The shared picker: Media Library, direct upload and paste-URL
+                  in one control. This used to be a URL box beside a bespoke
+                  browse-only modal, so the library was reachable but uploading
+                  a new logo meant leaving for the Media page first.
+                -->
+                <div class="grid gap-2 text-sm font-medium text-ink">
+                  <MediaPicker
+                    label={field.label}
+                    uploadFolder="settings"
+                    aspect={field.aspect ?? 'aspect-[16/9]'}
+                    fit={field.fit ?? 'object-cover'}
+                    value={String(values[field.key] ?? '')}
+                    on:change={(event) => (values[field.key] = event.detail)}
+                  />
                   {#if field.helper}<span class="text-xs font-normal text-ink/50">{field.helper}</span>{/if}
-                </label>
+                </div>
               {:else}
                 <AdminFormInput label={field.label} name={field.key} type={field.type === 'phone' ? 'tel' : field.type} bind:value={values[field.key]} placeholder={field.helper ?? ''} />
               {/if}
@@ -516,29 +501,3 @@
   </div>
 {/if}
 
-<!-- media picker modal -->
-{#if mediaPickerFor}
-  <div class="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4 backdrop-blur-sm" transition:fade={{ duration: 140 }}>
-    <div class="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-[0_24px_80px_rgba(57,61,50,0.18)]" transition:scale={{ duration: 160, start: 0.98 }}>
-      <div class="flex items-center justify-between border-b border-ink/10 bg-sand/30 p-4">
-        <h3 class="text-base font-bold text-ink">Choose an image</h3>
-        <button class="grid h-9 w-9 place-items-center rounded-xl border border-ink/10 bg-surface text-ink shadow-sm transition hover:bg-sand" type="button" aria-label="Close" on:click={() => (mediaPickerFor = null)}><X size={16} /></button>
-      </div>
-      <div class="overflow-y-auto p-4">
-        {#if loadingMedia}
-          <p class="py-8 text-center text-sm text-ink/50">Loading media...</p>
-        {:else if mediaItems.length === 0}
-          <p class="py-8 text-center text-sm text-ink/50">No images in the Media Library yet.</p>
-        {:else}
-          <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {#each mediaItems as m (m.id)}
-              <button class="group overflow-hidden rounded-xl border border-ink/10 bg-sand/30 transition hover:border-goldfinch-gold/50" type="button" on:click={() => pickMedia(m.file_url)}>
-                <div class="aspect-square"><img class="h-full w-full object-cover transition group-hover:scale-105" src={m.file_url} alt={m.file_name} loading="lazy" /></div>
-              </button>
-            {/each}
-          </div>
-        {/if}
-      </div>
-    </div>
-  </div>
-{/if}

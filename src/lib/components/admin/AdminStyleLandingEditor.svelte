@@ -11,12 +11,16 @@
    * the public page, in the order a visitor scrolls past it, and each is
    * described by what it does rather than what it is called in the data.
    *
-   * The JSON has not gone anywhere — it is the last section, collapsed, for
-   * pasting a page in wholesale or checking what was produced.
+   * Every field of the document is reachable from these fields, so there is no
+   * raw-JSON escape hatch: it existed only to repair what the form could not
+   * express, and there is nothing left in that category.
    */
-  import { afterUpdate, createEventDispatcher } from 'svelte';
-  import { AlertTriangle, Braces, Check, ChevronDown, Copy, GripVertical, Plus, Sparkles, X } from '@lucide/svelte';
+  import { afterUpdate, createEventDispatcher, onMount } from 'svelte';
+  import { AlertTriangle, Check, ChevronDown, Copy, GripVertical, Plus, Sparkles, X } from '@lucide/svelte';
+  import AdminLinkPicker from './AdminLinkPicker.svelte';
   import AdminRichText from './AdminRichText.svelte';
+  import MediaPicker from './MediaPicker.svelte';
+  import { loadInternalLinks, type LinkGroup } from '$lib/internalLinks';
   import {
     defaultStyleLandingContent,
     parseStyleLandingJson,
@@ -36,7 +40,6 @@
   const dispatch = createEventDispatcher<{ change: string; toast: { message: string; tone: 'success' | 'error' } }>();
 
   let content: StyleLandingContent = defaultStyleLandingContent(seed);
-  let showJson = false;
   let lastPushed = '';
 
   /**
@@ -169,6 +172,24 @@
   const area = 'w-full rounded-md border border-ink/15 bg-surface px-3 py-2.5 text-sm leading-6 text-heading outline-none transition focus:border-goldfinch-gold focus:ring-2 focus:ring-goldfinch-gold/20';
   const label = 'text-[13px] font-semibold text-ink/65';
   const hint = 'text-[11px] leading-5 text-ink/45';
+
+  /**
+   * The site's real pages, so card links are chosen rather than typed. Loaded
+   * once per editor; a failure leaves the pickers in free-text mode, which is
+   * exactly how they behaved before.
+   */
+  let linkGroups: LinkGroup[] = [];
+  let linksLoading = true;
+
+  onMount(async () => {
+    try {
+      linkGroups = await loadInternalLinks();
+    } catch {
+      linkGroups = [];
+    } finally {
+      linksLoading = false;
+    }
+  });
 </script>
 
 <section class="grid gap-3 rounded-[8px] border border-goldfinch-gold/35 bg-goldfinch-gold/[0.06] p-4">
@@ -340,10 +361,19 @@
               <Plus size={13} /> Add a paragraph
             </button>
           </div>
-          <label class="grid gap-1.5">
-            <span class={label}>Photo address <span class="font-normal text-ink/40">optional</span></span>
-            <input class={field} bind:value={content.overview.imageUrl} on:input={push} placeholder="https://…" />
-          </label>
+          <div class="grid gap-1.5">
+            <span class={label}>Photo <span class="font-normal text-clay">required</span></span>
+            <MediaPicker
+              label="Overview photo"
+              uploadFolder="categories/landing"
+              aspect="aspect-[4/3]"
+              bind:value={content.overview.imageUrl}
+              on:change={push}
+            />
+            {#if !content.overview.imageUrl}
+              <span class={hint}>This band is a photo beside the paragraphs — without one the section renders half empty.</span>
+            {/if}
+          </div>
         </div>
       {/if}
     </div>
@@ -453,7 +483,10 @@
               {#each block.links as link, li}
                 <div class="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
                   <input class={field} bind:value={link.label} on:input={push} placeholder="Link wording" />
-                  <input class={field} bind:value={link.href} on:input={push} placeholder="/where-it-goes" />
+                  <!-- Chosen from the site's real published pages rather than
+                       typed, so a card cannot link somewhere that never existed.
+                       The pencil still allows an anchor or a hand-written path. -->
+                  <AdminLinkPicker groups={linkGroups} loading={linksLoading} bind:value={link.href} on:change={push} />
                   <button class="rounded-md p-2 text-ink/35 transition hover:text-red-600 disabled:opacity-30" type="button" aria-label="Remove link" disabled={block.links.length <= 1} on:click={() => removeAt(block.links, li, 1)}>
                     <X size={15} />
                   </button>
@@ -612,18 +645,4 @@
     </div>
   </div>
 
-  <!-- The code box has not gone away, it has just stopped being the only way
-       in. Kept for pasting a whole page across from somewhere else. -->
-  <details class="rounded-md border border-ink/10 bg-surface px-4 py-3" bind:open={showJson}>
-    <summary class="cursor-pointer text-xs font-semibold text-ink/55">
-      <Braces size={13} class="mr-1 inline" /> Advanced — edit the raw page data
-    </summary>
-    <p class="mt-2 {hint}">Only needed to paste a page in from elsewhere. Editing here changes the fields above.</p>
-    <textarea
-      class="mt-2 min-h-[320px] w-full resize-y rounded-md border border-ink/15 bg-[#20231d] px-4 py-3 font-mono text-[12px] leading-5 text-[#f3efe7] outline-none focus:border-goldfinch-gold"
-      spellcheck="false"
-      value={json}
-      on:input={(e) => { json = e.currentTarget.value; lastPushed = ''; dispatch('change', json); }}
-    ></textarea>
-  </details>
 </section>

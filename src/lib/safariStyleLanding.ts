@@ -14,7 +14,7 @@ export type StyleLandingContent = {
     label: string;
     headline: string;
     paragraphs: string[];
-    imageUrl?: string;
+    imageUrl: string;
   };
   planner: { label: string; headline: string; intro: string };
   tourCollection: {
@@ -107,7 +107,7 @@ export const defaultStyleLandingContent = (category: CategorySeed = {}): StyleLa
       label: name,
       headline: `${name}, Done Properly`,
       paragraphs: [intro, `The right ${lower} depends on your dates, available time, comfort level and preferred pace.`],
-      imageUrl: category.image_url || undefined
+      imageUrl: category.image_url || ''
     },
     planner: {
       label: 'Plan This Experience',
@@ -226,6 +226,9 @@ export const styleLandingContentErrors = (value: unknown): string[] => {
   // having too many — the one disagreement this validator exists to prevent.
   if (!Array.isArray(data.overview?.paragraphs) || data.overview!.paragraphs.length < 1 || !data.overview!.paragraphs.every(isText)) errors.push('overview.paragraphs must contain at least 1 non-empty paragraph.');
   else if (data.overview!.paragraphs.length > 4) errors.push('overview.paragraphs must contain at most 4 paragraphs.');
+  // The overview band is a photo beside the paragraphs, so it is required
+  // rather than optional — without one the section publishes half empty.
+  requiredText('overview.imageUrl', data.overview?.imageUrl);
   for (const key of ['label', 'headline', 'intro'] as const) requiredText(`planner.${key}`, data.planner?.[key]);
   for (const key of ['label', 'headline', 'subheadline', 'resultsNoun', 'loadMoreLabel'] as const) requiredText(`tourCollection.${key}`, data.tourCollection?.[key]);
   for (const key of ['label', 'title', 'intro'] as const) requiredText(`planningGuide.${key}`, data.planningGuide?.[key]);

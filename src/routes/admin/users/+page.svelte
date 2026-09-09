@@ -10,6 +10,7 @@
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import AdminToolbar from '$lib/components/admin/AdminToolbar.svelte';
   import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
+  import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import RoleBadge from '$lib/components/admin/RoleBadge.svelte';
   import ToastStack from '$lib/components/admin/ToastStack.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
@@ -311,7 +312,8 @@
           <AdminFormInput label="Phone" name="phone" bind:value={form.phone} />
           <AdminSelect label="Role" name="role" bind:value={form.role} options={assignableRoles} />
         </div>
-        <AdminFormInput label="Avatar URL" name="avatar_url" bind:value={form.avatar_url} placeholder="https://..." />
+        <!-- Square: the topbar renders this in a round 9x9 frame with object-cover. -->
+        <MediaPicker label="Avatar" uploadFolder="users/avatars" aspect="aspect-square" bind:value={form.avatar_url} />
         <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-ink/10 bg-surface p-4 transition hover:bg-sand/30">
           <input class="h-4 w-4 accent-forest" type="checkbox" bind:checked={form.is_active} />
           <div>
