@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { ArrowRight, Check, MessageCircle } from '@lucide/svelte';
+  import { ArrowRight, MessageCircle } from '@lucide/svelte';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import type { GalleryCardItem } from '$lib/components/public/GalleryCard.svelte';
@@ -154,45 +154,8 @@
   $: heroPreloadHref =
     variantSrc(heroVariants, 1800, heroVariants?.avif ? 'avif' : 'webp') || imgUrl(heroLeadImage, 1800, 72);
 
-  const hexToRgba = (hex: string, alpha: number) => {
-    const match = /^#?([0-9a-fA-F]{6})$/.exec(hex);
-    if (!match) return `rgba(57,61,50,${alpha})`;
-    const n = parseInt(match[1], 16);
-    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
-  };
-
-  // Final CTA background (image/video + overlay), all editable from Admin → Homepage.
-  $: ctaExtra = (sections.final_cta?.extra_data ?? {}) as Record<string, unknown>;
-  $: ctaImage = typeof sections.final_cta?.image_url === 'string' ? sections.final_cta.image_url : '';
-  $: ctaVideo = typeof ctaExtra.background_video === 'string' ? ctaExtra.background_video : '';
-  $: ctaPosition = typeof ctaExtra.media_position === 'string' ? ctaExtra.media_position : 'center';
-  $: ctaImageResolved = ctaImage || heroImageResolved;
-  $: ctaOverlayColor = typeof ctaExtra.overlay_color === 'string' ? ctaExtra.overlay_color : '#393D32';
-  $: ctaOverlayOpacity = typeof ctaExtra.overlay_opacity === 'number' ? ctaExtra.overlay_opacity : 0.7;
-  $: ctaOverlayStyle =
-    ctaExtra.overlay_gradient !== false
-      ? `background:linear-gradient(135deg, ${hexToRgba(ctaOverlayColor, ctaOverlayOpacity)}, ${hexToRgba(ctaOverlayColor, ctaOverlayOpacity * 0.55)})`
-      : `background:${hexToRgba(ctaOverlayColor, ctaOverlayOpacity)}`;
-
-  // Partner / company logo strip (managed in Admin → Homepage → "partners").
-  $: partnersExtra = (sections.partners?.extra_data ?? {}) as Record<string, unknown>;
-  $: partnerLogos = (Array.isArray(partnersExtra.logos) ? partnersExtra.logos : []) as Array<{
-    image_url: string;
-    name?: string;
-    url?: string;
-  }>;
-  $: partnersActive = sections.partners?.is_active !== false;
-
-  // Typical-cost rows, CMS-overridable (cost_ranges → extra_data.ranges).
-  $: costRanges = (() => {
-    const r = (sections.cost_ranges?.extra_data as Record<string, unknown> | undefined)?.ranges;
-    return Array.isArray(r) ? (r as Array<{ label: string; from: string; note?: string }>) : [];
-  })();
-
-  // ── New reference sections — all editable in Admin → Homepage. Each reads its
-  // section (title/subtitle/image/button) + `extra_data` (eyebrow + arrays like
-  // stats/features/seasons/points). Empty values are dropped so the component's
-  // built-in defaults show, keeping every section editable but never blank.
+  // Sections read their own record plus `extra_data`. Empty values are dropped
+  // so the component's built-in default shows rather than a blank band.
   const arr = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
   const clean = (o: Record<string, unknown>): Record<string, unknown> =>
     Object.fromEntries(
@@ -201,13 +164,10 @@
         return v != null && !(typeof v === 'string' && !v.trim()) && !(Array.isArray(v) && !v.length);
       })
     );
-  $: introExtra = (sections.intro?.extra_data ?? {}) as Record<string, unknown>;
   $: whyExtra = (sections.why_us?.extra_data ?? {}) as Record<string, unknown>;
   $: seasonsExtra = (sections.seasons?.extra_data ?? {}) as Record<string, unknown>;
   $: impactExtra = (sections.impact?.extra_data ?? {}) as Record<string, unknown>;
-  $: featuredToursExtra = (sections.featured_tours?.extra_data ?? {}) as Record<string, unknown>;
   $: faqExtra = (sections.faq?.extra_data ?? {}) as Record<string, unknown>;
-  $: advisorExtra = (sections.advisor_note?.extra_data ?? {}) as Record<string, unknown>;
   $: howExtra = (sections.how_it_works?.extra_data ?? {}) as Record<string, unknown>;
   // Experiences cards come from published tour categories (real CMS records).
   // short_description is written for exactly this compact card context, so it
@@ -231,16 +191,6 @@
     }))
     .filter((c) => c.name && c.slug)
     .sort((a, b) => Number(b.featured) - Number(a.featured));
-  $: introProps = clean({
-    eyebrow: introExtra.eyebrow,
-    title: sections.intro?.title,
-    body: sections.intro?.subtitle,
-    stats: arr(introExtra.stats),
-    cert: arr(introExtra.cert_items).length
-      ? { title: (introExtra.cert_title as string) || 'Conservation & community', items: arr(introExtra.cert_items) }
-      : undefined
-  });
-  $: whyProps = clean({ eyebrow: whyExtra.eyebrow, title: sections.why_us?.title, subtitle: sections.why_us?.subtitle, features: arr(whyExtra.features) });
   $: seasonsProps = clean({ eyebrow: seasonsExtra.eyebrow, title: sections.seasons?.title, subtitle: sections.seasons?.subtitle, seasons: arr(seasonsExtra.seasons) });
   $: impactProps = clean({
     eyebrow: impactExtra.eyebrow,
@@ -253,27 +203,13 @@
     primaryCta: sections.impact?.button_text,
     primaryCtaUrl: sections.impact?.button_url
   });
-  $: tourProps = clean({
-    eyebrow: featuredToursExtra.eyebrow,
-    title: sections.featured_tours?.title,
-    subtitle: sections.featured_tours?.subtitle,
-    buttonText: sections.featured_tours?.button_text,
-    buttonUrl: sections.featured_tours?.button_url
-  });
 
-  // "Plan your dream" band bullets + Final-CTA trust chips — CMS-overridable via
-  // extra_data.points / extra_data.trust_points, falling back to the current text.
+  // "Plan your dream" band bullets — CMS-overridable via extra_data.points,
+  // falling back to the current text.
   $: planDreamExtra = (sections.plan_dream?.extra_data ?? {}) as Record<string, unknown>;
   $: planDreamPoints = arr<string>(planDreamExtra.points).length
     ? arr<string>(planDreamExtra.points)
     : ['Fully tailored to your dates & budget', 'A reply within one business day', 'Honest advice, never a hard sell'];
-  $: ctaTrustPoints = arr<string>(ctaExtra.trust_points).length
-    ? arr<string>(ctaExtra.trust_points)
-    : ['Local experts', 'No payment to plan', 'Honest, tailored advice'];
-  $: destinationCtaText = cms('featured_destinations', 'button_text', 'All destinations');
-  $: destinationCtaUrl = cms('featured_destinations', 'button_url', '/destinations');
-  $: processCtaText = cms('how_it_works', 'button_text', 'Start planning');
-  $: processCtaUrl = cms('how_it_works', 'button_url', '/plan-my-trip');
   $: blogCtaText = cms('blog_preview', 'button_text', 'View all');
   $: blogCtaUrl = cms('blog_preview', 'button_url', '/blog');
   $: galleryCtaText = cms('gallery_preview', 'button_text', 'View gallery');
@@ -281,8 +217,6 @@
   // Real published gallery images only. Keeping this empty until the deferred
   // CMS request returns avoids loading bundled sample imagery during first paint.
   $: galleryDisplay = galleryItems.length ? (galleryItems as Record<string, unknown>[]) : [];
-  $: ctaSecondaryText = cmsExtra('final_cta', 'secondary_cta_text', 'Talk to a Travel Advisor');
-  $: ctaSecondaryUrl = cmsExtra('final_cta', 'secondary_cta_url', '/contact');
   $: homepageFaqRows = arr<Record<string, unknown>>(faqExtra.faqs)
     .map((faq, index) => ({
       id: typeof faq.id === 'string' && faq.id.trim() ? faq.id : `homepage-faq-${index}`,

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
-  import { fadeUpOnScroll, staggeredCardReveal } from '$lib/animations';
+  import { staggeredCardReveal } from '$lib/animations';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import DestinationsHero from '$lib/components/public/destinations/DestinationsHero.svelte';
   import DestinationSearchBar from '$lib/components/public/destinations/DestinationSearchBar.svelte';

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { fade, scale } from 'svelte/transition';
   import type { Component } from 'svelte';
   import {
     BarChart3,
@@ -18,8 +17,7 @@
     RotateCcw,
     Trash2,
     Plug,
-    MessageCircle,
-    X
+    MessageCircle
   } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';

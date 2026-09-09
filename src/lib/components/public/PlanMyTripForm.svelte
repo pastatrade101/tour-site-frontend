@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { get } from 'svelte/store';
-  import { AlertCircle, ArrowLeft, ArrowRight, BedDouble, CalendarDays, CheckCircle2, Copy, MapPin, MessageCircle, Scale, ShieldCheck, X } from '@lucide/svelte';
+  import { AlertCircle, ArrowLeft, ArrowRight, BedDouble, CalendarDays, CheckCircle2, Copy, MapPin, Scale, ShieldCheck, X } from '@lucide/svelte';
   import { page } from '$app/stores';
   import { getAttribution, trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';

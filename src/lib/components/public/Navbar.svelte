@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { afterNavigate, goto, preloadData } from '$app/navigation';
   import { page } from '$app/stores';
-  import { ArrowDownToLine, ArrowRight, ChevronDown, ChevronRight, CircleHelp, Compass, Globe, MapPin, Menu, MessageCircle, Search, TicketsPlane, User, X, BedDouble } from '@lucide/svelte';
+  import { ArrowDownToLine, ArrowRight, ChevronDown, ChevronRight, Compass, Globe, MapPin, Menu, MessageCircle, Search, TicketsPlane, User, X, BedDouble } from '@lucide/svelte';
   import { fade, fly } from 'svelte/transition';
   import { api } from '$lib/api/client';
   import { trackEvent } from '$lib/analytics';
@@ -14,7 +14,6 @@
   import CurrencySelector from './CurrencySelector.svelte';
   import LanguageSwitcher from './LanguageSwitcher.svelte';
   import UtilityBar from './UtilityBar.svelte';
-  import { DEFAULT_LOCALE } from '$lib/i18n';
   import { t } from '$lib/i18n/ui';
   import Img from './Img.svelte';
 

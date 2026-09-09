@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { DEFAULT_LOCALE } from '$lib/i18n';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import {
@@ -9,13 +8,11 @@
     BedDouble,
     CalendarDays,
     Check,
-    ChevronDown,
     Compass,
     MapPin,
     Minus,
     Route,
     Users,
-    Utensils,
     Wallet,
     X
   } from '@lucide/svelte';
@@ -218,57 +215,12 @@
     return null;
   };
 
-  const detailsForDay = (day: ItineraryDay): FactCard[] => {
-    const stay = day.lodge?.name || day.accommodation || '';
-    return [
-      day.title ? { icon: MapPin, label: 'Main stop', value: day.title } : null,
-      stay ? { icon: BedDouble, label: 'Accommodation', value: stay } : null,
-      day.meals ? { icon: Utensils, label: 'Meals', value: day.meals } : null,
-      day.activities ? { icon: Compass, label: 'Activities', value: day.activities } : null
-    ].filter(Boolean) as FactCard[];
-  };
-
   const scrollToSection = (id: string) => {
     if (!browser) return;
     const el = document.getElementById(id);
     if (!el) return;
     const top = el.getBoundingClientRect().top + window.scrollY - 96;
     window.scrollTo({ top, behavior: 'smooth' });
-  };
-
-  const animateDayDisclosure = async (event: MouseEvent) => {
-    const summary = event.currentTarget as HTMLElement;
-    const details = summary.closest('details');
-    if (!details || details.dataset.animating === 'true') return;
-
-    event.preventDefault();
-    const wasOpen = details.open;
-    if (!wasOpen) details.open = true;
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      details.open = !wasOpen;
-      return;
-    }
-
-    const startHeight = wasOpen ? details.offsetHeight : summary.offsetHeight;
-    const endHeight = wasOpen ? summary.offsetHeight : details.scrollHeight;
-    details.dataset.animating = 'true';
-    details.style.overflow = 'hidden';
-
-    const animation = details.animate(
-      [{ height: `${startHeight}px` }, { height: `${endHeight}px` }],
-      { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
-    );
-
-    try {
-      await animation.finished;
-    } catch {
-      // A cancelled animation should still leave the disclosure usable.
-    }
-
-    if (wasOpen) details.open = false;
-    details.style.removeProperty('overflow');
-    delete details.dataset.animating;
   };
 
   const openPlanner = (location: string) => {
@@ -309,9 +261,6 @@
   };
 
   $: slug = $page.params.slug ?? '';
-  // Locale comes from the URL prefix via the root layout, so a client-side
-  // fetch asks for the same language the page was rendered in.
-  $: activeLocale = ($page.data as { locale?: string }).locale ?? DEFAULT_LOCALE;
   $: origin = $page.url.origin;
   $: destinationLabel = getTourDestinationLabel(tour, 4);
   $: destinations = getTourDestinations(tour);
@@ -334,17 +283,6 @@
   $: tourDescription = tour?.full_description || tour?.short_description || '';
   $: metaDescription = tour ? shortText(tour.meta_description || tour.short_description || tour.full_description, 170) : '';
   $: categoryLabel = tour?.tour_categories?.name || normaliseLabel(tour?.experience_type);
-  $: attachedTravelStyles = travelStyles.filter((style) =>
-    (tour?.persona_tags ?? []).map(personaKey).includes(personaKey(style.persona))
-  );
-  $: bestFor = tour
-    ? unique([
-        ...(tour.persona_tags ?? []).map(normaliseLabel),
-        tour.tour_categories?.name,
-        tour.experience_type ? normaliseLabel(tour.experience_type) : '',
-        tour.budget_tier ? `${normaliseLabel(tour.budget_tier)} comfort` : ''
-      ])
-    : [];
   $: tripFacts = tour
     ? ([
         routeLabel ? { icon: Route, label: 'Start / End', value: routeLabel } : null,
@@ -423,20 +361,6 @@
     if(price.price_status==='ON_REQUEST'||price.price==null)return {label:'On request',amount:''};
     return {label:'From',amount:formatPublishedRate(Number(price.price),season.currency)};
   };
-  $: mediaImages = (() => {
-    if (!tour) return [] as MediaImage[];
-    const images: MediaImage[] = [];
-    const add = (image: MediaImage | null | undefined) => {
-      if (!image?.src || images.some((item) => item.src === image.src)) return;
-      images.push(image);
-    };
-    add(heroImage ? { src: heroImage, caption: tour.title, record: tour as unknown as Record<string, unknown>, fields: ['main_image_url', 'banner_image_url'] } : null);
-    for (const day of itineraryDays) {
-      add(dayImage(day));
-      if (day.lodge) for (const image of galleryForStay(day.lodge)) add(image);
-    }
-    return images.slice(0, 10);
-  })();
   $: touristTripLd = tour
     ? {
         '@type': 'TouristTrip',

@@ -12,7 +12,6 @@ import {
   aboutYouFields,
   accommodationField,
   adultsField,
-  budgetField,
   childrenField,
   durationField,
   emailField,

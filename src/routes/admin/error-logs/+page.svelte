@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
-  import { CheckCircle2, ExternalLink, RotateCcw, Search, Signpost, TriangleAlert, Trash2, X } from '@lucide/svelte';
+  import { CheckCircle2, RotateCcw, Search, Signpost, TriangleAlert, Trash2, X } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';

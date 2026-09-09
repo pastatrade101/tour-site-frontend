@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { fade, scale } from 'svelte/transition';
-  import { Edit, Hotel, Plus, Search, Trash2, X } from '@lucide/svelte';
+  import { Edit, Hotel, Plus, Search, Trash2 } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import MediaPicker from '$lib/components/admin/MediaPicker.svelte';

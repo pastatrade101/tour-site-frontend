@@ -6,8 +6,7 @@
     MapPinned,
     Route,
     ShieldCheck,
-    Wallet,
-    X
+    Wallet
   } from '@lucide/svelte';
   import { page } from '$app/stores';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';

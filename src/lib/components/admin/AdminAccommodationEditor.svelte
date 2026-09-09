@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher, onMount, tick } from 'svelte';
-  import { ArrowLeft, ArrowRight, Eye, Plus, Save, Trash2, X } from '@lucide/svelte';
+  import { ArrowLeft, ArrowRight, Eye, Plus, Save, X } from '@lucide/svelte';
   import { api, ApiRequestError, type ApiFieldError } from '$lib/api/client';
   import AdminRichText from './AdminRichText.svelte';
   import MediaPicker from './MediaPicker.svelte';

@@ -19,7 +19,6 @@
     X
   } from '@lucide/svelte';
   import { api } from '$lib/api/client';
-  import { imgUrl } from '$lib/img';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
