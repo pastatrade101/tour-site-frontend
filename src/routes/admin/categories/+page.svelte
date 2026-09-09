@@ -1,7 +1,20 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
-  import { ArrowDown, ArrowUp, ChevronDown, Edit, Plus, Search, Trash2, X } from '@lucide/svelte';
+  import {
+    ArrowDown,
+    ArrowUp,
+    Compass,
+    Edit,
+    FileText,
+    Images,
+    Languages,
+    LayoutTemplate,
+    Plus,
+    Search,
+    Trash2,
+    X
+  } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
@@ -85,6 +98,21 @@
 
   type VisualType = 'none' | 'icon' | 'lottie';
   type LottieSource = 'upload' | 'url';
+  type TabKey = 'basics' | 'landing' | 'travel' | 'media' | 'seo' | 'translations';
+
+  /**
+   * The form is long enough that one scroll was hiding the Save button, so it
+   * is split across tabs. Translations is listed here but only rendered for a
+   * saved category — it needs an id.
+   */
+  const TABS = [
+    ['basics', FileText, 'Basics'],
+    ['landing', LayoutTemplate, 'Landing page'],
+    ['travel', Compass, 'Travel'],
+    ['media', Images, 'Media'],
+    ['seo', Search, 'SEO'],
+    ['translations', Languages, 'Translations']
+  ] as const;
 
   type MediaItem = { file_name: string; file_url: string; id: string; thumbnail_url?: string | null };
 
@@ -168,8 +196,11 @@
   let visualType: VisualType = 'none';
   let lastVisualType: VisualType = 'none';
   let lottieSource: LottieSource = 'upload';
-  let seoOpen = false;
   let toasts: Toast[] = [];
+  let activeTab: TabKey = 'basics';
+  let bodyEl: HTMLDivElement;
+  /** Name and slug only go red once the operator has tried to save. */
+  let attemptedSave = false;
 
   const slugify = (value: string) =>
     value
@@ -195,6 +226,34 @@
     form.min_days && form.max_days && Number(form.max_days) < Number(form.min_days)
       ? 'Maximum days must be greater than or equal to minimum days.'
       : '';
+
+  /**
+   * Name and slug used to be gated by the browser's own `required`/`pattern`.
+   * Inactive tabs stay in the DOM (see the panel comments), so those controls
+   * are present but unfocusable — Chrome then refuses to submit and reports it
+   * only to the console, leaving Save looking dead. The form is `novalidate`
+   * and these checks run in JS instead, mirroring the API exactly:
+   * backend/src/schemas/categories.schema.ts:147-152.
+   */
+  const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+  $: nameError = form.name.trim().length < 2 ? 'Name must be at least 2 characters.' : '';
+  $: slugError =
+    form.slug.trim().length < 2 || !SLUG_RE.test(form.slug.trim())
+      ? 'Lowercase letters, numbers and single hyphens, e.g. wildlife-safari'
+      : '';
+
+  const selectTab = (tab: TabKey) => {
+    activeTab = tab;
+    // Each tab starts at its own top rather than inheriting the last one's scroll.
+    bodyEl?.scrollTo({ top: 0 });
+  };
+
+  /** Save blocked by a field the operator cannot see: go to it, then explain. */
+  const failOn = (tab: TabKey, message: string) => {
+    selectTab(tab);
+    showToast(message, 'error');
+  };
 
   const loadMedia = async () => {
     if (mediaItems.length || loadingMedia) return;
@@ -245,7 +304,8 @@
     visualType = 'none';
     lastVisualType = visualType;
     lottieSource = 'upload';
-    seoOpen = false;
+    activeTab = 'basics';
+    attemptedSave = false;
     slugManuallyEdited = false;
     modalOpen = true;
     await loadMedia();
@@ -280,8 +340,8 @@
     visualType = category.lottie_url ? 'lottie' : category.icon_url ? 'icon' : 'none';
     lastVisualType = visualType;
     lottieSource = 'url';
-    // Open the SEO section only when there is something in it to see.
-    seoOpen = Boolean(category.meta_title || category.meta_description || category.seo_image_url);
+    activeTab = 'basics';
+    attemptedSave = false;
     slugManuallyEdited = true;
     modalOpen = true;
     await loadMedia();
@@ -295,7 +355,8 @@
     visualType = 'none';
     lastVisualType = visualType;
     lottieSource = 'upload';
-    seoOpen = false;
+    activeTab = 'basics';
+    attemptedSave = false;
   };
 
   const toggleMonth = (month: number) => {
@@ -328,6 +389,24 @@
 
   $: landingPageValidation = parseStyleLandingJson(form.landing_page_json);
   $: landingPageError = landingPageValidation.errors[0] ?? '';
+
+  /**
+   * Which tabs hold something that would stop a save. Without this a blocking
+   * error can sit on a panel the operator is not looking at, and the only
+   * symptom is that Save appears to do nothing.
+   */
+  $: landingBlocked = Boolean(form.landing_page_json.trim()) && landingPageValidation.errors.length > 0;
+  $: tabError = {
+    basics: attemptedSave && Boolean(nameError || slugError),
+    landing: landingBlocked,
+    travel: Boolean(daysError),
+    media: false,
+    seo: false,
+    translations: false
+  } as Record<TabKey, boolean>;
+
+  /** SEO is all optional, so the tab says whether anything was actually set. */
+  $: seoFilled = Boolean(form.meta_title || form.meta_description || form.seo_image_url);
 
   /**
    * What a generated template is built from. Everything already typed into the
@@ -376,16 +455,27 @@
 
   const saveCategory = async () => {
     if (saving) return;
+    attemptedSave = true;
+    // Each guard names the tab that owns the field, so a blocked save moves the
+    // operator to the problem instead of just refusing.
+    if (nameError) {
+      failOn('basics', nameError);
+      return;
+    }
+    if (slugError) {
+      failOn('basics', slugError);
+      return;
+    }
     if (daysError) {
-      showToast(daysError, 'error');
+      failOn('travel', daysError);
       return;
     }
     if (form.status === 'published' && landingPageValidation.errors.length) {
-      showToast(`Landing page is incomplete: ${landingPageValidation.errors[0]}`, 'error');
+      failOn('landing', `Landing page is incomplete: ${landingPageValidation.errors[0]}`);
       return;
     }
     if (form.landing_page_json.trim() && landingPageValidation.errors.length) {
-      showToast(landingPageValidation.errors[0], 'error');
+      failOn('landing', landingPageValidation.errors[0]);
       return;
     }
     saving = true;
@@ -522,25 +612,80 @@
 </div>
 
 {#if modalOpen}
-  <div class="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4 backdrop-blur-sm" transition:fade={{ duration: 140 }}>
-    <div class="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-[10px] border border-ink/10 bg-surface p-6 shadow-[0_24px_80px_rgba(57,61,50,0.18)]" transition:scale={{ duration: 160, start: 0.98 }}>
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">{editingCategory ? 'Edit category' : 'New category'}</p>
-          <h2 class="mt-2 text-2xl font-bold tracking-normal text-ink">{editingCategory ? editingCategory.name : 'Create Tour Category'}</h2>
+  <div class="fixed inset-0 z-50 grid place-items-center bg-black/45 p-0 backdrop-blur-sm sm:p-4" transition:fade={{ duration: 140 }}>
+    <!--
+      The form itself is the flex column: header and footer are shrink-0, only
+      the middle scrolls. That is what keeps Save on screen no matter how long
+      the active tab is — and the footer has to stay INSIDE the form, because
+      AdminButton forwards no `form` attribute, so type="submit" is the only
+      thing wiring it to the submit handler.
+    -->
+    <form
+      class="flex h-full max-h-full w-full max-w-5xl flex-col overflow-hidden bg-surface shadow-[0_24px_80px_rgba(57,61,50,0.18)] sm:h-auto sm:max-h-[94vh] sm:rounded-[10px] sm:border sm:border-ink/10"
+      transition:scale={{ duration: 160, start: 0.98 }}
+      novalidate
+      on:submit|preventDefault={saveCategory}
+    >
+      <header class="flex shrink-0 flex-col gap-4 border-b border-ink/10 bg-surface px-4 py-4 sm:px-6 sm:py-5">
+        <div class="flex items-start justify-between gap-4">
+          <div class="min-w-0">
+            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">{editingCategory ? 'Edit category' : 'New category'}</p>
+            <h2 class="mt-1 truncate text-xl font-bold tracking-normal text-ink sm:text-2xl">{editingCategory ? editingCategory.name : 'Create Tour Category'}</h2>
+          </div>
+          <button class="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-ink/10 bg-surface text-ink shadow-sm transition hover:bg-sand" type="button" aria-label="Close modal" on:click={closeModal}>
+            <X size={18} />
+          </button>
         </div>
-        <button class="grid h-10 w-10 place-items-center rounded-2xl border border-ink/10 bg-surface text-ink shadow-sm transition hover:bg-sand" type="button" aria-label="Close modal" on:click={closeModal}>
-          <X size={18} />
-        </button>
-      </div>
 
-      <form class="mt-6 grid gap-5" on:submit|preventDefault={saveCategory}>
-        <!-- ── 1 · Basic information ─────────────────────────────────────── -->
+        <div class="flex gap-1 overflow-x-auto rounded-2xl border border-ink/10 bg-surface p-1.5 shadow-sm">
+          {#each TABS as [tab, Icon, label] (tab)}
+            <!-- Translations needs a saved id, so it has no tab on a new category. -->
+            {#if tab !== 'translations' || editingCategory}
+              <button
+                class={`flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/20 ${
+                  activeTab === tab ? 'bg-forest text-white shadow-sm' : 'text-ink/55 hover:bg-sand/50 hover:text-ink'
+                }`}
+                type="button"
+                aria-current={activeTab === tab}
+                on:click={() => selectTab(tab)}
+              >
+                <Icon size={15} />
+                {label}
+                {#if tabError[tab]}
+                  <span class="h-1.5 w-1.5 rounded-full bg-clay" title="Something here is blocking the save"></span>
+                {:else if tab === 'seo' && seoFilled}
+                  <span class="h-1.5 w-1.5 rounded-full bg-goldfinch-gold" title="Custom SEO is set"></span>
+                {/if}
+              </button>
+            {/if}
+          {/each}
+        </div>
+      </header>
+
+      <div class="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6" bind:this={bodyEl}>
+        <!--
+          Panels are CSS-hidden, never {#if}-unmounted. AdminStyleLandingEditor
+          rebuilds a fresh template on mount and has no branch for a document
+          that is non-empty but mid-edit (AdminStyleLandingEditor.svelte:48-53),
+          so unmounting it would write that template back over the operator's
+          page through bind:json. AdminTranslationTabs likewise refetches and
+          replaces its draft on mount. The toggle therefore lives on a bare
+          wrapper — putting `hidden` on an element that also carries a display
+          utility would lose to it.
+        -->
+
+        <!-- ── Basics ────────────────────────────────────────────────────── -->
+        <div class="grid gap-5" class:hidden={activeTab !== 'basics'}>
         <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
           <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Basic information</p>
 
           <div class="grid gap-4 md:grid-cols-2">
-            <AdminFormInput label="Name" name="name" bind:value={form.name} required placeholder="Wildlife Safari" />
+            <div class="grid gap-1.5">
+              <AdminFormInput label="Name" name="name" bind:value={form.name} placeholder="Wildlife Safari" />
+              {#if attemptedSave && nameError}
+                <span class="text-[11px] font-semibold text-clay">{nameError}</span>
+              {/if}
+            </div>
 
             <label class="grid gap-1.5">
               <span class="text-[13px] font-semibold text-ink/65">Slug</span>
@@ -548,12 +693,14 @@
                 class="h-11 rounded-md border border-ink/15 bg-black/[0.02] px-3.5 text-sm text-ink outline-none transition hover:border-ink/25 focus:border-forest focus:bg-surface focus:ring-2 focus:ring-forest/20"
                 name="slug"
                 bind:value={form.slug}
-                required
-                pattern="[a-z0-9]+(-[a-z0-9]+)*"
                 title="Lowercase letters, numbers and single hyphens, e.g. wildlife-safari"
                 on:input={() => (slugManuallyEdited = true)}
               />
-              <span class="text-[11px] text-ink/40">Auto-generated from the name until you edit it.</span>
+              {#if attemptedSave && slugError}
+                <span class="text-[11px] font-semibold text-clay">{slugError}</span>
+              {:else}
+                <span class="text-[11px] text-ink/40">Auto-generated from the name until you edit it.</span>
+              {/if}
             </label>
           </div>
 
@@ -570,36 +717,39 @@
 
           <AdminTextArea label="Who it's for" name="who_its_for" bind:value={form.who_its_for} rows={2} placeholder="Ideal for first-time safari travellers, couples, families and wildlife enthusiasts." />
 
-          <!--
-            The two planning facts that have no home of their own. Best months,
-            trip length and fitness already have fields below; the parks a style
-            visits are read from its published tours, so they cannot go stale.
-          -->
-          <AdminRichText
-            label="Travel costs — how to plan"
-            name="planning_costs"
-            bind:value={form.planning_costs}
-            rows={4}
-            placeholder="What a trip of this style typically costs and what drives the price. A short list often reads better than a paragraph — park fees, lodge standard, season, group size."
-          />
-          <AdminRichText
-            label="Route planning — how to plan"
-            name="planning_route"
-            bind:value={form.planning_route}
-            rows={4}
-            placeholder="How the route is usually put together for this style — where to start, how long to stay, what to leave out."
-          />
-          <p class="-mt-1 text-xs text-ink/55">Both optional, and both take bullets. Each appears as its own card on the style page; leave one blank and it is hidden.</p>
         </section>
 
-        <!-- ── 2 · The safari-style page, as a form ─────────────────────── -->
-        <AdminStyleLandingEditor
-          bind:json={form.landing_page_json}
-          seed={landingSeed}
-          on:toast={(e) => showToast(e.detail.message, e.detail.tone)}
-        />
+        <!--
+          Publishing lives on Basics rather than behind its own tab: status arms
+          the strictest save guard (a published style must have a complete
+          landing page), so it should not be the one thing you can only see by
+          leaving the tab you are working on.
+        -->
+        <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
+          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Publishing</p>
+          <div class="grid gap-4 md:grid-cols-3">
+            <AdminSelect label="Status" name="status" bind:value={form.status} options={statusOptions} />
+            <AdminFormInput label="Sort order" name="sort_order" type="number" min={0} bind:value={form.sort_order} />
+            <label class="flex items-center gap-3 self-end rounded-md border border-ink/10 bg-surface px-4 py-3 text-sm font-semibold text-ink">
+              <input class="h-4 w-4 rounded border-ink/20 text-forest focus:ring-forest" type="checkbox" bind:checked={form.is_featured} />
+              Featured category
+            </label>
+          </div>
+          <p class="-mt-2 text-xs text-ink/45">Featured marks this category for homepage and promotional sections. Sort order only controls list position — lower first.</p>
+        </section>
+        </div>
 
-        <!-- ── 3 · Travel information ────────────────────────────────────── -->
+        <!-- ── Landing page ──────────────────────────────────────────────── -->
+        <div class:hidden={activeTab !== 'landing'}>
+          <AdminStyleLandingEditor
+            bind:json={form.landing_page_json}
+            seed={landingSeed}
+            on:toast={(e) => showToast(e.detail.message, e.detail.tone)}
+          />
+        </div>
+
+        <!-- ── Travel ────────────────────────────────────────────────────── -->
+        <div class="grid gap-5" class:hidden={activeTab !== 'travel'}>
         <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
           <div>
             <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Travel information</p>
@@ -697,7 +847,34 @@
             </div>
         </section>
 
-        <!-- ── 4 · Media ─────────────────────────────────────────────────── -->
+        <!--
+          The two planning facts that have no home of their own. They sit with
+          best months, trip length and fitness because they answer the same
+          question; the parks a style visits are read from its published tours,
+          so they cannot go stale.
+        -->
+        <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
+          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">How to plan this style</p>
+          <AdminRichText
+            label="Travel costs — how to plan"
+            name="planning_costs"
+            bind:value={form.planning_costs}
+            rows={4}
+            placeholder="What a trip of this style typically costs and what drives the price. A short list often reads better than a paragraph — park fees, lodge standard, season, group size."
+          />
+          <AdminRichText
+            label="Route planning — how to plan"
+            name="planning_route"
+            bind:value={form.planning_route}
+            rows={4}
+            placeholder="How the route is usually put together for this style — where to start, how long to stay, what to leave out."
+          />
+          <p class="-mt-1 text-xs text-ink/55">Both optional, and both take bullets. Each appears as its own card on the style page; leave one blank and it is hidden.</p>
+        </section>
+        </div>
+
+        <!-- ── Media ─────────────────────────────────────────────────────── -->
+        <div class:hidden={activeTab !== 'media'}>
         <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
           <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Media</p>
 
@@ -745,63 +922,46 @@
             </div>
           </div>
         </section>
+        </div>
 
-        <!-- ── 5 · Publishing ────────────────────────────────────────────── -->
+        <!-- ── SEO ───────────────────────────────────────────────────────── -->
+        <div class:hidden={activeTab !== 'seo'}>
         <section class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/20 p-4">
-          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Publishing</p>
-          <div class="grid gap-4 md:grid-cols-3">
-            <AdminSelect label="Status" name="status" bind:value={form.status} options={statusOptions} />
-            <AdminFormInput label="Sort order" name="sort_order" type="number" min={0} bind:value={form.sort_order} />
-            <label class="flex items-center gap-3 self-end rounded-md border border-ink/10 bg-surface px-4 py-3 text-sm font-semibold text-ink">
-              <input class="h-4 w-4 rounded border-ink/20 text-forest focus:ring-forest" type="checkbox" bind:checked={form.is_featured} />
-              Featured category
-            </label>
-          </div>
-          <p class="-mt-2 text-xs text-ink/45">Featured marks this category for homepage and promotional sections. Sort order only controls list position — lower first.</p>
-        </section>
-
-        <!-- ── 6 · SEO (collapsed until needed) ──────────────────────────── -->
-        <section class="rounded-[8px] border border-ink/10 bg-sand/20">
-          <button
-            class="flex w-full items-center justify-between gap-3 p-4 text-left"
-            type="button"
-            aria-expanded={seoOpen}
-            on:click={() => (seoOpen = !seoOpen)}
-          >
-            <span class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">SEO</span>
-            <ChevronDown size={16} class={`text-ink/45 transition-transform ${seoOpen ? 'rotate-180' : ''}`} />
-          </button>
-          {#if seoOpen}
-            <div class="grid gap-4 border-t border-ink/10 p-4">
-              <div class="grid gap-4 md:grid-cols-2">
-                <div class="grid content-start gap-4">
-                  <AdminFormInput label="SEO title" name="meta_title" bind:value={form.meta_title} counter={60} placeholder="Falls back to the category name." />
-                  <AdminTextArea label="SEO description" name="meta_description" bind:value={form.meta_description} rows={3} counter={160} placeholder="Falls back to the short description." />
-                </div>
-                <MediaPicker label="Social / Open Graph image" media={mediaItems} uploadFolder="categories/seo" aspect="aspect-[16/9]" bind:value={form.seo_image_url} />
-              </div>
-              <p class="text-xs text-ink/45">All optional. Empty fields fall back to the category name, short description and category image.</p>
+          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">SEO</p>
+          <div class="grid gap-4 md:grid-cols-2">
+            <div class="grid content-start gap-4">
+              <AdminFormInput label="SEO title" name="meta_title" bind:value={form.meta_title} counter={60} placeholder="Falls back to the category name." />
+              <AdminTextArea label="SEO description" name="meta_description" bind:value={form.meta_description} rows={3} counter={160} placeholder="Falls back to the short description." />
             </div>
-          {/if}
+            <MediaPicker label="Social / Open Graph image" media={mediaItems} uploadFolder="categories/seo" aspect="aspect-[16/9]" bind:value={form.seo_image_url} />
+          </div>
+          <p class="text-xs text-ink/45">All optional. Empty fields fall back to the category name, short description and category image.</p>
         </section>
+        </div>
 
-        <!-- ── 7 · Translations (existing categories only — needs an id) ── -->
+        <!-- ── Translations (existing categories only — needs an id) ─────── -->
         {#if editingCategory}
-          <AdminTranslationTabs
-            entityType="tour_categories"
-            entityId={editingCategory.id}
-            on:toast={(event) => showToast(event.detail.message, event.detail.type ?? 'success')}
-          />
+          <div class:hidden={activeTab !== 'translations'}>
+            <AdminTranslationTabs
+              entityType="tour_categories"
+              entityId={editingCategory.id}
+              on:toast={(event) => showToast(event.detail.message, event.detail.type ?? 'success')}
+            />
+          </div>
         {/if}
+      </div>
 
-        <div class="flex justify-end gap-3 pt-2">
+      <footer class="flex shrink-0 items-center justify-between gap-3 border-t border-ink/10 bg-surface px-4 py-3 shadow-[0_-8px_24px_rgba(57,61,50,0.04)] sm:px-6 sm:py-4">
+        <!-- What Save will actually do, without a trip back to the Basics tab. -->
+        <StatusBadge status={form.status} />
+        <div class="flex items-center gap-3">
           <AdminButton variant="secondary" type="button" on:click={closeModal}>Cancel</AdminButton>
           <AdminButton type="submit" disabled={saving}>
             {saving ? 'Saving...' : editingCategory ? 'Save Changes' : 'Create Category'}
           </AdminButton>
         </div>
-      </form>
-    </div>
+      </footer>
+    </form>
   </div>
 {/if}
 
