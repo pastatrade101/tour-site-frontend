@@ -10,12 +10,13 @@
    * The section chrome is Goldfinch's own: alternating surface/canvas bands,
    * `container-shell`, gold eyebrow, serif heading, ink body.
    */
-  import { Check, Minus } from '@lucide/svelte';
+  import { ArrowRight, Banknote, Car, Check, Clock3, MapPin, Minus, Plane, Route, Tent, Users } from '@lucide/svelte';
   import FAQAccordion from './FAQAccordion.svelte';
   import Img from './Img.svelte';
   import ItineraryDays from './ItineraryDays.svelte';
   import LeadCaptureForm from './LeadCaptureForm.svelte';
   import RichText from './RichText.svelte';
+  import SafariRouteOptions from './SafariRouteOptions.svelte';
   import TourCard from './TourCard.svelte';
   import { MONTHS, arr, lines, rows, str, type Block } from '$lib/safariPackageBlocks';
   import type { FAQ, ItineraryDay, Tour } from '$lib/types';
@@ -38,6 +39,22 @@
   const byOrder = (slugs: string[]) =>
     slugs.map((slug) => tours.find((tour) => tour.slug === slug)).filter((tour): tour is Tour => Boolean(tour));
 
+  /**
+   * The names an editor can type in a fact's Icon box, kept deliberately small
+   * and plain-language. An unknown name draws no icon rather than an error
+   * glyph, so a typo costs nothing.
+   */
+  const FACT_ICON: Record<string, typeof Plane> = {
+    plane: Plane,
+    pin: MapPin,
+    clock: Clock3,
+    route: Route,
+    price: Banknote,
+    people: Users,
+    vehicle: Car,
+    tent: Tent
+  };
+
   const monthsOf = (value: unknown) =>
     arr<unknown>(value)
       .map((entry) => String(entry ?? '').trim())
@@ -50,14 +67,18 @@
   {@const intro = str(block.intro)}
 
   {#if block.type === 'facts'}
-    {@const items = rows<{ label?: string; value?: string }>(block.items).filter((item) => str(item.value).trim())}
+    {@const items = rows<{ label?: string; value?: string; icon?: string }>(block.items).filter((item) => str(item.value).trim())}
     {#if items.length}
-      <section class="border-y border-ink/10 bg-canvas">
-        <div class="container-shell grid gap-4 py-6 sm:grid-cols-2 lg:grid-cols-4">
+      <section class="bg-deep-green">
+        <div class="container-shell grid gap-x-8 gap-y-5 py-6 sm:grid-cols-2 lg:grid-cols-4">
           {#each items as item, i (i)}
-            <div class="min-w-0">
-              <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/50">{str(item.label)}</p>
-              <p class="mt-1 text-[15px] font-semibold leading-snug text-heading">{str(item.value)}</p>
+            {@const Icon = FACT_ICON[str(item.icon).trim().toLowerCase()]}
+            <div class="flex min-w-0 items-start gap-2.5">
+              {#if Icon}<Icon size={18} strokeWidth={1.6} class="mt-0.5 shrink-0 text-goldfinch-gold" />{/if}
+              <div class="min-w-0">
+                <p class="text-[10px] font-bold uppercase tracking-[0.13em] text-white/55">{str(item.label)}</p>
+                <p class="mt-0.5 text-[13.5px] leading-snug text-white">{str(item.value)}</p>
+              </div>
             </div>
           {/each}
         </div>
@@ -65,12 +86,32 @@
     {/if}
 
   {:else if block.type === 'prose'}
+    {@const asideTitle = str(block.aside_title).trim()}
+    {@const asideBody = str(block.aside_body).trim()}
+    {@const hasAside = Boolean(asideTitle && asideBody)}
     {#if str(block.body)}
       <section class={`${surface(index)} py-14 md:py-20`}>
-        <div class="container-shell max-w-[820px]">
+        <!-- The copy runs full width until there is a side card to sit beside. -->
+        <div class={`container-shell ${hasAside ? '' : 'max-w-[820px]'}`}>
           {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
           {#if title}<h2 class={HEADING}>{title}</h2>{/if}
-          <RichText value={str(block.body)} className="mt-5 space-y-4 text-[15px] leading-8 text-ink/72 md:text-base" />
+          <div class={hasAside ? 'mt-5 grid gap-8 lg:grid-cols-12' : ''}>
+            <RichText
+              value={str(block.body)}
+              className={`space-y-4 text-[15px] leading-8 text-ink/72 md:text-base ${hasAside ? 'lg:col-span-7' : 'mt-5'}`}
+            />
+            {#if hasAside}
+              <div class="lg:col-span-5">
+                <div class="rounded-[12px] border border-clay/20 bg-canvas p-6">
+                  <div class="inline-flex items-center gap-2">
+                    <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
+                    <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-clay">{asideTitle}</span>
+                  </div>
+                  <p class="font-serif mt-3 text-[19px] leading-[1.35] text-heading">{asideBody}</p>
+                </div>
+              </div>
+            {/if}
+          </div>
         </div>
       </section>
     {/if}
@@ -320,5 +361,210 @@
         <LeadCaptureForm inline />
       </div>
     </section>
+
+  {:else if block.type === 'routes'}
+    {@const routeRows = rows<Record<string, unknown>>(block.routes)}
+    {#if routeRows.length}
+      <section id="route-options" class={`scroll-mt-20 ${surface(index)} py-14 md:py-20`}>
+        <div class="container-shell">
+          {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
+          {#if title}<h2 class={HEADING}>{title}</h2>{/if}
+          {#if intro}<p class={INTRO}>{intro}</p>{/if}
+          <SafariRouteOptions routes={routeRows} {tours} ctaLabel={str(block.cta_label) || 'Send request for this route'} />
+        </div>
+      </section>
+    {/if}
+
+  {:else if block.type === 'advice'}
+    {@const cards = rows<{ title?: string; body?: string; best_for?: string; note?: string }>(block.cards)}
+    {#if cards.length}
+      <section class={`${surface(index)} py-14 md:py-20`}>
+        <div class="container-shell">
+          {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
+          {#if title}<h2 class={HEADING}>{title}</h2>{/if}
+          {#if intro}<p class={INTRO}>{intro}</p>{/if}
+          <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {#each cards as card, i (i)}
+              <div class="overflow-hidden rounded-[12px] border border-ink/12 bg-surface">
+                <div class="h-[3px] w-full bg-clay" aria-hidden="true"></div>
+                <div class="p-5">
+                  {#if str(card.title)}<h3 class="font-serif text-lg font-semibold leading-snug text-heading">{str(card.title)}</h3>{/if}
+                  {#if str(card.body)}<p class="mt-2.5 text-[14.5px] leading-relaxed text-ink/70">{str(card.body)}</p>{/if}
+                  {#if str(card.best_for)}<p class="mt-4 text-[13.5px] font-semibold leading-relaxed text-heading">Best for: {str(card.best_for)}</p>{/if}
+                  {#if str(card.note)}<p class="mt-2 text-[13px] italic leading-relaxed text-ink/55">{str(card.note)}</p>{/if}
+                </div>
+              </div>
+            {/each}
+          </div>
+          {#if str(block.help_text) || str(block.cta_label)}
+            <div class="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+              {#if str(block.help_text)}<p class="text-[14.5px] leading-relaxed text-ink/70">{str(block.help_text)}</p>{/if}
+              {#if str(block.cta_label)}
+                <a class="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-6 text-sm font-bold text-heading transition hover:brightness-105" href="#lead-form">
+                  {str(block.cta_label)}
+                  <ArrowRight size={16} />
+                </a>
+              {/if}
+            </div>
+          {/if}
+        </div>
+      </section>
+    {/if}
+
+  {:else if block.type === 'expectations'}
+    {@const can = lines(block.can)}
+    {@const cannot = lines(block.cannot)}
+    {#if can.length || cannot.length}
+      <section class={`${surface(index)} py-14 md:py-20`}>
+        <div class="container-shell">
+          <div class="rounded-[16px] bg-canvas p-6 md:p-9">
+            {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
+            {#if title}<h2 class={HEADING}>{title}</h2>{/if}
+            {#if intro}<p class={INTRO}>{intro}</p>{/if}
+            <div class="mt-7 grid gap-4 md:grid-cols-2">
+              {#if can.length}
+                <div class="rounded-[12px] border border-ink/10 bg-surface p-5">
+                  <h3 class="text-[11px] font-bold uppercase tracking-[0.14em] text-heading">{str(block.can_title) || 'What it can give you'}</h3>
+                  <ul class="mt-4 grid gap-2.5">
+                    {#each can as item, i (i)}
+                      <li class="flex gap-2.5 text-[14.5px] leading-relaxed text-ink/70">
+                        <span class="mt-[3px] grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-goldfinch-gold text-heading">
+                          <Check size={11} strokeWidth={3} />
+                        </span>
+                        <span>{item}</span>
+                      </li>
+                    {/each}
+                  </ul>
+                </div>
+              {/if}
+              {#if cannot.length}
+                <div class="rounded-[12px] border border-ink/10 bg-surface p-5">
+                  <h3 class="text-[11px] font-bold uppercase tracking-[0.14em] text-heading">{str(block.cannot_title) || 'What it cannot give you'}</h3>
+                  <ul class="mt-4 grid gap-2.5">
+                    {#each cannot as item, i (i)}
+                      <li class="flex gap-2.5 text-[14.5px] leading-relaxed text-ink/70">
+                        <span class="mt-[3px] grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border border-ink/30 text-ink/50">
+                          <Minus size={11} strokeWidth={3} />
+                        </span>
+                        <span>{item}</span>
+                      </li>
+                    {/each}
+                  </ul>
+                </div>
+              {/if}
+            </div>
+            {#if str(block.note)}<p class="mt-6 max-w-3xl text-[14.5px] leading-relaxed text-ink/70">{str(block.note)}</p>{/if}
+          </div>
+        </div>
+      </section>
+    {/if}
+
+  {:else if block.type === 'priceguide'}
+    {@const priceRows = rows<{ route?: string; price?: string; best_for?: string; tendency?: string; why?: string }>(block.rows)}
+    {@const factors = lines(block.factors)}
+    {#if priceRows.length || factors.length}
+      <section class={`${surface(index)} py-14 md:py-20`}>
+        <div class="container-shell">
+          {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
+          {#if title}<h2 class={HEADING}>{title}</h2>{/if}
+          {#if intro}<p class={INTRO}>{intro}</p>{/if}
+
+          {#if priceRows.length}
+            <div class="mt-8 overflow-hidden rounded-[12px] border border-ink/10 bg-surface">
+              <div class="hidden grid-cols-12 gap-4 bg-deep-green px-5 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white/80 md:grid">
+                <span class="col-span-3">Option</span>
+                <span class="col-span-3">Usually best for</span>
+                <span class="col-span-2">Price tendency</span>
+                <span class="col-span-4">Why it costs that way</span>
+              </div>
+              {#each priceRows as row, i (i)}
+                <div class="grid gap-2 border-b border-ink/10 px-5 py-5 last:border-b-0 md:grid-cols-12 md:items-start md:gap-4 md:py-4">
+                  <div class="md:col-span-3">
+                    <span class="font-serif block text-[16px] font-semibold text-heading">{str(row.route)}</span>
+                    {#if str(row.price)}<span class="mt-1 block text-[13px] font-semibold text-clay">{str(row.price)}</span>{/if}
+                  </div>
+                  <span class="text-sm text-ink/70 md:col-span-3">{str(row.best_for)}</span>
+                  <span class="text-sm font-semibold text-heading md:col-span-2">{str(row.tendency)}</span>
+                  <span class="text-sm leading-relaxed text-ink/70 md:col-span-4">{str(row.why)}</span>
+                </div>
+              {/each}
+            </div>
+          {/if}
+          {#if str(block.small_print)}<p class="mt-4 text-[13.5px] italic leading-relaxed text-ink/55">{str(block.small_print)}</p>{/if}
+
+          {#if factors.length}
+            <div class="mt-8 rounded-[12px] border border-ink/10 bg-surface p-6">
+              <h3 class="font-serif text-lg font-semibold text-heading">{str(block.factors_title) || 'Why your quote may change'}</h3>
+              <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {#each factors as factor, i (i)}
+                  <div class="flex items-start gap-3">
+                    <span class="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-canvas text-clay">
+                      <Banknote size={18} />
+                    </span>
+                    <span class="pt-1.5 text-[14.5px] font-medium text-heading">{factor}</span>
+                  </div>
+                {/each}
+              </div>
+              {#if str(block.factors_note)}<p class="mt-5 text-sm leading-relaxed text-ink/70">{str(block.factors_note)}</p>{/if}
+            </div>
+          {/if}
+
+          {#if str(block.note)}
+            <div class="mt-6 rounded-[12px] border-l-[3px] border-goldfinch-gold bg-surface p-5">
+              {#if str(block.note_label)}<span class="text-[11px] font-bold uppercase tracking-[0.14em] text-clay">{str(block.note_label)}</span>{/if}
+              <p class="mt-2 text-[15px] leading-relaxed text-heading">{str(block.note)}</p>
+            </div>
+          {/if}
+
+          {#if str(block.cta_label)}
+            <a class="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-6 text-[14.5px] font-bold text-heading transition hover:brightness-105 sm:w-auto" href="#lead-form">
+              {str(block.cta_label)}
+              <ArrowRight size={16} />
+            </a>
+          {/if}
+        </div>
+      </section>
+    {/if}
+
+  {:else if block.type === 'durations'}
+    {@const options = rows<{ title?: string; body?: string; best_for?: string; href?: string; cta_label?: string }>(block.options)}
+    {#if options.length}
+      <section id="compare-durations" class={`scroll-mt-20 ${surface(index)} py-14 md:py-20`}>
+        <div class="container-shell">
+          {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
+          {#if title}<h2 class={HEADING}>{title}</h2>{/if}
+          {#if intro}<p class={INTRO}>{intro}</p>{/if}
+          <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {#each options as option, i (i)}
+              {@const href = str(option.href).trim()}
+              <!-- No link means this is the page the reader is already on. -->
+              <div class={`flex flex-col rounded-[12px] p-5 ${href ? 'border border-ink/12 bg-surface' : 'bg-deep-green text-white'}`}>
+                {#if str(option.title)}
+                  <h3 class={`font-serif text-lg font-semibold leading-snug ${href ? 'text-heading' : 'text-white'}`}>{str(option.title)}</h3>
+                {/if}
+                {#if str(option.body)}
+                  <p class={`mt-2.5 flex-1 text-sm leading-relaxed ${href ? 'text-ink/70' : 'text-white/80'}`}>{str(option.body)}</p>
+                {/if}
+                {#if str(option.best_for)}
+                  <p class={`mt-4 text-[11px] font-bold uppercase tracking-[0.13em] ${href ? 'text-clay' : 'text-goldfinch-gold'}`}>
+                    Best for: {str(option.best_for)}
+                  </p>
+                {/if}
+                {#if href}
+                  <a class="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-4 text-[13.5px] font-bold text-heading transition hover:brightness-105" {href}>
+                    {str(option.cta_label) || 'See this option'}
+                    <ArrowRight size={15} />
+                  </a>
+                {:else}
+                  <span class="mt-4 inline-flex h-10 items-center justify-center rounded-[10px] border border-white/25 px-4 text-[13.5px] font-semibold text-white/80">
+                    You are viewing this option
+                  </span>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        </div>
+      </section>
+    {/if}
   {/if}
 {/each}

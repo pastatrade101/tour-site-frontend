@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
 import { attachedFaqQuery, generalFaqQuery, mergeFaqs } from '$lib/faqEntities';
+import { parseRouteTour } from '$lib/safariPackageBlocks';
 import { localeFromPath, withLocale } from '$lib/i18n';
 import type { FAQ, SafariPackage, Tour } from '$lib/types';
 
@@ -33,14 +34,26 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
   const record = body?.data ?? null;
   if (!record) throw error(404, 'Safari package not found');
 
-  // Only what a `tours` block actually names. No block, no request.
+  // Only what a block actually names. No block, no request.
+  //
+  // Two blocks name tours: `tours` lists them for cards, and `routes` names one
+  // per comfort level as "Label | slug". They share one fetch and one array, so
+  // a tour used by both is requested once.
+  const sections = (record.sections ?? []) as Array<Record<string, unknown>>;
+
+  const fromTourBlocks = sections
+    .filter((block) => block?.type === 'tours')
+    .flatMap((block) => (block.tour_slugs as unknown[]) ?? []);
+
+  const fromRouteBlocks = sections
+    .filter((block) => block?.type === 'routes')
+    .flatMap((block) => (block.routes as Array<Record<string, unknown>>) ?? [])
+    .flatMap((route) => (route?.tours as unknown[]) ?? [])
+    .map((line) => parseRouteTour(String(line ?? '')).slug);
+
   const slugs = [
     ...new Set(
-      (record.sections ?? [])
-        .filter((block) => (block as { type?: string })?.type === 'tours')
-        .flatMap((block) => ((block as { tour_slugs?: unknown }).tour_slugs as unknown[]) ?? [])
-        .map((slug) => String(slug ?? '').trim())
-        .filter(Boolean)
+      [...fromTourBlocks, ...fromRouteBlocks].map((slug) => String(slug ?? '').trim()).filter(Boolean)
     )
   ];
 

@@ -45,6 +45,9 @@ export type BlockSpec = {
   fields: FieldSpec[];
 };
 
+/** Icons the quick-facts strip can draw. The renderer maps these to Lucide. */
+export const FACT_ICONS = ['plane', 'pin', 'clock', 'route', 'price', 'people', 'vehicle', 'tent'] as const;
+
 const eyebrow: FieldSpec = { key: 'eyebrow', label: 'Small label above the heading', kind: 'text', placeholder: 'Why this trip' };
 const title: FieldSpec = { key: 'title', label: 'Heading', kind: 'text' };
 const intro: FieldSpec = { key: 'intro', label: 'Intro paragraph', kind: 'textarea' };
@@ -62,7 +65,8 @@ export const BLOCK_TYPES: BlockSpec[] = [
         hint: 'Four reads best. A fact with no value is left out.',
         fields: [
           { key: 'label', label: 'Label', kind: 'text', placeholder: 'Duration' },
-          { key: 'value', label: 'Value', kind: 'text', placeholder: '2 days, 1 night' }
+          { key: 'value', label: 'Value', kind: 'text', placeholder: '2 days, 1 night' },
+          { key: 'icon', label: 'Icon', kind: 'text', hint: `One of: ${FACT_ICONS.join(', ')}. Anything else, or blank, draws no icon.`, placeholder: 'clock' }
         ]
       }
     ]
@@ -71,7 +75,13 @@ export const BLOCK_TYPES: BlockSpec[] = [
     type: 'prose',
     label: 'Written section',
     blurb: 'A heading and formatted copy. The workhorse block.',
-    fields: [eyebrow, title, { key: 'body', label: 'Body', kind: 'richtext' }]
+    fields: [
+      eyebrow,
+      title,
+      { key: 'body', label: 'Body', kind: 'richtext' },
+      { key: 'aside_title', label: 'Side card label', kind: 'text', hint: 'Fill both to show a card beside the copy; leave either empty and the copy runs full width.', placeholder: 'Keep in mind' },
+      { key: 'aside_body', label: 'Side card text', kind: 'textarea' }
+    ]
   },
   {
     type: 'highlights',
@@ -205,8 +215,138 @@ export const BLOCK_TYPES: BlockSpec[] = [
     label: 'Enquiry band',
     blurb: 'The trip planner, on the dark band. One per page is plenty.',
     fields: [eyebrow, title, intro]
+  },
+  {
+    type: 'routes',
+    label: 'Route options (tabbed)',
+    blurb:
+      'The alternative routes for this trip, each as a tab. Points at real published tours — the photo, wording, price and day-by-day come from them, so this page and the tour pages can never disagree.',
+    fields: [
+      eyebrow,
+      title,
+      intro,
+      {
+        key: 'routes',
+        label: 'Routes',
+        kind: 'items',
+        hint: 'One per tab. Three or four reads best.',
+        fields: [
+          { key: 'tab', label: 'Tab label', kind: 'text', placeholder: 'Tarangire & Ngorongoro' },
+          {
+            key: 'tours',
+            label: 'Comfort levels',
+            kind: 'lines',
+            hint: 'One per line, as "Label | tour-slug" — e.g. Mid-range | 2-day-tarangire-midrange. The first is shown first. A slug that no longer resolves is left out rather than shown broken.'
+          },
+          { key: 'best_for', label: 'Best for', kind: 'text', placeholder: 'first-time safari travellers who want the classic route.' },
+          { key: 'note', label: 'Caveat under the route', kind: 'textarea', placeholder: 'This route is busier and needs careful flight and lodge timing.' }
+        ]
+      },
+      { key: 'cta_label', label: 'Button under each route', kind: 'text', placeholder: 'Send request for this route' }
+    ]
+  },
+  {
+    type: 'advice',
+    label: 'Which route suits you',
+    blurb: '"Choose this if…" cards, for a reader who cannot pick between the routes.',
+    fields: [
+      eyebrow,
+      title,
+      intro,
+      {
+        key: 'cards',
+        label: 'Cards',
+        kind: 'items',
+        fields: [
+          { key: 'title', label: 'Heading', kind: 'text', placeholder: 'Choose Tarangire & Ngorongoro if…' },
+          { key: 'body', label: 'Body', kind: 'textarea' },
+          { key: 'best_for', label: 'Best for', kind: 'text' },
+          { key: 'note', label: 'Caveat', kind: 'text' }
+        ]
+      },
+      { key: 'help_text', label: 'Line above the help button', kind: 'text', placeholder: "Still not sure? Send us your dates and we'll recommend the best route." },
+      { key: 'cta_label', label: 'Help button', kind: 'text', placeholder: 'Help Me Choose' }
+    ]
+  },
+  {
+    type: 'expectations',
+    label: 'What it can and cannot be',
+    blurb: 'Two honest lists. Sets expectations before someone books a trip that is too short for what they want.',
+    fields: [
+      eyebrow,
+      title,
+      intro,
+      { key: 'can_title', label: 'Left heading', kind: 'text', placeholder: 'Two days can give you' },
+      { key: 'can', label: 'Can', kind: 'lines' },
+      { key: 'cannot_title', label: 'Right heading', kind: 'text', placeholder: 'Two days cannot give you' },
+      { key: 'cannot', label: 'Cannot', kind: 'lines' },
+      { key: 'note', label: 'Closing line', kind: 'textarea' }
+    ]
+  },
+  {
+    type: 'priceguide',
+    label: 'Price guide',
+    blurb: 'What the options cost and why they differ, plus what moves a quote.',
+    fields: [
+      eyebrow,
+      title,
+      intro,
+      {
+        key: 'rows',
+        label: 'Options',
+        kind: 'items',
+        fields: [
+          { key: 'route', label: 'Option', kind: 'text', placeholder: 'Mikumi overnight' },
+          { key: 'price', label: 'Price', kind: 'text', placeholder: 'From ~$850 pp' },
+          { key: 'best_for', label: 'Usually best for', kind: 'text' },
+          { key: 'tendency', label: 'Price tendency', kind: 'text', placeholder: 'Usually lower' },
+          { key: 'why', label: 'Why it costs that way', kind: 'textarea' }
+        ]
+      },
+      { key: 'small_print', label: 'Line under the table', kind: 'textarea' },
+      { key: 'factors_title', label: 'Factors heading', kind: 'text', placeholder: 'Why your quote may change' },
+      { key: 'factors', label: 'What moves the price', kind: 'lines' },
+      { key: 'factors_note', label: 'Line under the factors', kind: 'textarea' },
+      { key: 'note_label', label: 'Pull-quote label', kind: 'text', placeholder: 'Goldfinch note' },
+      { key: 'note', label: 'Pull quote', kind: 'textarea' },
+      { key: 'cta_label', label: 'Button', kind: 'text', placeholder: 'Check My Date and Group Size' }
+    ]
+  },
+  {
+    type: 'durations',
+    label: 'Compare trip lengths',
+    blurb: 'The shorter and longer versions of this trip, so a reader can size it correctly. Leave a link empty to mark the one they are already on.',
+    fields: [
+      eyebrow,
+      title,
+      intro,
+      {
+        key: 'options',
+        label: 'Lengths',
+        kind: 'items',
+        fields: [
+          { key: 'title', label: 'Heading', kind: 'text', placeholder: '3-Day Safari from Zanzibar' },
+          { key: 'body', label: 'Body', kind: 'textarea' },
+          { key: 'best_for', label: 'Best for', kind: 'text' },
+          { key: 'href', label: 'Link', kind: 'text', hint: 'A path on this site. Leave empty for the page you are on — it renders as "you are viewing this option".', placeholder: '/3-day-safari-from-zanzibar' },
+          { key: 'cta_label', label: 'Button', kind: 'text', placeholder: 'Ask About 3-Day Safari' }
+        ]
+      }
+    ]
   }
 ];
+
+/**
+ * "Mid-range | 2-day-tarangire-midrange" → { label, slug }.
+ *
+ * A line with no pipe is taken as a bare slug and labelled from the tour it
+ * resolves to, so a single-comfort route needs no ceremony.
+ */
+export const parseRouteTour = (line: string): { label: string; slug: string } => {
+  const [first, ...rest] = str(line).split('|');
+  const slug = (rest.length ? rest.join('|') : first).trim();
+  return { label: rest.length ? first.trim() : '', slug };
+};
 
 export const blockSpec = (type: string): BlockSpec | undefined => BLOCK_TYPES.find((spec) => spec.type === type);
 
