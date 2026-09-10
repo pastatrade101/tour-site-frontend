@@ -444,10 +444,20 @@
       <span class="text-lg font-extrabold tracking-normal text-white">Goldfinch</span>
     </a>
 
-    <!-- min-w-0 so the nav can shrink instead of pushing the actions off the
-         right edge; Accommodation carries a dropdown chevron that Expert
-         Advice did not, which was enough to overflow at 1280. -->
-    <nav class="hidden min-w-0 flex-1 items-stretch justify-center gap-0.5 lg:flex" aria-label="Primary" data-sveltekit-preload-code="hover" data-sveltekit-preload-data="hover">
+    <!--
+      Shown from `xl`, not `lg`.
+
+      Logo (134) + the eight links on one line (705) + the action cluster
+      (263) + gaps and padding needs about 1166px. At `lg` it was appearing
+      142px before it fitted, so between 1024 and 1166 the labels wrapped, the
+      header grew from 65px to 97px and the items ran into each other. Below
+      `xl` the side menu handles navigation instead, which is what the
+      hamburger is for.
+
+      min-w-0 stays so the nav shrinks rather than shoving the actions off the
+      right edge if a translated label runs long.
+    -->
+    <nav class="hidden min-w-0 flex-1 items-stretch justify-center gap-0.5 xl:flex" aria-label="Primary" data-sveltekit-preload-code="hover" data-sveltekit-preload-data="hover">
         {#each NAV as item}
           {@const active = isActive(path, item.href)}
           {@const links = item.dropdown === 'destinations' ? destinations : item.dropdown === 'tours' ? tours : item.dropdown === 'accommodation' ? lodges : item.dropdown === 'safariStyles' ? categories : []}
@@ -610,7 +620,7 @@
       <!-- Search keeps its own row rather than a 640px field in a 64px bar. -->
       <button
         type="button"
-        class="hidden h-10 w-10 place-items-center rounded-md text-white/85 transition hover:bg-white/10 hover:text-white lg:grid"
+        class="hidden h-10 w-10 place-items-center rounded-md text-white/85 transition hover:bg-white/10 hover:text-white xl:grid"
         aria-label="Search tours"
         aria-expanded={searchOpen}
         on:click|stopPropagation={() => (searchOpen = !searchOpen)}
@@ -620,7 +630,7 @@
 
       <a
         href="/admin/login"
-        class="hidden h-10 items-center gap-2 rounded-md border border-white/25 px-3.5 text-sm font-semibold text-white/90 transition hover:bg-white/10 hover:text-white lg:inline-flex"
+        class="hidden h-10 items-center gap-2 rounded-md border border-white/25 px-3.5 text-sm font-semibold text-white/90 transition hover:bg-white/10 hover:text-white xl:inline-flex"
         on:click={() => activateLink('/admin/login')}
         on:focus={() => preloadRoute('/admin/login')}
       >
@@ -640,7 +650,7 @@
 
       <button
         bind:this={menuButton}
-        class="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-white/30 text-white lg:hidden"
+        class="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-white/30 text-white xl:hidden"
         type="button"
         aria-label="Toggle menu"
         aria-controls="mobile-navigation-drawer"
@@ -654,7 +664,7 @@
 
   <!-- ── search row ──────────────────────────────────────────────────────── -->
   {#if searchOpen}
-    <div class="hidden border-t border-white/10 bg-deep-green text-white lg:block" transition:fly={{ y: -6, duration: 160 }}>
+    <div class="hidden border-t border-white/10 bg-deep-green text-white xl:block" transition:fly={{ y: -6, duration: 160 }}>
       <form class="mx-auto flex h-14 w-full max-w-[1500px] items-center gap-2 px-4" on:submit|preventDefault={submitSearch} role="search">
         <Search size={18} strokeWidth={2.4} class="shrink-0 text-white/60" />
         <!-- svelte-ignore a11y-autofocus -->
@@ -678,7 +688,7 @@
     <div
       id="mobile-navigation-drawer"
       use:modalDrawer
-      class="fixed inset-0 z-[120] isolate overscroll-none lg:hidden"
+      class="fixed inset-0 z-[120] isolate overscroll-none xl:hidden"
       role="dialog"
       aria-modal="true"
       aria-label="Mobile navigation"
@@ -790,10 +800,10 @@
     </div>
   {/if}
 </header>
-<div class="h-[70px] lg:hidden" aria-hidden="true"></div>
+<div class="h-[70px] xl:hidden" aria-hidden="true"></div>
 
 <style>
-  @media (max-width: 1023px) {
+  @media (max-width: 1279px) {
     .mobile-nav-header {
       position: fixed;
       inset: 0 0 auto;
