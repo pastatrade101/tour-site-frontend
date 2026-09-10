@@ -1119,14 +1119,24 @@
   .tour-detail-tabs {
     position: -webkit-sticky;
     position: sticky;
-    top: 70px;
+    /*
+     * Flush against the header, with no seam between them.
+     *
+     * 70px was a guess at the nav's height. The nav publishes its measured
+     * height as --nav-h (see Navbar.svelte) precisely so the bars beneath it
+     * can sit tight — the tours, destinations and accommodation pages already
+     * read it. Hardcoding left a few px of page showing through, and got
+     * worse between lg and ~1310px where the nav labels wrap and it grows to
+     * 91px, and during the collapse animation on scroll.
+     */
+    top: var(--nav-h, 70px);
     z-index: 45;
   }
 
   @media (max-width: 1023px) {
     .tour-detail-tabs-pinned {
       position: fixed;
-      inset: 70px 0 auto;
+      inset: var(--nav-h, 70px) 0 auto;
       width: 100%;
       z-index: 90;
     }
@@ -1143,8 +1153,19 @@
 
     .tour-planner-sticky {
       position: sticky;
-      z-index: 40;
-      top: 8.75rem;
+      /*
+       * Under both bars that pin above it: the site header (`sticky top-0
+       * z-40`) and .tour-detail-tabs (z-30), which is full-width and so runs
+       * across this column too.
+       *
+       * It used to be 40 — level with the header — and equal z-index is
+       * settled by document order, so the aside won and the enquiry form rode
+       * up over the top nav instead of sliding beneath it. Anything below 30
+       * puts it under both.
+       */
+      z-index: 20;
+      /* Clear of the header plus the tab bar that pins under it. */
+      top: calc(var(--nav-h, 70px) + 4.5rem);
       overflow: visible;
     }
   }
