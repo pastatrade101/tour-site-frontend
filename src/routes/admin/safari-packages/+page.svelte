@@ -14,7 +14,7 @@
    *     blocks.
    */
   import { onMount } from 'svelte';
-  import { AlertTriangle, CheckCircle2, ExternalLink, Loader2, Plus } from '@lucide/svelte';
+  import { AlertTriangle, CheckCircle2, ExternalLink, FileText, LayoutTemplate, Loader2, Plus, Save, Search } from '@lucide/svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
@@ -50,9 +50,31 @@
     hero_image_url: '',
     status: 'draft',
     indexable: false,
+    seo_title: '',
     meta_title: '',
-    meta_description: ''
+    meta_description: '',
+    og_image_url: ''
   });
+
+  type TabKey = 'basics' | 'content' | 'seo';
+
+  /**
+   * Three tabs rather than one long column. The blocks editor alone can run to
+   * a dozen sections, which put Save far below the fold.
+   */
+  const TABS = [
+    ['basics', FileText, 'Basics'],
+    ['content', LayoutTemplate, 'Page content'],
+    ['seo', Search, 'SEO & indexing']
+  ] as const;
+
+  let activeTab: TabKey = 'basics';
+  let attemptedSave = false;
+
+  const selectTab = (tab: TabKey) => {
+    activeTab = tab;
+    if (typeof document !== 'undefined') document.querySelector('main')?.scrollTo({ top: 0 });
+  };
 
   let form = blank();
   let blocks: Block[] = [];
@@ -125,8 +147,10 @@
         hero_image_url: full.hero_image_url ?? '',
         status: full.status ?? 'draft',
         indexable: full.indexable === true,
+        seo_title: full.seo_title ?? '',
         meta_title: full.meta_title ?? '',
-        meta_description: full.meta_description ?? ''
+        meta_description: full.meta_description ?? '',
+        og_image_url: full.og_image_url ?? ''
       };
       blocks = blocksForEditing(full.sections);
       linkedDayCount = (full.tours?.itinerary_days ?? []).length;
@@ -187,11 +211,16 @@
   const save = async () => {
     if (saving) return;
     formError = '';
+    attemptedSave = true;
+    // Both guards live on tabs the editor may not be looking at, so each one
+    // switches to the tab that owns it rather than only setting a message.
     if (form.name.trim().length < 2) {
+      selectTab('basics');
       formError = 'Give the page a name.';
       return;
     }
     if (needsAck) {
+      selectTab('seo');
       formError = 'This page reads as a near-duplicate. Tick the box to publish it anyway, or give it something of its own.';
       return;
     }
@@ -211,7 +240,9 @@
         // a value the editor has just turned off.
         indexable: form.indexable === true,
         meta_title: form.meta_title || null,
-        meta_description: form.meta_description || null
+        seo_title: form.seo_title || null,
+        meta_description: form.meta_description || null,
+        og_image_url: form.og_image_url || null
       };
       if (form.slug.trim()) payload.slug = form.slug.trim();
 
@@ -314,11 +345,41 @@
 {/if}
 
 {#if open}
-  <section class="mt-8 grid gap-6 rounded-[14px] border border-ink/12 bg-canvas p-5 md:p-6">
+  <section class="mt-8 rounded-[14px] border border-ink/12 bg-canvas p-5 md:p-6">
     <h2 class="font-serif text-2xl font-semibold text-heading">{editingId ? 'Edit package' : 'New package'}</h2>
 
+    <div class="mt-4 flex gap-1 overflow-x-auto rounded-2xl border border-ink/10 bg-surface p-1.5 shadow-sm">
+      {#each TABS as [tab, Icon, label] (tab)}
+        <button
+          class={`flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/20 ${
+            activeTab === tab ? 'bg-forest text-white shadow-sm' : 'text-ink/55 hover:bg-sand/50 hover:text-ink'
+          }`}
+          type="button"
+          aria-current={activeTab === tab}
+          on:click={() => selectTab(tab)}
+        >
+          <Icon size={15} />
+          {label}
+          {#if tab === 'basics' && attemptedSave && form.name.trim().length < 2}
+            <span class="h-1.5 w-1.5 rounded-full bg-clay" title="Something here is blocking the save"></span>
+          {/if}
+        </button>
+      {/each}
+    </div>
+
+    <!--
+      Panels are CSS-hidden, never {#if}-unmounted: the blocks editor holds the
+      media pickers and rich-text fields for every section, and tearing those
+      down on a tab click would be both slow and a good way to lose an edit.
+    -->
+    <div class="mt-6 grid gap-6" class:hidden={activeTab !== 'basics'}>
     <div class="grid gap-4 md:grid-cols-2">
-      <AdminFormInput label="Name" name="name" required bind:value={form.name} placeholder="2-Day Safari from Zanzibar" />
+      <div class="grid gap-1.5">
+        <AdminFormInput label="Name" name="name" bind:value={form.name} placeholder="2-Day Safari from Zanzibar" />
+        {#if attemptedSave && form.name.trim().length < 2}
+          <span class="text-[11px] font-semibold text-clay">Give the page a name — at least 2 characters.</span>
+        {/if}
+      </div>
       <AdminFormInput label="Slug" name="slug" bind:value={form.slug} placeholder="Left blank, made from the name" />
       <AdminFormInput label="Hero eyebrow" name="hero_eyebrow" bind:value={form.hero_eyebrow} />
       <AdminFormInput label="Hero heading" name="hero_title" bind:value={form.hero_title} />
@@ -349,19 +410,31 @@
     <p class="-mt-2 text-[12px] text-ink/55">
       The day-by-day block renders the linked tour's published days. Without a tour it draws nothing.
     </p>
-
-    <div class="grid gap-4 md:grid-cols-2">
-      <AdminFormInput label="Meta title" name="meta_title" bind:value={form.meta_title} />
-      <AdminTextArea label="Meta description" name="meta_description" rows={2} bind:value={form.meta_description} />
     </div>
 
-    <!-- ── Content blocks ─────────────────────────────────────────────── -->
-    <div>
-      <h3 class="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-ink/55">Page content</h3>
+    <!-- ── Page content ───────────────────────────────────────────────── -->
+    <div class="mt-6" class:hidden={activeTab !== 'content'}>
       <SafariPackageBlocksEditor bind:blocks />
     </div>
 
-    <!-- ── Search visibility ──────────────────────────────────────────── -->
+    <!-- ── SEO & indexing ─────────────────────────────────────────────── -->
+    <div class="mt-6 grid gap-6" class:hidden={activeTab !== 'seo'}>
+    <div class="grid gap-4 rounded-[12px] border border-ink/12 bg-surface p-4">
+      <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/55">Search result</p>
+      <div class="grid gap-4 md:grid-cols-2">
+        <AdminFormInput label="Meta title" name="meta_title" bind:value={form.meta_title} counter={60} placeholder="Falls back to the SEO title, then the page name." />
+        <AdminFormInput label="SEO title" name="seo_title" bind:value={form.seo_title} counter={60} placeholder="Used when there is no meta title." />
+      </div>
+      <AdminTextArea label="Meta description" name="meta_description" rows={2} counter={160} bind:value={form.meta_description} placeholder="Falls back to the hero subtitle." />
+      <MediaPicker
+        label="Social / Open Graph image"
+        aspect="aspect-[1.91/1]"
+        bind:value={form.og_image_url}
+        on:change={(event) => (form.og_image_url = event.detail ?? '')}
+      />
+      <p class="-mt-1 text-[12px] text-ink/55">All optional. Empty fields fall back to the page name, hero subtitle and hero image.</p>
+    </div>
+
     <div class="grid gap-3 rounded-[12px] border border-ink/12 bg-surface p-4">
       <label class="flex items-start gap-3">
         <input type="checkbox" class="mt-1 h-4 w-4 rounded border-ink/30 text-goldfinch-gold focus:ring-goldfinch-gold" bind:checked={form.indexable} />
@@ -410,18 +483,24 @@
       {/if}
     </div>
 
+    </div>
+
     {#if formError}
-      <p class="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{formError}</p>
+      <p class="mt-6 rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{formError}</p>
     {/if}
 
-    <div class="flex flex-wrap gap-3">
-      <button type="button" class="inline-flex h-11 items-center gap-2 rounded bg-goldfinch-gold px-5 text-sm font-bold text-heading transition hover:brightness-105 disabled:opacity-60" disabled={saving} on:click={save}>
-        {#if saving}<Loader2 size={15} class="animate-spin" />{/if}
-        {editingId ? 'Save changes' : 'Create package'}
-      </button>
-      <button type="button" class="inline-flex h-11 items-center rounded border border-ink/20 px-5 text-sm font-semibold text-heading transition hover:bg-sand/50" on:click={() => (open = false)}>
-        Cancel
-      </button>
+    <!-- Sticky, so Save stays reachable however long the blocks tab runs. -->
+    <div class="sticky bottom-0 z-20 mt-6 -mx-5 flex flex-wrap items-center justify-between gap-3 border-t border-ink/12 bg-canvas px-5 py-3 shadow-[0_-8px_24px_rgba(57,61,50,0.06)] md:-mx-6 md:px-6">
+      <p class="text-[12px] text-ink/55">{editingId ? 'Editing an existing page.' : 'New pages start as a draft, not indexable.'}</p>
+      <div class="flex flex-wrap gap-3">
+        <button type="button" class="inline-flex h-11 items-center rounded border border-ink/20 px-5 text-sm font-semibold text-heading transition hover:bg-sand/50" on:click={() => (open = false)}>
+          Cancel
+        </button>
+        <button type="button" class="inline-flex h-11 items-center gap-2 rounded bg-goldfinch-gold px-5 text-sm font-bold text-heading transition hover:brightness-105 disabled:opacity-60" disabled={saving} on:click={save}>
+          {#if saving}<Loader2 size={15} class="animate-spin" />{:else}<Save size={15} />{/if}
+          {editingId ? 'Save changes' : 'Create package'}
+        </button>
+      </div>
     </div>
   </section>
 {/if}
