@@ -85,6 +85,20 @@
   $: highlights = (category?.highlights ?? []).map((item) => toPlainText(item).trim()).filter(Boolean);
   $: landing = category?.landing_page_content ?? defaultStyleLandingContent(category ?? {});
   $: trustChips = landing.trustChips;
+  /**
+   * The hero's trust line, back into the items it was joined from.
+   *
+   * It arrives as one string because an editor types it as one — but set as a
+   * paragraph it breaks wherever the line happens to run out, so "Local
+   * Tanzania support" lands half on one line and half on the next. Split, each
+   * item wraps as a whole or not at all. The separators an editor might
+   * plausibly type are all accepted; a comma is not, because plenty of these
+   * phrases contain one.
+   */
+  $: trustItems = String(landing.hero.trustLine ?? '')
+    .split(/[·•|]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
   $: heroVariants = variantsOf(category, 'image_url');
   $: heroPreloadType = heroVariants?.avif ? 'image/avif' : heroVariants ? 'image/webp' : undefined;
   $: heroPreloadSrcset = heroVariants ? srcsetFor(heroVariants, heroVariants.avif ? 'avif' : 'webp') : '';
@@ -242,7 +256,21 @@
           <button type="button" on:click={openEnquiry} class="inline-flex items-center justify-center rounded-md bg-goldfinch-gold px-5 py-3 text-sm font-semibold text-heading transition hover:brightness-95">{landing.hero.primaryCtaLabel}</button>
           <a href="#trip-ideas" class="inline-flex items-center justify-center rounded-md border border-white/35 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20">{landing.hero.secondaryCtaLabel}</a>
         </div>
-        <p class="mt-5 text-sm text-white/80">{landing.hero.trustLine}</p>
+        {#if trustItems.length}
+          <!-- Each item carries its own leading dot rather than sitting between
+               shared separators. Separators belong to the gaps, and a gap that
+               lands at a line break leaves a mark dangling off the end of one
+               line — this way every line starts on a dot and ends on a word,
+               at any width. -->
+          <ul class="mt-6 flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] leading-5 text-white/80 sm:gap-x-5 sm:text-sm">
+            {#each trustItems as item, index (index)}
+              <li class="flex items-center gap-2 whitespace-nowrap">
+                <span class="h-[5px] w-[5px] shrink-0 rounded-full bg-goldfinch-gold" aria-hidden="true"></span>
+                {item}
+              </li>
+            {/each}
+          </ul>
+        {/if}
       </div>
     </div>
   </section>
