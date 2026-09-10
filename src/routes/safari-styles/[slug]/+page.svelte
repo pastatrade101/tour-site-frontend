@@ -220,7 +220,9 @@
   <!-- 2 · Hero -->
   <section data-hero class="relative isolate overflow-hidden bg-deep-green">
     {#if category.image_url}
-      <Img record={category} fields={['image_url']} alt="" width={1920} sizes="100vw" eager className="absolute inset-0 h-full w-full object-cover" />
+      <!-- Anchored to the top, so a landscape photo in a shorter frame loses
+           ground rather than the faces in the upper half of it. -->
+      <Img record={category} fields={['image_url']} alt="" width={1920} sizes="100vw" eager className="absolute inset-0 h-full w-full object-cover object-top" />
     {/if}
     <div class="absolute inset-0 bg-gradient-to-b from-black/45 via-black/25 to-black/60"></div>
     <div class="container-shell relative py-20 md:py-28 lg:py-32">
@@ -263,7 +265,7 @@
       </div>
       <div class="relative overflow-hidden rounded-[12px] border border-ink/10 bg-surface">
         {#if landing.overview.imageUrl || category.image_url}
-          <Img src={(landing.overview.imageUrl || category.image_url) ?? undefined} alt={category.name} width={1100} sizes="(max-width: 768px) 92vw, 50vw" className="h-[320px] w-full object-cover md:h-[440px]" />
+          <Img src={(landing.overview.imageUrl || category.image_url) ?? undefined} alt={category.name} width={1100} sizes="(max-width: 768px) 92vw, 50vw" className="h-[320px] w-full object-cover object-top md:h-[440px]" />
         {/if}
       </div>
     </div>
@@ -327,7 +329,7 @@
         {/if}
       {:else}
         <article class="mt-8 grid overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-sm md:grid-cols-2">
-          <div class="relative min-h-[260px] bg-sand">{#if category.image_url}<Img record={category} fields={['image_url']} alt={category.name} width={1000} sizes="(max-width: 768px) 100vw, 50vw" className="absolute inset-0 h-full w-full object-cover" />{/if}<span class="absolute left-4 top-4 rounded-md bg-clay px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">Custom Safari</span></div>
+          <div class="relative min-h-[260px] bg-sand">{#if category.image_url}<Img record={category} fields={['image_url']} alt={category.name} width={1000} sizes="(max-width: 768px) 100vw, 50vw" className="absolute inset-0 h-full w-full object-cover object-top" />{/if}<span class="absolute left-4 top-4 rounded-md bg-clay px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">Custom Safari</span></div>
           <div class="flex flex-col justify-center p-6 md:p-9"><h3 class="font-serif text-2xl font-semibold text-heading">Custom {category.name}</h3><p class="mt-3 text-[15px] leading-7 text-ink/75">A route designed around your dates, starting point, budget and preferred pace.</p><p class="mt-5 font-semibold text-heading">Tailored quote</p><button type="button" on:click={openEnquiry} class="mt-5 inline-flex w-fit items-center gap-2 rounded-md bg-goldfinch-gold px-4 py-2.5 text-sm font-semibold text-heading">Request a Plan <ArrowRight size={15} /></button></div>
         </article>
       {/if}

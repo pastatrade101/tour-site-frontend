@@ -60,7 +60,7 @@
       width={1800}
       sizes="100vw"
       eager
-      className="absolute inset-0 h-full w-full object-cover"
+      className="absolute inset-0 h-full w-full object-cover object-top"
     />
     <div class="absolute inset-0 bg-gradient-to-r from-deep-green via-deep-green/78 to-deep-green/30"></div>
     <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-transparent to-deep-green/25"></div>
@@ -125,7 +125,7 @@
                   alt={category.name}
                   width={820}
                   sizes="(max-width: 640px) 92vw, (max-width: 1280px) 46vw, 33vw"
-                  className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                  className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105"
                 />
               {:else}
                 <div class="grid h-full w-full place-items-center bg-gradient-to-br from-sand to-savanna/50 text-forest/40">
