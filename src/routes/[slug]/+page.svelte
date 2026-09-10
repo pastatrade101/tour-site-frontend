@@ -1,9 +1,11 @@
 <script lang="ts">
   import { page as pageStore } from '$app/stores';
   import Img from '$lib/components/public/Img.svelte';
+  import JsonLd from '$lib/components/public/JsonLd.svelte';
   import SafariPackageBlocks from '$lib/components/public/SafariPackageBlocks.svelte';
   import { SITE_URL } from '$lib/config/env';
   import { toMetaText } from '$lib/richText';
+  import { breadcrumbLd, faqLd } from '$lib/seo';
   import type { Block } from '$lib/safariPackageBlocks';
   import type { FAQ, ItineraryDay, SafariPackage, Tour } from '$lib/types';
   import type { PageData } from './$types';
@@ -33,6 +35,75 @@
    * once would invite a crawler onto every unfinished page in the collection.
    */
   $: indexable = record?.indexable === true;
+
+  /**
+   * Structured data, assembled from what the page already holds rather than
+   * typed a second time.
+   *
+   * These pages are meant to rank, so the rich-result markup has to be in the
+   * server-rendered HTML — the tour pages have carried it for a while and these
+   * were the odd ones out with none at all. Everything below is derived: no
+   * invented ratings, no prices that are not on the linked tour.
+   *
+   * A noindex page emits none of it. Marking a page up for a rich result while
+   * telling the crawler to ignore it is a contradiction worth avoiding.
+   */
+  $: origin = SITE_URL || $pageStore.url.origin;
+  $: linkedTour = (record?.tours ?? null) as Tour | null;
+
+  $: touristTripLd =
+    record && indexable
+      ? {
+          '@type': 'TouristTrip',
+          name: record.name,
+          description: description || undefined,
+          ...(record.hero_image_url ? { image: record.hero_image_url } : {}),
+          url: canonical,
+          ...(linkedTour?.price_from
+            ? {
+                offers: {
+                  '@type': 'Offer',
+                  price: linkedTour.price_from,
+                  priceCurrency: linkedTour.currency ?? 'USD'
+                }
+              }
+            : {}),
+          ...(itineraryDays.length
+            ? {
+                itinerary: {
+                  '@type': 'ItemList',
+                  itemListElement: itineraryDays.map((day, i) => ({
+                    '@type': 'ListItem',
+                    position: i + 1,
+                    name: day.title ?? `Day ${day.day_number ?? i + 1}`
+                  }))
+                }
+              }
+            : {}),
+          provider: { '@type': 'TravelAgency', name: 'Goldfinch Adventures' }
+        }
+      : null;
+
+  /** The questions actually on the page — the block's own, or the attached ones it fell back to. */
+  $: faqPairs = (() => {
+    const fromBlock = blocks
+      .filter((block) => block.type === 'faq')
+      .flatMap((block) => (Array.isArray(block.items) ? (block.items as Record<string, unknown>[]) : []))
+      .map((item) => ({ q: String(item.question ?? '').trim(), a: String(item.answer ?? '').trim() }))
+      .filter((pair) => pair.q && pair.a);
+    if (fromBlock.length) return fromBlock;
+    return moduleFaqs.map((faq) => ({ q: faq.question, a: faq.answer })).filter((pair) => pair.q && pair.a);
+  })();
+
+  $: faqStructured = indexable && faqPairs.length ? faqLd(faqPairs) : null;
+
+  $: crumbs =
+    record && indexable
+      ? breadcrumbLd(origin, [
+          { name: 'Home', path: '/' },
+          { name: record.name, path: `/${record.slug ?? ''}` }
+        ])
+      : null;
 </script>
 
 <svelte:head>
@@ -50,6 +121,10 @@
   <meta property="og:title" content={title} />
   {#if description}<meta property="og:description" content={description} />{/if}
 </svelte:head>
+
+{#if touristTripLd}<JsonLd data={touristTripLd} />{/if}
+{#if faqStructured}<JsonLd data={faqStructured} />{/if}
+{#if crumbs}<JsonLd data={crumbs} />{/if}
 
 {#if record}
   <section class="relative isolate overflow-hidden bg-deep-green text-white">
