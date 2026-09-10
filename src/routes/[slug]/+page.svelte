@@ -168,5 +168,14 @@
     </div>
   </section>
 
-  <SafariPackageBlocks {blocks} {itineraryDays} {moduleFaqs} tours={related} />
+  <SafariPackageBlocks
+    {blocks}
+    {itineraryDays}
+    {moduleFaqs}
+    tours={related}
+    interests={data.interests ?? []}
+    startPoints={data.startPoints ?? []}
+    packageName={record.name ?? ''}
+    packageSlug={record.slug ?? ''}
+  />
 {/if}

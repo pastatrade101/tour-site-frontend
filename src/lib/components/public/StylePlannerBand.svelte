@@ -24,6 +24,14 @@
   export let interests: Array<{ name: string; slug: string }> = [];
   export let categoryName = '';
   export let categorySlug = '';
+  /**
+   * The safari-package page this band is closing, when it is not a safari
+   * style. Recorded under its own key rather than as `safari_style`: a package
+   * is not a style, and an admin reading the lead should not be told it was.
+   * Empty on a style page, where the two keys above carry the answer.
+   */
+  export let packageName = '';
+  export let packageSlug = '';
 
   const TOTAL = 3;
   let step = 1;
@@ -97,6 +105,8 @@
           form_type: 'style_planner',
           safari_style: categoryName || undefined,
           safari_style_slug: categorySlug || undefined,
+          safari_package: packageName || undefined,
+          safari_package_slug: packageSlug || undefined,
           trip_days: days || undefined,
           starting_point: startPoint || undefined,
           comfort_level: comfort || undefined,

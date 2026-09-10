@@ -239,7 +239,8 @@ export const BLOCK_TYPES: BlockSpec[] = [
             hint: 'One per line, as "Label | tour-slug" — e.g. Mid-range | 2-day-tarangire-midrange. The first is shown first. A slug that no longer resolves is left out rather than shown broken.'
           },
           { key: 'best_for', label: 'Best for', kind: 'text', placeholder: 'first-time safari travellers who want the classic route.' },
-          { key: 'note', label: 'Caveat under the route', kind: 'textarea', placeholder: 'This route is busier and needs careful flight and lodge timing.' }
+          { key: 'note', label: 'Caveat under the route', kind: 'textarea', placeholder: 'This route is busier and needs careful flight and lodge timing.' },
+          { key: 'stay_note', label: 'Accommodation note', kind: 'textarea', hint: 'Shown inside day one, above the lodges from the chosen comfort level. Leave blank and the accommodation panel only appears if those tours have lodge photos.', placeholder: 'A comfortable lodge or tented camp with better rest between safari activities.' }
         ]
       },
       { key: 'cta_label', label: 'Button under each route', kind: 'text', placeholder: 'Send request for this route' }
@@ -305,7 +306,7 @@ export const BLOCK_TYPES: BlockSpec[] = [
       },
       { key: 'small_print', label: 'Line under the table', kind: 'textarea' },
       { key: 'factors_title', label: 'Factors heading', kind: 'text', placeholder: 'Why your quote may change' },
-      { key: 'factors', label: 'What moves the price', kind: 'lines' },
+      { key: 'factors', label: 'What moves the price', kind: 'lines', hint: `One per line. Prefix with an icon and a pipe to change the glyph — e.g. "clock | Travel date". Icons: ${FACT_ICONS.join(', ')}.` },
       { key: 'factors_note', label: 'Line under the factors', kind: 'textarea' },
       { key: 'note_label', label: 'Pull-quote label', kind: 'text', placeholder: 'Goldfinch note' },
       { key: 'note', label: 'Pull quote', kind: 'textarea' },

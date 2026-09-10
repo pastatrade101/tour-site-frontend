@@ -8,15 +8,15 @@
    * page saved by a newer editor stays readable on an older renderer.
    *
    * The section chrome is Goldfinch's own: alternating surface/canvas bands,
-   * `container-shell`, gold eyebrow, serif heading, ink body.
+   * the supplied 1180px shell, a clay label, serif heading, ink body.
    */
   import { ArrowRight, Banknote, Car, Check, Clock3, MapPin, Minus, Plane, Route, Tent, Users } from '@lucide/svelte';
   import FAQAccordion from './FAQAccordion.svelte';
   import Img from './Img.svelte';
   import ItineraryDays from './ItineraryDays.svelte';
-  import LeadCaptureForm from './LeadCaptureForm.svelte';
   import RichText from './RichText.svelte';
   import SafariRouteOptions from './SafariRouteOptions.svelte';
+  import StylePlannerBand from './StylePlannerBand.svelte';
   import TourCard from './TourCard.svelte';
   import { MONTHS, arr, lines, rows, str, type Block } from '$lib/safariPackageBlocks';
   import type { FAQ, ItineraryDay, Tour } from '$lib/types';
@@ -28,13 +28,27 @@
   export let tours: Tour[] = [];
   /** FAQs attached to this package, used only when a `faq` block has none of its own. */
   export let moduleFaqs: FAQ[] = [];
+  /** Published categories, offered as "main interest" in the planner band. */
+  export let interests: { name: string; slug: string }[] = [];
+  /** Real gateways, offered as "starting point". Empty hides that field. */
+  export let startPoints: Array<Record<string, unknown>> = [];
+  /** This package, so a lead from the planner records where it came from. */
+  export let packageName = '';
+  export let packageSlug = '';
 
   /** Alternating bands stop a long page reading as one flat slab. */
   const surface = (index: number) => (index % 2 === 0 ? 'bg-surface' : 'bg-canvas');
 
-  const EYEBROW = 'text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold';
-  const HEADING = 'font-serif mt-3 text-3xl leading-[1.1] tracking-tight text-heading sm:text-4xl md:text-[40px]';
-  const INTRO = 'mt-4 max-w-[820px] text-base leading-relaxed text-ink/70';
+  /** The design's own shell: 1180px, not the site-wide container. */
+  const SHELL = 'mx-auto max-w-[1180px] px-4 md:px-6';
+  const SECTION = 'scroll-mt-24 py-12 md:py-16';
+  const HEADING = 'font-serif mt-3 max-w-[820px] text-[26px] font-semibold leading-[1.15] tracking-tight text-heading md:text-[34px]';
+  const INTRO = 'mt-4 max-w-3xl text-[15.5px] leading-relaxed text-ink/70';
+  const GOLD =
+    'inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-6 text-[14px] font-bold text-heading transition hover:brightness-105';
+
+  /** Which enquiry block owns the #lead-form anchor. -1 when there is none. */
+  $: firstEnquiry = blocks.findIndex((block) => block?.type === 'enquiry');
 
   const byOrder = (slugs: string[]) =>
     slugs.map((slug) => tours.find((tour) => tour.slug === slug)).filter((tour): tour is Tour => Boolean(tour));
@@ -69,15 +83,15 @@
   {#if block.type === 'facts'}
     {@const items = rows<{ label?: string; value?: string; icon?: string }>(block.items).filter((item) => str(item.value).trim())}
     {#if items.length}
-      <section class="bg-deep-green">
-        <div class="container-shell grid gap-x-8 gap-y-5 py-6 sm:grid-cols-2 lg:grid-cols-4">
+      <section class="bg-[#272B22]">
+        <div class={`${SHELL} grid gap-x-8 gap-y-5 py-6 sm:grid-cols-2 lg:grid-cols-5`}>
           {#each items as item, i (i)}
             {@const Icon = FACT_ICON[str(item.icon).trim().toLowerCase()]}
             <div class="flex min-w-0 items-start gap-2.5">
               {#if Icon}<Icon size={18} strokeWidth={1.6} class="mt-0.5 shrink-0 text-goldfinch-gold" />{/if}
               <div class="min-w-0">
-                <p class="text-[10px] font-bold uppercase tracking-[0.13em] text-white/55">{str(item.label)}</p>
-                <p class="mt-0.5 text-[13.5px] leading-snug text-white">{str(item.value)}</p>
+                <p class="text-[10px] font-bold uppercase tracking-[0.13em] text-canvas/60">{str(item.label)}</p>
+                <p class="mt-0.5 text-[13.5px] leading-snug text-surface">{str(item.value)}</p>
               </div>
             </div>
           {/each}
@@ -90,10 +104,15 @@
     {@const asideBody = str(block.aside_body).trim()}
     {@const hasAside = Boolean(asideTitle && asideBody)}
     {#if str(block.body)}
-      <section class={`${surface(index)} py-14 md:py-20`}>
+      <section class={`${surface(index)} ${SECTION}`}>
         <!-- The copy runs full width until there is a side card to sit beside. -->
-        <div class={`container-shell ${hasAside ? '' : 'max-w-[820px]'}`}>
-          {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
+        <div class={`${SHELL} ${hasAside ? '' : 'max-w-[820px]'}`}>
+          {#if eyebrow}
+            <div class="inline-flex items-center gap-2">
+              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
+              <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
+            </div>
+          {/if}
           {#if title}<h2 class={HEADING}>{title}</h2>{/if}
           <div class={hasAside ? 'mt-5 grid gap-8 lg:grid-cols-12' : ''}>
             <RichText
@@ -119,8 +138,8 @@
   {:else if block.type === 'highlights'}
     {@const items = lines(block.items)}
     {#if items.length || str(block.image_url)}
-      <section class={`${surface(index)} py-14 md:py-20`}>
-        <div class="container-shell grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-12">
+      <section class={`${surface(index)} ${SECTION}`}>
+        <div class={`${SHELL} grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-12`}>
           {#if str(block.image_url)}
             <Img
               src={str(block.image_url)}
@@ -131,7 +150,12 @@
             />
           {/if}
           <div class="min-w-0">
-            {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
+            {#if eyebrow}
+            <div class="inline-flex items-center gap-2">
+              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
+              <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
+            </div>
+          {/if}
             {#if title}<h2 class={HEADING}>{title}</h2>{/if}
             {#if intro}<p class={INTRO}>{intro}</p>{/if}
             {#if items.length}
@@ -154,9 +178,14 @@
   {:else if block.type === 'season'}
     {@const months = monthsOf(block.months)}
     {#if months.length}
-      <section class={`${surface(index)} py-14 md:py-20`}>
-        <div class="container-shell">
-          {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
+      <section class={`${surface(index)} ${SECTION}`}>
+        <div class={SHELL}>
+          {#if eyebrow}
+            <div class="inline-flex items-center gap-2">
+              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
+              <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
+            </div>
+          {/if}
           {#if title}<h2 class={HEADING}>{title}</h2>{/if}
           {#if intro}<p class={INTRO}>{intro}</p>{/if}
           <div class="mt-7 grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-12">
@@ -175,9 +204,14 @@
   {:else if block.type === 'tiers'}
     {@const tiers = rows<{ label?: string; price?: string; body?: string }>(block.tiers)}
     {#if tiers.length}
-      <section class={`${surface(index)} py-14 md:py-20`}>
-        <div class="container-shell">
-          {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
+      <section class={`${surface(index)} ${SECTION}`}>
+        <div class={SHELL}>
+          {#if eyebrow}
+            <div class="inline-flex items-center gap-2">
+              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
+              <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
+            </div>
+          {/if}
           {#if title}<h2 class={HEADING}>{title}</h2>{/if}
           {#if intro}<p class={INTRO}>{intro}</p>{/if}
           <div class="mt-8 grid gap-4 md:grid-cols-3">
@@ -202,9 +236,14 @@
     <!-- The linked tour's real days, through the same renderer the tour page
          uses. Nothing is retyped here, so the two can never disagree. -->
     {#if itineraryDays.length}
-      <section class={`${surface(index)} py-14 md:py-20`}>
-        <div class="container-shell">
-          {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
+      <section class={`${surface(index)} ${SECTION}`}>
+        <div class={SHELL}>
+          {#if eyebrow}
+            <div class="inline-flex items-center gap-2">
+              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
+              <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
+            </div>
+          {/if}
           {#if title}<h2 class={HEADING}>{title}</h2>{/if}
           {#if intro}<p class={INTRO}>{intro}</p>{/if}
           <div class="mt-8">
@@ -218,9 +257,14 @@
     {@const columns = lines(block.columns)}
     {@const tableRows = rows<{ label?: string; values?: unknown }>(block.rows)}
     {#if columns.length && tableRows.length}
-      <section class={`${surface(index)} py-14 md:py-20`}>
-        <div class="container-shell">
-          {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
+      <section class={`${surface(index)} ${SECTION}`}>
+        <div class={SHELL}>
+          {#if eyebrow}
+            <div class="inline-flex items-center gap-2">
+              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
+              <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
+            </div>
+          {/if}
           {#if title}<h2 class={HEADING}>{title}</h2>{/if}
           {#if intro}<p class={INTRO}>{intro}</p>{/if}
           <!-- Scrolls inside itself; the page never scrolls sideways. -->
@@ -253,8 +297,8 @@
     {@const included = lines(block.included)}
     {@const excluded = lines(block.excluded)}
     {#if included.length || excluded.length}
-      <section class={`${surface(index)} py-14 md:py-20`}>
-        <div class="container-shell">
+      <section class={`${surface(index)} ${SECTION}`}>
+        <div class={SHELL}>
           {#if title}<h2 class={`${HEADING} mt-0 max-w-3xl`}>{title}</h2>{/if}
           <div class="mt-8 grid gap-5 md:grid-cols-2">
             {#if included.length}
@@ -291,9 +335,14 @@
   {:else if block.type === 'gallery'}
     {@const images = rows<{ image_url?: string; caption?: string }>(block.images).filter((image) => str(image.image_url).trim())}
     {#if images.length}
-      <section class={`${surface(index)} py-14 md:py-20`}>
-        <div class="container-shell">
-          {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
+      <section class={`${surface(index)} ${SECTION}`}>
+        <div class={SHELL}>
+          {#if eyebrow}
+            <div class="inline-flex items-center gap-2">
+              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
+              <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
+            </div>
+          {/if}
           {#if title}<h2 class={HEADING}>{title}</h2>{/if}
           <div class="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {#each images as image, i (i)}
@@ -318,9 +367,14 @@
   {:else if block.type === 'tours'}
     {@const picked = byOrder(lines(block.tour_slugs))}
     {#if picked.length}
-      <section class={`${surface(index)} py-14 md:py-20`}>
-        <div class="container-shell">
-          {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
+      <section class={`${surface(index)} ${SECTION}`}>
+        <div class={SHELL}>
+          {#if eyebrow}
+            <div class="inline-flex items-center gap-2">
+              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
+              <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
+            </div>
+          {/if}
           {#if title}<h2 class={HEADING}>{title}</h2>{/if}
           {#if intro}<p class={INTRO}>{intro}</p>{/if}
           <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -340,8 +394,8 @@
       ? authored.map((item, n) => ({ id: `pkg-faq-${index}-${n}`, question: str(item.question), answer: str(item.answer) }))
       : moduleFaqs.map((faq) => ({ id: faq.id, question: faq.question, answer: faq.answer }))}
     {#if entries.length}
-      <section class={`${surface(index)} py-14 md:py-20`}>
-        <div class="container-shell max-w-[900px]">
+      <section class={`${surface(index)} ${SECTION}`}>
+        <div class={`${SHELL} max-w-[900px]`}>
           {#if title}<h2 class={`${HEADING} mt-0`}>{title}</h2>{/if}
           <div class="mt-8">
             <FAQAccordion faqs={entries} />
@@ -351,23 +405,35 @@
     {/if}
 
   {:else if block.type === 'enquiry'}
-    <section id="lead-form" class="scroll-mt-20 bg-deep-green py-14 text-white md:py-20">
-      <div class="container-shell grid gap-10 lg:grid-cols-2 lg:gap-14">
-        <div>
-          {#if eyebrow}<p class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{eyebrow}</p>{/if}
-          {#if title}<h2 class="font-serif mt-3 text-3xl leading-tight tracking-tight text-white sm:text-4xl">{title}</h2>{/if}
-          {#if intro}<p class="mt-4 max-w-lg text-base leading-relaxed text-white/75">{intro}</p>{/if}
-        </div>
-        <LeadCaptureForm inline />
-      </div>
-    </section>
+    <!-- The same planner band a safari-style page closes with, questions laid
+         out across the band rather than a button that opens a dialog. Reused
+         rather than re-cut so a lead from here is shaped like every other one. -->
+    <!-- A page usually closes with two of these. Only the first answers to
+         #lead-form — every "Plan this trip" link on the page points there, and
+         two elements sharing one id is one id too many. -->
+    <div id={index === firstEnquiry ? 'lead-form' : undefined} class="scroll-mt-24">
+      <StylePlannerBand
+        eyebrow={eyebrow || 'Plan this safari'}
+        title={title || 'Plan this trip with a local specialist'}
+        description={intro}
+        {startPoints}
+        {interests}
+        {packageName}
+        {packageSlug}
+      />
+    </div>
 
   {:else if block.type === 'routes'}
     {@const routeRows = rows<Record<string, unknown>>(block.routes)}
     {#if routeRows.length}
-      <section id="route-options" class={`scroll-mt-20 ${surface(index)} py-14 md:py-20`}>
-        <div class="container-shell">
-          {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
+      <section id="route-options" class={`scroll-mt-20 ${surface(index)} ${SECTION}`}>
+        <div class={SHELL}>
+          {#if eyebrow}
+            <div class="inline-flex items-center gap-2">
+              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
+              <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
+            </div>
+          {/if}
           {#if title}<h2 class={HEADING}>{title}</h2>{/if}
           {#if intro}<p class={INTRO}>{intro}</p>{/if}
           <SafariRouteOptions routes={routeRows} {tours} ctaLabel={str(block.cta_label) || 'Send request for this route'} />
@@ -378,9 +444,14 @@
   {:else if block.type === 'advice'}
     {@const cards = rows<{ title?: string; body?: string; best_for?: string; note?: string }>(block.cards)}
     {#if cards.length}
-      <section class={`${surface(index)} py-14 md:py-20`}>
-        <div class="container-shell">
-          {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
+      <section class={`${surface(index)} ${SECTION}`}>
+        <div class={SHELL}>
+          {#if eyebrow}
+            <div class="inline-flex items-center gap-2">
+              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
+              <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
+            </div>
+          {/if}
           {#if title}<h2 class={HEADING}>{title}</h2>{/if}
           {#if intro}<p class={INTRO}>{intro}</p>{/if}
           <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -400,7 +471,7 @@
             <div class="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
               {#if str(block.help_text)}<p class="text-[14.5px] leading-relaxed text-ink/70">{str(block.help_text)}</p>{/if}
               {#if str(block.cta_label)}
-                <a class="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-6 text-sm font-bold text-heading transition hover:brightness-105" href="#lead-form">
+                <a class={GOLD} href="#lead-form">
                   {str(block.cta_label)}
                   <ArrowRight size={16} />
                 </a>
@@ -415,10 +486,15 @@
     {@const can = lines(block.can)}
     {@const cannot = lines(block.cannot)}
     {#if can.length || cannot.length}
-      <section class={`${surface(index)} py-14 md:py-20`}>
-        <div class="container-shell">
+      <section class={`${surface(index)} ${SECTION}`}>
+        <div class={SHELL}>
           <div class="rounded-[16px] bg-canvas p-6 md:p-9">
-            {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
+            {#if eyebrow}
+            <div class="inline-flex items-center gap-2">
+              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
+              <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
+            </div>
+          {/if}
             {#if title}<h2 class={HEADING}>{title}</h2>{/if}
             {#if intro}<p class={INTRO}>{intro}</p>{/if}
             <div class="mt-7 grid gap-4 md:grid-cols-2">
@@ -463,9 +539,14 @@
     {@const priceRows = rows<{ route?: string; price?: string; best_for?: string; tendency?: string; why?: string }>(block.rows)}
     {@const factors = lines(block.factors)}
     {#if priceRows.length || factors.length}
-      <section class={`${surface(index)} py-14 md:py-20`}>
-        <div class="container-shell">
-          {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
+      <section class={`${surface(index)} ${SECTION}`}>
+        <div class={SHELL}>
+          {#if eyebrow}
+            <div class="inline-flex items-center gap-2">
+              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
+              <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
+            </div>
+          {/if}
           {#if title}<h2 class={HEADING}>{title}</h2>{/if}
           {#if intro}<p class={INTRO}>{intro}</p>{/if}
 
@@ -497,11 +578,14 @@
               <h3 class="font-serif text-lg font-semibold text-heading">{str(block.factors_title) || 'Why your quote may change'}</h3>
               <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {#each factors as factor, i (i)}
+                  {@const parts = factor.split('|')}
+                  {@const Icon = parts.length > 1 ? FACT_ICON[parts[0].trim().toLowerCase()] : undefined}
+                  {@const label = parts.length > 1 ? parts.slice(1).join('|').trim() : factor}
                   <div class="flex items-start gap-3">
                     <span class="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-canvas text-clay">
-                      <Banknote size={18} />
+                      {#if Icon}<Icon size={18} />{:else}<Banknote size={18} />{/if}
                     </span>
-                    <span class="pt-1.5 text-[14.5px] font-medium text-heading">{factor}</span>
+                    <span class="pt-1.5 text-[14.5px] font-medium text-heading">{label}</span>
                   </div>
                 {/each}
               </div>
@@ -517,7 +601,7 @@
           {/if}
 
           {#if str(block.cta_label)}
-            <a class="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-6 text-[14.5px] font-bold text-heading transition hover:brightness-105 sm:w-auto" href="#lead-form">
+            <a class={`mt-6 w-full sm:w-auto ${GOLD}`} href="#lead-form">
               {str(block.cta_label)}
               <ArrowRight size={16} />
             </a>
@@ -529,9 +613,14 @@
   {:else if block.type === 'durations'}
     {@const options = rows<{ title?: string; body?: string; best_for?: string; href?: string; cta_label?: string }>(block.options)}
     {#if options.length}
-      <section id="compare-durations" class={`scroll-mt-20 ${surface(index)} py-14 md:py-20`}>
-        <div class="container-shell">
-          {#if eyebrow}<p class={EYEBROW}>{eyebrow}</p>{/if}
+      <section id="compare-durations" class={`scroll-mt-20 ${surface(index)} ${SECTION}`}>
+        <div class={SHELL}>
+          {#if eyebrow}
+            <div class="inline-flex items-center gap-2">
+              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
+              <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
+            </div>
+          {/if}
           {#if title}<h2 class={HEADING}>{title}</h2>{/if}
           {#if intro}<p class={INTRO}>{intro}</p>{/if}
           <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

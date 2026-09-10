@@ -57,6 +57,16 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     )
   ];
 
+  // What the closing planner band offers: the real published categories as
+  // "main interest", and the real gateways as "starting point". Same two lists
+  // a safari-style page hands the same band, so a lead from here reaches the
+  // inbox looking like every other one. Both fail soft — the band drops the
+  // starting-point field entirely rather than inventing a gateway.
+  const plannerPromise = Promise.allSettled([
+    fetch(withLocale('/api/categories?status=published&limit=30', locale)),
+    fetch('/api/trip-points?status=published&limit=30')
+  ]);
+
   const related: Tour[] = [];
   if (slugs.length) {
     const results = await Promise.allSettled(
@@ -98,5 +108,23 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     moduleFaqs = mergeFaqs(await read(attached), await read(general), 8);
   }
 
-  return { package: record, related, moduleFaqs };
+  const [categoryResult, pointResult] = await plannerPromise;
+
+  const listOf = async (result: PromiseSettledResult<Response>): Promise<Record<string, unknown>[]> => {
+    if (result.status !== 'fulfilled' || !result.value.ok) return [];
+    const payload = (await result.value.json()) as { data?: { items?: Record<string, unknown>[] } };
+    return payload?.data?.items ?? [];
+  };
+
+  const interests = (await listOf(categoryResult))
+    .map((item) => ({ name: String(item?.name ?? '').trim(), slug: String(item?.slug ?? '').trim() }))
+    .filter((item) => item.name);
+
+  // Only points this operator actually starts from, exactly as the safari-style
+  // loader filters them.
+  const startPoints = (await listOf(pointResult)).filter((point) =>
+    ['start', 'both'].includes(String(point?.role ?? ''))
+  );
+
+  return { package: record, related, moduleFaqs, interests, startPoints };
 };
