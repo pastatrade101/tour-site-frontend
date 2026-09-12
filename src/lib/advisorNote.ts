@@ -110,6 +110,44 @@ export const advisorNoteProps = (
   };
 };
 
+/**
+ * One page's own note, written over the site-wide one.
+ *
+ * A safari-package page can carry an `advisor` block. The block holds only what
+ * that page says differently; every field it leaves empty falls through to the
+ * shared note. Two things follow from that, and both are the point: a page that
+ * wants one different paragraph writes one paragraph rather than retyping the
+ * advisor, the portrait and both lists — and when the shared note is edited,
+ * the parts a page did not override change with it.
+ *
+ * The trade is that a block cannot blank a field the shared note fills. Erasing
+ * is what the shared note is for; a block is for saying something else.
+ */
+export const advisorNoteFromBlock = (
+  block: Record<string, unknown> | null | undefined,
+  sections: Record<string, AdvisorNoteSection | undefined> | null | undefined
+): AdvisorNoteProps => {
+  const base = advisorNoteProps(sections);
+  const own = (block ?? {}) as Record<string, unknown>;
+
+  /*
+   * `??`, not `||`: the shared note returns '' for a field an editor cleared,
+   * and a cleared field is an answer. Falling back on '' would put the
+   * component's hardcoded default back on the page, which is the drift this
+   * module exists to prevent.
+   */
+  return {
+    eyebrow: text(own.eyebrow) ?? base.eyebrow,
+    title: text(own.title) ?? base.title,
+    body: text(own.body) ?? base.body,
+    imageUrl: text(own.image_url) ?? base.imageUrl,
+    authorName: text(own.author_name) ?? base.authorName,
+    authorRole: text(own.author_role) ?? base.authorRole,
+    footnote: text(own.footnote) ?? base.footnote,
+    columns: columnsFrom(own.columns) ?? base.columns
+  };
+};
+
 /** The homepage switch still governs it: off there means off everywhere. */
 export const advisorNoteEnabled = (
   sections: Record<string, AdvisorNoteSection | undefined> | null | undefined

@@ -62,9 +62,13 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
   // a safari-style page hands the same band, so a lead from here reaches the
   // inbox looking like every other one. Both fail soft — the band drops the
   // starting-point field entirely rather than inventing a gateway.
+  // The third is the homepage sections, which carry the site-wide Advisor's
+  // Note. An `advisor` block writes over that rather than replacing it, so the
+  // parts a page does not override still follow the one note the client edits.
   const plannerPromise = Promise.allSettled([
     fetch(withLocale('/api/categories?status=published&limit=30', locale)),
-    fetch('/api/trip-points?status=published&limit=30')
+    fetch('/api/trip-points?status=published&limit=30'),
+    fetch(withLocale('/api/homepage', locale))
   ]);
 
   const related: Tour[] = [];
@@ -108,7 +112,7 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     moduleFaqs = mergeFaqs(await read(attached), await read(general), 8);
   }
 
-  const [categoryResult, pointResult] = await plannerPromise;
+  const [categoryResult, pointResult, homepageResult] = await plannerPromise;
 
   const listOf = async (result: PromiseSettledResult<Response>): Promise<Record<string, unknown>[]> => {
     if (result.status !== 'fulfilled' || !result.value.ok) return [];
@@ -126,5 +130,12 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     ['start', 'both'].includes(String(point?.role ?? ''))
   );
 
-  return { package: record, related, moduleFaqs, interests, startPoints };
+  // `/homepage` answers with a bare array, not the `{ items }` envelope the
+  // list endpoints use.
+  const homeSections =
+    homepageResult.status === 'fulfilled' && homepageResult.value.ok
+      ? (((await homepageResult.value.json()) as { data?: Record<string, unknown>[] })?.data ?? [])
+      : [];
+
+  return { package: record, related, moduleFaqs, interests, startPoints, homeSections };
 };

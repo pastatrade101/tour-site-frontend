@@ -12,6 +12,7 @@
    */
   import { ArrowRight, Banknote, Car, Check, Clock3, MapPin, Minus, Plane, Route, Tent, Users } from '@lucide/svelte';
   import FAQAccordion from './FAQAccordion.svelte';
+  import HomeAdvisorNote from './home/HomeAdvisorNote.svelte';
   import Img from './Img.svelte';
   import ItineraryDays from './ItineraryDays.svelte';
   import RichText from './RichText.svelte';
@@ -19,6 +20,7 @@
   import StylePlannerBand from './StylePlannerBand.svelte';
   import TourCard from './TourCard.svelte';
   import { MONTHS, arr, lines, rows, str, type Block } from '$lib/safariPackageBlocks';
+  import { advisorNoteEnabled, advisorNoteFromBlock, type AdvisorNoteSection } from '$lib/advisorNote';
   import type { FAQ, ItineraryDay, Tour } from '$lib/types';
 
   export let blocks: Block[] = [];
@@ -35,6 +37,11 @@
   /** This package, so a lead from the planner records where it came from. */
   export let packageName = '';
   export let packageSlug = '';
+  /**
+   * Homepage sections by key — the site-wide Advisor's Note lives in there, and
+   * an `advisor` block is written over it rather than instead of it.
+   */
+  export let homeSections: Record<string, AdvisorNoteSection | undefined> = {};
 
   /** Alternating bands stop a long page reading as one flat slab. */
   const surface = (index: number) => (index % 2 === 0 ? 'bg-surface' : 'bg-canvas');
@@ -396,7 +403,14 @@
     {#if entries.length}
       <section class={`${surface(index)} ${SECTION}`}>
         <div class={`${SHELL} max-w-[900px]`}>
-          {#if title}<h2 class={`${HEADING} mt-0`}>{title}</h2>{/if}
+          {#if eyebrow}
+            <div class="inline-flex items-center gap-2">
+              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
+              <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
+            </div>
+          {/if}
+          {#if title}<h2 class={eyebrow ? HEADING : `${HEADING} mt-0`}>{title}</h2>{/if}
+          {#if intro}<p class={INTRO}>{intro}</p>{/if}
           <div class="mt-8">
             <FAQAccordion faqs={entries} />
           </div>
@@ -422,6 +436,14 @@
         {packageSlug}
       />
     </div>
+
+  {:else if block.type === 'advisor'}
+    <!-- The same section the homepage, tours listing, About and safari-style
+         pages draw — this page just hands it different words. The site-wide
+         switch still governs it, so "off" means off here too. -->
+    {#if advisorNoteEnabled(homeSections)}
+      <HomeAdvisorNote {...advisorNoteFromBlock(block, homeSections)} />
+    {/if}
 
   {:else if block.type === 'routes'}
     {@const routeRows = rows<Record<string, unknown>>(block.routes)}

@@ -196,16 +196,22 @@ export const BLOCK_TYPES: BlockSpec[] = [
   {
     type: 'faq',
     label: 'Questions and answers',
-    blurb: 'The questions this trip actually gets asked.',
+    blurb:
+      'The questions this trip actually gets asked. Type them here and they are this page\'s own; leave the list empty and the page falls back to whatever the FAQ module has attached to this package, so shared questions stay in one place.',
     fields: [
+      eyebrow,
       title,
+      intro,
       {
         key: 'items',
         label: 'Questions',
         kind: 'items',
+        hint: 'A question with no answer, or an answer with no question, is left out.',
         fields: [
           { key: 'question', label: 'Question', kind: 'text' },
-          { key: 'answer', label: 'Answer', kind: 'textarea' }
+          // The accordion has always drawn answers through RichText; the editor
+          // was the only half of that pair still handing it plain text.
+          { key: 'answer', label: 'Answer', kind: 'richtext' }
         ]
       }
     ]
@@ -331,6 +337,32 @@ export const BLOCK_TYPES: BlockSpec[] = [
           { key: 'best_for', label: 'Best for', kind: 'text' },
           { key: 'href', label: 'Link', kind: 'text', hint: 'A path on this site. Leave empty for the page you are on — it renders as "you are viewing this option".', placeholder: '/3-day-safari-from-zanzibar' },
           { key: 'cta_label', label: 'Button', kind: 'text', placeholder: 'Ask About 3-Day Safari' }
+        ]
+      }
+    ]
+  },
+  {
+    type: 'advisor',
+    label: "Advisor's note",
+    blurb:
+      'The same note the rest of the site carries, in this trip\'s own words. Anything left empty keeps what the site-wide note says — so a page that only needs a different paragraph writes only that paragraph, and an edit to the site-wide note still reaches it. Switching the note off under Homepage → Advisor\'s note takes it off every page, this one included.',
+    fields: [
+      eyebrow,
+      title,
+      { key: 'body', label: 'The note', kind: 'richtext' },
+      { key: 'footnote', label: 'Closing line', kind: 'textarea', hint: 'Set in italics under the lists.' },
+      { key: 'author_name', label: 'Advisor name', kind: 'text' },
+      { key: 'author_role', label: 'Advisor role', kind: 'text' },
+      { key: 'image_url', label: 'Advisor photo', kind: 'image', hint: 'Empty keeps the site-wide portrait.' },
+      {
+        key: 'columns',
+        label: 'Lists beside the note',
+        kind: 'items',
+        hint: 'Two read best, and only the first two are drawn. Add none and the site-wide lists stand.',
+        fields: [
+          { key: 'title', label: 'List heading', kind: 'text', placeholder: 'What this trip gets right' },
+          { key: 'icon_url', label: 'Icon', kind: 'image' },
+          { key: 'items', label: 'Points', kind: 'lines', hint: 'One per line.' }
         ]
       }
     ]

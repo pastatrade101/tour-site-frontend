@@ -172,7 +172,15 @@
                       </button>
                     </div>
                     {#each field.fields ?? [] as sub (sub.key)}
-                      {#if sub.kind === 'textarea'}
+                      {#if sub.kind === 'richtext'}
+                        <AdminRichText
+                          label={sub.label}
+                          name={`b${index}_${field.key}_${rowIndex}_${sub.key}`}
+                          rows={5}
+                          hint={sub.hint ?? ''}
+                          bind:value={blocks[index][field.key][rowIndex][sub.key]}
+                        />
+                      {:else if sub.kind === 'textarea'}
                         <AdminTextArea
                           label={sub.label}
                           name={`b${index}_${field.key}_${rowIndex}_${sub.key}`}

@@ -6,6 +6,7 @@
   import { SITE_URL } from '$lib/config/env';
   import { toMetaText } from '$lib/richText';
   import { breadcrumbLd, faqLd } from '$lib/seo';
+  import type { AdvisorNoteSection } from '$lib/advisorNote';
   import type { Block } from '$lib/safariPackageBlocks';
   import type { FAQ, ItineraryDay, SafariPackage, Tour } from '$lib/types';
   import type { PageData } from './$types';
@@ -16,6 +17,11 @@
   $: related = (data.related ?? []) as Tour[];
   $: moduleFaqs = (data.moduleFaqs ?? []) as FAQ[];
   $: blocks = ((record?.sections ?? []) as Block[]).filter((block) => block && typeof block.type === 'string');
+
+  /** Homepage sections by key — what an `advisor` block is written over. */
+  $: homeSections = Object.fromEntries(
+    ((data.homeSections ?? []) as Array<{ section_key?: string }>).map((section) => [section.section_key, section])
+  ) as Record<string, AdvisorNoteSection | undefined>;
 
   /** The linked tour's real days — what the itinerary block draws. */
   $: itineraryDays = [...((record?.tours?.itinerary_days ?? []) as ItineraryDay[])].sort(
@@ -177,5 +183,6 @@
     startPoints={data.startPoints ?? []}
     packageName={record.name ?? ''}
     packageSlug={record.slug ?? ''}
+    {homeSections}
   />
 {/if}
