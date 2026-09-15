@@ -275,7 +275,7 @@
       </div>
     {/key}
     <div class="absolute inset-0 bg-deep-green/45" aria-hidden="true"></div>
-    <div class="absolute inset-0 bg-[linear-gradient(90deg,rgba(26,54,48,0.92)_0%,rgba(26,54,48,0.7)_48%,rgba(26,54,48,0.2)_100%)]" aria-hidden="true"></div>
+    <div class="absolute inset-0 bg-gradient-to-r from-deep-green/92 via-deep-green/70 to-deep-green/20" aria-hidden="true"></div>
     <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-deep-green/65 to-transparent" aria-hidden="true"></div>
   {/if}
 

@@ -130,6 +130,26 @@ export const advisorNoteFromBlock = (
   const base = advisorNoteProps(sections);
   const own = (block ?? {}) as Record<string, unknown>;
 
+  /**
+   * Safari Styles stored their per-category version before the shared card
+   * existed. Keep that compact document useful by reading its old names as
+   * aliases for the shared component's fields. This lets every style have its
+   * own note without making editors duplicate the site-wide portrait and
+   * advisor details.
+   */
+  const legacyColumns = (): AdvisorColumn[] | undefined => {
+    const columns = [
+      { title: 'The big decisions', items: own.big },
+      { title: 'The quiet details', items: own.quiet }
+    ]
+      .map((column) => ({
+        title: column.title,
+        items: (Array.isArray(column.items) ? column.items : []).map((item) => String(item ?? '').trim()).filter(Boolean)
+      }))
+      .filter((column) => column.items.length);
+    return columns.length ? columns : undefined;
+  };
+
   /*
    * `??`, not `||`: the shared note returns '' for a field an editor cleared,
    * and a cleared field is an answer. Falling back on '' would put the
@@ -138,13 +158,13 @@ export const advisorNoteFromBlock = (
    */
   return {
     eyebrow: text(own.eyebrow) ?? base.eyebrow,
-    title: text(own.title) ?? base.title,
-    body: text(own.body) ?? base.body,
+    title: text(own.title) ?? text(own.headline) ?? base.title,
+    body: text(own.body) ?? text(own.intro) ?? base.body,
     imageUrl: text(own.image_url) ?? base.imageUrl,
     authorName: text(own.author_name) ?? base.authorName,
     authorRole: text(own.author_role) ?? base.authorRole,
     footnote: text(own.footnote) ?? base.footnote,
-    columns: columnsFrom(own.columns) ?? base.columns
+    columns: columnsFrom(own.columns) ?? legacyColumns() ?? base.columns
   };
 };
 

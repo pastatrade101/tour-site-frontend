@@ -102,6 +102,11 @@ export const load: PageLoad = async ({ fetch, url }) => {
 
   const variantUrls = new Set<string>();
   collectImageUrls(variantUrls, homeSectionItems, ['image_url']);
+  const heroExtra = homeSectionItems.find((section) => section.section_key === 'hero')?.extra_data;
+  if (heroExtra && typeof heroExtra === 'object' && !Array.isArray(heroExtra)) {
+    const heroSlides = (heroExtra as Record<string, unknown>).hero_slides;
+    if (Array.isArray(heroSlides)) collectImageUrls(variantUrls, heroSlides as Array<Record<string, unknown>>, ['image_url']);
+  }
   collectImageUrls(variantUrls, categoryItems, ['image_url', 'icon_url']);
   // Without these the hero would fall back to the full-size originals — the
   // very thing the responsive ladder exists to avoid, on the page's LCP image.

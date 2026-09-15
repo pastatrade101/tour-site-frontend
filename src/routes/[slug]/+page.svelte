@@ -179,6 +179,7 @@
     {itineraryDays}
     {moduleFaqs}
     tours={related}
+    lodges={data.relatedLodges ?? []}
     interests={data.interests ?? []}
     startPoints={data.startPoints ?? []}
     packageName={record.name ?? ''}

@@ -515,15 +515,15 @@
       <button class="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-sand/30" type="button" on:click={() => toggle('advisor')}>
         <ChevronDown size={16} class={`shrink-0 text-ink/40 transition ${open.advisor ? 'rotate-180' : ''}`} />
         <span class="min-w-0 flex-1">
-          <span class="block text-sm font-bold text-heading">6 · What we help you get right</span>
-          <span class="block text-[11px] text-ink/50">The big decisions, and the quiet details people forget.</span>
+          <span class="block text-sm font-bold text-heading">6 · Advisor's note</span>
+          <span class="block text-[11px] text-ink/50">This style's own version of the reusable Advisor's Note. The site-wide card supplies the portrait and advisor details.</span>
         </span>
         {#if incomplete('advisor')}<span class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">Needs filling</span>{/if}
       </button>
       {#if open.advisor}
         <div class="grid gap-3 border-t border-ink/10 p-4">
-          <input class={field} bind:value={content.advisor.headline} on:input={push} placeholder="Heading" />
-          <textarea class={area} rows="2" bind:value={content.advisor.intro} on:input={push} placeholder="Sentence underneath"></textarea>
+          <input class={field} bind:value={content.advisor.headline} on:input={push} placeholder="Advisor's note heading" />
+          <textarea class={area} rows="2" bind:value={content.advisor.intro} on:input={push} placeholder="The category-specific note visitors will read"></textarea>
 
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="grid gap-2">

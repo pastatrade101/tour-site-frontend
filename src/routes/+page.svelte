@@ -137,11 +137,28 @@
   // The CMS background stays as the last candidate: it is what the hero shows
   // when there is no published tour or destination photograph to show instead,
   // and it drops out on its own as soon as there is.
-  $: heroSlides = [...(data.heroSlides ?? []), { imageUrl: heroImageResolved, label: 'Goldfinch Adventures', href: '/tours' }]
+  $: heroCmsSlides = arr<Record<string, unknown>>(heroExtra.hero_slides)
+    .map((slide) => ({
+      imageUrl: String(slide.image_url ?? slide.imageUrl ?? '').trim(),
+      label: String(slide.title ?? '').trim(),
+      eyebrow: String(slide.eyebrow ?? '').trim(),
+      title: String(slide.title ?? '').trim(),
+      highlight: String(slide.title_highlight ?? slide.highlight ?? '').trim(),
+      description: String(slide.subtitle ?? slide.description ?? '').trim(),
+      primaryLabel: String(slide.primary_label ?? slide.primaryLabel ?? '').trim(),
+      primaryHref: String(slide.primary_url ?? slide.primaryHref ?? '').trim(),
+      secondaryLabel: String(slide.secondary_label ?? slide.secondaryLabel ?? '').trim(),
+      secondaryHref: String(slide.secondary_url ?? slide.secondaryHref ?? '').trim()
+    }))
+    .filter((slide) => slide.imageUrl);
+  $: heroSlides = (heroCmsSlides.length
+    ? heroCmsSlides
+    : [...(data.heroSlides ?? []), { imageUrl: heroImageResolved, label: 'Goldfinch Adventures', href: '/tours' }]
+  )
     .filter((slide, index, all) =>
       Boolean(slide.imageUrl) && all.findIndex((candidate) => candidate.imageUrl === slide.imageUrl) === index
     )
-    .slice(0, 3);
+    .slice(0, 5);
 
   // Preload whatever the hero will actually paint first. This pointed at the
   // CMS background regardless, so once the slides came from real tours the
@@ -169,6 +186,7 @@
   $: impactExtra = (sections.impact?.extra_data ?? {}) as Record<string, unknown>;
   $: faqExtra = (sections.faq?.extra_data ?? {}) as Record<string, unknown>;
   $: howExtra = (sections.how_it_works?.extra_data ?? {}) as Record<string, unknown>;
+  $: experiencesExtra = (sections.experiences?.extra_data ?? {}) as Record<string, unknown>;
   // Experiences cards come from published tour categories (real CMS records).
   // short_description is written for exactly this compact card context, so it
   // wins over truncating the long description. Featured categories lead;
@@ -177,7 +195,7 @@
   // level, best months, highlights and who it's for. Each is absent on plenty
   // of records, and the section renders nothing for the ones it does not have
   // rather than filling the gap.
-  $: experienceItems = categories
+  $: categoryExperienceItems = categories
     .map((c) => ({
       name: String(c.name ?? c.slug ?? ''),
       slug: String(c.slug ?? ''),
@@ -191,6 +209,20 @@
     }))
     .filter((c) => c.name && c.slug)
     .sort((a, b) => Number(b.featured) - Number(a.featured));
+  $: experienceOverrides = arr<Record<string, unknown>>(experiencesExtra.items)
+    .map((item) => ({
+      name: String(item.name ?? item.slug ?? '').trim(),
+      slug: String(item.slug ?? '').trim(),
+      description: String(item.description ?? item.short ?? '').trim(),
+      image: String(item.image_url ?? item.image ?? '').trim(),
+      href: String(item.href ?? '').trim(),
+      meta: String(item.meta ?? '').trim(),
+      tags: arr<unknown>(item.tags).map(String).filter(Boolean),
+      bestFor: arr<unknown>(item.best_for ?? item.bestFor).map(String).filter(Boolean),
+      ctaLabel: String(item.cta_label ?? item.ctaLabel ?? '').trim()
+    }))
+    .filter((item) => item.name && item.slug);
+  $: experienceItems = experienceOverrides.length ? experienceOverrides : categoryExperienceItems;
   $: seasonsProps = clean({ eyebrow: seasonsExtra.eyebrow, title: sections.seasons?.title, subtitle: sections.seasons?.subtitle, seasons: arr(seasonsExtra.seasons) });
   $: impactProps = clean({
     eyebrow: impactExtra.eyebrow,
@@ -362,6 +394,10 @@
     eyebrow={cmsExtra('experiences', 'eyebrow', 'Ways to Travel')}
     title={cms('experiences', 'title', 'What Kind of Tanzania Trip Are You Imagining?')}
     subtitle={cms('experiences', 'subtitle', "You do not need to know the perfect route yet. Start with the experience that feels closest to your trip, and we'll help connect the right places, timing, lodges, transfers and pace.")}
+    moreLabel={cmsExtra('experiences', 'more_label', 'More experiences')}
+    bestForLabel={cmsExtra('experiences', 'best_for_label', 'Best for')}
+    primaryCtaPrefix={cmsExtra('experiences', 'primary_cta_prefix', 'Explore')}
+    primaryCount={Number(experiencesExtra.primary_count) || 6}
     {imageVariants}
   />
 {/if}

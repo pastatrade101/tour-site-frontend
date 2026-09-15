@@ -7,14 +7,18 @@
    * editor grows a new form for it without being touched, and the two can never
    * disagree about a field name.
    */
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import { ArrowDown, ArrowUp, Plus, X } from '@lucide/svelte';
   import AdminFormInput from './AdminFormInput.svelte';
   import AdminRichText from './AdminRichText.svelte';
   import AdminSelect from './AdminSelect.svelte';
   import AdminTextArea from './AdminTextArea.svelte';
   import MediaPicker from './MediaPicker.svelte';
+  import PackageIconPicker from './PackageIconPicker.svelte';
+  import { api } from '$lib/api/client';
+  import { PROPERTY_CATEGORIES, enumLabel } from '$lib/accommodationEnums';
   import { BLOCK_TYPES, MONTHS, blockSpec, emptyBlock, type Block, type FieldSpec } from '$lib/safariPackageBlocks';
+  import type { Lodge, Tour } from '$lib/types';
 
   // `any` on the value bag deliberately: these are jsonb fields of mixed type,
   // and a rich-text control has to bind straight into one.
@@ -27,6 +31,25 @@
   };
 
   let addType = BLOCK_TYPES[0]?.type ?? '';
+  let lodges: Lodge[] = [];
+  let tours: Tour[] = [];
+  let accommodationLoading = true;
+
+  const categoryOptions = [{ value: '', label: 'Choose an accommodation category' }, ...PROPERTY_CATEGORIES.map((category) => ({ value: category, label: enumLabel(category) }))];
+  $: tourOptions = [{ value: '', label: 'Choose a published tour' }, ...tours.map((tour) => ({ value: tour.slug, label: tour.title }))];
+
+  onMount(async () => {
+    try {
+      const [lodgeResult, tourResult] = await Promise.allSettled([
+        api.lodges.list({ status: 'published', limit: 200 }),
+        api.tours.list({ status: 'published', limit: 200 })
+      ]);
+      if (lodgeResult.status === 'fulfilled') lodges = lodgeResult.value.data.items ?? [];
+      if (tourResult.status === 'fulfilled') tours = tourResult.value.data.items ?? [];
+    } finally {
+      accommodationLoading = false;
+    }
+  });
 
   const addBlock = () => {
     if (!addType) return;
@@ -57,7 +80,7 @@
 
   const addItem = (index: number, field: FieldSpec) => {
     const row: Record<string, unknown> = {};
-    for (const sub of field.fields ?? []) row[sub.key] = sub.kind === 'lines' ? [] : '';
+    for (const sub of field.fields ?? []) row[sub.key] = sub.kind === 'lines' || sub.kind === 'routeComforts' ? [] : '';
     setField(index, field.key, [...itemRows(blocks[index][field.key]), row]);
   };
 
@@ -68,6 +91,43 @@
   const toggleMonth = (index: number, key: string, month: string) => {
     const current = Array.isArray(blocks[index][key]) ? (blocks[index][key] as string[]) : [];
     setField(index, key, current.includes(month) ? current.filter((m) => m !== month) : [...current, month]);
+  };
+
+  const comfortRows = (blockIndex: number, routeKey: string, routeIndex: number, key: string) =>
+    itemRows(itemRows(blocks[blockIndex][routeKey])[routeIndex]?.[key]);
+
+  const setComfortRows = (blockIndex: number, routeKey: string, routeIndex: number, key: string, comforts: Record<string, unknown>[]) => {
+    const routes = itemRows(blocks[blockIndex][routeKey]);
+    setField(blockIndex, routeKey, routes.map((route, index) => (index === routeIndex ? { ...route, [key]: comforts } : route)));
+  };
+
+  const addComfort = (blockIndex: number, routeKey: string, routeIndex: number, key: string) =>
+    setComfortRows(blockIndex, routeKey, routeIndex, key, [
+      ...comfortRows(blockIndex, routeKey, routeIndex, key),
+      { accommodation_level: 'MID_RANGE', tour_slug: '', accommodation_ids: [] }
+    ]);
+
+  const updateComfort = (blockIndex: number, routeKey: string, routeIndex: number, key: string, comfortIndex: number, patch: Record<string, unknown>) =>
+    setComfortRows(
+      blockIndex,
+      routeKey,
+      routeIndex,
+      key,
+      comfortRows(blockIndex, routeKey, routeIndex, key).map((comfort, index) => (index === comfortIndex ? { ...comfort, ...patch } : comfort))
+    );
+
+  const removeComfort = (blockIndex: number, routeKey: string, routeIndex: number, key: string, comfortIndex: number) =>
+    setComfortRows(blockIndex, routeKey, routeIndex, key, comfortRows(blockIndex, routeKey, routeIndex, key).filter((_, index) => index !== comfortIndex));
+
+  const availableLodges = (category: unknown) => lodges.filter((lodge) => lodge.accommodation_level === category);
+  const selectValue = (event: Event) => (event.currentTarget as HTMLSelectElement | null)?.value ?? '';
+
+  const toggleAccommodation = (blockIndex: number, routeKey: string, routeIndex: number, key: string, comfortIndex: number, lodgeId: string) => {
+    const comfort = comfortRows(blockIndex, routeKey, routeIndex, key)[comfortIndex] ?? {};
+    const selected = Array.isArray(comfort.accommodation_ids) ? comfort.accommodation_ids.map(String) : [];
+    updateComfort(blockIndex, routeKey, routeIndex, key, comfortIndex, {
+      accommodation_ids: selected.includes(lodgeId) ? selected.filter((id) => id !== lodgeId) : [...selected, lodgeId]
+    });
   };
 
   const label = 'block text-[11px] font-bold uppercase tracking-[0.12em] text-ink/55';
@@ -133,6 +193,12 @@
                 value={String(block[field.key] ?? '')}
                 on:change={(event) => setField(index, field.key, event.detail ?? '')}
               />
+            {:else if field.kind === 'icon'}
+              <PackageIconPicker
+                label={field.label}
+                hint={field.hint ?? ''}
+                bind:value={blocks[index][field.key]}
+              />
             {:else if field.kind === 'lines'}
               <div class="grid gap-1">
                 <AdminTextArea
@@ -172,7 +238,66 @@
                       </button>
                     </div>
                     {#each field.fields ?? [] as sub (sub.key)}
-                      {#if sub.kind === 'richtext'}
+                      {#if sub.kind === 'routeComforts'}
+                        <div class="grid gap-3 rounded-[10px] border border-forest/15 bg-forest/[0.025] p-3">
+                          <div>
+                            <p class="text-[12px] font-bold text-heading">Accommodation tabs</p>
+                            <p class="mt-0.5 text-[11px] leading-4 text-ink/55">Each category becomes a connected comfort tab on the package page. Select only properties already in the CMS.</p>
+                          </div>
+                          {#if sub.hint}<span class="-mt-1 text-[11px] text-ink/45">{sub.hint}</span>{/if}
+                          {#if accommodationLoading}
+                            <p class="text-[12px] text-ink/55">Loading accommodation choices…</p>
+                          {:else}
+                            {#each comfortRows(index, field.key, rowIndex, sub.key) as comfort, comfortIndex (comfortIndex)}
+                              {@const category = String(comfort.accommodation_level ?? '')}
+                              {@const matchingLodges = availableLodges(category)}
+                              {@const selectedIds = Array.isArray(comfort.accommodation_ids) ? comfort.accommodation_ids.map(String) : []}
+                              <div class="grid gap-3 rounded-[9px] border border-ink/12 bg-surface p-3">
+                                <div class="flex items-center justify-between gap-3">
+                                  <span class="text-[11px] font-bold uppercase tracking-wider text-forest">Comfort tab {comfortIndex + 1}</span>
+                                  <button type="button" class="rounded p-1 text-ink/40 transition hover:text-red-600" aria-label="Remove accommodation tab" on:click={() => removeComfort(index, field.key, rowIndex, sub.key, comfortIndex)}>
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                                <div class="grid gap-3 md:grid-cols-2">
+                                  <AdminSelect
+                                    label="Accommodation category"
+                                    name={`b${index}_${field.key}_${rowIndex}_${sub.key}_${comfortIndex}_category`}
+                                    options={categoryOptions}
+                                    value={category}
+                                    on:change={(event) => updateComfort(index, field.key, rowIndex, sub.key, comfortIndex, { accommodation_level: selectValue(event), accommodation_ids: [] })}
+                                  />
+                                  <AdminSelect
+                                    label="Tour for price & itinerary"
+                                    name={`b${index}_${field.key}_${rowIndex}_${sub.key}_${comfortIndex}_tour`}
+                                    options={tourOptions}
+                                    value={String(comfort.tour_slug ?? '')}
+                                    on:change={(event) => updateComfort(index, field.key, rowIndex, sub.key, comfortIndex, { tour_slug: selectValue(event) })}
+                                  />
+                                </div>
+                                <div class="grid gap-1.5">
+                                  <span class={label}>Available accommodation</span>
+                                  {#if matchingLodges.length}
+                                    <div class="grid gap-2 sm:grid-cols-2">
+                                      {#each matchingLodges as lodge (lodge.id)}
+                                        <label class={`flex cursor-pointer items-start gap-2.5 rounded-[8px] border p-2.5 transition ${selectedIds.includes(lodge.id) ? 'border-goldfinch-gold bg-goldfinch-gold/10' : 'border-ink/10 bg-canvas hover:border-goldfinch-gold/45'}`}>
+                                          <input class="mt-0.5 h-4 w-4 rounded border-ink/30 text-goldfinch-gold focus:ring-goldfinch-gold" type="checkbox" checked={selectedIds.includes(lodge.id)} on:change={() => toggleAccommodation(index, field.key, rowIndex, sub.key, comfortIndex, lodge.id)} />
+                                          <span class="min-w-0"><span class="block text-[12px] font-semibold text-heading">{lodge.name}</span>{#if lodge.destinations?.name}<span class="block truncate text-[11px] text-ink/50">{lodge.destinations.name}</span>{/if}</span>
+                                        </label>
+                                      {/each}
+                                    </div>
+                                  {:else}
+                                    <p class="rounded-[8px] border border-dashed border-ink/15 px-3 py-2 text-[12px] text-ink/55">No CMS accommodation is available in this category yet.</p>
+                                  {/if}
+                                </div>
+                              </div>
+                            {/each}
+                            <button type="button" class="inline-flex h-9 w-fit items-center gap-1.5 rounded border border-ink/15 px-3 text-xs font-semibold text-heading transition hover:bg-sand/50" on:click={() => addComfort(index, field.key, rowIndex, sub.key)}>
+                              <Plus size={13} /> Add accommodation category
+                            </button>
+                          {/if}
+                        </div>
+                      {:else if sub.kind === 'richtext'}
                         <AdminRichText
                           label={sub.label}
                           name={`b${index}_${field.key}_${rowIndex}_${sub.key}`}
@@ -195,6 +320,12 @@
                             blocks[index][field.key][rowIndex][sub.key] = event.detail ?? '';
                             push();
                           }}
+                        />
+                      {:else if sub.kind === 'icon'}
+                        <PackageIconPicker
+                          label={sub.label}
+                          hint={sub.hint ?? ''}
+                          bind:value={blocks[index][field.key][rowIndex][sub.key]}
                         />
                       {:else if sub.kind === 'lines'}
                         <div class="grid gap-1">

@@ -16,7 +16,7 @@
   import { loadStyleImages } from '$lib/enquiry/styleImages';
   import HomeAdvisorNote from '$lib/components/public/home/HomeAdvisorNote.svelte';
   import HomeTravellerStories from '$lib/components/public/home/HomeTravellerStories.svelte';
-  import { advisorNoteEnabled, advisorNoteProps } from '$lib/advisorNote';
+  import { advisorNoteEnabled, advisorNoteFromBlock } from '$lib/advisorNote';
   import Img from '$lib/components/public/Img.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
@@ -400,10 +400,10 @@
     </div>
   </section>
 
-  <!-- 8 · Advisor — the homepage section, not a second version of it. -->
+  <!-- 8 · Advisor — the shared card, with this safari style's own copy. -->
   {#if advisorNoteEnabled(homeByKey)}
     <div class="bg-surface">
-      <HomeAdvisorNote {...advisorNoteProps(homeByKey)} />
+      <HomeAdvisorNote {...advisorNoteFromBlock(landing.advisor, homeByKey)} />
     </div>
   {/if}
 
@@ -460,4 +460,3 @@
 {:else}
   <section class="container-shell py-20 text-center"><h1 class="text-2xl font-bold text-heading">Safari style not found</h1><a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-forest" href="/safari-styles">All safari styles <ArrowRight size={16} /></a></section>
 {/if}
-

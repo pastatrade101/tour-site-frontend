@@ -8,7 +8,19 @@
 
   type Cta = { label: string; href: string };
   type QuickLink = { label: string; href: string };
-  type HeroSlide = { imageUrl: string; label?: string; href?: string };
+  type HeroSlide = {
+    imageUrl: string;
+    label?: string;
+    href?: string;
+    eyebrow?: string;
+    title?: string;
+    highlight?: string;
+    description?: string;
+    primaryLabel?: string;
+    primaryHref?: string;
+    secondaryLabel?: string;
+    secondaryHref?: string;
+  };
 
   export let eyebrow = '';
   export let title = 'Plan your African safari,';
@@ -38,12 +50,27 @@
   let activeSlide = 0;
   let slideTimer: ReturnType<typeof setInterval> | undefined;
   let mounted = false;
+  let visiblePrimaryCta: Cta = primaryCta;
+  let visibleSecondaryCta: Cta = secondaryCta;
   const today = new Date().toISOString().slice(0, 10);
 
-  $: displaySlides = (slides.length ? slides : [{ imageUrl }]).filter((slide) => slide.imageUrl).slice(0, 3);
+  $: displaySlides = (slides.length ? slides : [{ imageUrl }]).filter((slide) => slide.imageUrl).slice(0, 5);
   $: slideKey = displaySlides.map((slide) => slide.imageUrl).join('|');
   $: if (displaySlides.length && activeSlide >= displaySlides.length) activeSlide = 0;
   $: if (mounted && slideKey) restartSlider();
+  $: activeSlideContent = displaySlides[activeSlide];
+  $: visibleEyebrow = activeSlideContent?.eyebrow || eyebrow;
+  $: visibleTitle = activeSlideContent?.title || title;
+  $: visibleHighlight = activeSlideContent?.highlight || highlight;
+  $: visibleDescription = activeSlideContent?.description || description;
+  $: visiblePrimaryCta = {
+    label: activeSlideContent?.primaryLabel || primaryCta.label,
+    href: activeSlideContent?.primaryHref || primaryCta.href
+  };
+  $: visibleSecondaryCta = {
+    label: activeSlideContent?.secondaryLabel || secondaryCta.label,
+    href: activeSlideContent?.secondaryHref || secondaryCta.href
+  };
 
   const selectSlide = (index: number) => {
     activeSlide = index;
@@ -92,11 +119,17 @@
   // Every quick-planner value is carried into the complete planning form.
   const findOptions = () => {
     trackEvent('cta_click', {
-      cta_name: 'Plan My Trip',
+      cta_name: visiblePrimaryCta.label || 'Plan My Trip',
       cta_location: 'hero_quick_planner',
       traveller_type: traveller,
       experience_type: focus
     });
+    // The default action carries the planner answers into the full form. A
+    // slide editor can deliberately set a different destination instead.
+    if (visiblePrimaryCta.href && visiblePrimaryCta.href !== '/plan-my-trip') {
+      void goto(visiblePrimaryCta.href);
+      return;
+    }
     const params = new URLSearchParams();
     if (traveller) params.set('persona', traveller);
     if (focus) params.set('experience', focus);
@@ -105,8 +138,8 @@
   };
   export let note = "No commitment. We'll simply help you understand what fits best.";
 
-  $: hasPrimary = Boolean(primaryCta?.label && primaryCta?.href);
-  $: hasSecondary = Boolean(secondaryCta?.label && secondaryCta?.href);
+  $: hasPrimary = Boolean(visiblePrimaryCta?.label && visiblePrimaryCta?.href);
+  $: hasSecondary = Boolean(visibleSecondaryCta?.label && visibleSecondaryCta?.href);
   $: showPanel = quickLinks.length > 0 || hasPrimary || experiences.length > 0;
 </script>
 
@@ -117,7 +150,7 @@
         <Img
           src={slide.imageUrl}
           variantsMap={imageVariants}
-          alt=""
+          alt={slide.title || slide.label || 'Tanzania safari landscape'}
           width={1920}
           height={1200}
           sizes="100vw"
@@ -140,20 +173,20 @@
 
   <div class="hero-copy relative container-shell pt-20 pb-8 md:pt-28 md:pb-10 lg:pt-32">
     <div class="max-w-2xl text-white">
-      {#if eyebrow}
+      {#if visibleEyebrow}
         <span
           class="inline-flex items-center rounded-md bg-black/30 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white ring-1 ring-white/25"
         >
-          {eyebrow}
+          {visibleEyebrow}
         </span>
       {/if}
       <h1 class="font-serif mt-5 text-4xl leading-[1.05] tracking-tight sm:text-5xl md:text-6xl lg:text-[64px]">
-        {title}{' '}
-        {#if highlight}<span class="italic text-goldfinch-gold">{highlight}</span>{/if}
+        {visibleTitle}{' '}
+        {#if visibleHighlight}<span class="italic text-goldfinch-gold">{visibleHighlight}</span>{/if}
       </h1>
-      {#if description}
+      {#if visibleDescription}
         <p class="mt-5 max-w-xl text-base leading-relaxed text-white/90 md:text-lg">
-          {description}
+          {visibleDescription}
         </p>
       {/if}
     </div>
@@ -220,7 +253,7 @@
               on:click={findOptions}
               class="hero-planner-submit h-11 w-full rounded-[8px] bg-goldfinch-gold px-5 text-[14px] font-bold text-heading transition hover:brightness-105 md:w-auto md:whitespace-nowrap"
             >
-              {primaryCta.label}
+              {visiblePrimaryCta.label}
             </button>
           </div>
         </div>
@@ -229,8 +262,8 @@
         <p class="hero-note mt-3 text-[13px] text-white/75">
           {note}{' '}
           {#if hasSecondary}
-            <a href={secondaryCta.href} class="font-semibold text-goldfinch-gold hover:underline">
-              {secondaryCta.label}
+            <a href={visibleSecondaryCta.href} class="font-semibold text-goldfinch-gold hover:underline">
+              {visibleSecondaryCta.label}
             </a>
           {/if}
         </p>

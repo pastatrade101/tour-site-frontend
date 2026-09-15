@@ -15,24 +15,39 @@
   import Img from './Img.svelte';
   import RichText from './RichText.svelte';
   import { currency, formatUsd } from '$lib/currency';
+  import { enumLabel } from '$lib/accommodationEnums';
   import { parseRouteTour, lines, str } from '$lib/safariPackageBlocks';
-  import type { ItineraryDay, Tour } from '$lib/types';
+  import type { ItineraryDay, Lodge, Tour } from '$lib/types';
 
-  type RouteRow = { tab?: string; tours?: unknown; best_for?: string; note?: string; stay_note?: string };
+  type RouteRow = { tab?: string; tours?: unknown; comforts?: unknown; best_for?: string; note?: string; stay_note?: string };
+  type ResolvedComfort = { label: string; slug: string; tour: Tour; lodges: Lodge[] };
+  type ResolvedRoute = { tab: string; bestFor: string; note: string; stayNote: string; comfort: ResolvedComfort[] };
 
   export let routes: RouteRow[] = [];
   export let tours: Tour[] = [];
+  export let lodges: Lodge[] = [];
   export let ctaLabel = 'Send request for this route';
   export let formHref = '#lead-form';
 
   const tourBySlug = (slug: string) => tours.find((tour) => tour.slug === slug);
 
+  const selectedLodges = (ids: unknown) =>
+    (Array.isArray(ids) ? ids.map(String) : []).map((id) => lodges.find((lodge) => lodge.id === id)).filter((lodge): lodge is Lodge => Boolean(lodge));
+
+  let resolved: ResolvedRoute[] = [];
   $: resolved = routes
     .map((route) => {
-      const comfort = lines(route.tours)
-        .map((line) => parseRouteTour(line))
+      const selected = Array.isArray(route.comforts) ? (route.comforts as Record<string, unknown>[]) : [];
+      const comfortSource = selected.length
+        ? selected.map((entry) => ({
+            label: enumLabel(str(entry.accommodation_level) || 'Accommodation'),
+            slug: str(entry.tour_slug),
+            lodges: selectedLodges(entry.accommodation_ids)
+          }))
+        : lines(route.tours).map((line) => ({ ...parseRouteTour(line), lodges: [] as Lodge[] }));
+      const comfort = comfortSource
         .map((entry) => ({ ...entry, tour: tourBySlug(entry.slug) }))
-        .filter((entry): entry is { label: string; slug: string; tour: Tour } => Boolean(entry.tour))
+        .filter((entry): entry is { label: string; slug: string; tour: Tour; lodges: Lodge[] } => Boolean(entry.tour))
         .map((entry) => ({ ...entry, label: entry.label || entry.tour.title }));
       return {
         tab: str(route.tab),
@@ -66,17 +81,26 @@
   $: highlights = (headTour?.highlights ?? []).map(String).filter((item) => item.trim());
   $: priceLabel = priced?.tour?.price_from ? formatUsd(priced.tour.price_from, $currency) : '';
 
-  /** Real lodges on the selected comfort level's itinerary. Absent, the strip hides. */
-  $: stayImages = (() => {
+  /** Explicit CMS picks lead; the tour itinerary is the safe legacy fallback. */
+  $: selectedStays = (() => {
+    if (stayed?.lodges?.length) {
+      return stayed.lodges.map((lodge) => ({
+        name: lodge.name,
+        href: lodge.slug ? `/accommodation/${lodge.slug}` : '',
+        src: lodge.hero_image_url || lodge.image_url || lodge.cover_image_url || '',
+        location: lodge.destinations?.name ?? ''
+      }));
+    }
     const seen = new Set<string>();
-    const out: { src: string; alt: string }[] = [];
+    const out: { name: string; href: string; src: string; location: string }[] = [];
     for (const day of daysOf(stayed?.tour)) {
-      const lodge = day.lodge as { name?: string; hero_image_url?: string; lodge_images?: { image_url?: string }[] } | undefined;
+      const lodge = day.lodge as { id?: string; name?: string; slug?: string; hero_image_url?: string; lodge_images?: { image_url?: string }[]; destinations?: { name?: string } } | undefined;
       if (!lodge) continue;
       const src = lodge.hero_image_url || lodge.lodge_images?.[0]?.image_url;
-      if (!src || seen.has(src)) continue;
-      seen.add(src);
-      out.push({ src, alt: lodge.name ?? 'Accommodation on this route' });
+      const key = lodge.id || src || lodge.name || '';
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push({ name: lodge.name ?? 'Accommodation on this route', href: lodge.slug ? `/accommodation/${lodge.slug}` : '', src: src ?? '', location: lodge.destinations?.name ?? '' });
     }
     return out.slice(0, 3);
   })();
@@ -109,7 +133,7 @@
         aria-selected={i === activeRoute}
         on:click={() => (activeRoute = i)}
       >
-        {item.tab || item.comfort[0].tour.title}
+        {item.tab || item.comfort[0]?.tour.title}
       </button>
     {/each}
   </div>
@@ -259,7 +283,7 @@
                         <RichText value={day.description} className={`mt-2 max-w-[820px] ${BODY}`} />
                       {/if}
 
-                      {#if i === 0 && (route.stayNote || stayImages.length)}
+                      {#if i === 0 && (route.stayNote || selectedStays.length)}
                         <div class="mt-7 border-t border-ink/[0.12] pt-6">
                           <h4 class="font-serif flex items-center gap-2 text-[17px] font-semibold text-heading md:text-[19px]">
                             <Tent size={18} class="text-clay" />
@@ -288,16 +312,28 @@
                             {#if route.stayNote}
                               <p class={`max-w-[820px] ${BODY}`}>{route.stayNote}</p>
                             {/if}
-                            {#if stayImages.length}
+                            {#if selectedStays.length}
                               <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                {#each stayImages as image, ii (ii)}
-                                  <Img
-                                    src={image.src}
-                                    alt={image.alt}
-                                    width={520}
-                                    sizes="(max-width: 639px) 100vw, (max-width: 1023px) 48vw, 32vw"
-                                    className="h-[160px] w-full rounded-[10px] object-cover md:h-[180px]"
-                                  />
+                                {#each selectedStays as stay, ii (ii)}
+                                  <div class="overflow-hidden rounded-[10px] border border-ink/10 bg-canvas">
+                                    {#if stay.src}
+                                      <Img
+                                        src={stay.src}
+                                        alt={stay.name}
+                                        width={520}
+                                        sizes="(max-width: 639px) 100vw, (max-width: 1023px) 48vw, 32vw"
+                                        className="h-[140px] w-full object-cover md:h-[160px]"
+                                      />
+                                    {/if}
+                                    <div class="p-3">
+                                      {#if stay.href}
+                                        <a class="text-[13.5px] font-bold text-heading transition hover:text-clay" href={stay.href}>{stay.name}</a>
+                                      {:else}
+                                        <p class="text-[13.5px] font-bold text-heading">{stay.name}</p>
+                                      {/if}
+                                      {#if stay.location}<p class="mt-0.5 text-[11.5px] text-ink/55">{stay.location}</p>{/if}
+                                    </div>
+                                  </div>
                                 {/each}
                               </div>
                             {/if}

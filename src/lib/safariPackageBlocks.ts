@@ -20,10 +20,14 @@ export type FieldKind =
   | 'richtext'
   | 'number'
   | 'image'
+  /** A controlled, visual choice from the package icon set. */
+  | 'icon'
   /** A simple list of strings, one per line. */
   | 'lines'
   /** A list of objects; `fields` describes one row. */
   | 'items'
+  /** A route's accommodation-category tabs, tours and selected properties. */
+  | 'routeComforts'
   /** Months of the year, chosen as chips. */
   | 'months';
 
@@ -60,13 +64,13 @@ export const BLOCK_TYPES: BlockSpec[] = [
     fields: [
       {
         key: 'items',
-        label: 'Facts',
+        label: 'Quick facts',
         kind: 'items',
-        hint: 'Four reads best. A fact with no value is left out.',
+        hint: 'Add the essential trip details travellers compare first. Three to five facts read best; incomplete facts stay off the page.',
         fields: [
-          { key: 'label', label: 'Label', kind: 'text', placeholder: 'Duration' },
-          { key: 'value', label: 'Value', kind: 'text', placeholder: '2 days, 1 night' },
-          { key: 'icon', label: 'Icon', kind: 'text', hint: `One of: ${FACT_ICONS.join(', ')}. Anything else, or blank, draws no icon.`, placeholder: 'clock' }
+          { key: 'label', label: 'What is this?', kind: 'text', placeholder: 'Duration' },
+          { key: 'value', label: 'Trip detail', kind: 'text', placeholder: '2 days, 1 night' },
+          { key: 'icon', label: 'Matching icon', kind: 'icon', hint: 'Choose the icon that makes this fact easiest to scan.' }
         ]
       }
     ]
@@ -239,10 +243,10 @@ export const BLOCK_TYPES: BlockSpec[] = [
         fields: [
           { key: 'tab', label: 'Tab label', kind: 'text', placeholder: 'Tarangire & Ngorongoro' },
           {
-            key: 'tours',
-            label: 'Comfort levels',
-            kind: 'lines',
-            hint: 'One per line, as "Label | tour-slug" — e.g. Mid-range | 2-day-tarangire-midrange. The first is shown first. A slug that no longer resolves is left out rather than shown broken.'
+            key: 'comforts',
+            label: 'Accommodation levels',
+            kind: 'routeComforts',
+            hint: 'Choose a CMS accommodation category, then choose the matching tour and the properties to feature beneath that category tab. The page uses these selections for its connected price and accommodation tabs.'
           },
           { key: 'best_for', label: 'Best for', kind: 'text', placeholder: 'first-time safari travellers who want the classic route.' },
           { key: 'note', label: 'Caveat under the route', kind: 'textarea', placeholder: 'This route is busier and needs careful flight and lodge timing.' },
@@ -312,7 +316,16 @@ export const BLOCK_TYPES: BlockSpec[] = [
       },
       { key: 'small_print', label: 'Line under the table', kind: 'textarea' },
       { key: 'factors_title', label: 'Factors heading', kind: 'text', placeholder: 'Why your quote may change' },
-      { key: 'factors', label: 'What moves the price', kind: 'lines', hint: `One per line. Prefix with an icon and a pipe to change the glyph — e.g. "clock | Travel date". Icons: ${FACT_ICONS.join(', ')}.` },
+      {
+        key: 'factors',
+        label: 'What moves the price',
+        kind: 'items',
+        hint: 'Add one factor at a time and choose its icon.',
+        fields: [
+          { key: 'icon', label: 'Icon', kind: 'icon' },
+          { key: 'text', label: 'Factor', kind: 'text', placeholder: 'Travel date' }
+        ]
+      },
       { key: 'factors_note', label: 'Line under the factors', kind: 'textarea' },
       { key: 'note_label', label: 'Pull-quote label', kind: 'text', placeholder: 'Goldfinch note' },
       { key: 'note', label: 'Pull quote', kind: 'textarea' },
@@ -416,6 +429,36 @@ export const lines = (value: unknown): string[] =>
     .map((entry) => str(entry).trim())
     .filter(Boolean);
 
+const iconName = (value: unknown): string => {
+  const icon = str(value).trim().toLowerCase();
+  return (FACT_ICONS as readonly string[]).includes(icon) ? icon : '';
+};
+
+/** Older price factors were written as `icon | label` text lines. */
+const priceFactorsForEditing = (value: unknown): Record<string, unknown>[] =>
+  Array.isArray(value)
+    ? (value as unknown[])
+        .map((factor) => {
+          if (factor && typeof factor === 'object') {
+            const row = factor as Record<string, unknown>;
+            return { ...row, icon: iconName(row.icon) };
+          }
+          const [maybeIcon, ...rest] = str(factor).split('|');
+          const hasIcon = rest.length > 0 && Boolean(iconName(maybeIcon));
+          return { icon: hasIcon ? iconName(maybeIcon) : '', text: (hasIcon ? rest.join('|') : maybeIcon).trim() };
+        })
+        .filter((factor) => str(factor.text).trim())
+    : [];
+
+/** Older routes used `Label | tour-slug` lines rather than connected CMS choices. */
+const routeComfortsForEditing = (value: unknown): Record<string, unknown>[] =>
+  lines(value).map((line) => {
+    const parsed = parseRouteTour(line);
+    const candidate = parsed.label.trim().toUpperCase().replace(/[\s-]+/g, '_');
+    const accommodation_level = ['BUDGET', 'MID_RANGE', 'LUXURY', 'PREMIUM_LUXURY'].includes(candidate) ? candidate : '';
+    return { accommodation_level, tour_slug: parsed.slug, accommodation_ids: [], label: parsed.label };
+  });
+
 /** Rows that carry at least one non-blank value of their own. */
 export const rows = <T extends Record<string, unknown>>(value: unknown): T[] =>
   arr<T>(value).filter((row) => row && typeof row === 'object' && Object.values(row).some((v) => (Array.isArray(v) ? v.length : str(v).trim())));
@@ -441,6 +484,13 @@ const eachLinesField = (block: Block, run: (key: string) => void) => {
 export const blocksForEditing = (source: unknown): Block[] =>
   arr<Block>(source).map((block) => {
     const next: Block = { ...block, type: str(block.type) };
+    if (next.type === 'priceguide') next.factors = priceFactorsForEditing(next.factors);
+    if (next.type === 'routes') {
+      next.routes = arr<Record<string, unknown>>(next.routes).map((route) => ({
+        ...route,
+        comforts: Array.isArray(route.comforts) ? route.comforts : routeComfortsForEditing(route.tours)
+      }));
+    }
     eachLinesField(next, (path) => {
       const [key, sub] = path.split('.');
       if (sub) {

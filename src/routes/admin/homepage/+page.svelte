@@ -31,6 +31,8 @@
   import ToastStack from '$lib/components/admin/ToastStack.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
+  import { categoryAudience, categoryHighlights, categoryMeta } from '$lib/categoryFacts';
+  import { toMetaText } from '$lib/richText';
 
   type Section = {
     button_text?: string | null;
@@ -70,6 +72,7 @@
     preset?: SectionPreset;
     surface: SectionSurface;
   };
+  type ButtonAction = { label: string; text: string; url: string; value: string };
 
   const emptyForm = (): FormValue => ({
     button_text: '',
@@ -82,6 +85,16 @@
     subtitle: '',
     title: ''
   });
+
+  const BUTTON_ACTIONS: ButtonAction[] = [
+    { value: 'none', label: 'No button', text: '', url: '' },
+    { value: 'plan', label: 'Plan My Trip', text: 'Plan My Trip', url: '/plan-my-trip' },
+    { value: 'advisor', label: 'Talk to a Travel Advisor', text: 'Talk to a Travel Advisor', url: '/contact' },
+    { value: 'contact', label: 'Contact us', text: 'Contact us', url: '/contact' },
+    { value: 'tours', label: 'Browse all itineraries', text: 'Browse all itineraries', url: '/tours' },
+    { value: 'gallery', label: 'View gallery', text: 'View gallery', url: '/gallery' },
+    { value: 'custom', label: 'Custom button…', text: '', url: '' }
+  ];
 
   const sectionRegistry: SectionRegistryItem[] = [
     {
@@ -102,8 +115,8 @@
     {
       key: 'intro',
       label: 'Intro and stats',
-      surface: 'public',
-      description: 'Introductory brand band after the hero. Extra JSON can override stats and certificate bullets.',
+      surface: 'orphan',
+      description: 'Deprecated: the current public homepage does not render this section.',
       fields: ['title', 'subtitle', 'extra: eyebrow, stats, cert_title, cert_items'],
       preset: {
         title: 'Not a booking platform. A team of Tanzanians who built this from the ground up.',
@@ -116,8 +129,8 @@
       key: 'experiences',
       label: 'Experiences (ways to travel)',
       surface: 'public',
-      description: 'Intro copy above the homepage experience selector. The cards themselves come from published tour categories (Safari Styles).',
-      fields: ['title', 'subtitle', 'extra: eyebrow'],
+      description: 'The complete “Ways to Travel” selector: heading, tab labels, left detail cards, right-hand images and calls to action. It starts from published Safari Styles, then saves this homepage-specific version here.',
+      fields: ['title', 'subtitle', 'extra: eyebrow, selector labels, number of tabs, experience cards'],
       preset: {
         title: 'What Kind of Tanzania Trip Are You Imagining?',
         subtitle: "You do not need to know the perfect route yet. Start with the experience that feels closest to your trip, and we'll help connect the right places, timing, lodges, transfers and pace.",
@@ -127,7 +140,7 @@
     {
       key: 'planning_process',
       label: 'Planning process (4 steps)',
-      surface: 'public',
+      surface: 'orphan',
       description:
         'The four steps from first enquiry to arrival, shown on every safari-style page. Extra JSON: `steps` is a list of {title, body}; four reads best. Edited once here rather than per style, because the process does not change with the trip.',
       fields: ['title', 'subtitle', 'extra: eyebrow, steps'],
@@ -187,7 +200,7 @@
     {
       key: 'top_destinations',
       label: 'Top destinations mosaic',
-      surface: 'public',
+      surface: 'orphan',
       description: 'Edge-to-edge photo mosaic of published destinations after the intro band. Hovering a tile reveals "Request this trip". Tiles come from published destination records with images.',
       fields: ['title', 'subtitle', 'extra: eyebrow'],
       preset: {
@@ -250,7 +263,7 @@
     {
       key: 'cost_ranges',
       label: 'Typical costs',
-      surface: 'public',
+      surface: 'orphan',
       description: 'Homepage price guide band. Use the cost range rows editor for trip type, starting price and note.',
       fields: ['title', 'subtitle', 'extra: ranges'],
       preset: {
@@ -332,7 +345,7 @@
     {
       key: 'testimonials',
       label: 'Traveller stories',
-      surface: 'public',
+      surface: 'orphan',
       description: 'Heading above testimonial cards. Cards come from published testimonial records.',
       fields: ['title', 'subtitle', 'extra: eyebrow'],
       preset: {
@@ -344,7 +357,7 @@
     {
       key: 'partners',
       label: 'Partner logos',
-      surface: 'public',
+      surface: 'orphan',
       description: 'Trusted partner logo strip shown on the homepage. Use the logo rows editor to manage logos.',
       fields: ['title', 'extra: logos'],
       preset: {
@@ -412,7 +425,7 @@
     {
       key: 'final_cta',
       label: 'Final CTA',
-      surface: 'public',
+      surface: 'orphan',
       description: 'Bottom homepage call to action with configurable image/video background, overlay, trust chips and buttons.',
       fields: ['title', 'subtitle', 'image', 'button', 'extra: eyebrow, secondary_cta, trust_points, background_video, overlay'],
       preset: {
@@ -426,7 +439,7 @@
     {
       key: 'login_slider',
       label: 'Admin login slider',
-      surface: 'admin',
+      surface: 'orphan',
       description: 'Used by the admin login screen, not by the public homepage.',
       fields: ['extra: slides'],
       preset: { title: 'Login slider', subtitle: 'Image slides shown on the admin login screen.', extra_data: { slides: [] } }
@@ -457,6 +470,13 @@
   const sectionSuggestions = sectionRegistry.filter((item) => item.surface !== 'orphan');
   const publicSectionItems = sectionRegistry.filter((item) => item.surface === 'public');
   const sectionLookup = new Map(sectionRegistry.map((item) => [item.key, item]));
+  /** These keys used to be offered here but have no matching section in / now. */
+  const REDUNDANT_HOME_KEYS = new Set([
+    'intro', 'planning_process', 'top_destinations', 'cost_ranges', 'testimonials',
+    'partners', 'final_cta', 'why_choose_us', 'faq_preview', 'ai_advisor_cta'
+  ]);
+  /** Not homepage content: it is read by the admin login page and must survive. */
+  const NON_HOME_KEYS = new Set(['login_slider']);
 
   let rows: Section[] = [];
   let mediaItems: MediaItem[] = [];
@@ -467,14 +487,36 @@
   let deleting = false;
   let reordering = false;
   let error = '';
+  let validationError = '';
 
   let modalOpen = false;
   let confirmOpen = false;
   let editing: Section | null = null;
   let toDelete: Section | null = null;
   let form = emptyForm();
+  let primaryButtonPreset = 'none';
+  let secondaryButtonPreset = 'none';
   let extraDataText = '{}';
   let toasts: Toast[] = [];
+
+  const buttonPresetFor = (text: string, url: string) =>
+    BUTTON_ACTIONS.find((action) => action.value !== 'custom' && action.text === text && action.url === url)?.value ??
+    (text || url ? 'custom' : 'none');
+  const hydrateButtonPresets = () => {
+    primaryButtonPreset = buttonPresetFor(form.button_text, form.button_url);
+    secondaryButtonPreset = buttonPresetFor(secondaryCtaText, secondaryCtaUrl);
+  };
+  const selectValue = (event: Event) => (event.currentTarget as HTMLSelectElement | null)?.value ?? '';
+  const applyPrimaryButtonPreset = (value: string) => {
+    primaryButtonPreset = value;
+    const action = BUTTON_ACTIONS.find((item) => item.value === value);
+    if (action && value !== 'custom') { form.button_text = action.text; form.button_url = action.url; }
+  };
+  const applySecondaryButtonPreset = (value: string) => {
+    secondaryButtonPreset = value;
+    const action = BUTTON_ACTIONS.find((item) => item.value === value);
+    if (action && value !== 'custom') { secondaryCtaText = action.text; secondaryCtaUrl = action.url; }
+  };
 
   // ── background & overlay (stored inside extra_data) ───────────────────────
   const positionOptions = [
@@ -527,6 +569,28 @@
   type WhyFeatureRow = { icon_url: string; text: string; title: string };
   type AdvisorColumnRow = { icon_url: string; items: string[]; title: string };
   type HowStepRow = { text: string; title: string };
+  type ExperienceCardRow = {
+    best_for: string[];
+    cta_label: string;
+    description: string;
+    href: string;
+    image_url: string;
+    meta: string;
+    name: string;
+    slug: string;
+    tags: string[];
+  };
+  type HeroSlideRow = {
+    eyebrow: string;
+    image_url: string;
+    primary_label: string;
+    primary_url: string;
+    secondary_label: string;
+    secondary_url: string;
+    subtitle: string;
+    title: string;
+    title_highlight: string;
+  };
   let logos: LogoRow[] = [];
   let slides: SlideRow[] = [];
   let whyFeatures: WhyFeatureRow[] = [];
@@ -551,6 +615,14 @@
   let howSteps: HowStepRow[] = [];
   let howCaptionEyebrow = 'Planned With You';
   let howCaption = 'From first message to arrival, we shape it together.';
+  let experienceSource: Record<string, unknown>[] = [];
+  let experienceCards: ExperienceCardRow[] = [];
+  let experienceCardsUseOverride = false;
+  let experienceMoreLabel = 'More experiences';
+  let experienceBestForLabel = 'Best for';
+  let experiencePrimaryCtaPrefix = 'Explore';
+  let experiencePrimaryCount = '6';
+  let heroSlides: HeroSlideRow[] = [];
 
   // Shared media-library picker — targets either a logo row or a slide row.
 
@@ -572,8 +644,100 @@
     'eyebrow',
     'secondary_cta_text',
     'secondary_cta_url',
-    'trust_points'
+    'trust_points',
+    'items',
+    'more_label',
+    'best_for_label',
+    'primary_cta_prefix',
+    'primary_count',
+    'hero_slides'
   ];
+
+  const emptyHeroSlide = (): HeroSlideRow => ({
+    image_url: '', eyebrow: '', title: '', title_highlight: '', subtitle: '', primary_label: '', primary_url: '', secondary_label: '', secondary_url: ''
+  });
+  const extraToHeroSlides = (ed: Record<string, unknown>): HeroSlideRow[] =>
+    Array.isArray(ed.hero_slides)
+      ? (ed.hero_slides as Array<Record<string, unknown>>).slice(0, 5).map((slide) => ({
+          image_url: String(slide.image_url ?? slide.imageUrl ?? ''), eyebrow: String(slide.eyebrow ?? ''),
+          title: String(slide.title ?? ''), title_highlight: String(slide.title_highlight ?? slide.highlight ?? ''),
+          subtitle: String(slide.subtitle ?? slide.description ?? ''), primary_label: String(slide.primary_label ?? slide.primaryLabel ?? ''),
+          primary_url: String(slide.primary_url ?? slide.primaryHref ?? ''), secondary_label: String(slide.secondary_label ?? slide.secondaryLabel ?? ''),
+          secondary_url: String(slide.secondary_url ?? slide.secondaryHref ?? '')
+        }))
+      : [];
+  const heroSlidesToExtra = () => heroSlides
+    .filter((slide) => slide.image_url.trim())
+    .map((slide) => ({
+      image_url: slide.image_url.trim(), eyebrow: slide.eyebrow.trim(), title: slide.title.trim(), title_highlight: slide.title_highlight.trim(), subtitle: slide.subtitle.trim(),
+      primary_label: slide.primary_label.trim(), primary_url: slide.primary_url.trim(), secondary_label: slide.secondary_label.trim(), secondary_url: slide.secondary_url.trim()
+    }));
+  const addHeroSlide = () => { if (heroSlides.length < 5) heroSlides = [...heroSlides, emptyHeroSlide()]; };
+  const removeHeroSlide = (index: number) => { heroSlides = heroSlides.filter((_, slideIndex) => slideIndex !== index); };
+  const moveHeroSlide = (index: number, direction: 'up' | 'down') => {
+    const nextIndex = direction === 'up' ? index - 1 : index + 1;
+    if (nextIndex < 0 || nextIndex >= heroSlides.length) return;
+    const next = [...heroSlides];
+    [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+    heroSlides = next;
+  };
+
+  const sourceExperienceCards = (): ExperienceCardRow[] =>
+    experienceSource
+      .map((category) => ({
+        name: String(category.name ?? category.slug ?? ''),
+        slug: String(category.slug ?? ''),
+        description: toMetaText(category.short_description ?? category.description ?? category.who_its_for ?? '', 170),
+        image_url: String(category.image_url ?? ''),
+        href: `/safari-styles/${String(category.slug ?? '')}`,
+        meta: categoryMeta(category),
+        tags: categoryHighlights(category.highlights),
+        best_for: categoryAudience(category.who_its_for),
+        cta_label: ''
+      }))
+      .filter((card) => card.name && card.slug)
+      .sort((a, b) => {
+        const sourceA = experienceSource.find((category) => String(category.slug ?? '') === a.slug);
+        const sourceB = experienceSource.find((category) => String(category.slug ?? '') === b.slug);
+        return Number(Boolean(sourceB?.is_featured)) - Number(Boolean(sourceA?.is_featured));
+      });
+
+  const extraToExperienceCards = (ed: Record<string, unknown>): ExperienceCardRow[] =>
+    Array.isArray(ed.items)
+      ? (ed.items as Array<Record<string, unknown>>)
+          .map((item) => ({
+            name: String(item.name ?? ''), slug: String(item.slug ?? ''), description: String(item.description ?? item.short ?? ''),
+            image_url: String(item.image_url ?? item.image ?? ''), href: String(item.href ?? ''), meta: String(item.meta ?? ''),
+            tags: Array.isArray(item.tags) ? item.tags.map(String).filter(Boolean) : [],
+            best_for: Array.isArray(item.best_for)
+              ? item.best_for.map(String).filter(Boolean)
+              : Array.isArray(item.bestFor)
+                ? item.bestFor.map(String).filter(Boolean)
+                : [],
+            cta_label: String(item.cta_label ?? item.ctaLabel ?? '')
+          }))
+          .filter((card) => card.name && card.slug)
+      : sourceExperienceCards();
+
+  const experienceCardsToExtra = () => experienceCards
+    .filter((card) => card.name.trim() && card.slug.trim())
+    .map((card) => ({
+      name: card.name.trim(), slug: card.slug.trim(), description: card.description.trim(), image_url: card.image_url.trim(), href: card.href.trim(), meta: card.meta.trim(),
+      tags: card.tags.map((tag) => tag.trim()).filter(Boolean), best_for: card.best_for.map((entry) => entry.trim()).filter(Boolean), cta_label: card.cta_label.trim()
+    }));
+
+  const setExperienceList = (index: number, key: 'tags' | 'best_for', value: string) => {
+    experienceCards = experienceCards.map((card, cardIndex) => cardIndex === index ? { ...card, [key]: value.split('\n') } : card);
+  };
+  const addExperienceCard = () => { experienceCards = [...experienceCards, { name: '', slug: '', description: '', image_url: '', href: '', meta: '', tags: [], best_for: [], cta_label: '' }]; };
+  const removeExperienceCard = (index: number) => { experienceCards = experienceCards.filter((_, cardIndex) => cardIndex !== index); };
+  const moveExperienceCard = (index: number, direction: 'up' | 'down') => {
+    const nextIndex = direction === 'up' ? index - 1 : index + 1;
+    if (nextIndex < 0 || nextIndex >= experienceCards.length) return;
+    const next = [...experienceCards];
+    [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+    experienceCards = next;
+  };
 
   const defaultWhyFeatures = (): WhyFeatureRow[] => [
     { icon_url: '/images/icons-home/icon-planned.png', title: 'Planned Around Your Trip', text: 'We do not force every traveller into the same route. Safari, Zanzibar, Kilimanjaro, culture and beach can be shaped around what you actually want.' },
@@ -685,6 +849,14 @@
     howCaption = key === 'how_it_works'
       ? String(ed.caption ?? 'From first message to arrival, we shape it together.')
       : 'From first message to arrival, we shape it together.';
+
+    experienceCardsUseOverride = key === 'experiences' && Array.isArray(ed.items) && ed.items.length > 0;
+    experienceCards = key === 'experiences' ? extraToExperienceCards(ed) : [];
+    experienceMoreLabel = key === 'experiences' ? String(ed.more_label ?? 'More experiences') : 'More experiences';
+    experienceBestForLabel = key === 'experiences' ? String(ed.best_for_label ?? 'Best for') : 'Best for';
+    experiencePrimaryCtaPrefix = key === 'experiences' ? String(ed.primary_cta_prefix ?? 'Explore') : 'Explore';
+    experiencePrimaryCount = key === 'experiences' ? String(ed.primary_count ?? 6) : '6';
+    heroSlides = key === 'hero' ? extraToHeroSlides(ed) : [];
   };
 
   const addLogo = () => {
@@ -797,8 +969,11 @@
         answer: f.answer.trim()
       }));
 
-  $: sorted = [...rows].sort((a, b) => a.sort_order - b.sort_order || a.section_key.localeCompare(b.section_key));
+  $: sorted = rows
+    .filter((section) => !NON_HOME_KEYS.has(section.section_key))
+    .sort((a, b) => a.sort_order - b.sort_order || a.section_key.localeCompare(b.section_key));
   $: partnersSection = sorted.find((section) => section.section_key === 'partners') ?? null;
+  $: experiencesSection = sorted.find((section) => section.section_key === 'experiences') ?? null;
   $: partnerLogoPreview = partnersSection
     ? extraToLogos(((partnersSection.extra_data && !Array.isArray(partnersSection.extra_data) ? partnersSection.extra_data : {}) ?? {}) as Record<string, unknown>).filter((logo) => logo.image_url.trim())
     : [];
@@ -852,7 +1027,16 @@
     error = '';
     try {
       const res = await api.homepage.get({ all: true });
-      rows = res.data as unknown as Section[];
+      const loaded = res.data as unknown as Section[];
+      const obsolete = loaded.filter((section) => REDUNDANT_HOME_KEYS.has(section.section_key));
+      if (obsolete.length) {
+        const results = await Promise.allSettled(obsolete.map((section) => api.homepage.removeSection(section.id)));
+        const removed = obsolete.filter((_, index) => results[index].status === 'fulfilled');
+        if (removed.length) showToast(`Removed ${removed.length} obsolete homepage section${removed.length === 1 ? '' : 's'}.`);
+        const failed = obsolete.filter((_, index) => results[index].status === 'rejected');
+        if (failed.length) showToast(`Could not remove ${failed.length} obsolete homepage section${failed.length === 1 ? '' : 's'}.`, 'error');
+      }
+      rows = loaded.filter((section) => !REDUNDANT_HOME_KEYS.has(section.section_key));
     } catch (err) {
       error = err instanceof Error ? err.message : 'Unable to load homepage sections.';
     } finally {
@@ -876,6 +1060,7 @@
   const nextOrder = () => (sorted.length ? Math.max(...sorted.map((s) => s.sort_order)) + 1 : 0);
 
   const openCreate = () => {
+    validationError = '';
     editing = null;
     form = { ...emptyForm(), sort_order: String(nextOrder()) };
     extraDataText = '{}';
@@ -885,11 +1070,13 @@
     costRanges = [];
     faqRows = [];
     hydrateReferenceEditors('', {});
+    hydrateButtonPresets();
     void loadMedia();
     modalOpen = true;
   };
 
   const openPresetSection = (key: string) => {
+    validationError = '';
     const preset = sectionLookup.get(key)?.preset ?? {};
     const { extra_data, ...formDefaults } = preset;
     const ed = extra_data ?? {};
@@ -907,6 +1094,7 @@
     costRanges = key === 'cost_ranges' ? extraToCostRanges(ed) : [];
     faqRows = key === 'faq' ? extraToFaqRows(ed) : [];
     hydrateReferenceEditors(key, ed);
+    hydrateButtonPresets();
     const rest = Object.fromEntries(Object.entries(ed).filter(([extraKey]) => !MANAGED_KEYS.includes(extraKey)));
     extraDataText = Object.keys(rest).length ? JSON.stringify(rest, null, 2) : '{}';
     void loadMedia();
@@ -914,6 +1102,7 @@
   };
 
   const openPartnersManager = () => {
+    validationError = '';
     if (partnersSection) {
       openEdit(partnersSection);
       return;
@@ -935,11 +1124,20 @@
     costRanges = [];
     faqRows = [];
     hydrateReferenceEditors('', {});
+    hydrateButtonPresets();
     void loadMedia();
     modalOpen = true;
   };
 
+  /** A dedicated entry keeps this high-value homepage editor discoverable even
+   * before its CMS row has been created. */
+  const openExperiencesManager = () => {
+    if (experiencesSection) openEdit(experiencesSection);
+    else openPresetSection('experiences');
+  };
+
   const openEdit = (section: Section) => {
+    validationError = '';
     editing = section;
     form = {
       button_text: section.button_text ?? '',
@@ -959,6 +1157,7 @@
     costRanges = extraToCostRanges(ed);
     faqRows = extraToFaqRows(ed);
     hydrateReferenceEditors(section.section_key, ed);
+    hydrateButtonPresets();
     const rest = Object.fromEntries(Object.entries(ed).filter(([key]) => !MANAGED_KEYS.includes(key)));
     extraDataText = Object.keys(rest).length ? JSON.stringify(rest, null, 2) : '{}';
     void loadMedia();
@@ -966,6 +1165,7 @@
   };
 
   const closeModal = () => {
+    validationError = '';
     modalOpen = false;
     editing = null;
     form = emptyForm();
@@ -976,11 +1176,68 @@
     costRanges = [];
     faqRows = [];
     hydrateReferenceEditors('', {});
+    hydrateButtonPresets();
   };
 
   const save = async () => {
-    if (!/^[a-z0-9_]{2,}$/.test(form.section_key.trim())) {
-      showToast('Section key is required (lowercase letters, numbers, underscores).', 'error');
+    validationError = '';
+    const sectionKey = form.section_key.trim();
+    if (!/^[a-z0-9_]{2,}$/.test(sectionKey)) {
+      validationError = 'Section key is required (lowercase letters, numbers and underscores only).';
+      showToast(validationError, 'error');
+      return;
+    }
+
+    if (sectionKey === 'experiences') {
+      if (!experienceCards.length) {
+        validationError = 'Add at least one experience card before saving Ways to Travel.';
+        showToast(validationError, 'error');
+        return;
+      }
+      const incompleteCard = experienceCards.findIndex((card) => !card.name.trim() || !card.slug.trim());
+      if (incompleteCard !== -1) {
+        validationError = `Experience card ${incompleteCard + 1} needs both a tab title and URL slug.`;
+        showToast(validationError, 'error');
+        return;
+      }
+      const visibleCount = Number(experiencePrimaryCount);
+      if (!Number.isInteger(visibleCount) || visibleCount < 1 || visibleCount > 6) {
+        validationError = 'Tabs and image tiles shown first must be a whole number from 1 to 6.';
+        showToast(validationError, 'error');
+        return;
+      }
+    }
+
+    if (sectionKey === 'hero') {
+      const incompleteSlide = heroSlides.findIndex((slide) => !slide.image_url.trim());
+      if (incompleteSlide !== -1) {
+        validationError = `Hero slide ${incompleteSlide + 1} needs an image.`;
+        showToast(validationError, 'error');
+        return;
+      }
+      if (!form.title.trim() && !heroSlides[0]?.title.trim()) {
+        validationError = 'The hero needs a clear primary heading (H1) for visitors and search engines.';
+        showToast(validationError, 'error');
+        return;
+      }
+      const incompleteCta = heroSlides.findIndex(
+        (slide) => Boolean(slide.primary_label.trim()) !== Boolean(slide.primary_url.trim()) || Boolean(slide.secondary_label.trim()) !== Boolean(slide.secondary_url.trim())
+      );
+      if (incompleteCta !== -1) {
+        validationError = `Hero slide ${incompleteCta + 1} needs both a label and a link for each CTA you use.`;
+        showToast(validationError, 'error');
+        return;
+      }
+    }
+
+    if (primaryButtonPreset === 'custom' && (!form.button_text.trim() || !form.button_url.trim())) {
+      validationError = 'A custom primary button needs both a label and a link.';
+      showToast(validationError, 'error');
+      return;
+    }
+    if (secondaryButtonPreset === 'custom' && (!secondaryCtaText.trim() || !secondaryCtaUrl.trim())) {
+      validationError = 'A custom secondary button needs both a label and a link.';
+      showToast(validationError, 'error');
       return;
     }
 
@@ -988,7 +1245,8 @@
     try {
       extra = extraDataText.trim() ? JSON.parse(extraDataText) : {};
     } catch {
-      showToast('Extra data must be valid JSON.', 'error');
+      validationError = 'Extra data must be valid JSON.';
+      showToast(validationError, 'error');
       return;
     }
 
@@ -1060,6 +1318,21 @@
         caption: howCaption.trim(),
         steps: howStepsToExtra()
       };
+    }
+
+    if (form.section_key.trim() === 'experiences') {
+      extra = {
+        ...extra,
+        items: experienceCardsToExtra(),
+        more_label: experienceMoreLabel.trim() || 'More experiences',
+        best_for_label: experienceBestForLabel.trim() || 'Best for',
+        primary_cta_prefix: experiencePrimaryCtaPrefix.trim() || 'Explore',
+        primary_count: Math.min(6, Math.max(1, Number(experiencePrimaryCount) || 6))
+      };
+    }
+
+    if (form.section_key.trim() === 'hero') {
+      extra = { ...extra, hero_slides: heroSlidesToExtra() };
     }
 
     saving = true;
@@ -1139,7 +1412,17 @@
     }
   };
 
-  onMount(load);
+  const loadExperienceSource = async () => {
+    try {
+      const response = await api.categories.list({ status: 'published', limit: 100 });
+      experienceSource = (response.data.items ?? []) as unknown as Record<string, unknown>[];
+      if (modalOpen && form.section_key.trim() === 'experiences' && !experienceCardsUseOverride) experienceCards = sourceExperienceCards();
+    } catch {
+      // The existing saved homepage overrides stay editable if category lookup is unavailable.
+    }
+  };
+
+  onMount(() => { void load(); void loadExperienceSource(); });
 </script>
 
 <ToastStack {toasts} on:dismiss={dismissToast} />
@@ -1155,42 +1438,22 @@
   />
 
   {#if !loading && !error}
-    <section class="grid gap-5 rounded-[8px] border border-ink/10 bg-surface p-5 shadow-[0_16px_48px_rgba(57,61,50,0.07)] lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)_auto] lg:items-center">
+    <section class="grid gap-5 rounded-[8px] border border-goldfinch-gold/30 bg-goldfinch-gold/[0.055] p-5 shadow-[0_16px_48px_rgba(57,61,50,0.07)] lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
       <div class="flex min-w-0 gap-4">
-        <span class="grid h-12 w-12 shrink-0 place-items-center rounded-[8px] bg-goldfinch-gold/15 text-clay ring-1 ring-goldfinch-gold/25">
-          <Building2 size={21} strokeWidth={2.2} />
+        <span class="grid h-12 w-12 shrink-0 place-items-center rounded-[8px] bg-goldfinch-gold/20 text-clay ring-1 ring-goldfinch-gold/35">
+          <LayoutTemplate size={21} strokeWidth={2.2} />
         </span>
         <div class="min-w-0">
-          <p class="text-[11px] font-extrabold uppercase tracking-[0.18em] text-forest/65">Homepage trust section</p>
-          <h2 class="mt-1 text-xl font-extrabold text-heading">Trusted by leading travel partners</h2>
-          <p class="mt-1 max-w-2xl text-sm leading-6 text-ink/60">Manage the partner logos shown on the public homepage strip. Use transparent SVG or PNG logos for the cleanest result.</p>
-          <div class="mt-3 flex flex-wrap gap-2">
-            <span class={`rounded-full px-2.5 py-1 text-[11px] font-bold ${partnersSection?.is_active ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/70' : 'bg-ink/5 text-ink/45'}`}>
-              {partnersSection ? (partnersSection.is_active ? 'Visible on homepage' : 'Inactive') : 'Not created'}
-            </span>
-            <span class="rounded-full bg-sand/70 px-2.5 py-1 text-[11px] font-bold text-ink/55">{partnerLogoPreview.length} logo{partnerLogoPreview.length === 1 ? '' : 's'}</span>
-          </div>
+          <p class="text-[11px] font-extrabold uppercase tracking-[0.18em] text-forest/65">Homepage experience selector</p>
+          <h2 class="mt-1 text-xl font-extrabold text-heading">Ways to Travel</h2>
+          <p class="mt-1 max-w-3xl text-sm leading-6 text-ink/60">Edit “What Kind of Tanzania Trip Are You Imagining?” and every tab, image, left-side detail, highlight, audience line and CTA in one place.</p>
+          <span class={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${experiencesSection?.is_active ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/70' : experiencesSection ? 'bg-ink/5 text-ink/45' : 'bg-goldfinch-gold/20 text-heading ring-1 ring-goldfinch-gold/30'}`}>
+            {experiencesSection ? (experiencesSection.is_active ? 'Visible on homepage' : 'Inactive') : 'Ready to create'}
+          </span>
         </div>
       </div>
-
-      <div class="min-h-[86px] rounded-[8px] border border-ink/10 bg-canvas p-3">
-        {#if partnerLogoPreview.length}
-          <div class="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-4 xl:grid-cols-6">
-            {#each partnerLogoPreview.slice(0, 6) as logo, i (`${logo.image_url}-${i}`)}
-              <div class="grid h-14 place-items-center rounded-[6px] bg-surface px-3 ring-1 ring-ink/[0.06]">
-                <img class="max-h-8 max-w-full object-contain grayscale" src={logo.image_url} alt={logo.name || 'Partner logo'} />
-              </div>
-            {/each}
-          </div>
-        {:else}
-          <div class="grid h-full min-h-[60px] place-items-center rounded-[6px] border border-dashed border-ink/15 bg-surface/60 text-center text-xs font-medium text-ink/45">
-            Add partner logos to activate this homepage strip.
-          </div>
-        {/if}
-      </div>
-
-      <button class="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-[8px] bg-deep-green px-4 text-sm font-bold text-white shadow-sm transition hover:bg-forest" type="button" on:click={openPartnersManager}>
-        {partnersSection ? 'Manage logos' : 'Create section'}
+      <button class="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-[8px] bg-deep-green px-4 text-sm font-bold text-white shadow-sm transition hover:bg-forest" type="button" on:click={openExperiencesManager}>
+        <Edit size={15} /> {experiencesSection ? 'Edit Ways to Travel' : 'Set up Ways to Travel'}
       </button>
     </section>
 
@@ -1378,14 +1641,21 @@
       transition:scale={{ duration: 160, start: 0.98 }}
       on:submit|preventDefault={save}
     >
-      <div class="flex items-start justify-between gap-4">
+      <div class="sticky top-0 z-20 -mx-6 -mt-6 flex items-start justify-between gap-4 border-b border-ink/10 bg-surface/95 px-6 py-5 backdrop-blur">
         <div>
           <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">{editing ? 'Edit section' : 'New section'}</p>
           <h2 class="mt-1 text-2xl font-bold text-ink">{editing ? sectionMeta(editing.section_key).label : 'Create homepage section'}</h2>
+          {#if validationError}<p class="mt-1 text-xs font-semibold text-red-700">{validationError}</p>{/if}
         </div>
-        <button class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-ink/10 bg-surface text-ink shadow-sm transition hover:bg-sand" type="button" aria-label="Close" on:click={closeModal}>
-          <X size={18} />
-        </button>
+        <div class="flex shrink-0 items-center gap-2">
+          <AdminButton type="submit" disabled={saving}>
+            <Save size={16} />
+            <span class="hidden sm:inline">{saving ? 'Saving…' : 'Save'}</span>
+          </AdminButton>
+          <button class="grid h-10 w-10 place-items-center rounded-2xl border border-ink/10 bg-surface text-ink shadow-sm transition hover:bg-sand" type="button" aria-label="Close" on:click={closeModal}>
+            <X size={18} />
+          </button>
+        </div>
       </div>
 
       <div class="mt-6 grid gap-4">
@@ -1414,6 +1684,15 @@
           </div>
         {/if}
 
+        {#if currentMeta?.surface === 'public'}
+          <div class="flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-forest/15 bg-forest/[0.045] px-4 py-3">
+            <p class="max-w-xl text-xs leading-5 text-ink/65"><strong class="text-heading">SEO content check:</strong> use a specific, traveller-focused heading and concise supporting copy. Search title, meta description and sharing image are managed in Homepage SEO.</p>
+            <a class="inline-flex items-center gap-1.5 text-xs font-bold text-forest underline decoration-forest/30 underline-offset-4 transition hover:text-heading" href="/admin/page-seo">
+              Homepage SEO <ExternalLink size={13} />
+            </a>
+          </div>
+        {/if}
+
         <!-- Above the heading on the page, so it sits above Title here too. -->
         <AdminFormInput
           label="Eyebrow"
@@ -1424,7 +1703,7 @@
 
         {#if form.section_key.trim() === 'advisor_note'}
           <!-- `subtitle` is the note's body paragraph here, not a one-liner. -->
-          <AdminFormInput label="Title" name="title" bind:value={form.title} placeholder="Section heading" />
+          <AdminFormInput label="Title" name="title" bind:value={form.title} placeholder="Section heading" counter={70} />
           <AdminRichText
             label="Advisor's note"
             name="subtitle"
@@ -1435,8 +1714,8 @@
           />
         {:else}
           <div class="grid gap-4 sm:grid-cols-2">
-            <AdminFormInput label="Title" name="title" bind:value={form.title} placeholder="Section heading" />
-            <AdminFormInput label="Subtitle" name="subtitle" bind:value={form.subtitle} placeholder="Supporting line" />
+            <AdminFormInput label="Title" name="title" bind:value={form.title} placeholder="Section heading" counter={70} />
+            <AdminFormInput label="Subtitle" name="subtitle" bind:value={form.subtitle} placeholder="Supporting line" counter={160} />
           </div>
         {/if}
 
@@ -1460,6 +1739,52 @@
               uploadFolder={`homepage/${form.section_key.trim() || 'sections'}`}
               bind:value={form.image_url}
             />
+          </div>
+        {/if}
+
+        {#if form.section_key.trim() === 'hero'}
+          <div class="grid gap-5 rounded-[8px] border border-goldfinch-gold/30 bg-goldfinch-gold/[0.055] p-4">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">Hero slides</p>
+                <p class="mt-1 max-w-2xl text-xs leading-5 text-ink/55">Add up to five slides. Each slide has its own image and can override the hero’s eyebrow, heading, supporting text and two CTAs. Empty content fields use the main hero values above.</p>
+              </div>
+              <button type="button" class="inline-flex h-9 items-center gap-1.5 rounded-xl border border-ink/10 bg-surface px-3 text-xs font-semibold text-ink shadow-sm transition hover:border-goldfinch-gold/35 hover:bg-sand/70 disabled:opacity-40" disabled={heroSlides.length >= 5} on:click={addHeroSlide}>
+                <Plus size={14} /> Add slide {heroSlides.length ? `(${heroSlides.length}/5)` : ''}
+              </button>
+            </div>
+
+            {#if heroSlides.length === 0}
+              <p class="rounded-[8px] border border-dashed border-ink/15 bg-surface/60 py-4 text-center text-xs text-ink/50">No custom slides yet. The hero will use its main image until you add one.</p>
+            {/if}
+
+            {#each heroSlides as slide, i (i)}
+              <details class="rounded-[8px] border border-ink/10 bg-surface p-3 shadow-sm" open={i === 0}>
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-3">
+                  <span class="min-w-0"><span class="block truncate text-sm font-bold text-heading">{slide.title || `Hero slide ${i + 1}`}</span><span class="block truncate text-[11px] text-ink/50">Slide {i + 1} of {heroSlides.length} · {slide.image_url ? 'Image selected' : 'Image required'}</span></span>
+                  <span class="flex shrink-0 items-center gap-1">
+                    <button type="button" class="grid h-8 w-8 place-items-center rounded-[8px] border border-ink/10 text-ink/50 transition hover:bg-sand/60 disabled:opacity-30" aria-label="Move slide up" disabled={i === 0} on:click|stopPropagation={() => moveHeroSlide(i, 'up')}><ArrowUp size={14} /></button>
+                    <button type="button" class="grid h-8 w-8 place-items-center rounded-[8px] border border-ink/10 text-ink/50 transition hover:bg-sand/60 disabled:opacity-30" aria-label="Move slide down" disabled={i === heroSlides.length - 1} on:click|stopPropagation={() => moveHeroSlide(i, 'down')}><ArrowDown size={14} /></button>
+                    <button type="button" class="grid h-8 w-8 place-items-center rounded-[8px] border border-red-200 text-red-600 transition hover:bg-red-50" aria-label="Remove slide" on:click|stopPropagation={() => removeHeroSlide(i)}><Trash2 size={14} /></button>
+                  </span>
+                </summary>
+                <div class="mt-4 grid gap-4 border-t border-ink/10 pt-4">
+                  <MediaPicker label="Slide image" media={mediaItems} uploadFolder="homepage/hero-slides" aspect="aspect-[16/9]" bind:value={slide.image_url} />
+                  <div class="grid gap-4 sm:grid-cols-2">
+                    <AdminFormInput label="Eyebrow" name={`hero_slide_${i}_eyebrow`} bind:value={slide.eyebrow} placeholder="Tanzania & East Africa specialists" counter={70} />
+                    <AdminFormInput label="Heading" name={`hero_slide_${i}_title`} bind:value={slide.title} placeholder="Plan your African safari," counter={70} />
+                  </div>
+                  <AdminFormInput label="Gold italic heading words" name={`hero_slide_${i}_highlight`} bind:value={slide.title_highlight} placeholder="your way." counter={70} />
+                  <AdminTextArea label="Supporting copy" name={`hero_slide_${i}_subtitle`} bind:value={slide.subtitle} rows={3} counter={160} />
+                  <div class="grid gap-4 sm:grid-cols-2">
+                    <AdminFormInput label="Primary button label" name={`hero_slide_${i}_primary_label`} bind:value={slide.primary_label} placeholder="Plan My Trip" />
+                    <AdminFormInput label="Primary button link" name={`hero_slide_${i}_primary_url`} bind:value={slide.primary_url} placeholder="/plan-my-trip" />
+                    <AdminFormInput label="Secondary button label" name={`hero_slide_${i}_secondary_label`} bind:value={slide.secondary_label} placeholder="Talk to a Travel Advisor" />
+                    <AdminFormInput label="Secondary button link" name={`hero_slide_${i}_secondary_url`} bind:value={slide.secondary_url} placeholder="/contact" />
+                  </div>
+                </div>
+              </details>
+            {/each}
           </div>
         {/if}
 
@@ -1550,6 +1875,61 @@
                 </div>
               {/each}
             </div>
+          </div>
+        {/if}
+
+        {#if form.section_key.trim() === 'experiences'}
+          <div class="grid gap-5 rounded-[8px] border border-ink/10 bg-sand/25 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">Ways to Travel selector</p>
+                <p class="mt-1 max-w-2xl text-xs leading-5 text-ink/50">Every visible tab, left-hand detail, image tile and CTA is edited here. The rows below start from published Safari Styles; after saving, this homepage keeps its own ordered version.</p>
+              </div>
+              <button type="button" class="inline-flex h-9 items-center gap-1.5 rounded-xl border border-ink/10 bg-surface px-3 text-xs font-semibold text-ink shadow-sm transition hover:border-goldfinch-gold/35 hover:bg-sand/70" on:click={addExperienceCard}>
+                <Plus size={14} />Add experience
+              </button>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <AdminFormInput label="More experiences label" name="experience_more_label" bind:value={experienceMoreLabel} />
+              <AdminFormInput label="Best-for label" name="experience_best_for_label" bind:value={experienceBestForLabel} />
+              <AdminFormInput label="CTA prefix" name="experience_cta_prefix" bind:value={experiencePrimaryCtaPrefix} placeholder="Explore" />
+              <AdminFormInput label="Tabs and image tiles shown first" name="experience_primary_count" type="number" bind:value={experiencePrimaryCount} placeholder="6" />
+            </div>
+
+            {#if experienceCards.length === 0}
+              <p class="rounded-[8px] border border-dashed border-ink/15 bg-surface/60 py-5 text-center text-xs text-ink/45">No experiences loaded yet. Add a row, or reopen after published Safari Styles are available.</p>
+            {/if}
+
+            {#each experienceCards as card, i (i)}
+              <details class="rounded-[8px] border border-ink/10 bg-surface p-3 shadow-sm" open={i === 0}>
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-3">
+                  <span class="min-w-0"><span class="block truncate text-sm font-bold text-heading">{card.name || `Experience ${i + 1}`}</span><span class="block truncate text-[11px] text-ink/50">Tab {i + 1} · {card.slug || 'add a URL slug'}</span></span>
+                  <span class="flex shrink-0 items-center gap-1">
+                    <button type="button" class="grid h-8 w-8 place-items-center rounded-[8px] border border-ink/10 text-ink/50 transition hover:bg-sand/60 disabled:opacity-30" aria-label="Move experience up" disabled={i === 0} on:click|stopPropagation={() => moveExperienceCard(i, 'up')}><ArrowUp size={14} /></button>
+                    <button type="button" class="grid h-8 w-8 place-items-center rounded-[8px] border border-ink/10 text-ink/50 transition hover:bg-sand/60 disabled:opacity-30" aria-label="Move experience down" disabled={i === experienceCards.length - 1} on:click|stopPropagation={() => moveExperienceCard(i, 'down')}><ArrowDown size={14} /></button>
+                    <button type="button" class="grid h-8 w-8 place-items-center rounded-[8px] border border-red-200 text-red-600 transition hover:bg-red-50" aria-label="Remove experience" on:click|stopPropagation={() => removeExperienceCard(i)}><Trash2 size={14} /></button>
+                  </span>
+                </summary>
+                <div class="mt-4 grid gap-4 border-t border-ink/10 pt-4">
+                  <div class="grid gap-4 sm:grid-cols-2">
+                    <AdminFormInput label="Tab and card title" name={`experience_${i}_name`} bind:value={card.name} placeholder="Family Safari" />
+                    <AdminFormInput label="URL slug" name={`experience_${i}_slug`} bind:value={card.slug} placeholder="family-safari" />
+                  </div>
+                  <MediaPicker label="Image tile" media={mediaItems} uploadFolder="homepage/experiences" aspect="aspect-[4/3]" bind:value={card.image_url} />
+                  <div class="grid gap-4 sm:grid-cols-2">
+                    <AdminFormInput label="CTA destination" name={`experience_${i}_href`} bind:value={card.href} placeholder="/safari-styles/family-safari" />
+                    <AdminFormInput label="CTA label" name={`experience_${i}_cta_label`} bind:value={card.cta_label} placeholder="Explore Family Safari" />
+                  </div>
+                  <AdminFormInput label="Meta line" name={`experience_${i}_meta`} bind:value={card.meta} placeholder="3–10 days · Easy · Jun–Oct" />
+                  <AdminTextArea label="Left-card description" name={`experience_${i}_description`} bind:value={card.description} rows={3} />
+                  <div class="grid gap-4 sm:grid-cols-2">
+                    <label class="grid gap-1.5"><span class="text-[13px] font-semibold text-ink/65">Highlight chips · one per line</span><textarea class="min-h-[112px] rounded-md border border-ink/15 bg-black/[0.02] px-3.5 py-2.5 text-sm leading-6 text-ink outline-none transition focus:border-forest focus:bg-surface focus:ring-2 focus:ring-forest/20" value={card.tags.join('\n')} on:input={(event) => setExperienceList(i, 'tags', event.currentTarget.value)}></textarea></label>
+                    <label class="grid gap-1.5"><span class="text-[13px] font-semibold text-ink/65">Best for · one per line</span><textarea class="min-h-[112px] rounded-md border border-ink/15 bg-black/[0.02] px-3.5 py-2.5 text-sm leading-6 text-ink outline-none transition focus:border-forest focus:bg-surface focus:ring-2 focus:ring-forest/20" value={card.best_for.join('\n')} on:input={(event) => setExperienceList(i, 'best_for', event.currentTarget.value)}></textarea></label>
+                  </div>
+                </div>
+              </details>
+            {/each}
           </div>
         {/if}
 
@@ -1723,14 +2103,30 @@
           </div>
         {/if}
 
-        <div class="grid gap-4 sm:grid-cols-2">
-          <AdminFormInput label="Button text" name="button_text" bind:value={form.button_text} placeholder="e.g. Plan My Trip" />
-          <AdminFormInput label="Button URL" name="button_url" bind:value={form.button_url} placeholder="e.g. /plan-my-trip" />
-          <!-- Rendered by the hero and the closing CTA band; leave blank to use
-               that section's own default. -->
-          <AdminFormInput label="Secondary button text" name="secondary_cta_text" bind:value={secondaryCtaText} placeholder="e.g. Talk to a Travel Advisor" />
-          <AdminFormInput label="Secondary button URL" name="secondary_cta_url" bind:value={secondaryCtaUrl} placeholder="e.g. /contact" />
-        </div>
+        {#if form.section_key.trim() !== 'experiences'}
+          <div class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/25 p-4">
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">Calls to action</p>
+              <p class="mt-1 text-xs text-ink/50">Choose a standard action instead of typing a label and link. Select Custom only when this section needs a different destination.</p>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <AdminSelect label="Primary button" name="button_preset" value={primaryButtonPreset} options={BUTTON_ACTIONS.map(({ label, value }) => ({ label, value }))} on:change={(event) => applyPrimaryButtonPreset(selectValue(event))} />
+              <AdminSelect label="Secondary button" name="secondary_button_preset" value={secondaryButtonPreset} options={BUTTON_ACTIONS.map(({ label, value }) => ({ label, value }))} on:change={(event) => applySecondaryButtonPreset(selectValue(event))} />
+            </div>
+            {#if primaryButtonPreset === 'custom' || secondaryButtonPreset === 'custom'}
+              <div class="grid gap-4 border-t border-ink/10 pt-4 sm:grid-cols-2">
+                {#if primaryButtonPreset === 'custom'}
+                  <AdminFormInput label="Custom primary label" name="button_text" bind:value={form.button_text} placeholder="Button label" />
+                  <AdminFormInput label="Custom primary link" name="button_url" bind:value={form.button_url} placeholder="/your-page" />
+                {/if}
+                {#if secondaryButtonPreset === 'custom'}
+                  <AdminFormInput label="Custom secondary label" name="secondary_cta_text" bind:value={secondaryCtaText} placeholder="Button label" />
+                  <AdminFormInput label="Custom secondary link" name="secondary_cta_url" bind:value={secondaryCtaUrl} placeholder="/your-page" />
+                {/if}
+              </div>
+            {/if}
+          </div>
+        {/if}
 
         <label class="grid gap-2 text-sm font-medium text-ink">
           <span>Extra data (JSON)</span>
@@ -1794,4 +2190,3 @@
     Deleting section...
   </div>
 {/if}
-

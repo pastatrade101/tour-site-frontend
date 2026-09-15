@@ -21,13 +21,15 @@
   import TourCard from './TourCard.svelte';
   import { MONTHS, arr, lines, rows, str, type Block } from '$lib/safariPackageBlocks';
   import { advisorNoteEnabled, advisorNoteFromBlock, type AdvisorNoteSection } from '$lib/advisorNote';
-  import type { FAQ, ItineraryDay, Tour } from '$lib/types';
+  import type { FAQ, ItineraryDay, Lodge, Tour } from '$lib/types';
 
   export let blocks: Block[] = [];
   /** The linked tour's real days — what the `itinerary` block renders. */
   export let itineraryDays: ItineraryDay[] = [];
   /** Resolved tours for `tours` blocks. Cards link to the canonical /tours/[slug]. */
   export let tours: Tour[] = [];
+  /** Properties chosen for route-category tabs, resolved by the page loader. */
+  export let lodges: Lodge[] = [];
   /** FAQs attached to this package, used only when a `faq` block has none of its own. */
   export let moduleFaqs: FAQ[] = [];
   /** Published categories, offered as "main interest" in the planner band. */
@@ -60,11 +62,7 @@
   const byOrder = (slugs: string[]) =>
     slugs.map((slug) => tours.find((tour) => tour.slug === slug)).filter((tour): tour is Tour => Boolean(tour));
 
-  /**
-   * The names an editor can type in a fact's Icon box, kept deliberately small
-   * and plain-language. An unknown name draws no icon rather than an error
-   * glyph, so a typo costs nothing.
-   */
+  /** The controlled icon values saved by the package editor. */
   const FACT_ICON: Record<string, typeof Plane> = {
     plane: Plane,
     pin: MapPin,
@@ -80,6 +78,20 @@
     arr<unknown>(value)
       .map((entry) => String(entry ?? '').trim())
       .filter((month) => MONTHS.includes(month));
+
+  /** Supports both the new icon-picker rows and legacy `icon | label` values. */
+  const priceFactors = (value: unknown): { icon: string; text: string }[] =>
+    arr<unknown>(value)
+      .map((factor) => {
+        if (factor && typeof factor === 'object') {
+          const row = factor as Record<string, unknown>;
+          return { icon: str(row.icon), text: str(row.text) };
+        }
+        const [maybeIcon, ...rest] = str(factor).split('|');
+        const icon = rest.length && FACT_ICON[maybeIcon.trim().toLowerCase()] ? maybeIcon.trim() : '';
+        return { icon, text: (icon ? rest.join('|') : maybeIcon).trim() };
+      })
+      .filter((factor) => factor.text);
 </script>
 
 {#each blocks as block, index (index)}
@@ -458,7 +470,7 @@
           {/if}
           {#if title}<h2 class={HEADING}>{title}</h2>{/if}
           {#if intro}<p class={INTRO}>{intro}</p>{/if}
-          <SafariRouteOptions routes={routeRows} {tours} ctaLabel={str(block.cta_label) || 'Send request for this route'} />
+          <SafariRouteOptions routes={routeRows} {tours} {lodges} ctaLabel={str(block.cta_label) || 'Send request for this route'} />
         </div>
       </section>
     {/if}
@@ -559,7 +571,7 @@
 
   {:else if block.type === 'priceguide'}
     {@const priceRows = rows<{ route?: string; price?: string; best_for?: string; tendency?: string; why?: string }>(block.rows)}
-    {@const factors = lines(block.factors)}
+    {@const factors = priceFactors(block.factors)}
     {#if priceRows.length || factors.length}
       <section class={`${surface(index)} ${SECTION}`}>
         <div class={SHELL}>
@@ -600,14 +612,12 @@
               <h3 class="font-serif text-lg font-semibold text-heading">{str(block.factors_title) || 'Why your quote may change'}</h3>
               <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {#each factors as factor, i (i)}
-                  {@const parts = factor.split('|')}
-                  {@const Icon = parts.length > 1 ? FACT_ICON[parts[0].trim().toLowerCase()] : undefined}
-                  {@const label = parts.length > 1 ? parts.slice(1).join('|').trim() : factor}
+                  {@const Icon = FACT_ICON[factor.icon.trim().toLowerCase()]}
                   <div class="flex items-start gap-3">
                     <span class="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-canvas text-clay">
                       {#if Icon}<Icon size={18} />{:else}<Banknote size={18} />{/if}
                     </span>
-                    <span class="pt-1.5 text-[14.5px] font-medium text-heading">{label}</span>
+                    <span class="pt-1.5 text-[14.5px] font-medium text-heading">{factor.text}</span>
                   </div>
                 {/each}
               </div>

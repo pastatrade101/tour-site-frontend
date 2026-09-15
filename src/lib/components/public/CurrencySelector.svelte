@@ -1,37 +1,14 @@
 <script lang="ts">
   import { Check, ChevronDown, RefreshCw } from '@lucide/svelte';
   import { currency, initCurrency, setCurrency } from '$lib/currency';
-  import { localeFlag } from '$lib/i18n';
 
   export let compact = false;
   export let mobile = false;
-  /**
-   * Flag-only square trigger for tight bars (the mobile top nav). The words —
-   * code, full name, symbol — live in the dropdown, which keeps its fixed
-   * 268px width and right-aligns to the trigger, so nothing is lost.
-   */
-  export let flagOnly = false;
   /**
    * No border, no background — for the dark utility strip, where a white pill
    * would read as a form control rather than a quiet switch.
    */
   export let bare = false;
-
-  const flags: Record<string, string> = {
-    USD: '🇺🇸',
-    EUR: '🇪🇺',
-    GBP: '🇬🇧',
-    TZS: '🇹🇿',
-    KES: '🇰🇪',
-    ZAR: '🇿🇦',
-    AUD: '🇦🇺',
-    CAD: '🇨🇦'
-  };
-
-  // The named ones win — the euro has no country — and everything else takes
-  // the flag of the region in its own locale. Shared with the language
-  // switcher, which derives its flags the same way.
-  const flagFor = (code: string, locale: string) => flags[code] ?? localeFlag(locale);
 
   const ensureReady = () => {
     if (!$currency.loading && $currency.status === 'missing') void initCurrency();
@@ -160,7 +137,7 @@
   on:pointerdown|stopPropagation
   role="presentation"
 >
-  {#if !compact && !flagOnly}
+  {#if !compact}
     <span class="mb-1 block text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">Currency</span>
   {/if}
 
@@ -172,9 +149,7 @@
         ? `gap-1.5 rounded text-inherit hover:text-white ${open ? 'text-white' : ''}`
         : `border bg-surface text-heading shadow-sm
            ${open ? 'border-goldfinch-gold ring-2 ring-goldfinch-gold/25' : 'border-ink/12 hover:border-goldfinch-gold/60'}
-           ${flagOnly
-             ? 'h-11 w-11 justify-center rounded-xl border-ink/15'
-             : `gap-2 rounded-[8px] pl-2.5 pr-2 ${compact ? 'h-10' : 'h-11'}`}`}
+           ${`gap-2 rounded-[8px] pl-2.5 pr-2 ${compact ? 'h-10' : 'h-11'}`}`}
       ${mobile ? 'w-full justify-between' : ''}`}
     aria-haspopup="listbox"
     aria-expanded={open}
@@ -185,27 +160,18 @@
     on:keydown={onTriggerKeydown}
     on:focus={ensureReady}
   >
-    {#if flagOnly && $currency.loading}
-      <RefreshCw size={15} class="animate-spin text-ink/40" />
-    {:else}
-      <span class="flag text-base leading-none" aria-hidden="true">{selected ? flagFor(selected.code, selected.locale) : '🌍'}</span>
+    <span class={`grid h-6 min-w-6 place-items-center rounded-[6px] font-bold leading-none ${bare ? 'bg-white/12 px-1 text-white' : 'bg-goldfinch-gold/15 px-1 text-heading'}`} aria-hidden="true">{selected?.symbol || selected?.code || '¤'}</span>
+    <span class={`min-w-0 truncate ${bare ? 'text-[12px] font-medium' : 'text-sm font-extrabold'}`}>{selected?.code ?? 'USD'}</span>
+    {#if mobile && selected?.name}
+      <span class="ml-1 min-w-0 flex-1 truncate text-left text-sm font-medium text-ink/50">{selected.name}</span>
     {/if}
-    {#if !flagOnly}
-      <span class={`min-w-0 truncate ${bare ? 'text-[12px] font-medium' : 'text-sm font-extrabold'}`}>{selected?.code ?? 'USD'}</span>
-      {#if !compact && !mobile && !bare && selected?.symbol}
-        <span class="text-sm font-semibold text-ink/40">{selected.symbol}</span>
+    <span class={`shrink-0 ${bare ? 'text-current opacity-80' : 'ml-auto text-ink/40'}`}>
+      {#if $currency.loading}
+        <RefreshCw size={bare ? 12 : 14} class="animate-spin" />
+      {:else}
+        <ChevronDown size={bare ? 12 : 15} class={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       {/if}
-      {#if mobile && selected?.name}
-        <span class="ml-1 min-w-0 flex-1 truncate text-left text-sm font-medium text-ink/50">{selected.name}</span>
-      {/if}
-      <span class={`shrink-0 ${bare ? 'text-current opacity-80' : 'ml-auto text-ink/40'}`}>
-        {#if $currency.loading}
-          <RefreshCw size={bare ? 12 : 14} class="animate-spin" />
-        {:else}
-          <ChevronDown size={bare ? 12 : 15} class={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
-        {/if}
-      </span>
-    {/if}
+    </span>
   </button>
 
   {#if open}
@@ -239,7 +205,7 @@
           on:click={() => !unavailable && choose(item.code)}
           on:mouseenter={() => (activeIndex = index)}
         >
-          <span class="flag text-lg leading-none" aria-hidden="true">{flagFor(item.code, item.locale)}</span>
+          <span class="grid h-8 min-w-8 place-items-center rounded-[7px] bg-goldfinch-gold/15 px-1 text-sm font-extrabold text-heading" aria-hidden="true">{item.symbol || item.code}</span>
           <span class="min-w-0 flex-1">
             <span class="block text-sm font-extrabold text-heading">{item.code}</span>
             <span class="block truncate text-xs text-ink/50">{item.name}</span>

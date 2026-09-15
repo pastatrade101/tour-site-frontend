@@ -37,15 +37,15 @@
   export let moreLabel = 'More experiences';
   export let bestForLabel = 'Best for';
   export let primaryCtaPrefix = 'Explore';
-
-  /** Six in the strip and the photo grid; the rest are named underneath. */
-  const PRIMARY_COUNT = 6;
+  /** Number of items shown as tabs and image tiles before the “more” row. */
+  export let primaryCount = 6;
 
   let activeIndex = 0;
   $: if (activeIndex >= items.length) activeIndex = 0;
 
-  $: primary = items.slice(0, PRIMARY_COUNT);
-  $: secondary = items.slice(PRIMARY_COUNT);
+  $: visibleCount = Math.min(items.length, Math.max(1, Math.floor(Number(primaryCount) || 6)));
+  $: primary = items.slice(0, visibleCount);
+  $: secondary = items.slice(visibleCount);
   $: active = items[activeIndex] ?? items[0];
 
   $: activeHref = active ? active.href || (active.slug ? `/safari-styles/${active.slug}` : '') : '';
@@ -219,8 +219,8 @@
           {#each secondary as opt, i (opt.slug || i)}<span
               ><button
                 type="button"
-                on:click={() => (activeIndex = i + PRIMARY_COUNT)}
-                class="underline-offset-2 hover:underline {activeIndex === i + PRIMARY_COUNT
+                on:click={() => (activeIndex = i + visibleCount)}
+                class="underline-offset-2 hover:underline {activeIndex === i + visibleCount
                   ? 'font-semibold text-heading'
                   : 'font-medium text-clay'}">{opt.name}</button
               >{#if i < secondary.length - 1}<span class="px-2 text-ink/40">·</span>{/if}</span

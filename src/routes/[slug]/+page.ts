@@ -3,7 +3,7 @@ import type { PageLoad } from './$types';
 import { attachedFaqQuery, generalFaqQuery, mergeFaqs } from '$lib/faqEntities';
 import { parseRouteTour } from '$lib/safariPackageBlocks';
 import { localeFromPath, withLocale } from '$lib/i18n';
-import type { FAQ, SafariPackage, Tour } from '$lib/types';
+import type { FAQ, Lodge, SafariPackage, Tour } from '$lib/types';
 
 /**
  * Safari-package landing pages, served straight off the root: /2-day-safari.
@@ -48,8 +48,22 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
   const fromRouteBlocks = sections
     .filter((block) => block?.type === 'routes')
     .flatMap((block) => (block.routes as Array<Record<string, unknown>>) ?? [])
-    .flatMap((route) => (route?.tours as unknown[]) ?? [])
-    .map((line) => parseRouteTour(String(line ?? '')).slug);
+    .flatMap((route) => [
+      ...((route?.tours as unknown[]) ?? []).map((line) => parseRouteTour(String(line ?? '')).slug),
+      ...((route?.comforts as Array<Record<string, unknown>>) ?? []).map((comfort) => String(comfort?.tour_slug ?? '').trim())
+    ]);
+
+  const accommodationIds = [
+    ...new Set(
+      sections
+        .filter((block) => block?.type === 'routes')
+        .flatMap((block) => (block.routes as Array<Record<string, unknown>>) ?? [])
+        .flatMap((route) => (route?.comforts as Array<Record<string, unknown>>) ?? [])
+        .flatMap((comfort) => (comfort?.accommodation_ids as unknown[]) ?? [])
+        .map((id) => String(id ?? '').trim())
+        .filter(Boolean)
+    )
+  ];
 
   const slugs = [
     ...new Set(
@@ -80,6 +94,19 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
       const tour = result.status === 'fulfilled' ? ((result.value as { data?: Tour } | null)?.data ?? null) : null;
       // A slug that no longer resolves is left out rather than rendered blank.
       if (tour) related.push(tour);
+    }
+  }
+
+  // The selected accommodation cards are explicit package content. Fetch the
+  // small CMS inventory only when a route option names at least one property.
+  let relatedLodges: Lodge[] = [];
+  if (accommodationIds.length) {
+    try {
+      const lodgingResponse = await fetch(withLocale('/api/lodges?status=published&limit=200', locale));
+      const lodgingBody = (await lodgingResponse.json()) as { data?: { items?: Lodge[] } };
+      relatedLodges = (lodgingBody?.data?.items ?? []).filter((lodge) => accommodationIds.includes(lodge.id));
+    } catch {
+      // The selected route still has its tour itinerary as a useful fallback.
     }
   }
 
@@ -137,5 +164,5 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
       ? (((await homepageResult.value.json()) as { data?: Record<string, unknown>[] })?.data ?? [])
       : [];
 
-  return { package: record, related, moduleFaqs, interests, startPoints, homeSections };
+  return { package: record, related, relatedLodges, moduleFaqs, interests, startPoints, homeSections };
 };
