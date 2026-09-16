@@ -164,12 +164,12 @@
   <div
     aria-hidden="true"
     class="hero-main-overlay absolute inset-0"
-    style="background: linear-gradient(100deg, rgba(57,61,50,0.80) 0%, rgba(57,61,50,0.48) 32%, rgba(57,61,50,0.12) 58%, rgba(57,61,50,0) 72%)"
+    style="background: linear-gradient(100deg, rgb(var(--c-deep-green) / 0.80) 0%, rgb(var(--c-deep-green) / 0.48) 32%, rgb(var(--c-deep-green) / 0.12) 58%, rgb(var(--c-deep-green) / 0) 72%)"
   ></div>
   <div
     aria-hidden="true"
     class="hero-bottom-overlay absolute inset-x-0 bottom-0 h-40"
-    style="background: linear-gradient(to top, rgba(57,61,50,0.62), transparent)"
+    style="background: linear-gradient(to top, rgb(var(--c-deep-green) / 0.62), transparent)"
   ></div>
 
   <div class="hero-copy relative container-shell pt-20 pb-8 md:pt-28 md:pb-10 lg:pt-32">
@@ -375,13 +375,19 @@
       background: rgb(var(--c-deep-green));
     }
 
+    /* Both overlays were a hardcoded #1A3630 — a teal-green that is not one of
+       the brand colours, sitting directly on top of a .home-hero painted in
+       --c-deep-green. On a tall phone hero the difference showed as a cast
+       over the bottom half of the picture. Same token as everything else now,
+       so it also follows a recolour from the Branding page instead of staying
+       frozen at whatever the hex was. */
     .hero-main-overlay {
-      background: linear-gradient(180deg, rgba(26,54,48,0.24) 0%, rgba(26,54,48,0.46) 43%, rgba(26,54,48,0.9) 100%) !important;
+      background: linear-gradient(180deg, rgb(var(--c-deep-green) / 0.24) 0%, rgb(var(--c-deep-green) / 0.46) 43%, rgb(var(--c-deep-green) / 0.9) 100%) !important;
     }
 
     .hero-bottom-overlay {
       height: 58%;
-      background: linear-gradient(to top, rgba(26,54,48,0.82), transparent) !important;
+      background: linear-gradient(to top, rgb(var(--c-deep-green) / 0.82), transparent) !important;
     }
 
     .hero-slide :global(.hero-slide-image) {
