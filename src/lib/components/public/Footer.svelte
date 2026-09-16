@@ -262,6 +262,10 @@
         <a class="transition hover:text-white" href={termsUrl}>{$t('footer.terms')}</a>
         <a class="transition hover:text-white" href={cancellationUrl}>{$t('footer.cancellation')}</a>
         <a class="transition hover:text-white" href="/data-retention">{$t('footer.data_retention')}</a>
+        <!-- Where staff sign in. It sat in the top bar as a button, competing
+             with the one call to action meant for visitors; down here it is
+             still one click from every page for the people who need it. -->
+        <a class="transition hover:text-white" href="/admin/login">{$t('nav.staff_login')}</a>
       </nav>
     </div>
   </div>

@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { afterNavigate, goto, preloadData } from '$app/navigation';
   import { page } from '$app/stores';
-  import { ArrowDownToLine, ArrowRight, ChevronDown, ChevronRight, Compass, Globe, MapPin, Menu, MessageCircle, Search, TicketsPlane, User, X, BedDouble } from '@lucide/svelte';
+  import { ArrowDownToLine, ArrowRight, ChevronDown, ChevronRight, Compass, Globe, MapPin, Menu, MessageCircle, Search, TicketsPlane, X, BedDouble } from '@lucide/svelte';
   import { fade, fly } from 'svelte/transition';
   import { api } from '$lib/api/client';
   import { trackEvent } from '$lib/analytics';
@@ -628,15 +628,9 @@
         <Search size={19} strokeWidth={2.4} />
       </button>
 
-      <a
-        href="/admin/login"
-        class="hidden h-10 items-center gap-2 rounded-md border border-white/25 px-3.5 text-sm font-semibold text-white/90 transition hover:bg-white/10 hover:text-white xl:inline-flex"
-        on:click={() => activateLink('/admin/login')}
-        on:focus={() => preloadRoute('/admin/login')}
-      >
-        <User size={15} strokeWidth={2.6} />
-        {$t('nav.login')}
-      </a>
+      <!-- Staff sign-in lives in the footer. It is a door for the people who
+           run the site, not a call to action for the people visiting it, and
+           it was taking bar space from the one button that is. -->
 
       <a
         class={`hidden h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-md px-4 text-sm font-semibold transition sm:inline-flex ${isActive(path, '/plan-my-trip') ? 'bg-white/15 text-white' : 'bg-goldfinch-gold text-heading hover:brightness-105'}`}
@@ -794,7 +788,6 @@
               <span class="text-[15px] font-bold text-ink">{waNumber}</span>
             </span>
           </a>
-          <a class="mt-1 text-center text-xs font-medium text-ink/40 transition hover:text-forest" href="/admin/login" on:click={() => activateLink('/admin/login')}>{$t('nav.staff_login')}</a>
         </div>
       </aside>
     </div>
