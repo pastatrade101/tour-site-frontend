@@ -81,10 +81,22 @@
   $: highlights = (headTour?.highlights ?? []).map(String).filter((item) => item.trim());
   $: priceLabel = priced?.tour?.price_from ? formatUsd(priced.tour.price_from, $currency) : '';
 
-  /** Explicit CMS picks lead; the tour itinerary is the safe legacy fallback. */
+  /**
+   * Explicit CMS picks lead; the tour itinerary is the safe legacy fallback.
+   *
+   * One property per comfort tab, which is what the editor now offers. Pages
+   * saved while it accepted several still hold them, so the first is taken
+   * rather than all — the alternative is a page that contradicts the form that
+   * produced it until someone happens to re-save it.
+   *
+   * The fallback below is deliberately NOT capped. Those are the lodges on the
+   * tour's own itinerary — the places you genuinely sleep across a multi-stop
+   * route — which is a different question from which single property this tab
+   * is featuring.
+   */
   $: selectedStays = (() => {
     if (stayed?.lodges?.length) {
-      return stayed.lodges.map((lodge) => ({
+      return stayed.lodges.slice(0, 1).map((lodge) => ({
         name: lodge.name,
         href: lodge.slug ? `/accommodation/${lodge.slug}` : '',
         src: lodge.hero_image_url || lodge.image_url || lodge.cover_image_url || '',

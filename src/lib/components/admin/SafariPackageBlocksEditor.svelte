@@ -122,13 +122,22 @@
   const availableLodges = (category: unknown) => lodges.filter((lodge) => lodge.accommodation_level === category);
   const selectValue = (event: Event) => (event.currentTarget as HTMLSelectElement | null)?.value ?? '';
 
-  const toggleAccommodation = (blockIndex: number, routeKey: string, routeIndex: number, key: string, comfortIndex: number, lodgeId: string) => {
-    const comfort = comfortRows(blockIndex, routeKey, routeIndex, key)[comfortIndex] ?? {};
-    const selected = Array.isArray(comfort.accommodation_ids) ? comfort.accommodation_ids.map(String) : [];
+  /**
+   * One property per comfort tab.
+   *
+   * Stored as a list of one rather than a bare id: the renderer, the page
+   * loader and every saved page already speak `accommodation_ids`, and
+   * narrowing the choice is not a reason to change the shape underneath them.
+   *
+   * An empty list is a real answer, not a missing one — it is how a tab falls
+   * back to the lodges on the linked tour's own itinerary. So the picker keeps
+   * a way back to none; a radio group with no off switch would trap an editor
+   * at the first property they tried.
+   */
+  const pickAccommodation = (blockIndex: number, routeKey: string, routeIndex: number, key: string, comfortIndex: number, lodgeId: string) =>
     updateComfort(blockIndex, routeKey, routeIndex, key, comfortIndex, {
-      accommodation_ids: selected.includes(lodgeId) ? selected.filter((id) => id !== lodgeId) : [...selected, lodgeId]
+      accommodation_ids: lodgeId ? [lodgeId] : []
     });
-  };
 
   const label = 'block text-[11px] font-bold uppercase tracking-[0.12em] text-ink/55';
 </script>
@@ -252,6 +261,7 @@
                               {@const category = String(comfort.accommodation_level ?? '')}
                               {@const matchingLodges = availableLodges(category)}
                               {@const selectedIds = Array.isArray(comfort.accommodation_ids) ? comfort.accommodation_ids.map(String) : []}
+                              {@const lodgeGroup = `b${index}_${field.key}_${rowIndex}_${sub.key}_${comfortIndex}_lodge`}
                               <div class="grid gap-3 rounded-[9px] border border-ink/12 bg-surface p-3">
                                 <div class="flex items-center justify-between gap-3">
                                   <span class="text-[11px] font-bold uppercase tracking-wider text-forest">Comfort tab {comfortIndex + 1}</span>
@@ -276,16 +286,28 @@
                                   />
                                 </div>
                                 <div class="grid gap-1.5">
-                                  <span class={label}>Available accommodation</span>
+                                  <span class={label}>Accommodation — choose one</span>
                                   {#if matchingLodges.length}
                                     <div class="grid gap-2 sm:grid-cols-2">
                                       {#each matchingLodges as lodge (lodge.id)}
                                         <label class={`flex cursor-pointer items-start gap-2.5 rounded-[8px] border p-2.5 transition ${selectedIds.includes(lodge.id) ? 'border-goldfinch-gold bg-goldfinch-gold/10' : 'border-ink/10 bg-canvas hover:border-goldfinch-gold/45'}`}>
-                                          <input class="mt-0.5 h-4 w-4 rounded border-ink/30 text-goldfinch-gold focus:ring-goldfinch-gold" type="checkbox" checked={selectedIds.includes(lodge.id)} on:change={() => toggleAccommodation(index, field.key, rowIndex, sub.key, comfortIndex, lodge.id)} />
+                                          <input class="mt-0.5 h-4 w-4 border-ink/30 text-goldfinch-gold focus:ring-goldfinch-gold" type="radio" name={lodgeGroup} checked={selectedIds.includes(lodge.id)} on:change={() => pickAccommodation(index, field.key, rowIndex, sub.key, comfortIndex, lodge.id)} />
                                           <span class="min-w-0"><span class="block text-[12px] font-semibold text-heading">{lodge.name}</span>{#if lodge.destinations?.name}<span class="block truncate text-[11px] text-ink/50">{lodge.destinations.name}</span>{/if}</span>
                                         </label>
                                       {/each}
+                                      <!-- The way back to none. Without it a radio group cannot be
+                                           cleared, and an empty selection is what hands the tab back
+                                           to the lodges on the linked tour's own itinerary. -->
+                                      <label class={`flex cursor-pointer items-start gap-2.5 rounded-[8px] border p-2.5 transition ${selectedIds.length ? 'border-ink/10 bg-canvas hover:border-goldfinch-gold/45' : 'border-goldfinch-gold bg-goldfinch-gold/10'}`}>
+                                        <input class="mt-0.5 h-4 w-4 border-ink/30 text-goldfinch-gold focus:ring-goldfinch-gold" type="radio" name={lodgeGroup} checked={selectedIds.length === 0} on:change={() => pickAccommodation(index, field.key, rowIndex, sub.key, comfortIndex, '')} />
+                                        <span class="min-w-0"><span class="block text-[12px] font-semibold text-heading">No specific property</span><span class="block text-[11px] text-ink/50">Use the lodges on the chosen tour’s itinerary.</span></span>
+                                      </label>
                                     </div>
+                                    {#if selectedIds.length > 1}
+                                      <p class="rounded-[8px] border border-dashed border-amber-300 bg-amber-50/70 px-3 py-2 text-[11.5px] leading-5 text-amber-900">
+                                        This tab still holds {selectedIds.length} properties from before only one was allowed. The page shows the first. Choosing one below replaces them all.
+                                      </p>
+                                    {/if}
                                   {:else}
                                     <p class="rounded-[8px] border border-dashed border-ink/15 px-3 py-2 text-[12px] text-ink/55">No CMS accommodation is available in this category yet.</p>
                                   {/if}

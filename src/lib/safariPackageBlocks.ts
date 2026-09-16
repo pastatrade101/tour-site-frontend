@@ -246,7 +246,7 @@ export const BLOCK_TYPES: BlockSpec[] = [
             key: 'comforts',
             label: 'Accommodation levels',
             kind: 'routeComforts',
-            hint: 'Choose a CMS accommodation category, then choose the matching tour and the properties to feature beneath that category tab. The page uses these selections for its connected price and accommodation tabs.'
+            hint: 'Choose a CMS accommodation category, then the matching tour and the one property to feature beneath that category tab. Leave the property on "No specific property" to show the lodges from the chosen tour\'s own itinerary instead. The page uses these selections for its connected price and accommodation tabs.'
           },
           { key: 'best_for', label: 'Best for', kind: 'text', placeholder: 'first-time safari travellers who want the classic route.' },
           { key: 'note', label: 'Caveat under the route', kind: 'textarea', placeholder: 'This route is busier and needs careful flight and lodge timing.' },
