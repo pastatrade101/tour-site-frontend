@@ -4,6 +4,7 @@ import de from '$lib/locales/de.json';
 import en from '$lib/locales/en.json';
 import es from '$lib/locales/es.json';
 import fr from '$lib/locales/fr.json';
+import it from '$lib/locales/it.json';
 import sw from '$lib/locales/sw.json';
 
 /**
@@ -14,7 +15,12 @@ import sw from '$lib/locales/sw.json';
  */
 type Dictionary = Record<string, string>;
 
-const DICTIONARIES: Record<KnownLocale, Dictionary> = { en, sw, de, fr, es };
+/*
+ * Keyed by KnownLocale on purpose: adding a locale to that list without adding
+ * its dictionary here is a type error, so a new language cannot ship with the
+ * interface silently still in English.
+ */
+const DICTIONARIES: Record<KnownLocale, Dictionary> = { en, sw, de, fr, es, it };
 
 /** Active locale, set once per navigation by the root layout. */
 export const locale = writable<KnownLocale>(DEFAULT_LOCALE);

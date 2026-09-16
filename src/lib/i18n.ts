@@ -15,8 +15,15 @@
  * one is canonical.
  */
 
-/** Locales the router will recognise in a path. Must match the seeded set. */
-export const KNOWN_LOCALES = ['en', 'sw', 'de', 'fr', 'es'] as const;
+/**
+ * Locales the router will recognise in a path. Must match the `languages`
+ * table, which is the source of truth everywhere else — the switcher, hreflang,
+ * the admin's translation tabs and the machine-translation target all read it
+ * over the wire. This list exists only because routing has to decide what is a
+ * locale prefix before any request has been made, and it is the one place a new
+ * language has to be named twice.
+ */
+export const KNOWN_LOCALES = ['en', 'sw', 'de', 'fr', 'es', 'it'] as const;
 export type KnownLocale = (typeof KNOWN_LOCALES)[number];
 
 /** Served without a prefix. Mirrors languages.is_default in the database. */
