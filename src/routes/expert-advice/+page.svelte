@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { page } from '$app/stores';
+  import { localeParam } from '$lib/faqEntities';
   import { onMount } from 'svelte';
   import { ArrowRight, GitCompare, MessageSquare, Sparkles } from '@lucide/svelte';
   import { api } from '$lib/api/client';
@@ -30,7 +32,7 @@
     const [postRes, faqRes] = await Promise.allSettled([
       api.blog.list({ status: 'published', limit: 24 }),
       // General questions only — this page is advice for any trip, not one place.
-      api.faqs.list({ entity_type: 'null', limit: 8 })
+      api.faqs.list({ entity_type: 'null', limit: 8, ...localeParam($page.data.locale) })
     ]);
     posts = postRes.status === 'fulfilled' ? postRes.value.data.items : [];
     faqs = faqRes.status === 'fulfilled' ? faqRes.value.data.items : [];

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { page } from '$app/stores';
+  import { localeParam } from '$lib/faqEntities';
   import { onMount } from 'svelte';
   import { ArrowRight, MessageCircle } from '@lucide/svelte';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
@@ -277,7 +279,7 @@
       api.blog.list({ limit: 3 }),
       // The general library only. The homepage should not answer a question
       // about one park to a visitor who has not chosen a destination yet.
-      api.faqs.list({ entity_type: 'null', limit: 5 }),
+      api.faqs.list({ entity_type: 'null', limit: 5, ...localeParam($page.data.locale) }),
       api.reviews.summary(),
       api.reviews.list({ status: 'approved', is_featured: true, limit: 6 }),
       api.reviews.list({ status: 'approved', limit: 6 }),

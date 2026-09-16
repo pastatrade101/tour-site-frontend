@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from '$app/stores';
   import { onMount } from 'svelte';
   import { DEFAULT_LOCALE } from '$lib/i18n';
   import { browser } from '$app/environment';
@@ -628,7 +629,7 @@
       api.gallery.list({ destination_id: current.id, media_type: 'image', status: 'published', limit: 10 }),
       // This destination's own questions first, topped up with the general ones
       // so the section is worth reading even before any are attached.
-      loadEntityFaqs('destinations', current.id, 8)
+      loadEntityFaqs('destinations', current.id, 8, $page.data.locale)
     ]);
 
     if (destination?.id !== current.id) return;

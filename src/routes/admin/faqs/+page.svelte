@@ -4,6 +4,7 @@
   import { ChevronDown, CircleHelp, Edit, ExternalLink, Plus, Search, Trash2, X } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
+  import AdminTranslationTabs from '$lib/components/admin/AdminTranslationTabs.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
@@ -532,6 +533,19 @@
           <AdminFormInput label="Sort order" name="sort_order" type="number" bind:value={form.sort_order} />
         </div>
       </div>
+
+      <!-- Translations, on a saved question only: they hang off its id, and a
+           question being written has none yet. The English above is the
+           source, so it is written first and translated after. -->
+      {#if editingFaq?.id}
+        <div class="mt-6 border-t border-ink/10 pt-6">
+          <AdminTranslationTabs
+            entityType="faqs"
+            entityId={editingFaq.id}
+            on:toast={(event) => showToast(event.detail.message, event.detail.type)}
+          />
+        </div>
+      {/if}
 
       <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <AdminButton variant="secondary" type="button" on:click={closeModal}>Cancel</AdminButton>

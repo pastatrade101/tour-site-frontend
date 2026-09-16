@@ -26,7 +26,7 @@ export const load: PageLoad = async ({ fetch, url }) => {
     cachedJson<{ data?: ReviewSummary }>(`${API_URL}/reviews/summary`, fetch),
     // General questions only: this is the index, so no single tour's or park's
     // questions belong here.
-    cachedJson<{ data?: { items?: FAQ[] } }>(`${API_URL}/faqs?${generalFaqQuery(8)}`, fetch),
+    cachedJson<{ data?: { items?: FAQ[] } }>(withLocale(`${API_URL}/faqs?${generalFaqQuery(8)}`, locale), fetch),
     cachedJson<{ data?: { items?: Record<string, unknown>[] } }>(
       `${API_URL}/gallery?status=published&media_type=image&limit=10`,
       fetch

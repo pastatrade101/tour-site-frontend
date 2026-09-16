@@ -1,5 +1,16 @@
 import { api } from '$lib/api/client';
+import { DEFAULT_LOCALE } from '$lib/i18n';
 import type { FAQ, FaqEntityType } from '$lib/types';
+
+/**
+ * `?locale=` for a FAQ request, omitted for the default language.
+ *
+ * Same rule withLocale follows for the routes that build their URLs by hand:
+ * the API serves the default language by definition, and leaving the parameter
+ * off keeps the default-language cache keys identical to what they were.
+ */
+export const localeParam = (locale?: string): Record<string, string> =>
+  locale && locale !== DEFAULT_LOCALE ? { locale } : {};
 
 /**
  * The collections an FAQ can be attached to, in the order an editor sees them.
@@ -113,16 +124,23 @@ const itemsOf = (result: PromiseSettledResult<{ data: { items?: FAQ[] } }>): FAQ
  */
 export const loadFaqsFor = async (
   attachments: Array<{ type: FaqEntityType; id?: string | null }>,
-  limit = 8
+  limit = 8,
+  /**
+   * Passed rather than read from the locale store: this module is also
+   * imported by `+page.ts` loaders, and a module-level store is one value
+   * shared by every request the server is handling at once.
+   */
+  locale?: string
 ): Promise<FAQ[]> => {
   const named = attachments.filter((entry): entry is { type: FaqEntityType; id: string } => Boolean(entry.id));
+  const lang = localeParam(locale);
 
   const results = await Promise.allSettled([
     ...named.map((entry) =>
-      api.faqs.list({ entity_type: entry.type, entity_id: entry.id, status: 'published', limit })
+      api.faqs.list({ entity_type: entry.type, entity_id: entry.id, status: 'published', limit, ...lang })
     ),
     // "null" is the API's spelling for IS NULL — the general library.
-    api.faqs.list({ entity_type: 'null', status: 'published', limit })
+    api.faqs.list({ entity_type: 'null', status: 'published', limit, ...lang })
   ]);
 
   const general = itemsOf(results[results.length - 1]);
@@ -131,9 +149,14 @@ export const loadFaqsFor = async (
 };
 
 /** Client-side loader for a public page that knows which record it is. */
-export const loadEntityFaqs = async (type: FaqEntityType, id: string, limit = 8): Promise<FAQ[]> => {
+export const loadEntityFaqs = async (
+  type: FaqEntityType,
+  id: string,
+  limit = 8,
+  locale?: string
+): Promise<FAQ[]> => {
   if (!id) return [];
-  return loadFaqsFor([{ type, id }], limit);
+  return loadFaqsFor([{ type, id }], limit, locale);
 };
 
 /** Query strings for the same two reads, for routes that load in `+page.ts`. */

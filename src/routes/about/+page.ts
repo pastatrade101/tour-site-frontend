@@ -11,7 +11,7 @@ export const load: PageLoad = async ({ fetch, url }) => {
   const locale = localeFromPath(url.pathname);
   const [tRes, fRes, sRes, hRes] = await Promise.all([
     cachedJson<{ data?: { items?: Testimonial[] } }>(`${API_URL}/testimonials?status=published&limit=12`, fetch).catch(() => null),
-    cachedJson<{ data?: { items?: FAQ[] } }>(`${API_URL}/faqs?${generalFaqQuery(12)}`, fetch).catch(() => null),
+    cachedJson<{ data?: { items?: FAQ[] } }>(withLocale(`${API_URL}/faqs?${generalFaqQuery(12)}`, locale), fetch).catch(() => null),
     cachedJson<{ data?: { items?: Specialist[] } }>(`${API_URL}/specialists?status=published&limit=12`, fetch).catch(() => null),
     // The Advisor's Note is one section, edited on the homepage and shown here
     // too — so this page reads the same record rather than restating it.

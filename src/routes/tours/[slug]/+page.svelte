@@ -397,7 +397,8 @@
           { type: 'tours', id: current.id },
           { type: 'tour_categories', id: current.category_id }
         ],
-        8
+        8,
+        $page.data.locale
       )
     ]);
 
