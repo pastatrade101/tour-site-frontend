@@ -258,6 +258,45 @@ select {
   letter-spacing: 0;
 }
 
+/* ── No zoom on focus, on any touch device ───────────────────────────────────
+   Safari on iOS zooms the whole page in when a form control it is focusing
+   has a font smaller than 16px, and it does not zoom back out. Every form on
+   this site was drawn at 12–15px, so tapping any field threw the layout out of
+   scale and left the visitor pinching to read the page they were filling in.
+
+   The floor is 16px, which is the threshold itself — not a design choice, a
+   platform one.
+
+   What this deliberately does NOT do is add `maximum-scale=1, user-scalable=no`
+   to the viewport. That is the answer usually reached for, and it is wrong
+   twice: it takes pinch-zoom away from everyone, which fails WCAG 1.4.4, and
+   Safari has ignored it since iOS 10 anyway, so it costs accessibility and
+   fixes nothing.
+
+   Targeted by input capability, not width: the trigger is the device, so an
+   iPad at 1024px needs this as much as a phone at 375px, while a mouse-driven
+   desktop of any size keeps the smaller type the forms were designed in.
+
+   Checkboxes, radios, ranges and file inputs are excluded — their font size
+   does not drive the zoom, and their layout is easier to disturb.
+
+   !important is load-bearing, not laziness. Svelte compiles a scoped rule to
+   `.hero-planner-select.svelte-1a2b3c`, two classes, which outranks anything
+   reasonable this selector can spell — the homepage hero's 13px selects went
+   on zooming until this was forced. Leaving it to specificity would mean every
+   component author has to remember the floor, and the ones that forgot are
+   exactly how the bug got here.
+
+   `.gf-keep-size` is the opt-out, for a control deliberately set ABOVE the
+   floor. Nothing needs it to stay below one — below is the bug. */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(.gf-keep-size),
+  select:not(.gf-keep-size),
+  textarea:not(.gf-keep-size) {
+    font-size: 16px !important;
+  }
+}
+
 /* Safari on iOS sizes a native date control from its own date text and ignores
    the width we set, so a date field styled to fill its row rendered wider than
    the row and hung off the right edge of the panel. Dropping the native

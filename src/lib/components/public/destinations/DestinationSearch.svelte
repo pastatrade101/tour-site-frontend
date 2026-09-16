@@ -62,7 +62,7 @@
     <input
       bind:this={inputEl}
       bind:value
-      class="min-w-0 flex-1 bg-transparent text-[15px] font-medium text-ink outline-none placeholder:font-normal placeholder:text-ink/40 md:text-lg"
+      class="gf-keep-size min-w-0 flex-1 bg-transparent text-[16px] font-medium text-ink outline-none placeholder:font-normal placeholder:text-ink/40 md:text-lg"
       type="search"
       inputmode="search"
       enterkeyhint="search"

@@ -143,6 +143,10 @@
         <div class="mt-5 flex flex-col gap-2 sm:flex-row">
           <input
             type="email"
+            inputmode="email"
+            autocomplete="email"
+            autocapitalize="off"
+            spellcheck="false"
             bind:value={requestEmail}
             placeholder="you@example.com"
             class="h-11 flex-1 rounded-xl border border-ink/15 bg-surface px-3.5 text-sm text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"

@@ -582,14 +582,14 @@
           </label>
           <label class="grid gap-1.5">
             <span class="gf-label">Email</span>
-            <input class={cls('email')} type="email" bind:value={email} on:input={() => clearErr('email')} placeholder="you@example.com" autocomplete="email" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'pmt-email-err' : undefined} />
+            <input class={cls('email')} type="email" inputmode="email" autocapitalize="off" spellcheck="false" bind:value={email} on:input={() => clearErr('email')} placeholder="you@example.com" autocomplete="email" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'pmt-email-err' : undefined} />
             {#if errors.email}<span id="pmt-email-err" data-error class="text-xs text-red-600">{errors.email}</span>{/if}
           </label>
         </div>
         <div class="planning-field-grid">
           <label class="grid gap-1.5">
             <span class="gf-label">Phone / WhatsApp</span>
-            <input class={cls('phone')} type="tel" bind:value={phone} on:input={() => clearErr('phone')} placeholder="+255 ..." autocomplete="tel" aria-invalid={Boolean(errors.phone)} aria-describedby={errors.phone ? 'pmt-phone-err' : undefined} />
+            <input class={cls('phone')} type="tel" inputmode="tel" bind:value={phone} on:input={() => clearErr('phone')} placeholder="+255 ..." autocomplete="tel" aria-invalid={Boolean(errors.phone)} aria-describedby={errors.phone ? 'pmt-phone-err' : undefined} />
             {#if errors.phone}<span id="pmt-phone-err" data-error class="text-xs text-red-600">{errors.phone}</span>{/if}
           </label>
           <!--
@@ -689,12 +689,12 @@
         <div class="planning-count-grid">
           <label class="grid gap-1.5">
             <span class="gf-label">Adults</span>
-            <input class={cls('number_of_adults')} type="number" min="1" bind:value={number_of_adults} on:input={() => clearErr('number_of_adults')} aria-invalid={Boolean(errors.number_of_adults)} />
+            <input class={cls('number_of_adults')} type="number" inputmode="numeric" min="1" bind:value={number_of_adults} on:input={() => clearErr('number_of_adults')} aria-invalid={Boolean(errors.number_of_adults)} />
             {#if errors.number_of_adults}<span data-error class="text-xs text-red-600">{errors.number_of_adults}</span>{/if}
           </label>
           <label class="grid gap-1.5">
             <span class="gf-label">Children</span>
-            <input class={cls('number_of_children')} type="number" min="0" bind:value={number_of_children} on:input={() => clearErr('number_of_children')} aria-invalid={Boolean(errors.number_of_children)} />
+            <input class={cls('number_of_children')} type="number" inputmode="numeric" min="0" bind:value={number_of_children} on:input={() => clearErr('number_of_children')} aria-invalid={Boolean(errors.number_of_children)} />
             {#if errors.number_of_children}<span data-error class="text-xs text-red-600">{errors.number_of_children}</span>{/if}
           </label>
         </div>

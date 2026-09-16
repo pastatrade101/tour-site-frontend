@@ -481,12 +481,12 @@
           <div class="booking-count-grid">
             <label class="grid gap-1.5">
               <span class="gf-label">Adults</span>
-              <input class={cls('number_of_adults')} type="number" min="1" bind:value={number_of_adults} on:input={() => clearErr('number_of_adults')} />
+              <input class={cls('number_of_adults')} type="number" inputmode="numeric" min="1" bind:value={number_of_adults} on:input={() => clearErr('number_of_adults')} />
               {#if errors.number_of_adults}<span class="text-xs text-red-600">{errors.number_of_adults}</span>{/if}
             </label>
             <label class="grid gap-1.5">
               <span class="gf-label">Children</span>
-              <input class={cls('number_of_children')} type="number" min="0" bind:value={number_of_children} on:input={() => clearErr('number_of_children')} />
+              <input class={cls('number_of_children')} type="number" inputmode="numeric" min="0" bind:value={number_of_children} on:input={() => clearErr('number_of_children')} />
               {#if errors.number_of_children}<span class="text-xs text-red-600">{errors.number_of_children}</span>{/if}
             </label>
           </div>
@@ -537,7 +537,7 @@
               <span class="gf-label">Email</span>
               <span class="gf-field">
                 <Mail size={15} class="gf-field-icon" />
-                <input class={cls('email')} type="email" bind:value={email} on:input={() => clearErr('email')} placeholder="you@example.com" autocomplete="email" />
+                <input class={cls('email')} type="email" inputmode="email" autocapitalize="off" spellcheck="false" bind:value={email} on:input={() => clearErr('email')} placeholder="you@example.com" autocomplete="email" />
               </span>
               {#if errors.email}<span class="text-xs text-red-600">{errors.email}</span>{/if}
             </label>
@@ -547,7 +547,7 @@
               <span class="gf-label">Phone / WhatsApp</span>
               <span class="gf-field">
                 <MessageCircle size={15} class="gf-field-icon" />
-                <input class={cls('phone')} type="tel" bind:value={phone} on:input={() => clearErr('phone')} placeholder="+255 ..." autocomplete="tel" />
+                <input class={cls('phone')} type="tel" inputmode="tel" bind:value={phone} on:input={() => clearErr('phone')} placeholder="+255 ..." autocomplete="tel" />
               </span>
               {#if errors.phone}<span class="text-xs text-red-600">{errors.phone}</span>{/if}
             </label>

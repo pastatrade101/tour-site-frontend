@@ -193,6 +193,7 @@
         class:border-red-400={error}
         type="tel"
         inputmode="tel"
+        autocomplete="tel-national"
         placeholder={field.placeholder ?? '712 345 678'}
         aria-describedby={describedBy}
         aria-invalid={error ? 'true' : undefined}
