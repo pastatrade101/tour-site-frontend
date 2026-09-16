@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { ArrowRight, Newspaper } from '@lucide/svelte';
   import { tilt } from '$lib/animations';
   import Img from './Img.svelte';
@@ -29,7 +30,7 @@
         <p class="mt-2 line-clamp-3 text-sm leading-6 text-ink/70">{summary}</p>
       {/if}
       <span class="mt-auto inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[8px] bg-canvas px-4 text-sm font-bold text-forest transition group-hover:bg-deep-green group-hover:text-white">
-        Read guide <ArrowRight size={14} strokeWidth={2.6} class="transition-transform group-hover:translate-x-0.5" />
+        {$t('cta.read_guide')} <ArrowRight size={14} strokeWidth={2.6} class="transition-transform group-hover:translate-x-0.5" />
       </span>
     </div>
   </a>

@@ -88,6 +88,24 @@
     return Array.isArray(value) ? value.length > 0 : String(value ?? '').trim().length > 0;
   };
 
+  /**
+   * The fields worth showing for THIS record.
+   *
+   * The registry is per entity type, but records of one type are not alike — a
+   * homepage section has an eyebrow and a button, or it has neither, and every
+   * field it does not use was rendering as a row saying there was nothing to
+   * translate. Twelve of those above the two fields that matter is a form
+   * nobody reads.
+   *
+   * A field stays when the source has something to translate, when it is
+   * required (its absence is the point — that is what blocks publishing), or
+   * when this translation already carries text for it, so nothing anyone has
+   * typed can be hidden by a later edit to the English.
+   */
+  $: visibleFields = (data?.fields ?? []).filter(
+    (field) => field.required || sourceText(field.key, field.kind).trim() || filled(field.key)
+  );
+
   /** Progress against the required fields only — the ones that gate publishing. */
   $: requiredFields = (data?.fields ?? []).filter((f) => f.required);
   $: doneRequired = requiredFields.filter((f) => filled(f.key)).length;
@@ -240,7 +258,7 @@
         </div>
 
         <div class="grid gap-4">
-          {#each data.fields as field (field.key)}
+          {#each visibleFields as field (field.key)}
             {@const src = sourceText(field.key, field.kind)}
             {@const missing = Boolean(field.required) && !filled(field.key)}
             <div class="grid gap-2 lg:grid-cols-2 lg:gap-4">

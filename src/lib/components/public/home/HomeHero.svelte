@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onDestroy, onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { ChevronDown } from '@lucide/svelte';
@@ -216,29 +217,29 @@
         >
           <div class="hero-planner-grid grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end md:gap-3">
             <label class="hero-planner-field hero-planner-field-origin block">
-              <span class="hero-planner-label mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">Who is travelling?</span>
+              <span class="hero-planner-label mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">{$t('hero.who_travelling')}</span>
               <select
                 bind:value={traveller}
                 class="hero-planner-select h-11 w-full rounded-[8px] border border-white/20 bg-surface/95 px-3 text-[14px] text-heading focus:outline-none focus:ring-2 focus:ring-goldfinch-gold"
               >
-                <option value="">Select travellers</option>
+                <option value="">{$t('hero.select_travellers')}</option>
                 {#each travellerOptions as option}<option value={option.value}>{option.label}</option>{/each}
               </select>
             </label>
 
             <label class="hero-planner-field hero-planner-field-focus block">
-              <span class="hero-planner-label mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">Experience</span>
+              <span class="hero-planner-label mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">{$t('hero.experience')}</span>
               <select
                 bind:value={focus}
                 class="hero-planner-select h-11 w-full rounded-[8px] border border-white/20 bg-surface/95 px-3 text-[14px] text-heading focus:outline-none focus:ring-2 focus:ring-goldfinch-gold"
               >
-                <option value="">Pick a focus</option>
+                <option value="">{$t('hero.pick_focus')}</option>
                 {#each experiences as e}<option value={e.label}>{e.label}</option>{/each}
               </select>
             </label>
 
             <label class="hero-planner-field hero-planner-field-duration block">
-              <span class="hero-planner-label mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">When?</span>
+              <span class="hero-planner-label mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">{$t('hero.when')}</span>
               <input
                 bind:value={travelDate}
                 type="date"
@@ -287,7 +288,7 @@
       </div>
     {/if}
     <a href="#experiences" class="hero-scroll-cue" aria-label="Scroll to explore" on:click={scrollToExplore}>
-      <span>Explore</span>
+      <span>{$t('cta.explore')}</span>
       <ChevronDown size={18} strokeWidth={2.2} />
     </a>
   </div>

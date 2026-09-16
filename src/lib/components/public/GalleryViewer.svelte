@@ -1,4 +1,7 @@
 <script lang="ts">
+  // Aliased: this component already binds `t` to the tour a gallery item links
+  // to, and `$t` cannot resolve to a store that a local name has shadowed.
+  import { t as tr } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { ChevronLeft, ChevronRight, MapPin, Route, X } from '@lucide/svelte';
   import Img from './Img.svelte';
@@ -155,7 +158,7 @@
         {#if t?.slug}<a class="inline-flex items-center gap-1 transition hover:text-goldfinch-gold" href={`/tours/${t.slug}`}><Route size={13} /> {t.title ?? 'View safari'}</a>{/if}
       </div>
       <button type="button" class="mt-4 inline-flex items-center gap-2 rounded-full border border-white/25 px-5 py-2 text-xs font-bold uppercase tracking-[0.12em] text-white transition hover:bg-white/10" on:click={close}>
-        <X size={14} /> Back to gallery
+        <X size={14} /> {$tr('cta.back_to_gallery')}
       </button>
     </div>
   </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { MapPin } from '@lucide/svelte';
@@ -70,7 +71,7 @@
                 />
                 <span class="absolute left-3 top-3 rounded-[6px] bg-heading/85 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white backdrop-blur">{entry.month}</span>
                 {#if current}
-                  <span class="absolute right-3 top-3 rounded-[6px] bg-goldfinch-gold px-2.5 py-1 text-[11px] font-bold text-heading">This month</span>
+                  <span class="absolute right-3 top-3 rounded-[6px] bg-goldfinch-gold px-2.5 py-1 text-[11px] font-bold text-heading">{$t('label.this_month')}</span>
                 {/if}
               </div>
             {/if}
@@ -79,7 +80,7 @@
               {#if !entry.image_url}
                 <div class="flex items-center justify-between gap-2">
                   <span class="text-lg font-bold text-heading">{entry.month}</span>
-                  {#if current}<span class="rounded-[6px] bg-goldfinch-gold px-2.5 py-1 text-[11px] font-bold text-heading">This month</span>{/if}
+                  {#if current}<span class="rounded-[6px] bg-goldfinch-gold px-2.5 py-1 text-[11px] font-bold text-heading">{$t('label.this_month')}</span>{/if}
                 </div>
               {/if}
               {#if entry.location}

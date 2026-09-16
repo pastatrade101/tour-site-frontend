@@ -50,7 +50,7 @@
   <span class="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-goldfinch-gold via-forest/45 to-transparent" aria-hidden="true"></span>
 
   <div>
-    <p class="text-sm font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">Tell us about your trip</p>
+    <p class="text-sm font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">{$t('lead.tell_us')}</p>
     <h3 class="mt-2 text-2xl font-bold tracking-normal text-heading">{title}</h3>
     <p class="mt-2 text-sm leading-6 text-ink/70">
       Answer a few questions and a local specialist will come back with a trip that fits your dates, interests and
@@ -83,7 +83,7 @@
     </a>
   </div>
 
-  <p class="text-xs text-ink/50">No payment required — we reply within one business day.</p>
+  <p class="text-xs text-ink/50">{$t('lead.no_payment')}</p>
 </div>
 
 <EnquiryForm bind:open {config} on:close={() => (open = false)} />
