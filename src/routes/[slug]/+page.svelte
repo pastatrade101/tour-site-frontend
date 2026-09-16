@@ -3,6 +3,8 @@
   import Img from '$lib/components/public/Img.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import SafariPackageBlocks from '$lib/components/public/SafariPackageBlocks.svelte';
+  import PackageNavigation from '$lib/components/public/PackageNavigation.svelte';
+  import { ArrowLeft, ArrowRight } from '@lucide/svelte';
   import { SITE_URL } from '$lib/config/env';
   import { toMetaText } from '$lib/richText';
   import { breadcrumbLd, faqLd } from '$lib/seo';
@@ -17,6 +19,7 @@
   $: related = (data.related ?? []) as Tour[];
   $: moduleFaqs = (data.moduleFaqs ?? []) as FAQ[];
   $: blocks = ((record?.sections ?? []) as Block[]).filter((block) => block && typeof block.type === 'string');
+  $: formHref = blocks.some((block) => block.type === 'enquiry') ? '#lead-form' : '/plan-my-trip';
 
   /** Homepage sections by key — what an `advisor` block is written over. */
   $: homeSections = Object.fromEntries(
@@ -133,57 +136,80 @@
 {#if crumbs}<JsonLd data={crumbs} />{/if}
 
 {#if record}
-  <section class="relative isolate overflow-hidden bg-deep-green text-white">
-    {#if record.hero_image_url}
-      <Img
-        src={record.hero_image_url}
-        alt={heroTitle}
-        width={1800}
-        sizes="100vw"
-        eager
-        className="absolute inset-0 h-full w-full object-cover"
-      />
-      <span class="absolute inset-0 bg-gradient-to-t from-deep-green via-deep-green/70 to-deep-green/35" aria-hidden="true"></span>
-    {/if}
-    <div class="container-shell relative py-16 md:py-24">
-      <div class="max-w-[820px]">
-        {#if record.hero_eyebrow}
-          <p class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{record.hero_eyebrow}</p>
-        {/if}
-        <h1 class="font-serif mt-3 text-3xl leading-[1.06] tracking-tight sm:text-4xl md:text-5xl">{heroTitle}</h1>
-        {#if record.hero_subtitle}
-          <p class="mt-4 max-w-2xl text-base leading-relaxed text-white/80 md:text-lg">{record.hero_subtitle}</p>
-        {/if}
-        <div class="mt-8 flex flex-wrap gap-3">
-          <a
-            href="#lead-form"
-            class="inline-flex h-11 items-center justify-center rounded bg-goldfinch-gold px-5 text-sm font-semibold text-heading transition hover:brightness-105"
-          >
-            Plan this trip
-          </a>
-          {#if record.tours?.slug}
-            <a
-              href={`/tours/${record.tours.slug}`}
-              class="inline-flex h-11 items-center justify-center rounded border border-white/30 px-5 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
-              See the full tour
-            </a>
+  <div class="safari-package-page">
+    <section class="package-hero relative isolate overflow-hidden bg-deep-green text-white">
+      {#if record.hero_image_url}
+        <Img
+          src={record.hero_image_url}
+          alt={heroTitle}
+          width={1800}
+          sizes="100vw"
+          eager
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <span class="absolute inset-0 bg-gradient-to-t from-deep-green via-deep-green/70 to-deep-green/35" aria-hidden="true"></span>
+      {/if}
+      <div class="package-hero-content container-shell relative py-16 md:py-24">
+        <a class="package-back" href="/safari-packages"><ArrowLeft size={16} /> Safari packages</a>
+        <div class="max-w-[820px]">
+          {#if record.hero_eyebrow}
+            <p class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{record.hero_eyebrow}</p>
           {/if}
+          <h1 class="font-serif mt-3 text-3xl leading-[1.06] tracking-tight sm:text-4xl md:text-5xl">{heroTitle}</h1>
+          {#if record.hero_subtitle}
+            <p class="mt-4 max-w-2xl text-base leading-relaxed text-white/80 md:text-lg">{record.hero_subtitle}</p>
+          {/if}
+          <div class="package-hero-actions mt-8 flex flex-wrap gap-3">
+            <a
+              href={formHref}
+              class="inline-flex h-11 items-center justify-center rounded bg-goldfinch-gold px-5 text-sm font-semibold text-heading transition hover:brightness-105"
+            >
+              Plan this trip <ArrowRight size={17} class="ml-2 md:hidden" />
+            </a>
+            {#if record.tours?.slug}
+              <a
+                href={`/tours/${record.tours.slug}`}
+                class="inline-flex h-11 items-center justify-center rounded border border-white/30 px-5 text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                See the full tour
+              </a>
+            {/if}
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <SafariPackageBlocks
-    {blocks}
-    {itineraryDays}
-    {moduleFaqs}
-    tours={related}
-    lodges={data.relatedLodges ?? []}
-    interests={data.interests ?? []}
-    startPoints={data.startPoints ?? []}
-    packageName={record.name ?? ''}
-    packageSlug={record.slug ?? ''}
-    {homeSections}
-  />
+    {#key record.slug}
+      <PackageNavigation packageName={record.name} {formHref} />
+    {/key}
+    <SafariPackageBlocks
+      {blocks}
+      {itineraryDays}
+      {moduleFaqs}
+      tours={related}
+      lodges={data.relatedLodges ?? []}
+      interests={data.interests ?? []}
+      startPoints={data.startPoints ?? []}
+      packageName={record.name ?? ''}
+      packageSlug={record.slug ?? ''}
+      {homeSections}
+      {formHref}
+    />
+  </div>
 {/if}
+
+<style>
+  .package-back { display: none; }
+  @media (max-width: 767px) {
+    .package-hero-content { padding-top: 22px; padding-bottom: 32px; }
+    .package-back { display: inline-flex; min-height: 44px; align-items: center; gap: 8px; margin-bottom: 46px; font-size: 12px; font-weight: 600; color: rgb(255 255 255 / 0.85); }
+    .package-hero h1 { max-width: 19ch; margin-top: 12px; font-size: clamp(32px, 8.6vw, 48px); line-height: 1.08; text-wrap: balance; }
+    .package-hero h1 + p { margin-top: 16px; max-width: 42ch; font-size: 15px; line-height: 1.65; }
+    .package-hero-actions { display: grid; grid-template-columns: 1fr; margin-top: 24px; gap: 10px; }
+    .package-hero-actions a { min-height: 50px; height: auto; padding: 12px 16px; border-radius: 12px; text-align: center; }
+    .package-hero-actions a:first-child { color: #272b22; }
+    .package-hero-actions a:focus-visible, .package-back:focus-visible { outline: 2px solid rgb(var(--c-goldfinch-gold)); outline-offset: 4px; }
+    .safari-package-page :global([data-package-label]),
+    .safari-package-page :global([data-package-enquiry]) { scroll-margin-top: calc(var(--nav-h, 70px) + 76px); }
+  }
+</style>

@@ -109,7 +109,7 @@
   $: if (activeRoute >= 0) openDay = 0;
 
   const GOLD =
-    'inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-6 text-[14px] font-bold text-heading transition hover:brightness-105';
+    'route-cta inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-6 text-[14px] font-bold text-heading transition hover:brightness-105';
   const SUB = 'font-serif text-[20px] font-semibold text-heading md:text-[24px]';
   const BODY = 'text-[14.5px] leading-relaxed text-ink/70';
 </script>
@@ -117,7 +117,7 @@
 {#if resolved.length}
   <!-- Route tabs -->
   <div
-    class="-mx-4 mt-8 flex gap-[10px] overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0"
+    class="route-tabs -mx-4 mt-8 flex gap-[10px] overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0"
     role="tablist"
     aria-label="Route options"
   >
@@ -140,18 +140,18 @@
 
   {#if route && headTour}
     <!-- Wide photo + panel = one card -->
-    <div class="mt-6 overflow-hidden rounded-[12px]">
+    <div class="route-card mt-6 overflow-hidden rounded-[12px]">
       {#if headTour.main_image_url}
         <Img
           src={headTour.main_image_url}
           alt={route.tab || headTour.title}
           width={1180}
           sizes="(max-width: 1179px) 100vw, 1180px"
-          className="block h-[240px] w-full rounded-t-[12px] object-cover sm:h-[320px] md:h-[360px] lg:h-[430px]"
+          className="route-photo block h-[240px] w-full rounded-t-[12px] object-cover sm:h-[320px] md:h-[360px] lg:h-[430px]"
         />
       {/if}
 
-      <div class="rounded-b-[12px] bg-canvas p-6 sm:p-9 md:p-11 lg:p-14">
+      <div class="route-panel rounded-b-[12px] bg-canvas p-6 sm:p-9 md:p-11 lg:p-14">
         <h3 class="font-serif text-[22px] font-semibold leading-snug text-heading md:text-[28px]">
           {route.tab || headTour.title}
         </h3>
@@ -194,7 +194,7 @@
             Choose a comfort level below to see the starting structure.
           </p>
           {#if route.comfort.length > 1}
-            <div class="-mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible" role="tablist" aria-label="Price comfort level">
+            <div class="comfort-tabs -mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible" role="tablist" aria-label="Price comfort level">
               {#each route.comfort as level, i (i)}
                 <button
                   class={`h-11 shrink-0 rounded-[10px] border px-5 text-[14px] font-semibold tracking-[0.02em] transition ${
@@ -213,12 +213,12 @@
             </div>
           {/if}
 
-          <div class="mt-4 rounded-[12px] border border-ink/[0.16] bg-surface p-6 md:p-10">
+          <div class="route-price mt-4 rounded-[12px] border border-ink/[0.16] bg-surface p-6 md:p-10">
             <h4 class="font-serif text-[19px] font-semibold text-heading">{priced?.label}</h4>
             {#if priced?.tour.short_description}
               <p class="mt-2 max-w-[760px] text-[14.5px] leading-relaxed text-ink/70">{priced.tour.short_description}</p>
             {/if}
-            {#if priceLabel}<p class="mt-4 text-[14.5px] font-semibold text-clay">From {priceLabel} per person</p>{/if}
+            {#if priceLabel}<p class="route-price-value mt-4 text-[14.5px] font-semibold text-clay">From {priceLabel} per person</p>{/if}
             <div class="mt-5 grid gap-2 sm:grid-cols-2">
               {#if priced?.tour.duration_days}
                 <div class="flex gap-2 text-[14px] leading-snug text-heading">
@@ -259,11 +259,11 @@
         {#if days.length}
           <div class="mt-9 border-t border-ink/[0.18] pt-8">
             <h3 class={SUB}>Day by Day Itinerary</h3>
-            <div class="mt-4 overflow-hidden rounded-[12px] border border-ink/[0.16] bg-surface">
+            <div class="route-itinerary mt-4 overflow-hidden rounded-[12px] border border-ink/[0.16] bg-surface">
               {#each days as day, i (i)}
                 <div class={i > 0 ? 'border-t border-ink/[0.12]' : ''}>
                   <button
-                    class="flex w-full items-center gap-4 px-5 py-5 text-left md:px-8 md:py-7"
+                    class="route-day-toggle flex w-full items-center gap-4 px-5 py-5 text-left md:px-8 md:py-7"
                     type="button"
                     aria-expanded={i === openDay}
                     on:click={() => (openDay = i === openDay ? -1 : i)}
@@ -278,7 +278,7 @@
                   </button>
 
                   {#if i === openDay}
-                    <div class="px-5 pb-6 md:px-8 md:pb-8">
+                    <div class="route-day-body px-5 pb-6 md:px-8 md:pb-8">
                       {#if day.description}
                         <RichText value={day.description} className={`mt-2 max-w-[820px] ${BODY}`} />
                       {/if}
@@ -290,7 +290,7 @@
                             Accommodation Options
                           </h4>
                           {#if route.comfort.length > 1}
-                            <div class="-mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible" role="tablist" aria-label="Accommodation comfort level">
+                            <div class="comfort-tabs -mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible" role="tablist" aria-label="Accommodation comfort level">
                               {#each route.comfort as level, li (li)}
                                 <button
                                   class={`h-11 shrink-0 rounded-[10px] border px-5 text-[14px] font-semibold tracking-[0.02em] transition ${
@@ -308,14 +308,14 @@
                               {/each}
                             </div>
                           {/if}
-                          <div class="mt-4 rounded-[12px] border border-ink/[0.12] bg-surface p-5 md:p-8">
+                          <div class="route-stays mt-4 rounded-[12px] border border-ink/[0.12] bg-surface p-5 md:p-8">
                             {#if route.stayNote}
                               <p class={`max-w-[820px] ${BODY}`}>{route.stayNote}</p>
                             {/if}
                             {#if selectedStays.length}
-                              <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                              <div class="route-stay-grid mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {#each selectedStays as stay, ii (ii)}
-                                  <div class="overflow-hidden rounded-[10px] border border-ink/10 bg-canvas">
+                                  <div class="route-stay-card overflow-hidden rounded-[10px] border border-ink/10 bg-canvas">
                                     {#if stay.src}
                                       <Img
                                         src={stay.src}
@@ -371,3 +371,31 @@
     </div>
   {/if}
 {/if}
+
+<style>
+  .route-tabs button:focus-visible, .comfort-tabs button:focus-visible,
+  .route-day-toggle:focus-visible, .route-cta:focus-visible {
+    outline: 2px solid rgb(var(--c-clay)); outline-offset: -3px;
+  }
+  @media (max-width: 767px) {
+    .route-tabs, .comfort-tabs { scroll-snap-type: x proximity; scrollbar-width: thin; scrollbar-color: rgb(var(--c-clay) / 0.4) transparent; }
+    .route-tabs button, .comfort-tabs button { min-height: 48px; scroll-snap-align: start; }
+    .route-tabs button { max-width: 85vw; white-space: normal; text-align: left; font-size: 13px; }
+    .route-card { margin-top: 18px; overflow: visible; border: 0; border-radius: 0; }
+    .route-card :global(.route-photo) { height: auto; aspect-ratio: 4 / 3; border-radius: 16px; }
+    .route-panel { padding: 20px 0 0; border-radius: 0; background: transparent; }
+    .route-cta { width: 100%; min-height: 48px; height: auto; gap: 8px; padding: 12px; font-size: 13px; text-align: center; color: #272b22; }
+    .route-cta :global(svg) { flex-shrink: 0; }
+    .route-price { padding: 16px 0 0; border: 0; border-top: 1px solid rgb(var(--c-ink) / 0.12); border-radius: 0; background: transparent; }
+    .route-price-value { font-size: 19px; line-height: 1.4; }
+    .route-day-toggle { flex-wrap: wrap; gap: 10px; padding: 16px 12px; }
+    .route-day-toggle > span:first-child { padding-inline: 8px; font-size: 10px; }
+    .route-day-toggle > span:nth-child(2) { min-width: 0; font-size: 15px; }
+    .route-day-body { padding: 0 12px 20px; }
+    .route-stays { border: 0; border-radius: 0; padding: 0; }
+    .route-stay-grid { gap: 16px; }
+    .route-stay-card { border: 0; background: transparent; }
+    .route-stay-card > div { padding: 12px 0 0; }
+    .comfort-tabs button { padding-inline: 14px; font-size: 13px; }
+  }
+</style>

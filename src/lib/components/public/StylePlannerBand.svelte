@@ -136,9 +136,9 @@
   $: hasStartPoints = startPoints.length > 0;
 </script>
 
-<section class="bg-surface py-10 md:py-14">
+<section class="bg-surface py-10 md:py-14" class:package-planner={Boolean(packageSlug)}>
   <div class="container-shell">
-    <div class="relative overflow-hidden rounded-[12px] bg-deep-green p-6 text-white md:p-8">
+    <div class="planner-panel relative overflow-hidden rounded-[12px] bg-deep-green p-6 text-white md:p-8">
       <div class="grid gap-6 lg:grid-cols-12 lg:items-center lg:gap-10">
     <div class="min-w-0 lg:col-span-4">
       <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{eyebrow}</p>
@@ -162,7 +162,7 @@
               ></span>
             {/each}
           </span>
-          <span class="ml-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">Step {step} of {TOTAL}</span>
+          <span aria-live="polite" class="ml-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">Step {step} of {TOTAL}</span>
         </div>
       {/if}
     </div>
@@ -283,7 +283,7 @@
             <p class="mt-3 rounded-lg bg-clay/25 px-3 py-2 text-xs text-white" role="alert">{error}</p>
           {/if}
 
-          <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+          <div class="planner-actions mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
             {#if step > 1}
               <button
                 class="inline-flex h-11 items-center justify-center gap-1.5 rounded-[10px] border border-white/25 px-5 text-[13px] font-semibold text-white transition hover:bg-white/10"
@@ -310,3 +310,16 @@
     </div>
   </div>
 </section>
+
+<style>
+  @media (max-width: 767px) {
+    .package-planner { padding-block: 28px; }
+    .package-planner .container-shell { width: calc(100% - 32px); }
+    .package-planner .planner-panel { padding: 24px 16px; border-radius: 20px; }
+    .package-planner input:not([type='checkbox']), .package-planner select { height: 50px; font-size: 16px; color: #272b22; }
+    .package-planner .planner-actions { display: flex; flex-direction: row; }
+    .package-planner .planner-actions button { min-height: 50px; height: auto; }
+    .package-planner .planner-actions button[type='submit'] { flex: 1; padding-inline: 12px; color: #272b22; }
+    .package-planner .planner-actions button[type='button'] { padding-inline: 14px; }
+  }
+</style>
