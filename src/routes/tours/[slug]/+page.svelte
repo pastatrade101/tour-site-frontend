@@ -17,7 +17,7 @@
     X
   } from '@lucide/svelte';
   import { api } from '$lib/api/client';
-  import { loadEntityFaqs } from '$lib/faqEntities';
+  import { loadFaqsFor } from '$lib/faqEntities';
   import { trackEvent } from '$lib/analytics';
   import { currency, formatUsd } from '$lib/currency';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
@@ -389,8 +389,16 @@
     const [tourRes, postRes, faqRes] = await Promise.allSettled([
       api.tours.list(destId ? { destination_id: destId, limit: 7 } : { limit: 7 }),
       api.blog.list({ limit: 3 }),
-      // This trip's own questions first, topped up with the general ones.
-      loadEntityFaqs('tours', current.id, 8)
+      // This trip's own questions, then its travel style's — most of what a
+      // reader asks about a trip was answered once on the style rather than
+      // retyped onto each tour under it — then the general library.
+      loadFaqsFor(
+        [
+          { type: 'tours', id: current.id },
+          { type: 'tour_categories', id: current.category_id }
+        ],
+        8
+      )
     ]);
 
     if (tourRes.status === 'fulfilled') {

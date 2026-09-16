@@ -93,17 +93,47 @@ export const mergeFaqs = (attached: FAQ[], general: FAQ[], limit: number): FAQ[]
 const itemsOf = (result: PromiseSettledResult<{ data: { items?: FAQ[] } }>): FAQ[] =>
   result.status === 'fulfilled' ? result.value.data.items ?? [] : [];
 
-/** Client-side loader for a public page that knows which record it is. */
-export const loadEntityFaqs = async (type: FaqEntityType, id: string, limit = 8): Promise<FAQ[]> => {
-  if (!id) return [];
+/**
+ * Questions for a page, narrowest attachment first.
+ *
+ * A tour belongs to a travel style, and most of what a reader wants to know
+ * about a 6-day migration safari was answered once on the migration style
+ * rather than retyped onto each of its tours. Asking only about the tour meant
+ * those questions existed in the CMS, were attached to something this page is
+ * part of, and still never appeared — so the page fell through to the general
+ * library and answered nothing specific to it.
+ *
+ * Attachments are read in the order given and concatenated in that order, so
+ * the tour's own questions lead, its style's follow, and the general library
+ * fills whatever is left. mergeFaqs dedupes, so a question attached at two
+ * levels is shown once, at its more specific position.
+ *
+ * An attachment with no id is skipped rather than requested — a tour with no
+ * category is not a tour whose category has no questions.
+ */
+export const loadFaqsFor = async (
+  attachments: Array<{ type: FaqEntityType; id?: string | null }>,
+  limit = 8
+): Promise<FAQ[]> => {
+  const named = attachments.filter((entry): entry is { type: FaqEntityType; id: string } => Boolean(entry.id));
 
-  const [attached, general] = await Promise.allSettled([
-    api.faqs.list({ entity_type: type, entity_id: id, status: 'published', limit }),
+  const results = await Promise.allSettled([
+    ...named.map((entry) =>
+      api.faqs.list({ entity_type: entry.type, entity_id: entry.id, status: 'published', limit })
+    ),
     // "null" is the API's spelling for IS NULL — the general library.
     api.faqs.list({ entity_type: 'null', status: 'published', limit })
   ]);
 
-  return mergeFaqs(itemsOf(attached), itemsOf(general), limit);
+  const general = itemsOf(results[results.length - 1]);
+  const attached = results.slice(0, -1).flatMap(itemsOf);
+  return mergeFaqs(attached, general, limit);
+};
+
+/** Client-side loader for a public page that knows which record it is. */
+export const loadEntityFaqs = async (type: FaqEntityType, id: string, limit = 8): Promise<FAQ[]> => {
+  if (!id) return [];
+  return loadFaqsFor([{ type, id }], limit);
 };
 
 /** Query strings for the same two reads, for routes that load in `+page.ts`. */
