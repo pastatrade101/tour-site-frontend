@@ -1101,6 +1101,41 @@
     modalOpen = true;
   };
 
+  /**
+   * Switch off a section that has no record yet.
+   *
+   * A section the homepage renders from component defaults has nothing to
+   * toggle — `is_active` lives on the record, and with no record the homepage
+   * reads "not switched off" and draws it. So hiding one meant opening the
+   * create form, saving copy nobody wanted, and only then finding the switch.
+   *
+   * This writes the record the switch needs, with the preset copy and the
+   * switch already off. Turning it back on restores exactly what was there,
+   * because the copy was saved rather than discarded.
+   */
+  const hideMissingSection = async (key: string) => {
+    const preset = sectionLookup.get(key)?.preset ?? {};
+    const { extra_data, ...rest } = preset;
+    try {
+      await api.homepage.createSection({
+        button_text: rest.button_text?.trim() || null,
+        button_url: rest.button_url?.trim() || null,
+        content: rest.content?.trim() || null,
+        extra_data: extra_data ?? {},
+        image_url: rest.image_url?.trim() || null,
+        is_active: false,
+        section_key: key,
+        sort_order: Number(rest.sort_order || nextOrder()),
+        subtitle: rest.subtitle?.trim() || null,
+        title: rest.title?.trim() || null
+      });
+      showToast('Section hidden. Its copy is saved, so switching it back on restores it.');
+      await load();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Unable to hide section.', 'error');
+    }
+  };
+
   const openPartnersManager = () => {
     validationError = '';
     if (partnersSection) {
@@ -1513,20 +1548,36 @@
         <div class="rounded-[8px] border border-dashed border-forest/25 bg-sand/25 p-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p class="text-sm font-extrabold text-heading">Create missing frontend sections</p>
-              <p class="mt-1 text-xs leading-5 text-ink/55">Creating these records makes the corresponding homepage copy editable instead of relying on component defaults.</p>
+              <p class="text-sm font-extrabold text-heading">Sections with no record yet</p>
+              <p class="mt-1 text-xs leading-5 text-ink/55">These are on the homepage right now, drawn from the component's own copy. <span class="font-bold text-heading">Create</span> makes that copy editable; <span class="font-bold text-heading">Hide</span> takes the section off the homepage. Either way it joins the list above, where it can be switched on and off.</p>
             </div>
           </div>
           <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {#each missingFrontendSections as item (item.key)}
-              <button class="group rounded-[8px] border border-ink/10 bg-surface p-3 text-left shadow-sm transition hover:border-forest/30 hover:bg-white" type="button" on:click={() => openPresetSection(item.key)}>
-                <span class="flex items-center justify-between gap-3">
+              <div class="rounded-[8px] border border-ink/10 bg-surface p-3 text-left shadow-sm transition hover:border-forest/30 hover:bg-white">
+                <div class="flex items-center justify-between gap-3">
                   <span class="font-mono text-xs font-extrabold text-forest">{item.key}</span>
-                  <span class="rounded-[6px] bg-deep-green px-2 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] text-white transition group-hover:bg-forest">Create</span>
-                </span>
-                <span class="mt-2 block text-sm font-bold text-heading">{item.label}</span>
-                <span class="mt-1 line-clamp-2 block text-xs leading-5 text-ink/55">{item.description}</span>
-              </button>
+                  <span class="flex shrink-0 items-center gap-1.5">
+                    <button
+                      class="rounded-[6px] border border-ink/15 px-2 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] text-ink/55 transition hover:border-clay/40 hover:text-clay"
+                      type="button"
+                      title={`Stop showing ${item.label} on the homepage`}
+                      on:click={() => hideMissingSection(item.key)}
+                    >
+                      Hide
+                    </button>
+                    <button
+                      class="rounded-[6px] bg-deep-green px-2 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] text-white transition hover:bg-forest"
+                      type="button"
+                      on:click={() => openPresetSection(item.key)}
+                    >
+                      Create
+                    </button>
+                  </span>
+                </div>
+                <p class="mt-2 text-sm font-bold text-heading">{item.label}</p>
+                <p class="mt-1 line-clamp-2 text-xs leading-5 text-ink/55">{item.description}</p>
+              </div>
             {/each}
           </div>
         </div>
