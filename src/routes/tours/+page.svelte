@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
@@ -26,11 +27,14 @@
   import type { Tour, TravelStyle } from '$lib/types';
   import type { PageData } from './$types';
 
-  const TIERS = [
-    { key: 'luxury_plus', label: 'Luxury+' },
-    { key: 'luxury', label: 'Luxury' },
-    { key: 'mid_range', label: 'Mid-range' },
-    { key: 'budget', label: 'Budget' }
+  // Reactive, not a const: the labels come from the dictionary, so the filter
+  // bar has to be rebuilt when the language changes rather than keeping the
+  // words it was first rendered with.
+  $: TIERS = [
+    { key: 'luxury_plus', label: $t('tier.luxury_plus') },
+    { key: 'luxury', label: $t('tier.luxury') },
+    { key: 'mid_range', label: $t('tier.mid_range') },
+    { key: 'budget', label: $t('tier.budget') }
   ];
 
   const normTier = (t?: string | null) => {

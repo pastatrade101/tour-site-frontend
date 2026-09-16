@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import {
     ArrowRight,
     CalendarRange,
@@ -42,27 +43,53 @@
   };
   type PlanningStep = { title: string; body: string };
 
-  const DAY_BUCKETS = [
-    { key: '3-4', label: '3–4 Days', test: (days: number) => days >= 3 && days <= 4 },
-    { key: '5-6', label: '5–6 Days', test: (days: number) => days >= 5 && days <= 6 },
-    { key: '7-8', label: '7–8 Days', test: (days: number) => days >= 7 && days <= 8 },
-    { key: '9-10', label: '9–10 Days', test: (days: number) => days >= 9 && days <= 10 },
-    { key: '11+', label: '11+ Days', test: (days: number) => days >= 11 }
+  /*
+   * The filter buckets. Ranges are data; the words around them come from the
+   * dictionary, so all three lists are reactive — a filter bar built once would
+   * keep whichever language it first rendered in.
+   *
+   * The day labels are composed rather than written out, because "Days" is the
+   * only translatable part of "3–4 Days".
+   */
+  const DAY_RANGES = [
+    { key: '3-4', range: '3–4', test: (days: number) => days >= 3 && days <= 4 },
+    { key: '5-6', range: '5–6', test: (days: number) => days >= 5 && days <= 6 },
+    { key: '7-8', range: '7–8', test: (days: number) => days >= 7 && days <= 8 },
+    { key: '9-10', range: '9–10', test: (days: number) => days >= 9 && days <= 10 },
+    { key: '11+', range: '11+', test: (days: number) => days >= 11 }
   ];
-  const PRICE_BUCKETS = [
-    { key: 'u1500', label: 'Under $1,500', test: (price: number) => price > 0 && price < 1500 },
-    { key: '1500-3000', label: '$1,500–$3,000', test: (price: number) => price >= 1500 && price < 3000 },
-    { key: '3000-5000', label: '$3,000–$5,000', test: (price: number) => price >= 3000 && price < 5000 },
-    { key: '5000+', label: '$5,000+', test: (price: number) => price >= 5000 }
+  $: DAY_BUCKETS = DAY_RANGES.map((bucket) => ({ ...bucket, label: `${bucket.range} ${$t('label.days_cap')}` }));
+
+  /*
+   * Prices are authored in USD because that is how the team quotes, and the
+   * label is formatted into the visitor's selected currency at render time —
+   * these used to read "Under $1,500" whatever currency the site was showing.
+   * The thresholds themselves stay USD so the filter keeps matching the USD
+   * price_from it is filtering on.
+   */
+  const PRICE_RANGES = [
+    { key: 'u1500', from: 0, to: 1500, test: (price: number) => price > 0 && price < 1500 },
+    { key: '1500-3000', from: 1500, to: 3000, test: (price: number) => price >= 1500 && price < 3000 },
+    { key: '3000-5000', from: 3000, to: 5000, test: (price: number) => price >= 3000 && price < 5000 },
+    { key: '5000+', from: 5000, to: 0, test: (price: number) => price >= 5000 }
   ];
-  const TIER_LABELS: Record<string, string> = {
-    budget: 'Budget',
-    mid_range: 'Mid-range',
-    'mid-range': 'Mid-range',
-    comfort: 'Comfort',
-    luxury: 'Luxury',
-    premium_luxury: 'Premium luxury'
-  };
+  $: PRICE_BUCKETS = PRICE_RANGES.map((bucket) => ({
+    ...bucket,
+    label: !bucket.from
+      ? `${$t('label.under')} ${formatUsd(bucket.to, $currency)}`
+      : bucket.to
+        ? `${formatUsd(bucket.from, $currency)}–${formatUsd(bucket.to, $currency)}`
+        : `${formatUsd(bucket.from, $currency)}+`
+  }));
+
+  $: TIER_LABELS = {
+    budget: $t('tier.budget'),
+    mid_range: $t('tier.mid_range'),
+    'mid-range': $t('tier.mid_range'),
+    comfort: $t('tier.comfort'),
+    luxury: $t('tier.luxury'),
+    premium_luxury: $t('tier.premium_luxury')
+  } as Record<string, string>;
   const GUIDE_ICONS = [CalendarRange, MapPinned, Wallet, Route];
 
   $: category = data.category as TourCategory | null;
@@ -334,15 +361,15 @@
       {#if tours.length}
         <div class="mt-8 rounded-[12px] border border-ink/10 bg-surface p-4 shadow-[0_8px_24px_rgba(57,61,50,0.04)] md:p-5">
           <div class="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
-            <span class="shrink-0 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/65 md:pb-3">Filter by:</span>
+            <span class="shrink-0 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/65 md:pb-3">{$t('label.filter_by')}:</span>
             <div class="grid flex-1 grid-cols-1 gap-3 md:grid-cols-3">
-              <label class="flex flex-col gap-1"><span class="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/65">Number of Days</span><select bind:value={duration} class="h-11 w-full rounded-md border border-ink/20 bg-surface px-3 text-[13px] text-heading outline-none focus:border-clay"><option value="all">All durations</option>{#each DAY_BUCKETS as option}<option value={option.key}>{option.label}</option>{/each}</select></label>
-              <label class="flex flex-col gap-1"><span class="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/65">Comfort Level</span><select bind:value={comfort} class="h-11 w-full rounded-md border border-ink/20 bg-surface px-3 text-[13px] text-heading outline-none focus:border-clay"><option value="all">All comfort levels</option>{#each comfortOptions as option}<option value={option}>{TIER_LABELS[option] ?? option}</option>{/each}</select></label>
-              <label class="flex flex-col gap-1"><span class="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/65">Price</span><select bind:value={price} class="h-11 w-full rounded-md border border-ink/20 bg-surface px-3 text-[13px] text-heading outline-none focus:border-clay"><option value="all">All prices</option>{#each PRICE_BUCKETS as option}<option value={option.key}>{option.label}</option>{/each}</select></label>
+              <label class="flex flex-col gap-1"><span class="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/65">{$t('filter.number_of_days')}</span><select bind:value={duration} class="h-11 w-full rounded-md border border-ink/20 bg-surface px-3 text-[13px] text-heading outline-none focus:border-clay"><option value="all">{$t('filter.all_durations')}</option>{#each DAY_BUCKETS as option}<option value={option.key}>{option.label}</option>{/each}</select></label>
+              <label class="flex flex-col gap-1"><span class="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/65">{$t('filter.comfort_level')}</span><select bind:value={comfort} class="h-11 w-full rounded-md border border-ink/20 bg-surface px-3 text-[13px] text-heading outline-none focus:border-clay"><option value="all">{$t('filter.all_comfort_levels')}</option>{#each comfortOptions as option}<option value={option}>{TIER_LABELS[option] ?? option}</option>{/each}</select></label>
+              <label class="flex flex-col gap-1"><span class="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/65">{$t('filter.price')}</span><select bind:value={price} class="h-11 w-full rounded-md border border-ink/20 bg-surface px-3 text-[13px] text-heading outline-none focus:border-clay"><option value="all">{$t('filter.all_prices')}</option>{#each PRICE_BUCKETS as option}<option value={option.key}>{option.label}</option>{/each}</select></label>
             </div>
             <div class="flex gap-2">
-              <button type="button" on:click={applyFilters} class="inline-flex h-11 items-center justify-center rounded-md bg-deep-green px-5 text-xs font-semibold uppercase tracking-[0.14em] text-white hover:bg-forest">Filter</button>
-              <button type="button" on:click={resetFilters} class="inline-flex h-11 items-center justify-center rounded-md border border-ink/20 bg-surface px-5 text-xs font-semibold uppercase tracking-[0.14em] text-heading hover:bg-canvas">Reset</button>
+              <button type="button" on:click={applyFilters} class="inline-flex h-11 items-center justify-center rounded-md bg-deep-green px-5 text-xs font-semibold uppercase tracking-[0.14em] text-white hover:bg-forest">{$t('filter.apply')}</button>
+              <button type="button" on:click={resetFilters} class="inline-flex h-11 items-center justify-center rounded-md border border-ink/20 bg-surface px-5 text-xs font-semibold uppercase tracking-[0.14em] text-heading hover:bg-canvas">{$t('label.reset')}</button>
             </div>
           </div>
         </div>

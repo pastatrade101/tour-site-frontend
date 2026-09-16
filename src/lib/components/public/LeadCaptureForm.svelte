@@ -11,6 +11,7 @@
    * The popup is only ever opened by this button. It never appears on load.
    */
   import { ArrowRight, MessageCircle } from '@lucide/svelte';
+  import { t } from '$lib/i18n/ui';
   import EnquiryForm from './enquiry/EnquiryForm.svelte';
   import { configFor } from '$lib/enquiry/configs';
   import type { Option } from '$lib/enquiry/types';
@@ -72,13 +73,13 @@
       class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-forest px-6 text-sm font-bold text-white transition hover:bg-deep-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 sm:w-auto"
       on:click={() => (open = true)}
     >
-      Plan My Trip <ArrowRight size={16} />
+      {$t('cta.plan_my_trip')} <ArrowRight size={16} />
     </button>
     <a
       class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] border border-ink/15 px-6 text-sm font-bold text-heading transition hover:border-goldfinch-gold hover:bg-sand/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold sm:w-auto"
       href="/contact"
     >
-      <MessageCircle size={16} /> Talk to a specialist
+      <MessageCircle size={16} /> {$t('cta.talk_to_advisor')}
     </a>
   </div>
 

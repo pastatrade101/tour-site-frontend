@@ -457,7 +457,7 @@
       min-w-0 stays so the nav shrinks rather than shoving the actions off the
       right edge if a translated label runs long.
     -->
-    <nav class="hidden min-w-0 flex-1 items-stretch justify-center gap-0.5 xl:flex" aria-label="Primary" data-sveltekit-preload-code="hover" data-sveltekit-preload-data="hover">
+    <nav class="hidden min-w-0 flex-1 items-stretch justify-center gap-0.5 xl:flex" aria-label={$t('a11y.primary_nav')} data-sveltekit-preload-code="hover" data-sveltekit-preload-data="hover">
         {#each NAV as item}
           {@const active = isActive(path, item.href)}
           {@const links = item.dropdown === 'destinations' ? destinations : item.dropdown === 'tours' ? tours : item.dropdown === 'accommodation' ? lodges : item.dropdown === 'safariStyles' ? categories : []}
@@ -621,7 +621,7 @@
       <button
         type="button"
         class="hidden h-10 w-10 place-items-center rounded-md text-white/85 transition hover:bg-white/10 hover:text-white xl:grid"
-        aria-label="Search tours"
+        aria-label={$t('a11y.search_tours')}
         aria-expanded={searchOpen}
         on:click|stopPropagation={() => (searchOpen = !searchOpen)}
       >
@@ -635,7 +635,7 @@
         on:focus={() => preloadRoute('/admin/login')}
       >
         <User size={15} strokeWidth={2.6} />
-        Login
+        {$t('nav.login')}
       </a>
 
       <a
@@ -645,14 +645,14 @@
         on:click={() => activateLink('/plan-my-trip')}
         on:focus={() => preloadRoute('/plan-my-trip')}
       >
-        {brand.primaryCta}
+        {$t('cta.plan_my_trip')}
       </a>
 
       <button
         bind:this={menuButton}
         class="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-white/30 text-white xl:hidden"
         type="button"
-        aria-label="Toggle menu"
+        aria-label={$t('a11y.toggle_menu')}
         aria-controls="mobile-navigation-drawer"
         aria-expanded={menuOpen}
         on:click={() => (menuOpen = !menuOpen)}
@@ -670,13 +670,13 @@
         <!-- svelte-ignore a11y-autofocus -->
         <input
           class="min-w-0 flex-1 bg-transparent text-sm font-medium text-white outline-none placeholder:text-white/45"
-          aria-label="Search tour packages"
+          aria-label={$t('placeholder.search_tours')}
           placeholder="Search safaris, Kilimanjaro, Zanzibar..."
           autofocus
           bind:value={searchQuery}
         />
-        <button type="submit" class="h-9 shrink-0 rounded-md bg-goldfinch-gold px-4 text-sm font-bold text-heading transition hover:brightness-105">Search</button>
-        <button type="button" class="grid h-9 w-9 shrink-0 place-items-center rounded-md text-white/70 transition hover:bg-white/10 hover:text-white" aria-label="Close search" on:click={() => (searchOpen = false)}>
+        <button type="submit" class="h-9 shrink-0 rounded-md bg-goldfinch-gold px-4 text-sm font-bold text-heading transition hover:brightness-105">{$t('cta.search')}</button>
+        <button type="button" class="grid h-9 w-9 shrink-0 place-items-center rounded-md text-white/70 transition hover:bg-white/10 hover:text-white" aria-label={$t('a11y.close_search')} on:click={() => (searchOpen = false)}>
           <X size={17} strokeWidth={2.4} />
         </button>
       </form>
@@ -691,11 +691,11 @@
       class="fixed inset-0 z-[120] isolate overscroll-none xl:hidden"
       role="dialog"
       aria-modal="true"
-      aria-label="Mobile navigation"
+      aria-label={$t('a11y.mobile_nav')}
       tabindex="-1"
       transition:fade={{ duration: 120 }}
     >
-      <button class="absolute inset-0 touch-none bg-black/55 backdrop-blur-sm" type="button" aria-label="Close menu" on:click={() => (menuOpen = false)}></button>
+      <button class="absolute inset-0 touch-none bg-black/55 backdrop-blur-sm" type="button" aria-label={$t('a11y.close_menu')} on:click={() => (menuOpen = false)}></button>
 
       <!-- h-dvh (not min-h) so the panel is capped at the viewport and its content
            scrolls internally — with min-h it grew past the screen and the links
@@ -709,14 +709,14 @@
               <p class="mt-1 text-xs font-semibold text-ink/70">Adventures</p>
             </div>
           </a>
-          <button data-drawer-initial-focus class="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 bg-surface text-ink" type="button" aria-label="Close menu" on:click={() => (menuOpen = false)}>
+          <button data-drawer-initial-focus class="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 bg-surface text-ink" type="button" aria-label={$t('a11y.close_menu')} on:click={() => (menuOpen = false)}>
             <X size={22} strokeWidth={2.4} />
           </button>
         </div>
 
         <form class="mt-5 flex h-11 items-center rounded-full bg-[#f1f1f1] px-2 transition focus-within:ring-2 focus-within:ring-goldfinch-gold/30" on:submit|preventDefault={submitSearch} role="search">
-          <button class="grid h-8 w-8 shrink-0 place-items-center rounded-full text-[#111]" type="submit" aria-label="Search tours"><Search size={17} strokeWidth={2.6} /></button>
-          <input class="min-w-0 flex-1 bg-transparent px-1 text-sm font-medium outline-none placeholder:text-[#a9a9a9]" aria-label="Search tour packages" placeholder="Search tours..." bind:value={searchQuery} />
+          <button class="grid h-8 w-8 shrink-0 place-items-center rounded-full text-[#111]" type="submit" aria-label={$t('a11y.search_tours')}><Search size={17} strokeWidth={2.6} /></button>
+          <input class="min-w-0 flex-1 bg-transparent px-1 text-sm font-medium outline-none placeholder:text-[#a9a9a9]" aria-label={$t('placeholder.search_tours')} placeholder="Search tours..." bind:value={searchQuery} />
         </form>
 
         <nav class="mt-5 grid gap-1" aria-label="Mobile" data-sveltekit-preload-code="tap" data-sveltekit-preload-data="tap">
@@ -794,7 +794,7 @@
               <span class="text-[15px] font-bold text-ink">{waNumber}</span>
             </span>
           </a>
-          <a class="mt-1 text-center text-xs font-medium text-ink/40 transition hover:text-forest" href="/admin/login" on:click={() => activateLink('/admin/login')}>Staff login</a>
+          <a class="mt-1 text-center text-xs font-medium text-ink/40 transition hover:text-forest" href="/admin/login" on:click={() => activateLink('/admin/login')}>{$t('nav.staff_login')}</a>
         </div>
       </aside>
     </div>

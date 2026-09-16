@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { ArrowRight, MessageCircle } from '@lucide/svelte';
   import { api } from '$lib/api/client';
@@ -142,7 +143,7 @@
           <div class="mt-8">
             <div class="inline-flex items-center gap-2">
               <span class="h-px w-6 bg-goldfinch-gold" aria-hidden="true"></span>
-              <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">Contact</span>
+              <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{$t('footer.contact')}</span>
             </div>
             <ul class="mt-4 space-y-2 text-sm">
               {#if address}<li>{address}</li>{/if}
@@ -188,7 +189,7 @@
         <div>
           <div class="inline-flex items-center gap-2">
             <span class="h-px w-6 bg-goldfinch-gold" aria-hidden="true"></span>
-            <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">Destinations</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{$t('footer.destinations')}</span>
           </div>
           <ul class="mt-4 space-y-2.5 text-sm">
             {#each destinations as item (item.href)}
@@ -202,7 +203,7 @@
         <div>
           <div class="inline-flex items-center gap-2">
             <span class="h-px w-6 bg-goldfinch-gold" aria-hidden="true"></span>
-            <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">Experiences</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{$t('footer.experiences')}</span>
           </div>
           <ul class="mt-4 space-y-2.5 text-sm">
             {#each experiences as item (item.href)}
@@ -216,7 +217,7 @@
         <div>
           <div class="inline-flex items-center gap-2">
             <span class="h-px w-6 bg-goldfinch-gold" aria-hidden="true"></span>
-            <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">Safari Packages</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{$t('footer.safari_packages')}</span>
           </div>
           <ul class="mt-4 space-y-2.5 text-sm">
             {#each packages as item (item.href)}
@@ -229,7 +230,7 @@
       <div>
         <div class="inline-flex items-center gap-2">
           <span class="h-px w-6 bg-goldfinch-gold" aria-hidden="true"></span>
-          <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">Expert Advice</span>
+          <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{$t('footer.expert_advice')}</span>
         </div>
         <ul class="mt-4 space-y-2.5 text-sm">
           {#each expertAdvice as item (item.href)}
@@ -241,7 +242,7 @@
       <div>
         <div class="inline-flex items-center gap-2">
           <span class="h-px w-6 bg-goldfinch-gold" aria-hidden="true"></span>
-          <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">Company</span>
+          <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{$t('footer.company')}</span>
         </div>
         <ul class="mt-4 space-y-2.5 text-sm">
           {#each company as item (item.href)}
@@ -257,10 +258,10 @@
     <div class="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between">
       <p>© {year} {settingText(s, 'company_name') || brand.companyName}. All rights reserved.</p>
       <nav class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-        <a class="transition hover:text-white" href={privacyUrl}>Privacy Policy</a>
-        <a class="transition hover:text-white" href={termsUrl}>Terms</a>
-        <a class="transition hover:text-white" href={cancellationUrl}>Cancellation Policy</a>
-        <a class="transition hover:text-white" href="/data-retention">Data Retention</a>
+        <a class="transition hover:text-white" href={privacyUrl}>{$t('footer.privacy')}</a>
+        <a class="transition hover:text-white" href={termsUrl}>{$t('footer.terms')}</a>
+        <a class="transition hover:text-white" href={cancellationUrl}>{$t('footer.cancellation')}</a>
+        <a class="transition hover:text-white" href="/data-retention">{$t('footer.data_retention')}</a>
       </nav>
     </div>
   </div>
