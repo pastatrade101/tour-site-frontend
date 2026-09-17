@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { ArrowRight } from '@lucide/svelte';
   import { revealHeading, staggeredCardReveal, tilt } from '$lib/animations';
@@ -39,11 +40,9 @@
 <section class="relative overflow-hidden bg-gradient-to-br from-deep-green via-forest to-deep-green text-white">
   <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-goldfinch-gold/20 blur-3xl"></div>
   <div class="container-shell relative py-16 text-center md:py-20">
-    <p class="font-serif text-xl italic text-savanna">Travel Styles</p>
-    <h1 class="mx-auto mt-5 max-w-3xl text-3xl font-extrabold leading-[1.1] tracking-tight md:text-[44px]" use:revealHeading>How do you want to travel?</h1>
-    <p class="mx-auto mt-4 max-w-2xl text-[15px] leading-7 text-white/75 md:text-lg">
-      Honeymoon, family, luxury, photography and more — we shape the trip around how you travel, not just where.
-    </p>
+    <p class="font-serif text-xl italic text-savanna">{$t('ui.travel_styles')}</p>
+    <h1 class="mx-auto mt-5 max-w-3xl text-3xl font-extrabold leading-[1.1] tracking-tight md:text-[44px]" use:revealHeading>{$t('ui.how_do_you_want_to')}</h1>
+    <p class="mx-auto mt-4 max-w-2xl text-[15px] leading-7 text-white/75 md:text-lg">{$t('ui.honeymoon_family_luxury_photography_and')}</p>
   </div>
 </section>
 

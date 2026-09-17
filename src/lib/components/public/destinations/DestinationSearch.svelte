@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { Search, X } from '@lucide/svelte';
 
   /**
@@ -13,7 +14,7 @@
    */
   export let value = '';
   export let resultCount = 0;
-  export let placeholder = 'Search destinations, parks, islands or wildlife…';
+  export let placeholder = '';
   /** Example terms shown as one-tap shortcuts. Nothing renders when empty. */
   export let suggestions: string[] = [];
 
@@ -49,7 +50,7 @@
   <form
     class="group flex h-[52px] w-full items-center gap-3 rounded-[10px] border border-ink/10 bg-surface pl-5 pr-2 shadow-soft transition duration-200 focus-within:border-goldfinch-gold/70 focus-within:ring-2 focus-within:ring-goldfinch-gold/35 md:h-14 md:gap-4 md:pl-6 md:pr-3"
     role="search"
-    aria-label="Search destinations"
+    aria-label={$t('filter.search_destinations')}
     on:submit|preventDefault={() => inputEl?.blur()}
   >
     <Search
@@ -68,15 +69,15 @@
       enterkeyhint="search"
       autocomplete="off"
       spellcheck="false"
-      aria-label="Search destinations"
-      {placeholder}
+      aria-label={$t('filter.search_destinations')}
+      placeholder={placeholder || $t('ui.search_destinations_long')}
     />
 
     {#if value}
       <button
         type="button"
         class="grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink/45 transition duration-200 hover:bg-sand/70 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
-        aria-label="Clear search"
+        aria-label={$t('ui.clear_search')}
         on:click={clear}
       >
         <X size={18} aria-hidden="true" />
@@ -91,9 +92,7 @@
       <div
         class="no-scrollbar -mx-1 flex snap-x snap-mandatory items-center gap-2 overflow-x-auto px-1 pb-0.5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
       >
-        <span class="hidden shrink-0 pr-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-ink/40 sm:inline">
-          Try
-        </span>
+        <span class="hidden shrink-0 pr-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-ink/40 sm:inline">{$t('ui.try')}</span>
         {#each suggestions as term (term)}
           {@const active = same(value, term)}
           <button

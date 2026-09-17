@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * Featured destinations as a swipeable rail of cinematic overlay cards.
    *
@@ -58,14 +59,13 @@
         <a
           class="inline-flex items-center gap-1.5 text-xs font-bold text-ink/60 transition hover:text-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
           href={viewAllHref}
-        >
-          View all destinations <ArrowRight size={14} />
+        >{$t('ui.view_all_destinations')}<ArrowRight size={14} />
         </a>
         <div class="hidden gap-1.5 md:flex">
           <button
             type="button"
             class="grid h-9 w-9 place-items-center rounded-full border border-ink/12 bg-surface text-ink transition hover:border-goldfinch-gold hover:text-heading disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
-            aria-label="Scroll left"
+            aria-label={$t('ui.scroll_left')}
             disabled={atStart}
             on:click={() => nudge(-1)}
           >
@@ -74,7 +74,7 @@
           <button
             type="button"
             class="grid h-9 w-9 place-items-center rounded-full border border-ink/12 bg-surface text-ink transition hover:border-goldfinch-gold hover:text-heading disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
-            aria-label="Scroll right"
+            aria-label={$t('ui.scroll_right')}
             disabled={atEnd}
             on:click={() => nudge(1)}
           >
@@ -119,9 +119,7 @@
           <span class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" aria-hidden="true"></span>
 
           {#if destination.is_featured}
-            <span class="absolute left-3 top-3 rounded-[6px] bg-goldfinch-gold px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.1em] text-heading">
-              Featured
-            </span>
+            <span class="absolute left-3 top-3 rounded-[6px] bg-goldfinch-gold px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.1em] text-heading">{$t('label.featured')}</span>
           {/if}
 
           <span class="absolute inset-x-0 bottom-0 p-4 text-white">

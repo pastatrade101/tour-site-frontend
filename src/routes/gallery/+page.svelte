@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { Camera, Compass, MapPin } from '@lucide/svelte';
   import type { ImageVariantMap } from '$lib/img';
   import { brand } from '$lib/brand';
@@ -44,10 +45,10 @@
   <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(20,18,15,0.45)_0%,rgba(20,18,15,0.25)_45%,rgba(20,18,15,0.78)_100%)]"></div>
   <div class="container-shell relative py-16 [text-shadow:0_2px_16px_rgba(0,0,0,0.5)] md:py-20">
     <nav class="mb-6 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-white/55">
-      <a class="transition hover:text-goldfinch-gold" href="/">Home</a><span>/</span><span class="text-white/80">Gallery</span>
+      <a class="transition hover:text-goldfinch-gold" href="/">{$t('nav.home')}</a><span>/</span><span class="text-white/80">{$t('nav.gallery')}</span>
     </nav>
-    <p class="text-sm font-extrabold uppercase tracking-[0.18em] text-goldfinch-gold">Travel Journal</p>
-    <h1 class="mt-3 max-w-2xl font-serif text-[30px] font-light leading-[1.08] md:text-[46px]">Safari Moments,<br />Unedited.</h1>
+    <p class="text-sm font-extrabold uppercase tracking-[0.18em] text-goldfinch-gold">{$t('ui.travel_journal')}</p>
+    <h1 class="mt-3 max-w-2xl font-serif text-[30px] font-light leading-[1.08] md:text-[46px]">{$t('ui.safari_moments')}<br />{$t('ui.unedited')}</h1>
     <p class="mt-4 max-w-xl text-[15px] font-medium leading-7 text-white/80 md:text-base">
       Every image tells the story of a real journey across Tanzania — from sunrise game drives in the Serengeti to quiet evenings overlooking the Ngorongoro Crater.
     </p>

@@ -68,7 +68,7 @@
 
 {#if showFilters && destinations.length > 1}
   <div class="hide-scroll -mx-1 mb-8 flex gap-2 overflow-x-auto px-1 pb-1">
-    <button type="button" class={chip(activeDest === 'All')} on:click={() => setDest('All')}>All</button>
+    <button type="button" class={chip(activeDest === 'All')} on:click={() => setDest('All')}>{$tr('ui.all')}</button>
     {#each destinations as d}
       <button type="button" class={chip(activeDest === d)} on:click={() => setDest(d)}>{d}</button>
     {/each}
@@ -120,18 +120,18 @@
   {@const d = destOf(active)}
   {@const t = tourOf(active)}
   <div class="fixed inset-0 z-[100] flex flex-col backdrop-blur-sm" style="background-color: rgba(9, 11, 8, 0.94);" role="dialog" aria-modal="true" aria-label={c || 'Gallery image'}>
-    <button type="button" class="absolute inset-0 cursor-default" aria-label="Close viewer" on:click={close}></button>
+    <button type="button" class="absolute inset-0 cursor-default" aria-label={$tr('ui.close_viewer')} on:click={close}></button>
 
     <div class="relative z-10 flex items-center justify-between px-4 py-3 text-white/80 sm:px-6">
       <span class="text-xs font-bold uppercase tracking-[0.14em]">{index + 1} / {filtered.length}</span>
-      <button type="button" class="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20" on:click={close} aria-label="Close">
+      <button type="button" class="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20" on:click={close} aria-label={$tr('ui.close')}>
         <X size={20} />
       </button>
     </div>
 
     <div class="pointer-events-none relative z-10 flex min-h-0 flex-1 items-center justify-center px-4 sm:px-16">
       {#if filtered.length > 1}
-        <button type="button" class="pointer-events-auto absolute left-2 z-10 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:left-4" on:click={prev} aria-label="Previous">
+        <button type="button" class="pointer-events-auto absolute left-2 z-10 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:left-4" on:click={prev} aria-label={$tr('ui.previous')}>
           <ChevronLeft size={22} />
         </button>
       {/if}
@@ -145,7 +145,7 @@
         className="pointer-events-auto max-h-full max-w-full rounded-[6px] object-contain"
       />
       {#if filtered.length > 1}
-        <button type="button" class="pointer-events-auto absolute right-2 z-10 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:right-4" on:click={next} aria-label="Next">
+        <button type="button" class="pointer-events-auto absolute right-2 z-10 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:right-4" on:click={next} aria-label={$tr('ui.next')}>
           <ChevronRight size={22} />
         </button>
       {/if}

@@ -383,15 +383,15 @@
           <div class="mt-10 flex flex-col items-center gap-4 text-center">
             <p class="text-[13px] text-ink/65">Showing {visibleTours.length} of {filteredTours.length} {landing.tourCollection.resultsNoun}</p>
             {#if visibleCount < filteredTours.length}<button type="button" on:click={() => (visibleCount += 6)} class="inline-flex h-12 items-center justify-center rounded-md bg-deep-green px-7 text-xs font-semibold uppercase tracking-[0.14em] text-white hover:bg-forest">{landing.tourCollection.loadMoreLabel}</button>{/if}
-            <a href="#lead-form" class="text-[13px] font-semibold text-clay hover:text-goldfinch-gold">Not sure which one fits? Request a custom recommendation →</a>
+            <a href="#lead-form" class="text-[13px] font-semibold text-clay hover:text-goldfinch-gold">{$t('ui.not_sure_which_one_fits')}</a>
           </div>
         {:else}
-          <div class="mt-8 rounded-[12px] border border-ink/10 bg-canvas p-8 text-center text-sm text-heading">No safari options match these filters. <button type="button" on:click={resetFilters} class="font-semibold text-clay underline underline-offset-4">Reset the filters</button>.</div>
+          <div class="mt-8 rounded-[12px] border border-ink/10 bg-canvas p-8 text-center text-sm text-heading">{$t('ui.no_safari_options_match_these')}<button type="button" on:click={resetFilters} class="font-semibold text-clay underline underline-offset-4">{$t('ui.reset_the_filters')}</button>.</div>
         {/if}
       {:else}
         <article class="mt-8 grid overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-sm md:grid-cols-2">
-          <div class="relative min-h-[260px] bg-sand">{#if category.image_url}<Img record={category} fields={['image_url']} alt={category.name} width={1000} sizes="(max-width: 768px) 100vw, 50vw" className="absolute inset-0 h-full w-full object-cover object-top" />{/if}<span class="absolute left-4 top-4 rounded-md bg-clay px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">Custom Safari</span></div>
-          <div class="flex flex-col justify-center p-6 md:p-9"><h3 class="font-serif text-2xl font-semibold text-heading">Custom {category.name}</h3><p class="mt-3 text-[15px] leading-7 text-ink/75">A route designed around your dates, starting point, budget and preferred pace.</p><p class="mt-5 font-semibold text-heading">Tailored quote</p><button type="button" on:click={openEnquiry} class="mt-5 inline-flex w-fit items-center gap-2 rounded-md bg-goldfinch-gold px-4 py-2.5 text-sm font-semibold text-heading">Request a Plan <ArrowRight size={15} /></button></div>
+          <div class="relative min-h-[260px] bg-sand">{#if category.image_url}<Img record={category} fields={['image_url']} alt={category.name} width={1000} sizes="(max-width: 768px) 100vw, 50vw" className="absolute inset-0 h-full w-full object-cover object-top" />{/if}<span class="absolute left-4 top-4 rounded-md bg-clay px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">{$t('ui.custom_safari')}</span></div>
+          <div class="flex flex-col justify-center p-6 md:p-9"><h3 class="font-serif text-2xl font-semibold text-heading">Custom {category.name}</h3><p class="mt-3 text-[15px] leading-7 text-ink/75">{$t('ui.a_route_designed_around_your')}</p><p class="mt-5 font-semibold text-heading">{$t('label.tailored_quote')}</p><button type="button" on:click={openEnquiry} class="mt-5 inline-flex w-fit items-center gap-2 rounded-md bg-goldfinch-gold px-4 py-2.5 text-sm font-semibold text-heading">{$t('ui.request_a_plan')}<ArrowRight size={15} /></button></div>
         </article>
       {/if}
     </div>
@@ -408,7 +408,7 @@
         </div>
         <aside class="lg:col-span-5">
           <div class="rounded-[12px] border border-ink/10 bg-canvas p-5 md:p-6">
-            <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/65">In this guide</div>
+            <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/65">{$t('ui.in_this_guide')}</div>
             <ul class="mt-4 divide-y divide-ink/10">{#each planningBlocks as block, index}<li><a href={`#planning-${index + 1}`} class="group flex items-center gap-3 py-3"><span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-ink/10 bg-surface text-clay"><svelte:component this={GUIDE_ICONS[index]} size={16} /></span><span class="text-[15px] font-medium text-heading group-hover:text-clay">{block.title}</span></a></li>{/each}</ul>
           </div>
         </aside>
@@ -458,9 +458,9 @@
     <JsonLd data={faqLd(faqs.map((faq) => ({ q: faq.question, a: faq.answer })))} />
     <section class="border-t border-ink/10 bg-surface py-16 md:py-24">
       <div class="mx-auto max-w-[1040px] px-4 md:px-6">
-        <div class="inline-flex items-center gap-2"><span class="h-px w-6 bg-clay"></span><span class="text-xs font-semibold uppercase tracking-[0.15em] text-clay">FAQ</span></div>
+        <div class="inline-flex items-center gap-2"><span class="h-px w-6 bg-clay"></span><span class="text-xs font-semibold uppercase tracking-[0.15em] text-clay">{$t('ui.faq')}</span></div>
         <h2 class="mt-3 font-serif text-3xl font-semibold leading-[1.1] tracking-tight text-heading sm:text-4xl md:text-[44px]">{landing.faq.title}</h2>
-        <div class="mt-5 flex items-center gap-3"><span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-clay font-serif text-[15px] font-semibold text-white ring-1 ring-ink/20">G</span><div class="text-[13px] leading-tight"><div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/65">Answered by</div><div class="mt-0.5 font-semibold text-heading">{landing.faq.answeredBy}</div></div></div>
+        <div class="mt-5 flex items-center gap-3"><span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-clay font-serif text-[15px] font-semibold text-white ring-1 ring-ink/20">G</span><div class="text-[13px] leading-tight"><div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/65">{$t('ui.answered_by')}</div><div class="mt-0.5 font-semibold text-heading">{landing.faq.answeredBy}</div></div></div>
         <div class="mt-12 md:mt-14"><FAQAccordion {faqs} /></div>
       </div>
     </section>
@@ -485,5 +485,5 @@
     on:close={closeEnquiry}
   />
 {:else}
-  <section class="container-shell py-20 text-center"><h1 class="text-2xl font-bold text-heading">Safari style not found</h1><a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-forest" href="/safari-styles">All safari styles <ArrowRight size={16} /></a></section>
+  <section class="container-shell py-20 text-center"><h1 class="text-2xl font-bold text-heading">{$t('ui.safari_style_not_found')}</h1><a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-forest" href="/safari-styles">{$t('ui.all_safari_styles')}<ArrowRight size={16} /></a></section>
 {/if}

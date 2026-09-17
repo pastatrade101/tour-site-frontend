@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   export let min = 0;
   export let max = 100;
   export let step = 1;
@@ -23,8 +24,8 @@
 <div class="rs">
   <div class="rs-track"></div>
   <div class="rs-fill" style={`left:${pctLo}%;right:${100 - pctHi}%`}></div>
-  <input class="rs-input" type="range" {min} {max} {step} value={lo} on:input={onLo} aria-label="Minimum" />
-  <input class="rs-input" type="range" {min} {max} {step} value={hi} on:input={onHi} aria-label="Maximum" />
+  <input class="rs-input" type="range" {min} {max} {step} value={lo} on:input={onLo} aria-label={$t('ui.minimum')} />
+  <input class="rs-input" type="range" {min} {max} {step} value={hi} on:input={onHi} aria-label={$t('ui.maximum')} />
 </div>
 <div class="mt-1 flex justify-between text-xs font-semibold text-ink/70">
   <span>{format(lo)}</span>

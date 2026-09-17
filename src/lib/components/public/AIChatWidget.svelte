@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { Bot, Send } from '@lucide/svelte';
   import { fly } from 'svelte/transition';
   import { api } from '$lib/api/client';
@@ -39,7 +40,7 @@
     </span>
     <div>
       <p class="text-sm font-semibold text-goldfinch-gold">{brand.aiAdvisorName}</p>
-      <h3 class="text-xl font-bold tracking-normal text-heading">Get confidence before you book</h3>
+      <h3 class="text-xl font-bold tracking-normal text-heading">{$t('ui.get_confidence_before_you_book')}</h3>
     </div>
   </div>
 
@@ -52,8 +53,8 @@
   {/if}
 
   <form class="mt-4 flex gap-2" on:submit|preventDefault={submit}>
-    <input class="min-w-0 flex-1 rounded-md border border-ink/10 bg-surface px-3 py-3 text-sm outline-none focus:border-forest" bind:value={message} placeholder="Ask about Tanzania, Kenya, Rwanda, budget, timing..." />
-    <button class="grid h-11 w-11 place-items-center rounded-md bg-forest text-white disabled:opacity-60" type="submit" disabled={loading} aria-label="Send message">
+    <input class="min-w-0 flex-1 rounded-md border border-ink/10 bg-surface px-3 py-3 text-sm outline-none focus:border-forest" bind:value={message} placeholder={$t('ui.ask_about_tanzania_kenya_rwanda')} />
+    <button class="grid h-11 w-11 place-items-center rounded-md bg-forest text-white disabled:opacity-60" type="submit" disabled={loading} aria-label={$t('ui.send_message')}>
       <Send size={18} />
     </button>
   </form>

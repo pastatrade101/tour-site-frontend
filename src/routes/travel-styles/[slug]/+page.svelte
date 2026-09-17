@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { ArrowRight, Check, Sparkles } from '@lucide/svelte';
   import { browser } from '$app/environment';
@@ -86,7 +87,7 @@
     <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-goldfinch-gold/20 blur-3xl"></div>
     <div class="container-shell relative py-14 md:py-20">
       <nav class="mb-5 flex items-center gap-2 text-sm text-white/70">
-        <a class="font-medium transition hover:text-white" href="/travel-styles">Travel Styles</a>
+        <a class="font-medium transition hover:text-white" href="/travel-styles">{$t('ui.travel_styles')}</a>
         <span class="text-white/30">/</span>
         <span class="font-medium text-white">{style.name}</span>
       </nav>
@@ -107,8 +108,7 @@
         <a class="inline-flex h-12 items-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-heading transition hover:brightness-105" href={planHref}>
           <Sparkles size={18} /> Plan a {style.name.toLowerCase()} trip
         </a>
-        <a class="inline-flex h-12 items-center gap-2 rounded-xl border border-white/30 px-6 font-semibold text-white transition hover:bg-surface/10" href={toursHref}>
-          Browse trips <ArrowRight size={18} />
+        <a class="inline-flex h-12 items-center gap-2 rounded-xl border border-white/30 px-6 font-semibold text-white transition hover:bg-surface/10" href={toursHref}>{$t('ui.browse_trips')}<ArrowRight size={18} />
         </a>
       </div>
     </div>
@@ -117,7 +117,7 @@
   <section class="container-shell py-12 md:py-16">
     <div class="grid gap-6 md:grid-cols-2">
       <div class="rounded-2xl border border-ink/10 bg-surface p-6 shadow-soft">
-        <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">What you want</p>
+        <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">{$t('ui.what_you_want')}</p>
         <div class="mt-3 grid gap-2.5">
           {#each style.desires as d}
             <span class="inline-flex items-center gap-2 text-sm font-medium text-ink/75">
@@ -127,7 +127,7 @@
         </div>
       </div>
       <div class="rounded-2xl border border-ink/10 bg-sand/30 p-6">
-        <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">What we plan around</p>
+        <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">{$t('ui.what_we_plan_around')}</p>
         <div class="mt-3 grid gap-2.5">
           {#each style.concerns as c}
             <span class="text-sm leading-6 text-ink/70">“{c}” — handled, honestly.</span>
@@ -139,8 +139,8 @@
     {#if featured.length}
       <div class="mt-12">
         <div class="flex flex-wrap items-end justify-between gap-4">
-          <h2 class="text-2xl font-bold text-heading md:text-3xl">Trips to start from</h2>
-          <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href={toursHref}>Browse all <ArrowRight size={16} /></a>
+          <h2 class="text-2xl font-bold text-heading md:text-3xl">{$t('ui.trips_to_start_from')}</h2>
+          <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href={toursHref}>{$t('ui.browse_all')}<ArrowRight size={16} /></a>
         </div>
         <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {#each featured as tour (tour.slug)}
@@ -151,7 +151,7 @@
     {/if}
 
     <div class="mt-12">
-      <h2 class="text-xl font-bold text-heading">Other travel styles</h2>
+      <h2 class="text-xl font-bold text-heading">{$t('ui.other_travel_styles')}</h2>
       <div class="mt-4 grid gap-4 sm:grid-cols-3">
         {#each others as o (o.slug)}
           <a class="group flex items-center justify-between gap-3 rounded-2xl border border-ink/10 bg-surface p-5 transition hover:border-goldfinch-gold/40" href={`/travel-styles/${o.slug}`}>
@@ -164,7 +164,7 @@
   </section>
 {:else if loaded}
   <section class="container-shell py-20 text-center">
-    <h1 class="text-2xl font-bold text-heading">Travel style not found</h1>
-    <a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-forest hover:text-heading" href="/travel-styles">All travel styles <ArrowRight size={16} /></a>
+    <h1 class="text-2xl font-bold text-heading">{$t('ui.travel_style_not_found')}</h1>
+    <a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-forest hover:text-heading" href="/travel-styles">{$t('ui.all_travel_styles')}<ArrowRight size={16} /></a>
   </section>
 {/if}

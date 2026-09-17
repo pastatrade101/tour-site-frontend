@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { ArrowRight } from '@lucide/svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
@@ -79,16 +80,15 @@
     <LoadingState message="Loading article..." />
   {:else if !post}
     <div class="mx-auto max-w-xl py-20 text-center">
-      <h1 class="text-3xl font-bold text-heading">Story not found</h1>
-      <p class="mt-4 text-lg text-ink/70">We couldn't find the article you were looking for.</p>
-      <a class="mt-8 inline-flex h-11 items-center gap-2 rounded-xl bg-deep-green px-6 font-bold text-white transition hover:bg-forest" href="/blog">
-        Back to the journal <ArrowRight size={16} />
+      <h1 class="text-3xl font-bold text-heading">{$t('ui.story_not_found')}</h1>
+      <p class="mt-4 text-lg text-ink/70">{$t('ui.we_couldnt_find_the_article')}</p>
+      <a class="mt-8 inline-flex h-11 items-center gap-2 rounded-xl bg-deep-green px-6 font-bold text-white transition hover:bg-forest" href="/blog">{$t('ui.back_to_the_journal')}<ArrowRight size={16} />
       </a>
     </div>
   {:else}
     <JsonLd data={breadcrumbLd(origin, [{ name: 'Home', path: '/' }, { name: 'Expert Advice', path: '/expert-advice' }, { name: post.title, path: `/blog/${post.slug}` }])} />
     <nav class="mb-6 flex items-center gap-2 text-sm">
-      <a class="font-medium text-ink/70 transition hover:text-forest" href="/blog">Blog</a>
+      <a class="font-medium text-ink/70 transition hover:text-forest" href="/blog">{$t('nav.blog')}</a>
       <span class="text-ink/30">/</span>
       <span class="max-w-[60vw] truncate font-medium text-ink/80">{post.title}</span>
     </nav>
@@ -118,9 +118,8 @@
   <!-- guide → primary action (SRS v2.0 §4.8: every guide ends with Plan My Trip) -->
   <section class="container-shell pb-4 pt-2 md:pb-8">
     <div class="flex flex-col items-start justify-between gap-4 rounded-2xl border border-goldfinch-gold/30 bg-savanna/20 p-5 sm:flex-row sm:items-center md:p-6">
-      <p class="text-base font-semibold text-heading">Ready to turn this into a real trip?</p>
-      <a class="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-deep-green px-6 font-bold text-white transition hover:bg-forest" href="/plan-my-trip">
-        Plan My Trip <ArrowRight size={16} />
+      <p class="text-base font-semibold text-heading">{$t('ui.ready_to_turn_this_into')}</p>
+      <a class="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-deep-green px-6 font-bold text-white transition hover:bg-forest" href="/plan-my-trip">{$t('cta.plan_my_trip')}<ArrowRight size={16} />
       </a>
     </div>
   </section>
@@ -132,14 +131,13 @@
         <div class="flex flex-wrap items-end justify-between gap-4">
           <SectionHeader
             eyebrow="Keep reading"
-            title="More from the journal"
+            title={$t('ui.more_from_the_journal')}
             description="Travel inspiration, tips and stories from the field."
           />
           <a
             class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading"
             href="/blog"
-          >
-            All articles <ArrowRight size={16} />
+          >{$t('ui.all_articles')}<ArrowRight size={16} />
           </a>
         </div>
         <div class="mt-9 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 18, stagger: 0.07 }}>
@@ -158,14 +156,13 @@
         <div class="flex flex-wrap items-end justify-between gap-4">
           <SectionHeader
             eyebrow="Plan your trip"
-            title="Explore destinations"
+            title={$t('ui.explore_destinations')}
             description="Turn inspiration into a real itinerary across East Africa."
           />
           <a
             class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading"
             href="/destinations"
-          >
-            All destinations <ArrowRight size={16} />
+          >{$t('label.all_destinations')}<ArrowRight size={16} />
           </a>
         </div>
         <div class="mt-9 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 18, stagger: 0.07 }}>

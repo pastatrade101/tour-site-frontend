@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { ArrowRight, Compass, Home, LifeBuoy, MapPin } from '@lucide/svelte';
@@ -61,8 +62,7 @@
     <a
       class="mt-8 inline-flex h-12 items-center gap-2 rounded-full bg-goldfinch-gold px-7 text-sm font-bold text-heading shadow-sm transition hover:brightness-105"
       href="/plan-my-trip"
-    >
-      Plan my trip <ArrowRight size={16} />
+    >{$t('ui.plan_my_trip')}<ArrowRight size={16} />
     </a>
   </div>
 </section>

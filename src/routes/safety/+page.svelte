@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import {
     ArrowRight,
@@ -79,9 +80,8 @@
   <div class="container-shell relative py-16 md:py-24">
     <div class="max-w-2xl">
       <span class="inline-flex items-center gap-2 rounded-full bg-surface/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-savanna">
-        <ShieldCheck size={14} /> Health &amp; Safety
-      </span>
-      <h1 class="mt-5 text-4xl font-extrabold leading-tight md:text-5xl">Travel with confidence</h1>
+        <ShieldCheck size={14} />{$t('ui.health_amp_safety')}</span>
+      <h1 class="mt-5 text-4xl font-extrabold leading-tight md:text-5xl">{$t('ui.travel_with_confidence')}</h1>
       <p class="mt-4 text-lg leading-8 text-white/80">
         Africa is an extraordinary, welcoming place to travel — and with the right planning, a safari is
         wonderfully safe. Here's our honest guidance on health, wildlife, security and the support you can
@@ -95,7 +95,7 @@
 <section class="container-shell py-14 md:py-20">
   <SectionHeader
     eyebrow="The essentials"
-    title="What you should know"
+    title={$t('ui.what_you_should_know')}
     description="Straightforward answers to the questions travellers ask us most."
   />
 
@@ -124,8 +124,7 @@
       {/each}
     </div>
   {:else}
-    <p class="mt-10 rounded-2xl border border-ink/10 bg-sand/40 p-6 text-center text-ink/70">
-      Safety guidance is being prepared. Please <a class="font-semibold text-forest underline" href="/contact">contact us</a> with any questions in the meantime.
+    <p class="mt-10 rounded-2xl border border-ink/10 bg-sand/40 p-6 text-center text-ink/70">{$t('ui.safety_guidance_is_being_prepared')}<a class="font-semibold text-forest underline" href="/contact">contact us</a> with any questions in the meantime.
     </p>
   {/if}
 </section>
@@ -136,7 +135,7 @@
     <div class="container-shell">
       <SectionHeader
         eyebrow="By destination"
-        title="Safety where you're going"
+        title={$t('ui.safety_where_youre_going')}
         description="A quick overview for each region — full health & safety notes are on every destination page."
       />
       <div class="mt-9 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -147,8 +146,7 @@
           >
             <h3 class="text-lg font-bold text-ink">{dest.name}</h3>
             <p class="mt-2 line-clamp-4 text-sm leading-6 text-ink/65">{toMetaText(dest.safety_overview, 220)}</p>
-            <span class="mt-auto inline-flex items-center gap-1.5 pt-4 text-sm font-semibold text-forest transition group-hover:text-heading">
-              Read full safety notes <ArrowRight size={16} />
+            <span class="mt-auto inline-flex items-center gap-1.5 pt-4 text-sm font-semibold text-forest transition group-hover:text-heading">{$t('ui.read_full_safety_notes')}<ArrowRight size={16} />
             </span>
           </a>
         {/each}
@@ -162,18 +160,15 @@
   <div class="relative overflow-hidden rounded-[10px] bg-gradient-to-br from-deep-green via-forest to-deep-green px-6 py-12 text-center text-white md:px-12 md:py-16">
     <div class="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-goldfinch-gold/20 blur-3xl"></div>
     <div class="relative mx-auto max-w-2xl">
-      <h2 class="text-2xl font-extrabold md:text-3xl">Still have a safety question?</h2>
+      <h2 class="text-2xl font-extrabold md:text-3xl">{$t('ui.still_have_a_safety_question')}</h2>
       <p class="mt-3 text-white/75">
         Our team plans these trips every day and is happy to talk through anything — health, insurance,
         wildlife or logistics — before you commit.
       </p>
       <div class="mt-7 flex flex-wrap justify-center gap-3">
-        <a class="inline-flex h-12 items-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-heading shadow-lg transition hover:brightness-105" href="/plan-my-trip">
-          Plan My Trip <ArrowRight size={18} />
+        <a class="inline-flex h-12 items-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-heading shadow-lg transition hover:brightness-105" href="/plan-my-trip">{$t('cta.plan_my_trip')}<ArrowRight size={18} />
         </a>
-        <a class="inline-flex h-12 items-center rounded-xl border border-white/30 px-6 font-semibold text-white transition hover:bg-surface/10" href="/contact">
-          Talk to an Advisor
-        </a>
+        <a class="inline-flex h-12 items-center rounded-xl border border-white/30 px-6 font-semibold text-white transition hover:bg-surface/10" href="/contact">{$t('ui.talk_to_an_advisor')}</a>
       </div>
     </div>
   </div>

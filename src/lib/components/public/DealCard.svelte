@@ -17,4 +17,4 @@
   $: badgeType = (tour.is_featured ? 'gold' : tour.is_popular ? 'rust' : index % 2 === 0 ? 'olive' : 'default') as TourCardBadgeType;
 </script>
 
-<TourCard {tour} {badge} {badgeType} ctaLabel="View trip" />
+<TourCard {tour} {badge} {badgeType} />

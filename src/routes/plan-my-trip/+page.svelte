@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onDestroy, onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
   import { X } from '@lucide/svelte';
@@ -46,7 +47,7 @@
       <button
         class="absolute -top-3 right-0 z-10 grid h-10 w-10 place-items-center rounded-full bg-surface text-ink shadow-lg ring-1 ring-ink/10 transition hover:bg-sand sm:-right-3"
         type="button"
-        aria-label="Close"
+        aria-label={$t('ui.close')}
         on:click={close}
       >
         <X size={20} />

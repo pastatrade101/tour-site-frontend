@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * The standard destination card for the main grid.
    *
@@ -117,9 +118,7 @@
     {#if destination.is_featured}
       <span
         class="destination-card-badge absolute left-4 top-4 rounded-full bg-goldfinch-gold px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-heading"
-      >
-        Featured
-      </span>
+      >{$t('label.featured')}</span>
     {/if}
 
     {#if region}
@@ -175,9 +174,7 @@
     <!-- Always present for keyboard and touch; the arrow is what moves on hover. -->
     <span
       class="destination-card-link mt-auto flex items-center gap-2.5 pt-5 text-[11px] font-bold uppercase tracking-[0.18em] text-forest"
-    >
-      View guide
-      <span
+    >{$t('ui.view_guide')}<span
         class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-sand/70 text-forest transition duration-300 ease-out group-hover:translate-x-1 group-hover:bg-goldfinch-gold group-hover:text-heading group-focus-visible:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
       >
         <ArrowRight size={13} strokeWidth={2.5} />

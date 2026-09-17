@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * DestinationsHero — one cinematic full-bleed frame.
    *
@@ -89,23 +90,18 @@
   </div>
 
   <div class="hero-shell container-shell relative z-10 flex min-h-[62vh] flex-col pb-12 pt-20 md:min-h-[72vh] md:pb-16 md:pt-24">
-    <nav class="hero-breadcrumb mb-auto flex flex-wrap items-center gap-2 text-[13px] font-medium text-white/60" aria-label="Breadcrumb">
-      <a class="inline-flex min-h-[44px] items-center rounded-[6px] pr-1 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green" href="/">
-        Home
-      </a>
+    <nav class="hero-breadcrumb mb-auto flex flex-wrap items-center gap-2 text-[13px] font-medium text-white/60" aria-label={$t('ui.breadcrumb')}>
+      <a class="inline-flex min-h-[44px] items-center rounded-[6px] pr-1 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green" href="/">{$t('nav.home')}</a>
       <span class="text-white/30" aria-hidden="true">/</span>
-      <span class="text-white/90" aria-current="page">Destinations</span>
+      <span class="text-white/90" aria-current="page">{$t('nav.destinations')}</span>
     </nav>
 
     <div class="hero-copy-grid grid grid-cols-12 pt-10 md:pt-14">
       <div class="hero-copy col-span-12 min-w-0 lg:col-span-8 xl:col-span-7" use:fadeUpOnScroll={{ y: 16 }}>
         <p class="hero-label flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] text-goldfinch-gold">
-          <span class="h-px w-8 bg-goldfinch-gold/70" aria-hidden="true"></span>
-          Goldfinch destinations
-        </p>
+          <span class="h-px w-8 bg-goldfinch-gold/70" aria-hidden="true"></span>{$t('ui.goldfinch_destinations')}</p>
 
-        <h1 class="mt-6 max-w-[18ch] break-words font-serif text-[clamp(2.35rem,6.2vw,4.5rem)] font-semibold leading-[1.04] tracking-[-0.02em] text-white">
-          Where would you like to <span class="whitespace-nowrap font-normal italic text-goldfinch-gold">wake up</span>?
+        <h1 class="mt-6 max-w-[18ch] break-words font-serif text-[clamp(2.35rem,6.2vw,4.5rem)] font-semibold leading-[1.04] tracking-[-0.02em] text-white">{$t('ui.where_would_you_like_to')}<span class="whitespace-nowrap font-normal italic text-goldfinch-gold">wake up</span>?
         </h1>
 
         <p class="hero-description mt-5 max-w-[52ch] text-[15px] leading-7 text-white/80 md:mt-6 md:text-lg md:leading-9">
@@ -118,16 +114,13 @@
             class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-7 text-sm font-bold text-heading shadow-lg shadow-black/15 transition duration-200 ease-out hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green sm:w-auto"
             href="/plan-my-trip"
             on:click={() => onCta('Plan my trip', 'primary')}
-          >
-            Plan my trip <ArrowRight size={17} strokeWidth={2.4} />
+          >{$t('ui.plan_my_trip')}<ArrowRight size={17} strokeWidth={2.4} />
           </a>
           <a
             class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] border border-white/40 bg-white/10 px-7 text-sm font-bold text-white backdrop-blur transition duration-200 ease-out hover:bg-white/18 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green sm:w-auto"
             href={BROWSE_TARGET}
             on:click={() => onCta('Browse destinations', 'secondary')}
-          >
-            Browse destinations
-          </a>
+          >{$t('ui.browse_destinations')}</a>
         </div>
 
         <ul class="hero-trust mt-8 gap-3 text-[13px] font-medium text-white/72 md:mt-10 md:flex md:flex-wrap md:items-center md:gap-x-7 md:gap-y-3">
@@ -154,10 +147,10 @@
            to right. A rail on mobile rather than a block of wrapping chips. -->
       <div class="hero-regions mt-10 border-t border-white/12 pt-5 md:mt-12">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
-          <p class="shrink-0 text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">Regions</p>
+          <p class="shrink-0 text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">{$t('ui.regions')}</p>
           <ul
             class="hero-rail -mx-1 flex snap-x snap-mandatory items-center gap-x-4 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:gap-y-2 sm:overflow-visible sm:px-0"
-            aria-label="Regions covered by these destinations"
+            aria-label={$t('ui.regions_covered_by_these_destinations')}
           >
             {#each regionList as region, index (region)}
               <li class="flex shrink-0 snap-start items-center gap-4">

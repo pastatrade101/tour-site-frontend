@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { ArrowRight } from '@lucide/svelte';
   import { revealHeading } from '$lib/animations';
 
@@ -29,9 +30,8 @@
   </div>
 
   <div class="mx-auto mt-8 flex max-w-3xl flex-col items-start justify-between gap-3 rounded-[12px] border border-forest/15 bg-forest/[0.04] p-5 sm:flex-row sm:items-center">
-    <p class="text-sm leading-6 text-ink/70">Questions about this policy? A Goldfinch specialist is happy to help.</p>
-    <a class="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg bg-forest px-5 text-sm font-bold text-white transition hover:bg-deep-green" href="/contact">
-      Contact us <ArrowRight size={16} />
+    <p class="text-sm leading-6 text-ink/70">{$t('ui.questions_about_this_policy_a')}</p>
+    <a class="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg bg-forest px-5 text-sm font-bold text-white transition hover:bg-deep-green" href="/contact">{$t('ui.contact_us')}<ArrowRight size={16} />
     </a>
   </div>
 </section>

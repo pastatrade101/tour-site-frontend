@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount, onDestroy } from 'svelte';
   import { ArrowRight, Check, ChevronDown, Star } from '@lucide/svelte';
   import { brand } from '$lib/brand';
@@ -134,7 +135,7 @@
   <button
     type="button"
     class="group absolute bottom-5 left-1/2 z-10 grid h-10 w-10 -translate-x-1/2 place-items-center rounded-full text-white/85 transition hover:text-white"
-    aria-label="Scroll down"
+    aria-label={$t('ui.scroll_down')}
     on:click={scrollDown}
   >
     <ChevronDown size={26} strokeWidth={2.4} class="motion-safe:animate-bounce" />
@@ -142,7 +143,7 @@
 
   <!-- slide dots (bottom right) -->
   {#if images.length > 1}
-    <div class="absolute bottom-7 right-6 z-10 flex gap-2 md:right-10" role="tablist" aria-label="Hero background">
+    <div class="absolute bottom-7 right-6 z-10 flex gap-2 md:right-10" role="tablist" aria-label={$t('ui.hero_background')}>
       {#each images as _src, i (i)}
         <button class={`h-2 rounded-full transition-all ${i === index ? 'w-7 bg-goldfinch-gold' : 'w-2.5 bg-white/50 hover:bg-white/80'}`} type="button" role="tab" aria-selected={i === index} aria-label={`Background ${i + 1}`} on:click={() => goSlide(i)}></button>
       {/each}

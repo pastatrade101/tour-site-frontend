@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount, tick } from 'svelte';
   import { ArrowRight } from '@lucide/svelte';
 
@@ -59,7 +60,7 @@
   });
 </script>
 
-<nav bind:this={navigation} class="package-navigation" class:empty={links.length < 2} aria-label="Explore this safari">
+<nav bind:this={navigation} class="package-navigation" class:empty={links.length < 2} aria-label={$t('ui.explore_this_safari')}>
   <div class="package-navigation-track">
     {#each links as link (link.id)}
       <a href={`#${link.id}`} aria-current={activeId === link.id ? 'location' : undefined}>{link.label}</a>
@@ -67,12 +68,12 @@
   </div>
 </nav>
 
-<aside class="package-dock" class:concealed={planningVisible} aria-label="Plan this safari">
+<aside class="package-dock" class:concealed={planningVisible} aria-label={$t('ui.plan_this_safari')}>
   <div class="package-dock-copy">
-    <span>Your next adventure</span>
+    <span>{$t('ui.your_next_adventure')}</span>
     <strong>{packageName}</strong>
   </div>
-  <a href={formHref}>Plan this trip <ArrowRight size={17} /></a>
+  <a href={formHref}>{$t('ui.plan_this_trip_2')}<ArrowRight size={17} /></a>
 </aside>
 
 <style>

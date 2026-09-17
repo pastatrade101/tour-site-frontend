@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { ArrowRight, Heart, Palmtree, PawPrint, ShieldCheck, Users } from '@lucide/svelte';
   import type { Tour } from '$lib/types';
   import TourCard from '../TourCard.svelte';
@@ -59,7 +60,7 @@
       </div>
 
       {#if filters.length}
-        <div class="filter-rail mt-8 lg:mt-11" aria-label="Filter featured itineraries">
+        <div class="filter-rail mt-8 lg:mt-11" aria-label={$t('ui.filter_featured_itineraries')}>
           {#each filters as filter}
             <button type="button" aria-pressed={activeFilter === filter.key} class:active={activeFilter === filter.key} class="package-tab" on:click={() => (activeFilter = filter.key)}>
               <svelte:component this={filter.icon} size={15} strokeWidth={2.2} class="chip-icon" aria-hidden="true" />{filter.label}
@@ -70,7 +71,7 @@
 
       {#key activeFilter}
         {#if visibleTours.length}<div class="package-grid mt-8 grid gap-5 lg:grid-cols-3 lg:gap-6">{#each visibleTours as tour (tour.slug)}<div class="package-card min-w-0"><TourCard {tour} showShortlist={false} /></div>{/each}</div>
-        {:else}<div class="mt-8 border-y border-ink/10 py-10 text-sm text-ink/55">No featured itineraries are assigned to this collection yet.</div>{/if}
+        {:else}<div class="mt-8 border-y border-ink/10 py-10 text-sm text-ink/55">{$t('ui.no_featured_itineraries_are_assigned')}</div>{/if}
       {/key}
 
       <a href={ctaHref} data-cta="browse-all-itineraries-mobile" class="mt-6 inline-flex items-center gap-2 text-sm font-bold text-clay lg:hidden">

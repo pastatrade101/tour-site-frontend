@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { ArrowRight, Image as ImageIcon } from '@lucide/svelte';
   import { trackEvent } from '$lib/analytics';
   import { currency, formatUsd } from '$lib/currency';
@@ -15,7 +16,7 @@
   export let whiteSurface = true;
   export let badge: string | null | undefined = undefined;
   export let badgeType: TourCardBadgeType | undefined = undefined;
-  export let ctaLabel = 'View trip';
+  export let ctaLabel = '';
   export let ctaHref = '';
 
   const badgeStyles: Record<TourCardBadgeType, { background: string; color: string }> = {
@@ -42,7 +43,7 @@
   $: image = tour.main_image_url || tour.banner_image_url || '';
   $: href = ctaHref || `/tours/${tour.slug}`;
   $: duration = tour.duration_days
-    ? `${tour.duration_days} ${tour.duration_days === 1 ? 'day' : 'days'}`
+    ? `${tour.duration_days} ${tour.duration_days === 1 ? $t('label.day') : $t('label.days')}`
     : 'Tailor-made';
   $: resolvedBadge = badge === undefined
     ? tour.is_popular
@@ -134,10 +135,10 @@
       <div class="flex items-center justify-between gap-3 border-t border-dashed border-[#E3DCCB] pt-4">
         <div class="min-w-0 text-[14px] text-heading">
           {#if hasPrice}
-            <span class="text-[11px] uppercase tracking-[0.08em] text-ink/45">From </span>
+            <span class="text-[11px] uppercase tracking-[0.08em] text-ink/45">{$t('label.from')} </span>
             <span class="font-serif text-[17px] font-medium">{priceLabel}</span>
           {:else}
-            <span class="font-serif text-[17px] font-medium">Tailored quote</span>
+            <span class="font-serif text-[17px] font-medium">{$t('label.tailored_quote')}</span>
           {/if}
         </div>
         <a
@@ -146,7 +147,7 @@
           on:click={recordClick}
           class="inline-flex shrink-0 items-center gap-1.5 text-[13px] font-semibold text-clay transition-transform hover:translate-x-0.5"
         >
-          {ctaLabel}
+          {ctaLabel || $t('cta.view_trip')}
           <ArrowRight size={14} />
         </a>
       </div>

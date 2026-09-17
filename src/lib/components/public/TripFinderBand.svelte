@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { ArrowRight, Clock, Compass, MapPin } from '@lucide/svelte';
   import { api } from '$lib/api/client';
@@ -67,14 +68,13 @@
 
       <div class="relative">
         <div class="flex flex-wrap items-center gap-3">
-          <p class="font-serif text-xl italic text-savanna">Not sure where to start?</p>
+          <p class="font-serif text-xl italic text-savanna">{$t('ui.not_sure_where_to_start')}</p>
           <span class="inline-flex items-center gap-1.5 rounded-full bg-surface/10 px-2.5 py-1 text-[11px] font-bold text-savanna backdrop-blur">
             <Clock size={12} strokeWidth={2.6} /> ~60 seconds
           </span>
         </div>
 
-        <h2 class="mt-4 text-3xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-4xl lg:text-[42px]">
-          Find your perfect Tanzania trip in <span class="text-goldfinch-gold">60 seconds</span>.
+        <h2 class="mt-4 text-3xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-4xl lg:text-[42px]">{$t('ui.find_your_perfect_tanzania_trip')}<span class="text-goldfinch-gold">60 seconds</span>.
         </h2>
 
         <p class="mt-4 max-w-lg text-[15px] leading-7 text-white/75 md:text-base">
@@ -86,11 +86,9 @@
           <a
             href="/trip-finder"
             class="inline-flex h-14 items-center gap-2.5 rounded-[10px] bg-goldfinch-gold px-7 text-[15px] font-bold text-heading shadow-[0_10px_28px_rgba(217,164,65,0.45)] transition duration-300 hover:-translate-y-0.5 hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-          >
-            Start Trip Finder
-            <ArrowRight size={18} strokeWidth={2.6} class="transition-transform duration-300 group-hover:translate-x-0.5" />
+          >{$t('ui.start_trip_finder')}<ArrowRight size={18} strokeWidth={2.6} class="transition-transform duration-300 group-hover:translate-x-0.5" />
           </a>
-          <p class="text-sm font-medium text-white/55">No pressure. Just simple guidance.</p>
+          <p class="text-sm font-medium text-white/55">{$t('ui.no_pressure_just_simple_guidance')}</p>
         </div>
       </div>
     </div>
@@ -101,7 +99,7 @@
         record={heroRecord}
         fields={['banner_image_url', 'main_image_url', 'image_url']}
         src={heroRecord ? '' : heroImage}
-        alt="Tanzania safari"
+        alt={$t('ui.tanzania_safari')}
         width={1000}
         sizes="(max-width: 1024px) 100vw, 48vw"
         className="absolute inset-0 h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-105"
@@ -112,8 +110,7 @@
 
       <!-- main location pill -->
       <span class="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-surface/90 px-3 py-1.5 text-xs font-bold text-heading shadow-md backdrop-blur">
-        <MapPin size={13} strokeWidth={2.6} class="text-clay" /> Tanzania
-      </span>
+        <MapPin size={13} strokeWidth={2.6} class="text-clay" />{$t('ui.tanzania')}</span>
 
       <!-- floating destination previews (hidden on the smallest screens) -->
       <div class="absolute bottom-4 right-4 hidden w-36 flex-col gap-3 sm:flex">

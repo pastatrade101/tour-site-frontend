@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { ArrowRight, MapPin } from '@lucide/svelte';
   import { thumbUrl } from '$lib/img';
   import { trackEvent } from '$lib/analytics';
@@ -31,8 +32,7 @@
       <p class="text-xs font-extrabold uppercase tracking-[0.2em] text-goldfinch-gold">{eyebrow}</p>
       <h2 class="max-w-sm font-serif text-3xl font-semibold leading-tight md:text-4xl">{title}</h2>
       <p class="max-w-sm text-sm leading-6 text-white/75">{subtitle}</p>
-      <a class="mt-1 inline-flex items-center gap-2 rounded-full border border-goldfinch-gold/50 px-5 py-2.5 text-sm font-bold text-goldfinch-gold transition hover:bg-goldfinch-gold hover:text-heading" href="/destinations">
-        All destinations <ArrowRight size={15} strokeWidth={2.6} />
+      <a class="mt-1 inline-flex items-center gap-2 rounded-full border border-goldfinch-gold/50 px-5 py-2.5 text-sm font-bold text-goldfinch-gold transition hover:bg-goldfinch-gold hover:text-heading" href="/destinations">{$t('label.all_destinations')}<ArrowRight size={15} strokeWidth={2.6} />
       </a>
     </div>
 
@@ -69,8 +69,7 @@
           <p class="mt-0.5 line-clamp-2 font-serif text-base font-semibold leading-tight text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.55)] sm:mt-1 sm:text-2xl sm:leading-snug">{d.name}</p>
 
           <!-- request pill: pointer devices only, revealed on hover -->
-          <span class="mt-3 hidden translate-y-2 items-center gap-2 whitespace-nowrap rounded-full bg-goldfinch-gold px-4 py-2 text-xs font-extrabold uppercase tracking-[0.08em] text-heading opacity-0 shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:inline-flex">
-            Request this trip <ArrowRight size={14} strokeWidth={2.8} class="transition-transform group-hover:translate-x-0.5" />
+          <span class="mt-3 hidden translate-y-2 items-center gap-2 whitespace-nowrap rounded-full bg-goldfinch-gold px-4 py-2 text-xs font-extrabold uppercase tracking-[0.08em] text-heading opacity-0 shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:inline-flex">{$t('cta.request_trip')}<ArrowRight size={14} strokeWidth={2.8} class="transition-transform group-hover:translate-x-0.5" />
           </span>
         </div>
       </a>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locale, t } from '$lib/i18n/ui';
   import { Check, ChevronDown, RefreshCw } from '@lucide/svelte';
   import { currency, initCurrency, setCurrency } from '$lib/currency';
 
@@ -20,6 +21,22 @@
   let activeIndex = 0;
 
   $: options = $currency.supportedCurrencies.filter((item) => item.enabled);
+  /**
+   * The currency's name in the reader's language.
+   *
+   * Intl.DisplayNames already knows every currency in every locale we serve, so
+   * the name follows the language switcher without a translation table — and a
+   * currency the client adds later is localised the day it is added. Falls back
+   * to the name the API supplied if the runtime has no entry for it.
+   */
+  const currencyName = (code: string, fallback: string, lang: string): string => {
+    try {
+      return new Intl.DisplayNames([lang], { type: 'currency' }).of(code) ?? fallback;
+    } catch {
+      return fallback;
+    }
+  };
+
   $: selected = options.find((item) => item.code === $currency.selectedCurrency) ?? options[0];
   $: selectedIndex = options.findIndex((item) => item.code === $currency.selectedCurrency);
 
@@ -138,7 +155,7 @@
   role="presentation"
 >
   {#if !compact}
-    <span class="mb-1 block text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">Currency</span>
+    <span class="mb-1 block text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">{$t('ui.currency')}</span>
   {/if}
 
   <button
@@ -153,7 +170,7 @@
       ${mobile ? 'w-full justify-between' : ''}`}
     aria-haspopup="listbox"
     aria-expanded={open}
-    aria-label={`Display currency: ${selected?.code ?? 'USD'}`}
+    aria-label={`${$t('ui.currency_label')}: ${selected?.code ?? 'USD'}`}
     aria-busy={$currency.loading}
     disabled={!options.length}
     on:click={() => (open ? close() : openList())}
@@ -163,7 +180,7 @@
     <span class={`grid h-6 min-w-6 place-items-center rounded-[6px] font-bold leading-none ${bare ? 'bg-white/12 px-1 text-white' : 'bg-goldfinch-gold/15 px-1 text-heading'}`} aria-hidden="true">{selected?.symbol || selected?.code || '¤'}</span>
     <span class={`min-w-0 truncate ${bare ? 'text-[12px] font-medium' : 'text-sm font-extrabold'}`}>{selected?.code ?? 'USD'}</span>
     {#if mobile && selected?.name}
-      <span class="ml-1 min-w-0 flex-1 truncate text-left text-sm font-medium text-ink/50">{selected.name}</span>
+      <span class="ml-1 min-w-0 flex-1 truncate text-left text-sm font-medium text-ink/50">{currencyName(selected.code, selected.name, $locale)}</span>
     {/if}
     <span class={`shrink-0 ${bare ? 'text-current opacity-80' : 'ml-auto text-ink/40'}`}>
       {#if $currency.loading}
@@ -182,7 +199,7 @@
       style={`top:${pos.top}px; left:${pos.left}px; width:${pos.width}px;`}
       role="listbox"
       tabindex="-1"
-      aria-label="Display currency"
+      aria-label={$t('ui.display_currency')}
       aria-activedescendant={options[activeIndex] ? `currency-${options[activeIndex].code}` : undefined}
       on:keydown={onListKeydown}
       on:click|stopPropagation
@@ -208,7 +225,7 @@
           <span class="grid h-8 min-w-8 place-items-center rounded-[7px] bg-goldfinch-gold/15 px-1 text-sm font-extrabold text-heading" aria-hidden="true">{item.symbol || item.code}</span>
           <span class="min-w-0 flex-1">
             <span class="block text-sm font-extrabold text-heading">{item.code}</span>
-            <span class="block truncate text-xs text-ink/50">{item.name}</span>
+            <span class="block truncate text-xs text-ink/50">{currencyName(item.code, item.name, $locale)}</span>
           </span>
           <span class="shrink-0 text-xs font-semibold text-ink/35">{item.symbol}</span>
           <span class="w-4 shrink-0 text-forest">

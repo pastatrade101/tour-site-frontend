@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * Property gallery — a large lead image with supporting shots beside it, and
    * a lightbox for the rest.
@@ -113,7 +114,7 @@
               <span class="absolute inset-0 grid place-items-center bg-black/55 text-white transition group-hover:bg-black/45">
                 <span class="text-center">
                   <span class="block font-serif text-2xl font-semibold">+{extra}</span>
-                  <span class="text-[11px] font-bold uppercase tracking-[0.14em]">More photos</span>
+                  <span class="text-[11px] font-bold uppercase tracking-[0.14em]">{$t('ui.more_photos')}</span>
                 </span>
               </span>
             {:else}
@@ -137,7 +138,7 @@
 
 {#if open}
   <div use:portal class="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-6" role="presentation">
-    <button type="button" class="absolute inset-0 cursor-default" aria-label="Close gallery" on:click={close}></button>
+    <button type="button" class="absolute inset-0 cursor-default" aria-label={$t('ui.close_gallery')} on:click={close}></button>
     <div
       class="relative z-10 flex max-h-[calc(100dvh-1.5rem)] min-h-0 w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/15 bg-[#111713] p-3 shadow-[0_30px_100px_rgba(0,0,0,0.55)] outline-none sm:max-h-[calc(100dvh-3rem)] sm:p-5"
       role="dialog"
@@ -147,15 +148,14 @@
       bind:this={dialog}
     >
     <div class="flex shrink-0 items-center justify-between border-b border-white/10 pb-3 text-white">
-      <div><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">Property gallery</p><p class="mt-0.5 text-[13px] font-semibold" aria-live="polite">Photo {index + 1} of {ordered.length}</p></div>
+      <div><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">{$t('ui.property_gallery')}</p><p class="mt-0.5 text-[13px] font-semibold" aria-live="polite">Photo {index + 1} of {ordered.length}</p></div>
       <button
         type="button"
         class="inline-flex h-10 items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3 text-xs font-bold text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
-        aria-label="Close photos"
+        aria-label={$t('ui.close_photos')}
         on:click={close}
       >
-        <X size={17} /> Close
-      </button>
+        <X size={17} />{$t('ui.close')}</button>
     </div>
 
     <div class="flex min-h-0 flex-1 items-center gap-2 py-3 sm:gap-4 sm:py-5">
@@ -163,7 +163,7 @@
         <button
           type="button"
           class="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/25 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
-          aria-label="Previous photo"
+          aria-label={$t('ui.previous_photo')}
           on:click={() => step(-1)}
         >
           <ChevronLeft size={20} />
@@ -191,7 +191,7 @@
         <button
           type="button"
           class="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/25 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
-          aria-label="Next photo"
+          aria-label={$t('ui.next_photo')}
           on:click={() => step(1)}
         >
           <ChevronRight size={20} />

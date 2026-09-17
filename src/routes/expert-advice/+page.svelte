@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { page } from '$app/stores';
   import { localeParam } from '$lib/faqEntities';
   import { onMount } from 'svelte';
@@ -50,21 +51,17 @@
   <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-goldfinch-gold/20 blur-3xl"></div>
   <div class="pointer-events-none absolute -bottom-28 -left-20 h-72 w-72 rounded-full bg-savanna/15 blur-3xl"></div>
   <div class="container-shell relative py-16 text-center md:py-20">
-    <p class="font-serif text-xl italic text-savanna">Expert Advice</p>
-    <h1 class="mx-auto mt-5 max-w-3xl text-3xl font-extrabold leading-[1.1] tracking-tight md:text-[44px]" use:revealHeading>
-      Honest guides to plan East Africa with confidence
-    </h1>
+    <p class="font-serif text-xl italic text-savanna">{$t('footer.expert_advice')}</p>
+    <h1 class="mx-auto mt-5 max-w-3xl text-3xl font-extrabold leading-[1.1] tracking-tight md:text-[44px]" use:revealHeading>{$t('ui.honest_guides_to_plan_east')}</h1>
     <p class="mx-auto mt-4 max-w-2xl text-[15px] leading-7 text-white/75 md:text-lg">
       Real answers from local experts — costs, timing, safety, and what each trip is actually like. Or ask our AI advisor and get an instant, honest answer.
     </p>
     <div class="mt-7 flex flex-wrap justify-center gap-3">
       {#if aiOn}
         <button type="button" on:click={() => openAiAdvisor()} class="inline-flex h-12 items-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-heading shadow-lg transition hover:brightness-105">
-          <Sparkles size={18} strokeWidth={2.4} /> Ask our AI advisor
-        </button>
+          <Sparkles size={18} strokeWidth={2.4} />{$t('ui.ask_our_ai_advisor')}</button>
       {/if}
-      <a href="/plan-my-trip" class="inline-flex h-12 items-center gap-2 rounded-xl border border-white/30 px-6 font-semibold text-white transition hover:bg-surface/10">
-        Plan My Trip <ArrowRight size={18} />
+      <a href="/plan-my-trip" class="inline-flex h-12 items-center gap-2 rounded-xl border border-white/30 px-6 font-semibold text-white transition hover:bg-surface/10">{$t('cta.plan_my_trip')}<ArrowRight size={18} />
       </a>
     </div>
   </div>
@@ -73,9 +70,9 @@
 <!-- Popular questions → AI advisor (only when the AI advisor is enabled) -->
 {#if aiOn}
   <section class="container-shell py-12 md:py-16" use:fadeUpOnScroll={{ y: 16 }}>
-    <p class="font-serif text-xl italic text-clay">Ask away</p>
-    <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-heading md:text-[34px]" use:revealHeading>Popular questions, answered instantly</h2>
-    <p class="mt-3 max-w-2xl text-[15px] leading-7 text-ink/70">Tap a question and our AI travel advisor will answer it for you — grounded in real Goldfinch trips, with honest limitations.</p>
+    <p class="font-serif text-xl italic text-clay">{$t('ui.ask_away')}</p>
+    <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-heading md:text-[34px]" use:revealHeading>{$t('ui.popular_questions_answered_instantly')}</h2>
+    <p class="mt-3 max-w-2xl text-[15px] leading-7 text-ink/70">{$t('ui.tap_a_question_and_our')}</p>
 
     <div class="mt-6 flex flex-wrap gap-2.5">
       {#each topics as topic}
@@ -96,9 +93,9 @@
 {#if loading || posts.length}
 <section class="bg-sand/30 py-12 md:py-16">
   <div class="container-shell">
-    <p class="font-serif text-xl italic text-clay">Guides</p>
-    <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-heading md:text-[34px]" use:revealHeading>Latest planning guides</h2>
-    <p class="mt-3 max-w-2xl text-[15px] leading-7 text-ink/70">Practical, no-fluff reads from the team who plans these trips every day.</p>
+    <p class="font-serif text-xl italic text-clay">{$t('ui.guides')}</p>
+    <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-heading md:text-[34px]" use:revealHeading>{$t('ui.latest_planning_guides')}</h2>
+    <p class="mt-3 max-w-2xl text-[15px] leading-7 text-ink/70">{$t('ui.practical_nofluff_reads_from_the')}</p>
 
     <div class="mt-8">
       {#if loading}
@@ -117,12 +114,11 @@
       <div class="flex items-start gap-3">
         <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-forest/10 text-forest"><GitCompare size={20} /></span>
         <div>
-          <p class="font-serif text-lg italic text-clay">Decision help</p>
-          <p class="mt-0.5 text-lg font-extrabold text-heading">Compare destinations &amp; routes side by side</p>
+          <p class="font-serif text-lg italic text-clay">{$t('ui.decision_help')}</p>
+          <p class="mt-0.5 text-lg font-extrabold text-heading">{$t('ui.compare_destinations_amp_routes_side')}</p>
         </div>
       </div>
-      <a href="/compare" class="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border border-forest/20 bg-surface px-5 font-semibold text-forest transition group-hover:bg-sand/40">
-        See comparisons <ArrowRight size={16} />
+      <a href="/compare" class="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border border-forest/20 bg-surface px-5 font-semibold text-forest transition group-hover:bg-sand/40">{$t('ui.see_comparisons')}<ArrowRight size={16} />
       </a>
     </div>
   </div>
@@ -133,13 +129,12 @@
 {#if faqs.length}
   <section class="container-shell grid gap-8 py-12 md:grid-cols-[0.7fr_1.3fr] md:py-16" use:fadeUpOnScroll={{ y: 16 }}>
     <div>
-      <p class="font-serif text-xl italic text-clay">Good to know</p>
-      <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-heading md:text-4xl" use:revealHeading>Frequently asked</h2>
-      <p class="mt-3 text-[15px] leading-7 text-ink/70">The questions East Africa travellers ask us most. Need something specific? Our AI advisor or a specialist can help.</p>
+      <p class="font-serif text-xl italic text-clay">{$t('ui.good_to_know')}</p>
+      <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-heading md:text-4xl" use:revealHeading>{$t('ui.frequently_asked')}</h2>
+      <p class="mt-3 text-[15px] leading-7 text-ink/70">{$t('ui.the_questions_east_africa_travellers')}</p>
       {#if aiOn}
         <button type="button" on:click={() => openAiAdvisor()} class="mt-5 inline-flex items-center gap-2 text-sm font-bold text-forest transition hover:text-heading">
-          <Sparkles size={15} /> Ask the AI advisor
-        </button>
+          <Sparkles size={15} />{$t('ui.ask_the_ai_advisor')}</button>
       {/if}
     </div>
     <FAQAccordion {faqs} />
@@ -151,16 +146,14 @@
   <div class="relative overflow-hidden rounded-[12px] bg-gradient-to-br from-deep-green via-forest to-deep-green p-8 text-center text-white md:p-12">
     <div class="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-goldfinch-gold/20 blur-3xl"></div>
     <div class="relative mx-auto max-w-2xl">
-      <h2 class="text-2xl font-extrabold md:text-3xl">Still have questions?</h2>
-      <p class="mx-auto mt-3 text-white/75">Get an instant answer from our AI advisor, or tell us what you're planning and a local expert will follow up — honest advice, no pressure.</p>
+      <h2 class="text-2xl font-extrabold md:text-3xl">{$t('ui.still_have_questions')}</h2>
+      <p class="mx-auto mt-3 text-white/75">{$t('ui.get_an_instant_answer_from')}</p>
       <div class="mt-7 flex flex-wrap justify-center gap-3">
         {#if aiOn}
           <button type="button" on:click={() => openAiAdvisor()} class="inline-flex h-12 items-center gap-2 rounded-xl bg-goldfinch-gold px-7 font-bold text-heading transition hover:brightness-105">
-            <Sparkles size={18} strokeWidth={2.4} /> Ask our AI advisor
-          </button>
+            <Sparkles size={18} strokeWidth={2.4} />{$t('ui.ask_our_ai_advisor')}</button>
         {/if}
-        <a class="inline-flex h-12 items-center gap-2 rounded-xl border border-white/30 px-7 font-semibold text-white transition hover:bg-surface/10" href="/plan-my-trip">
-          Plan My Trip <ArrowRight size={18} />
+        <a class="inline-flex h-12 items-center gap-2 rounded-xl border border-white/30 px-7 font-semibold text-white transition hover:bg-surface/10" href="/plan-my-trip">{$t('cta.plan_my_trip')}<ArrowRight size={18} />
         </a>
       </div>
     </div>

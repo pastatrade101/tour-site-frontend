@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { ArrowRight } from '@lucide/svelte';
   import Img from '$lib/components/public/Img.svelte';
   import type { SafariPackage } from '$lib/types';
@@ -17,13 +18,9 @@
 <section class="bg-surface py-14 md:py-20">
   <div class="container-shell">
     <div class="max-w-[720px]">
-      <p class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">Safari packages</p>
-      <h1 class="font-serif mt-3 text-3xl leading-[1.1] tracking-tight text-heading sm:text-4xl md:text-[40px]">
-        Trips shaped around where you are starting from
-      </h1>
-      <p class="mt-4 text-base leading-relaxed text-ink/70">
-        Each package is a real route with published days, a stated length and an honest price band.
-      </p>
+      <p class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{$t('ui.safari_packages')}</p>
+      <h1 class="font-serif mt-3 text-3xl leading-[1.1] tracking-tight text-heading sm:text-4xl md:text-[40px]">{$t('ui.trips_shaped_around_where_you')}</h1>
+      <p class="mt-4 text-base leading-relaxed text-ink/70">{$t('ui.each_package_is_a_real')}</p>
     </div>
 
     {#if packages.length}
@@ -51,8 +48,7 @@
               {#if item.hero_subtitle}
                 <span class="mt-2 line-clamp-3 text-sm leading-relaxed text-ink/65">{item.hero_subtitle}</span>
               {/if}
-              <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-forest">
-                View package <ArrowRight size={15} />
+              <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-forest">{$t('ui.view_package')}<ArrowRight size={15} />
               </span>
             </span>
           </a>
@@ -60,9 +56,7 @@
       </div>
     {:else}
       <!-- Nothing published yet. The page says so rather than showing a shell. -->
-      <p class="mt-10 rounded-[12px] border border-ink/10 bg-sand/35 p-5 text-[14px] leading-6 text-ink/70">
-        No safari packages have been published yet.
-      </p>
+      <p class="mt-10 rounded-[12px] border border-ink/10 bg-sand/35 p-5 text-[14px] leading-6 text-ink/70">{$t('ui.no_safari_packages_have_been')}</p>
     {/if}
   </div>
 </section>

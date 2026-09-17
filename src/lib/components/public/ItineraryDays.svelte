@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * The day-by-day itinerary — one renderer, wherever days are shown.
    *
@@ -227,8 +228,7 @@
                       class="inline-flex shrink-0 items-center gap-1 rounded-[6px] border border-ink/10 px-3 py-2 text-[12px] font-bold text-forest transition hover:border-goldfinch-gold hover:text-heading"
                       href={`/accommodation/${stay.slug}`}
                       data-sveltekit-preload-data="hover"
-                    >
-                      View accommodation <ArrowRight size={13} />
+                    >{$t('ui.view_accommodation')}<ArrowRight size={13} />
                     </a>
                   </div>
                 </div>

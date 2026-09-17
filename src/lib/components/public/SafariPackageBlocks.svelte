@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * Draws the blocks an editor composed on a safari-package page.
    *
@@ -309,7 +310,7 @@
           <div class="mt-8 grid gap-5 md:grid-cols-2">
             {#if included.length}
               <article class="package-card-content rounded-[16px] border border-forest/20 bg-forest/[0.06] p-6 md:p-7">
-                <h3 class="font-serif text-2xl font-semibold text-heading">Included</h3>
+                <h3 class="font-serif text-2xl font-semibold text-heading">{$t('ui.included')}</h3>
                 <ul class="mt-5 grid gap-3">
                   {#each included as item, i (i)}
                     <li class="flex gap-3 text-sm leading-6 text-ink/75">
@@ -322,7 +323,7 @@
             {/if}
             {#if excluded.length}
               <article class="package-card-content rounded-[16px] border border-clay/20 bg-clay/[0.05] p-6 md:p-7">
-                <h3 class="font-serif text-2xl font-semibold text-heading">Not included</h3>
+                <h3 class="font-serif text-2xl font-semibold text-heading">{$t('ui.not_included')}</h3>
                 <ul class="mt-5 grid gap-3">
                   {#each excluded as item, i (i)}
                     <li class="flex gap-3 text-sm leading-6 text-ink/75">
@@ -459,7 +460,7 @@
   {:else if block.type === 'routes'}
     {@const routeRows = rows<Record<string, unknown>>(block.routes)}
     {#if routeRows.length}
-      <section id={index === blocks.findIndex((item) => item.type === 'routes') ? 'route-options' : `route-options-${index}`} data-package-label="Routes" class={`scroll-mt-20 ${surface(index)} ${SECTION}`}>
+      <section id={index === blocks.findIndex((item) => item.type === 'routes') ? 'route-options' : `route-options-${index}`} data-package-label={$t('ui.routes')} class={`scroll-mt-20 ${surface(index)} ${SECTION}`}>
         <div class={SHELL}>
           {#if eyebrow}
             <div class="inline-flex items-center gap-2">
@@ -545,10 +546,10 @@
           {#if priceRows.length}
             <div class="package-price-list mt-8 overflow-hidden rounded-[12px] border border-ink/10 bg-surface">
               <div class="hidden grid-cols-12 gap-4 bg-deep-green px-5 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white/80 md:grid">
-                <span class="col-span-3">Option</span>
-                <span class="col-span-3">Usually best for</span>
-                <span class="col-span-2">Price tendency</span>
-                <span class="col-span-4">Why it costs that way</span>
+                <span class="col-span-3">{$t('ui.option')}</span>
+                <span class="col-span-3">{$t('ui.usually_best_for')}</span>
+                <span class="col-span-2">{$t('ui.price_tendency')}</span>
+                <span class="col-span-4">{$t('ui.why_it_costs_that_way')}</span>
               </div>
               {#each priceRows as row, i (i)}
                 <div class="package-price-row grid gap-2 border-b border-ink/10 px-5 py-5 last:border-b-0 md:grid-cols-12 md:items-start md:gap-4 md:py-4">
@@ -556,7 +557,7 @@
                     <span class="font-serif block text-[16px] font-semibold text-heading">{str(row.route)}</span>
                     {#if str(row.price)}<span class="mt-1 block text-[13px] font-semibold text-clay">{str(row.price)}</span>{/if}
                   </div>
-                  <span class="text-sm text-ink/70 md:col-span-3">{#if str(row.best_for)}<span class="mb-1 block text-[10px] font-bold uppercase tracking-wide text-clay md:hidden">Best for</span>{str(row.best_for)}{/if}</span>
+                  <span class="text-sm text-ink/70 md:col-span-3">{#if str(row.best_for)}<span class="mb-1 block text-[10px] font-bold uppercase tracking-wide text-clay md:hidden">{$t('ui.best_for')}</span>{str(row.best_for)}{/if}</span>
                   <span class="text-sm font-semibold text-heading md:col-span-2">{str(row.tendency)}</span>
                   <span class="text-sm leading-relaxed text-ink/70 md:col-span-4">{str(row.why)}</span>
                 </div>

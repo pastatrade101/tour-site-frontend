@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { Heart } from '@lucide/svelte';
   import { shortlist } from '$lib/shortlist';
 
@@ -12,8 +13,6 @@
     href="/shortlist"
     aria-label={`${count} saved trips`}
   >
-    <span class="grid h-6 w-6 place-items-center rounded-full bg-clay text-white"><Heart size={13} fill="currentColor" /></span>
-    Saved
-    <span class="grid h-5 min-w-[20px] place-items-center rounded-full bg-deep-green px-1 text-xs text-white">{count}</span>
+    <span class="grid h-6 w-6 place-items-center rounded-full bg-clay text-white"><Heart size={13} fill="currentColor" /></span>{$t('ui.saved')}<span class="grid h-5 min-w-[20px] place-items-center rounded-full bg-deep-green px-1 text-xs text-white">{count}</span>
   </a>
 {/if}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { ArrowRight, CalendarRange, Check, Footprints, Sparkles } from '@lucide/svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
@@ -171,7 +172,7 @@
     <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-deep-green/80 to-deep-green/40"></div>
     <div class="container-shell relative py-14 md:py-20">
       <nav class="mb-5 flex items-center gap-2 text-sm text-white/70">
-        <a class="font-medium transition hover:text-white" href="/experiences">Experiences</a>
+        <a class="font-medium transition hover:text-white" href="/experiences">{$t('nav.experiences')}</a>
         <span class="text-white/30">/</span>
         <span class="font-medium text-white">{name}</span>
       </nav>
@@ -192,7 +193,7 @@
     {#if info}
       <div class="grid gap-6 md:grid-cols-[1fr_1fr]">
         <div class="rounded-2xl border border-ink/10 bg-surface p-6 shadow-soft">
-          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">Who this experience suits</p>
+          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">{$t('label.who_its_for')}</p>
           <p class="mt-3 text-base leading-7 text-ink/80">{info.whoItsFor}</p>
 
           <!-- Travel facts: typography and hierarchy, not pills. Values render
@@ -204,7 +205,7 @@
                 <div class="flex items-start gap-3">
                   <span class="mt-1 shrink-0 text-clay" aria-hidden="true"><Footprints size={17} strokeWidth={1.8} /></span>
                   <div class="min-w-0">
-                    <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/45">Fitness</p>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/45">{$t('label.fitness')}</p>
                     {#if fitnessSupport}
                       <p class="mt-1 font-serif text-xl font-semibold leading-tight text-heading">{info.fitness}</p>
                       <p class="mt-0.5 text-xs text-ink/50">{fitnessSupport}</p>
@@ -219,9 +220,9 @@
                 <div class="flex items-start gap-3">
                   <span class="mt-1 shrink-0 text-clay" aria-hidden="true"><CalendarRange size={17} strokeWidth={1.8} /></span>
                   <div class="min-w-0">
-                    <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/45">Ideal trip length</p>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/45">{$t('label.trip_length')}</p>
                     <p class="mt-1 font-serif text-xl font-semibold leading-tight text-heading">{durationText}</p>
-                    <p class="mt-0.5 text-xs text-ink/50">Recommended stay</p>
+                    <p class="mt-0.5 text-xs text-ink/50">{$t('ui.recommended_stay')}</p>
                   </div>
                 </div>
               {/if}
@@ -230,7 +231,7 @@
 
           {#if bestTimeRanges.length}
             <div class="mt-5 border-t border-ink/[0.07] pt-5">
-              <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/45">Best time to go</p>
+              <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/45">{$t('label.best_time')}</p>
               <p class="mt-1 font-serif text-xl font-semibold leading-tight text-heading">
                 {#each bestTimeRanges as range, rangeIndex}{#if rangeIndex}<span class="mx-2 font-sans text-base font-normal text-ink/30">·</span>{/if}{range}{/each}
               </p>
@@ -238,7 +239,7 @@
           {/if}
         </div>
         <div class="rounded-2xl border border-ink/10 bg-surface p-6 shadow-soft">
-          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">Highlights</p>
+          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">{$t('label.highlights')}</p>
           <div class="mt-3 grid gap-2.5">
             {#each info.highlights as h}
               <div class="flex items-start gap-2 text-sm font-medium text-ink/75">
@@ -255,8 +256,7 @@
       <div class="mt-12">
         <div class="flex flex-wrap items-end justify-between gap-4">
           <h2 class="text-2xl font-bold text-heading md:text-3xl">{name} trips</h2>
-          <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href={`/tours?experience=${slug}`}>
-            See all <ArrowRight size={16} />
+          <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href={`/tours?experience=${slug}`}>{$t('cta.see_all')}<ArrowRight size={16} />
           </a>
         </div>
         <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -269,8 +269,8 @@
   </section>
 {:else}
   <section class="container-shell py-20 text-center">
-    <h1 class="text-2xl font-bold text-heading">Experience not found</h1>
-    <a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-forest hover:text-heading" href="/experiences">All experiences <ArrowRight size={16} /></a>
+    <h1 class="text-2xl font-bold text-heading">{$t('ui.experience_not_found')}</h1>
+    <a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-forest hover:text-heading" href="/experiences">{$t('ui.all_experiences')}<ArrowRight size={16} /></a>
   </section>
 {/if}
 

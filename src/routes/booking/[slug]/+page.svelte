@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { CalendarClock, MapPin, Users } from '@lucide/svelte';
@@ -40,7 +41,7 @@
 <section class="container-shell grid items-start gap-10 py-12 lg:grid-cols-[0.85fr_1.15fr] lg:py-16">
   <!-- tour summary -->
   <aside class="lg:sticky lg:top-24">
-    <p class="font-serif text-xl italic text-clay">Booking</p>
+    <p class="font-serif text-xl italic text-clay">{$t('ui.booking')}</p>
     {#key tour.title}
       <h1 class="mt-2 text-3xl font-bold tracking-normal text-heading md:text-4xl" use:revealHeading>{tour.title}</h1>
     {/key}
@@ -78,7 +79,7 @@
 
         {#if tour.price_from}
           <div class="mt-1 flex items-end justify-between border-t border-ink/10 pt-4">
-            <span class="text-sm font-medium text-ink/70">From</span>
+            <span class="text-sm font-medium text-ink/70">{$t('label.from')}</span>
             <span class="text-2xl font-extrabold text-heading">{priceLabel}</span>
           </div>
         {/if}
@@ -97,9 +98,9 @@
 </section>
 {:else if !loading}
   <section class="container-shell flex flex-col items-center justify-center py-24 text-center">
-    <p class="font-serif text-xl italic text-clay">Booking</p>
-    <h1 class="mt-2 text-3xl font-bold tracking-normal text-heading md:text-4xl">Booking not found</h1>
-    <p class="mt-4 max-w-md text-sm leading-6 text-ink/65">We couldn't find the tour you're trying to book. It may no longer be available.</p>
-    <a href="/tours" class="mt-8 inline-flex items-center rounded-full bg-forest px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-forest/90">Browse tours</a>
+    <p class="font-serif text-xl italic text-clay">{$t('ui.booking')}</p>
+    <h1 class="mt-2 text-3xl font-bold tracking-normal text-heading md:text-4xl">{$t('ui.booking_not_found')}</h1>
+    <p class="mt-4 max-w-md text-sm leading-6 text-ink/65">{$t('ui.we_couldnt_find_the_tour')}</p>
+    <a href="/tours" class="mt-8 inline-flex items-center rounded-full bg-forest px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-forest/90">{$t('ui.browse_tours')}</a>
   </section>
 {/if}

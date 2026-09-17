@@ -61,8 +61,7 @@
     {/if}
     {#if lodge.is_featured}
       <span class="absolute left-3 top-3 inline-flex items-center gap-1 bg-goldfinch-gold px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-heading shadow">
-        <Sparkles size={12} /> Recommended
-      </span>
+        <Sparkles size={12} />{$t('sort.recommended')}</span>
     {/if}
     <span class="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent"></span>
     {#if lodge.destinations?.name}
@@ -78,7 +77,7 @@
     {#if summary}
       <p class={`mt-2.5 text-[13px] leading-6 text-ink/65 ${feature ? 'md:text-base md:leading-8' : compact ? 'line-clamp-2' : 'line-clamp-2 min-h-12'}`}>{summary}</p>
     {:else if !feature}
-      <p class={`mt-2.5 text-[13px] leading-6 text-ink/50 ${compact ? 'line-clamp-2' : 'min-h-12'}`}>A carefully selected stay that can be included in a private Goldfinch itinerary.</p>
+      <p class={`mt-2.5 text-[13px] leading-6 text-ink/50 ${compact ? 'line-clamp-2' : 'min-h-12'}`}>{$t('ui.a_carefully_selected_stay_that')}</p>
     {/if}
 
     {#if hasMeta}

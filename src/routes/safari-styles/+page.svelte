@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { ArrowRight, Check, Compass, Gauge, Search, Sparkles, Users } from '@lucide/svelte';
   import EmptyState from '$lib/components/public/EmptyState.svelte';
   import { fadeUpOnScroll, revealHeading, staggeredCardReveal, tilt } from '$lib/animations';
@@ -71,30 +72,26 @@
 
   <div class="container-shell relative py-16 md:py-24">
     <nav class="mb-7 flex items-center gap-2 text-sm font-medium text-white/70">
-      <a class="transition hover:text-white" href="/">Home</a>
+      <a class="transition hover:text-white" href="/">{$t('nav.home')}</a>
       <span class="text-white/35">/</span>
-      <span class="text-white">Safari Styles</span>
+      <span class="text-white">{$t('nav.safari_styles')}</span>
     </nav>
 
     <div class="grid items-end gap-8 lg:grid-cols-[1fr_360px]">
       <div>
         <p class="inline-flex items-center gap-2 rounded-[8px] border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-goldfinch-gold backdrop-blur">
-          <Sparkles size={13} fill="currentColor" />
-          Safari Styles
-        </p>
-        <h1 class="mt-5 max-w-4xl text-4xl font-extrabold leading-[1.05] tracking-normal md:text-6xl" use:revealHeading>
-          Choose the way you want to travel.
-        </h1>
+          <Sparkles size={13} fill="currentColor" />{$t('nav.safari_styles')}</p>
+        <h1 class="mt-5 max-w-4xl text-4xl font-extrabold leading-[1.05] tracking-normal md:text-6xl" use:revealHeading>{$t('ui.choose_the_way_you_want')}</h1>
         <p class="mt-5 max-w-2xl text-base font-medium leading-8 text-white/82 md:text-lg">
           Browse live tour categories from Goldfinch and start with the style that fits your trip: safari pace, comfort level, interests and travel goals.
         </p>
       </div>
 
       <div class="rounded-[8px] border border-white/15 bg-white/10 p-4 backdrop-blur" use:fadeUpOnScroll={{ y: 16 }}>
-        <p class="text-sm font-bold text-white">Find a style faster</p>
+        <p class="text-sm font-bold text-white">{$t('ui.find_a_style_faster')}</p>
         <label class="mt-3 flex h-12 items-center gap-2 rounded-[8px] bg-surface px-3 text-heading">
           <Search size={18} class="shrink-0 text-forest" />
-          <input class="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:text-ink/35" placeholder="Search safari, family, luxury..." bind:value={query} />
+          <input class="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:text-ink/35" placeholder={$t('ui.search_safari_family_luxury')} bind:value={query} />
         </label>
         <p class="mt-3 text-xs font-medium text-white/65">{filtered.length} style{filtered.length === 1 ? '' : 's'} available</p>
       </div>
@@ -106,9 +103,9 @@
   <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-goldfinch-gold/30 to-transparent" aria-hidden="true"></div>
   <div class="container-shell">
     {#if categories.length === 0}
-      <EmptyState title="Safari styles coming soon" message="Published tour categories will appear here once they are added in the backend." />
+      <EmptyState title={$t('ui.safari_styles_coming_soon')} message="Published tour categories will appear here once they are added in the backend." />
     {:else if filtered.length === 0}
-      <EmptyState title="No matching safari styles" message="Try another search term or view all styles again." />
+      <EmptyState title={$t('ui.no_matching_safari_styles')} message="Try another search term or view all styles again." />
     {:else}
       <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3" use:staggeredCardReveal={{ y: 18, stagger: 0.05 }}>
         {#each filtered as category (category.slug)}
@@ -167,8 +164,7 @@
                 </div>
               {/if}
 
-              <span class="mt-auto inline-flex h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-deep-green px-4 text-sm font-bold text-white transition group-hover:bg-forest">
-                View style <ArrowRight size={15} strokeWidth={2.6} class="transition-transform group-hover:translate-x-0.5" />
+              <span class="mt-auto inline-flex h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-deep-green px-4 text-sm font-bold text-white transition group-hover:bg-forest">{$t('ui.view_style')}<ArrowRight size={15} strokeWidth={2.6} class="transition-transform group-hover:translate-x-0.5" />
               </span>
             </div>
           </a>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import Img from '../Img.svelte';
 
   export let eyebrow = 'How Your Trip Is Planned';
@@ -55,7 +56,7 @@
           {#if displayImage}
             <Img
               src={displayImage}
-              alt="Tanzania safari route planned around your trip"
+              alt={$t('ui.tanzania_safari_route_planned_around')}
               width={900}
               sizes="(max-width: 1024px) 92vw, 42vw"
               className="h-full w-full object-cover"

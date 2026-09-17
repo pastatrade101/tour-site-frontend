@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
@@ -165,10 +166,8 @@
   <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-goldfinch-gold/20 blur-3xl"></div>
   <div class="pointer-events-none absolute -bottom-28 -left-20 h-72 w-72 rounded-full bg-savanna/15 blur-3xl"></div>
   <div class="container-shell relative py-16 text-center md:py-20">
-    <p class="font-serif text-xl italic text-savanna">Scheduled Departures</p>
-    <h1 class="mx-auto mt-5 max-w-3xl text-3xl font-extrabold leading-[1.1] tracking-normal md:text-[44px]" use:revealHeading>
-      Confirmed East Africa Departure Dates
-    </h1>
+    <p class="font-serif text-xl italic text-savanna">{$t('ui.scheduled_departures')}</p>
+    <h1 class="mx-auto mt-5 max-w-3xl text-3xl font-extrabold leading-[1.1] tracking-normal md:text-[44px]" use:revealHeading>{$t('ui.confirmed_east_africa_departure_dates')}</h1>
     <p class="mx-auto mt-4 max-w-2xl text-[15px] font-medium leading-7 text-white/75 md:text-lg">
       Browse our scheduled safari, Kilimanjaro, gorilla trekking and beach departures with confirmed dates, availability and pricing. Reserve a place or let a local expert tailor your own.
     </p>
@@ -181,23 +180,23 @@
     <div class="rounded-[8px] border border-ink/10 bg-surface p-4 shadow-[0_14px_44px_rgba(57,61,50,0.06)] sm:p-5">
       <div class="grid gap-3 lg:grid-cols-[1.4fr_repeat(4,1fr)_auto] lg:items-end">
         <label class="grid gap-2 text-sm font-medium text-ink">
-          <span>Search</span>
+          <span>{$t('cta.search')}</span>
           <span class="flex h-11 items-center gap-2 rounded-xl border border-ink/15 bg-surface px-3 shadow-sm transition focus-within:border-forest focus-within:ring-2 focus-within:ring-forest/15">
             <Search size={16} class="text-ink/70" />
-            <input class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink/35" bind:value={search} placeholder="Search by tour..." on:keydown={(e) => e.key === 'Enter' && load()} />
+            <input class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink/35" bind:value={search} placeholder={$t('ui.search_by_tour')} on:keydown={(e) => e.key === 'Enter' && load()} />
           </span>
         </label>
-        <SelectInput label="Destination" name="destination" bind:value={destination} options={destinationOptions} />
-        <SelectInput label="Category" name="category" bind:value={category} options={categoryOptions} />
-        <SelectInput label="Month" name="month" bind:value={month} options={monthOptions} />
-        <SelectInput label="Status" name="status" bind:value={status} options={statusOptions} />
+        <SelectInput label={$t('filter.destination')} name="destination" bind:value={destination} options={destinationOptions} />
+        <SelectInput label={$t('ui.category')} name="category" bind:value={category} options={categoryOptions} />
+        <SelectInput label={$t('ui.month')} name="month" bind:value={month} options={monthOptions} />
+        <SelectInput label={$t('ui.status')} name="status" bind:value={status} options={statusOptions} />
         <div class="flex gap-2">
-          <button class="inline-flex h-11 items-center rounded-xl bg-forest px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-deep-green" type="button" on:click={load}>Search</button>
-          <button class="inline-flex h-11 items-center rounded-xl border border-ink/15 bg-surface px-4 text-sm font-semibold text-ink/70 transition hover:bg-sand/60" type="button" on:click={clearFilters}>Clear</button>
+          <button class="inline-flex h-11 items-center rounded-xl bg-forest px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-deep-green" type="button" on:click={load}>{$t('cta.search')}</button>
+          <button class="inline-flex h-11 items-center rounded-xl border border-ink/15 bg-surface px-4 text-sm font-semibold text-ink/70 transition hover:bg-sand/60" type="button" on:click={clearFilters}>{$t('filter.clear')}</button>
         </div>
       </div>
       <div class="mt-3 flex items-center justify-end gap-2 border-t border-ink/10 pt-3">
-        <span class="text-xs font-medium text-ink/70">Sort</span>
+        <span class="text-xs font-medium text-ink/70">{$t('label.sort')}</span>
         <div class="w-44"><SelectInput label="" name="sort" bind:value={sort} options={sortOptions} /></div>
       </div>
     </div>
@@ -209,9 +208,9 @@
       {:else if error}
         <ErrorState message={error} />
       {:else if departures.length === 0}
-        <EmptyState title="No departures match your filters" message="Try a different month or destination — or plan a custom trip and we'll schedule dates around you." />
+        <EmptyState title={$t('ui.no_departures_match_your_filters')} message="Try a different month or destination — or plan a custom trip and we'll schedule dates around you." />
         <div class="mt-5 flex justify-center">
-          <Button href="/plan-my-trip">Plan My Trip</Button>
+          <Button href="/plan-my-trip">{$t('cta.plan_my_trip')}</Button>
         </div>
       {:else}
         <p class="mb-5 text-sm font-medium text-ink/70">{grouped.length} tour{grouped.length === 1 ? '' : 's'} · {departures.length} upcoming departure{departures.length === 1 ? '' : 's'}</p>
@@ -250,11 +249,11 @@
                 </div>
 
                 <div class="mt-3 flex items-baseline gap-1.5">
-                  <span class="text-[11px] font-semibold uppercase tracking-wide text-ink/70">From</span>
+                  <span class="text-[11px] font-semibold uppercase tracking-wide text-ink/70">{$t('label.from')}</span>
                   <span class="text-xl font-extrabold text-heading">{fmtMoney(g.minPrice)}</span>
                 </div>
 
-                <p class="mt-4 text-[11px] font-bold uppercase tracking-[0.14em] text-forest/70">Upcoming departures</p>
+                <p class="mt-4 text-[11px] font-bold uppercase tracking-[0.14em] text-forest/70">{$t('ui.upcoming_departures')}</p>
                 <div class="mt-2 divide-y divide-ink/10 overflow-hidden rounded-xl border border-ink/10">
                   {#each dates as dt (dt.id)}
                     <div class="flex items-center justify-between gap-3 px-3 py-2.5">
@@ -265,7 +264,7 @@
                           <span class={`font-semibold ${dt.status === 'limited' ? 'text-amber-600' : 'text-emerald-600'}`}>{dt.status === 'limited' ? 'Limited' : 'Available'}</span>
                         </p>
                       </div>
-                      <a class="shrink-0 rounded-lg bg-forest px-3 py-1.5 text-xs font-bold text-white transition hover:bg-deep-green" href={`/booking/${g.tour.tour_slug}?departureId=${dt.id}`}>Book</a>
+                      <a class="shrink-0 rounded-lg bg-forest px-3 py-1.5 text-xs font-bold text-white transition hover:bg-deep-green" href={`/booking/${g.tour.tour_slug}?departureId=${dt.id}`}>{$t('ui.book')}</a>
                     </div>
                   {/each}
                 </div>
@@ -276,8 +275,8 @@
                 {/if}
 
                 <div class="mt-4 grid grid-cols-2 gap-2 border-t border-ink/10 pt-4">
-                  <Button href={`/tours/${g.tour.tour_slug}`} variant="secondary">View Tour</Button>
-                  <Button href={`/plan-my-trip?tour=${g.tour.tour_slug}&month=${(g.tour.start_date ?? '').slice(0, 7)}`}>Request</Button>
+                  <Button href={`/tours/${g.tour.tour_slug}`} variant="secondary">{$t('cta.view_tour')}</Button>
+                  <Button href={`/plan-my-trip?tour=${g.tour.tour_slug}&month=${(g.tour.start_date ?? '').slice(0, 7)}`}>{$t('ui.request')}</Button>
                 </div>
               </div>
             </article>

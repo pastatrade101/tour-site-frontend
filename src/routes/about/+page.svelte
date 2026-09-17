@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import {
     ArrowRight, BadgeCheck, CalendarCheck, Camera, Car, ChevronLeft, ChevronRight,
     Clock, Compass, CreditCard, ExternalLink, Flag, Headphones, Leaf, MapPin, Mountain, Plane, Quote, ShieldCheck,
@@ -98,17 +99,17 @@
   ></div>
   <div class="container-shell relative grid gap-10 py-20 md:py-28 lg:grid-cols-[1.35fr_0.65fr] lg:items-center">
     <div class="max-w-2xl [text-shadow:0_2px_18px_rgba(0,0,0,0.45)]">
-      <p class="text-sm font-extrabold uppercase tracking-[0.22em] text-goldfinch-gold">About</p>
+      <p class="text-sm font-extrabold uppercase tracking-[0.22em] text-goldfinch-gold">{$t('ui.about')}</p>
       <h1 class="mt-3 font-serif text-5xl font-semibold uppercase leading-[0.98] tracking-tight md:text-7xl">
         Goldfinch<br />Adventures
       </h1>
-      <p class="mt-5 max-w-xl font-serif text-xl font-light italic text-white/90 md:text-2xl">Creating extraordinary African journeys, designed around you.</p>
+      <p class="mt-5 max-w-xl font-serif text-xl font-light italic text-white/90 md:text-2xl">{$t('ui.creating_extraordinary_african_journeys_design')}</p>
       <p class="mt-5 max-w-xl text-[15px] leading-7 text-white/80">
         We are a locally based safari company in Arusha, crafting unforgettable private journeys across Tanzania with authentic experiences, expert guides and genuine hospitality.
       </p>
       <div class="mt-8 flex flex-wrap gap-3">
-        <a class="inline-flex h-12 items-center gap-2 rounded-[10px] bg-goldfinch-gold px-6 text-sm font-extrabold text-heading shadow-lg transition hover:brightness-105" href="/plan-my-trip">Plan Your Safari <ArrowRight size={17} strokeWidth={2.6} /></a>
-        <a class="inline-flex h-12 items-center gap-2 rounded-[10px] border border-white/40 bg-white/5 px-6 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15" href="/contact">Talk to a Safari Expert <ArrowRight size={16} /></a>
+        <a class="inline-flex h-12 items-center gap-2 rounded-[10px] bg-goldfinch-gold px-6 text-sm font-extrabold text-heading shadow-lg transition hover:brightness-105" href="/plan-my-trip">{$t('ui.plan_your_safari')}<ArrowRight size={17} strokeWidth={2.6} /></a>
+        <a class="inline-flex h-12 items-center gap-2 rounded-[10px] border border-white/40 bg-white/5 px-6 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15" href="/contact">{$t('ui.talk_to_a_safari_expert')}<ArrowRight size={16} /></a>
       </div>
     </div>
 
@@ -137,7 +138,7 @@
     <div class="overflow-hidden rounded-[14px] shadow-[0_24px_60px_rgb(var(--c-deep-green)/0.16)]" use:fadeUpOnScroll={{ y: 16 }}>
       <Img
         src={settingText(s, 'about_story_image') || heroImage}
-        alt="Safari in Tanzania"
+        alt={$t('ui.safari_in_tanzania')}
         width={1000}
         sizes="(max-width: 1024px) 92vw, 46vw"
         aspect="4/3"
@@ -145,13 +146,13 @@
       />
     </div>
     <div use:fadeUpOnScroll={{ y: 16, delay: 0.08 }}>
-      <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Our Story</p>
-      <h2 class="mt-3 font-serif text-3xl font-semibold text-heading md:text-[40px]">More Than A Safari Company</h2>
+      <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{$t('ui.our_story')}</p>
+      <h2 class="mt-3 font-serif text-3xl font-semibold text-heading md:text-[40px]">{$t('ui.more_than_a_safari_company')}</h2>
       <div class="mt-5 grid gap-4 text-[15px] leading-7 text-ink/75">
-        <p>Goldfinch Adventures was founded on one simple belief: <span class="font-semibold text-heading">every traveller deserves a safari that feels personal.</span></p>
-        <p>We are not a mass-tour operator selling identical itineraries. We design journeys around your dreams, interests, travel style and pace.</p>
+        <p>{$t('ui.goldfinch_adventures_was_founded_on')}<span class="font-semibold text-heading">every traveller deserves a safari that feels personal.</span></p>
+        <p>{$t('ui.we_are_not_a_masstour')}</p>
         <p>From witnessing the Great Migration in the Serengeti, to climbing Kilimanjaro, to relaxing on Zanzibar's beaches — every itinerary is handcrafted by local experts who know Tanzania intimately.</p>
-        <p>Our mission is to create experiences that stay with you long after your journey ends.</p>
+        <p>{$t('ui.our_mission_is_to_create')}</p>
       </div>
     </div>
   </div>
@@ -178,8 +179,8 @@
 <section class="bg-surface py-16 md:py-24" use:sectionReveal>
   <div class="container-shell">
     <div class="max-w-2xl">
-      <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Why Travel With Us</p>
-      <h2 class="mt-3 font-serif text-3xl font-semibold text-heading md:text-[40px]">Why Your Safari With Us Will Be Unforgettable</h2>
+      <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{$t('ui.why_travel_with_us')}</p>
+      <h2 class="mt-3 font-serif text-3xl font-semibold text-heading md:text-[40px]">{$t('ui.why_your_safari_with_us')}</h2>
     </div>
     <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.05 }}>
       {#each WHY as f}
@@ -200,7 +201,7 @@
   <div class="pointer-events-none absolute inset-0 opacity-[0.06]" style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1.5px); background-size: 30px 30px;" aria-hidden="true"></div>
   <div class="container-shell relative">
     <div class="mx-auto max-w-2xl text-center">
-      <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Our Services For You</p>
+      <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{$t('ui.our_services_for_you')}</p>
       <p class="mt-4 font-serif text-xl font-light italic text-white/85 md:text-2xl">“As we lose ourselves in the service of others we discover our own lives and our own happiness.”</p>
       <p class="mt-2 text-sm font-semibold text-white/60">Dieter F. Uchtdorf</p>
     </div>
@@ -225,8 +226,8 @@
   <section class="bg-surface py-16 md:py-24" use:sectionReveal>
     <div class="container-shell">
       <div class="mx-auto max-w-2xl text-center">
-        <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Meet The Team</p>
-        <h2 class="mt-3 font-serif text-3xl font-semibold text-heading md:text-[40px]">The People Behind Your Safari</h2>
+        <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{$t('ui.meet_the_team')}</p>
+        <h2 class="mt-3 font-serif text-3xl font-semibold text-heading md:text-[40px]">{$t('ui.the_people_behind_your_safari')}</h2>
       </div>
       <div class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.05 }}>
         {#each specialists as specialist (specialist.id ?? specialist.name)}
@@ -262,8 +263,7 @@
               <div class="mt-4 flex flex-wrap gap-2 border-t border-ink/8 pt-4">
                 {#if specialist.is_featured}
                   <span class="inline-flex items-center gap-1.5 rounded-full bg-goldfinch-gold/15 px-3 py-1.5 text-xs font-bold text-heading">
-                    <Star size={13} fill="currentColor" /> Featured specialist
-                  </span>
+                    <Star size={13} fill="currentColor" />{$t('ui.featured_specialist')}</span>
                 {/if}
                 {#if specialist.tripadvisor_url}
                   <a
@@ -295,8 +295,8 @@
 <section class="bg-surface py-16 md:py-20" use:sectionReveal>
   <div class="container-shell grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
     <div>
-      <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Our Partners</p>
-      <h2 class="mt-3 font-serif text-2xl font-semibold text-heading md:text-3xl">Proudly Working With</h2>
+      <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{$t('ui.our_partners')}</p>
+      <h2 class="mt-3 font-serif text-2xl font-semibold text-heading md:text-3xl">{$t('ui.proudly_working_with')}</h2>
       <div class="mt-6 flex flex-wrap gap-2.5">
         {#each PARTNERS as p}
           <span class="inline-flex items-center gap-2 rounded-[8px] border border-ink/12 bg-surface px-4 py-2.5 text-sm font-bold text-ink/70 shadow-sm">
@@ -308,7 +308,7 @@
 
     {#if activeT}
       <div class="rounded-[16px] border border-goldfinch-gold/20 bg-surface p-7 shadow-[0_18px_50px_rgb(var(--c-deep-green)/0.08)] md:p-9">
-        <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">What Our Guests Say</p>
+        <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{$t('ui.what_our_guests_say')}</p>
         <Quote size={30} class="mt-4 text-goldfinch-gold/40" />
         {#if activeT.rating}
           <div class="mt-2 flex gap-0.5 text-goldfinch-gold">
@@ -337,8 +337,8 @@
           </div>
           {#if testimonials.length > 1}
             <div class="flex gap-2">
-              <button type="button" class="grid h-9 w-9 place-items-center rounded-full border border-ink/12 bg-surface text-ink/60 transition hover:border-forest/30 hover:text-forest" aria-label="Previous" on:click={() => (tIndex -= 1)}><ChevronLeft size={17} /></button>
-              <button type="button" class="grid h-9 w-9 place-items-center rounded-full border border-ink/12 bg-surface text-ink/60 transition hover:border-forest/30 hover:text-forest" aria-label="Next" on:click={() => (tIndex += 1)}><ChevronRight size={17} /></button>
+              <button type="button" class="grid h-9 w-9 place-items-center rounded-full border border-ink/12 bg-surface text-ink/60 transition hover:border-forest/30 hover:text-forest" aria-label={$t('ui.previous')} on:click={() => (tIndex -= 1)}><ChevronLeft size={17} /></button>
+              <button type="button" class="grid h-9 w-9 place-items-center rounded-full border border-ink/12 bg-surface text-ink/60 transition hover:border-forest/30 hover:text-forest" aria-label={$t('ui.next')} on:click={() => (tIndex += 1)}><ChevronRight size={17} /></button>
             </div>
           {/if}
         </div>
@@ -351,8 +351,8 @@
 <section class="bg-surface py-16 md:py-20" use:sectionReveal>
   <div class="container-shell">
     <div class="mx-auto max-w-2xl text-center">
-      <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Frequently Asked Questions</p>
-      <h2 class="mt-3 font-serif text-3xl font-semibold text-heading md:text-[38px]">Everything You Need to Know</h2>
+      <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{$t('ui.frequently_asked_questions')}</p>
+      <h2 class="mt-3 font-serif text-3xl font-semibold text-heading md:text-[38px]">{$t('ui.everything_you_need_to_know')}</h2>
     </div>
     <!-- The sand tint used to hold this block together. On white the questions
          would sit on nothing, so the panel does that job instead — the same
@@ -372,13 +372,11 @@
   ></div>
   <div class="container-shell relative py-16 text-center md:py-20">
     <Sparkles size={24} class="mx-auto text-goldfinch-gold" />
-    <h2 class="mt-4 font-serif text-3xl font-semibold md:text-[42px]">Your African Adventure Starts Here</h2>
-    <p class="mx-auto mt-3 max-w-2xl text-[15px] leading-7 text-white/80">
-      Whether you're dreaming of the Great Migration, climbing Kilimanjaro, or relaxing in Zanzibar, we're ready to create the perfect journey.
-    </p>
+    <h2 class="mt-4 font-serif text-3xl font-semibold md:text-[42px]">{$t('ui.your_african_adventure_starts_here')}</h2>
+    <p class="mx-auto mt-3 max-w-2xl text-[15px] leading-7 text-white/80">{$t('ui.whether_youre_dreaming_of_the')}</p>
     <div class="mt-8 flex flex-wrap justify-center gap-3">
-      <a class="inline-flex h-12 items-center gap-2 rounded-[10px] bg-goldfinch-gold px-7 text-sm font-extrabold text-heading shadow-lg transition hover:brightness-105" href="/plan-my-trip">Plan My Safari <ArrowRight size={17} strokeWidth={2.6} /></a>
-      <a class="inline-flex h-12 items-center gap-2 rounded-[10px] border border-white/40 bg-white/5 px-7 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15" href="/contact"><Headphones size={16} /> Talk to a Safari Expert</a>
+      <a class="inline-flex h-12 items-center gap-2 rounded-[10px] bg-goldfinch-gold px-7 text-sm font-extrabold text-heading shadow-lg transition hover:brightness-105" href="/plan-my-trip">{$t('ui.plan_my_safari')}<ArrowRight size={17} strokeWidth={2.6} /></a>
+      <a class="inline-flex h-12 items-center gap-2 rounded-[10px] border border-white/40 bg-white/5 px-7 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15" href="/contact"><Headphones size={16} />{$t('ui.talk_to_a_safari_expert')}</a>
     </div>
   </div>
 </section>

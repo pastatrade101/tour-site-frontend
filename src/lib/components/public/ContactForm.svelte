@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { CheckCircle2, AlertCircle } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import Button from './Button.svelte';
@@ -48,17 +49,17 @@
 
 <form class="grid gap-4 rounded-lg border border-ink/10 bg-surface p-5 shadow-soft" on:submit|preventDefault={submit}>
   <div class="grid gap-4 md:grid-cols-2">
-    <FormInput label="Full name" name="full_name" bind:value={full_name} required />
-    <FormInput label="Email" name="email" type="email" bind:value={email} required />
+    <FormInput label={$t('form.full_name')} name="full_name" bind:value={full_name} required />
+    <FormInput label={$t('form.email')} name="email" type="email" bind:value={email} required />
   </div>
-  <FormInput label="Phone" name="phone" bind:value={phone} />
-  <FormInput label="Subject" name="subject" bind:value={subject} />
-  <TextArea label="Message" name="message" bind:value={message} required />
+  <FormInput label={$t('ui.phone')} name="phone" bind:value={phone} />
+  <FormInput label={$t('ui.subject')} name="subject" bind:value={subject} />
+  <TextArea label={$t('ui.message')} name="message" bind:value={message} required />
 
   {#if sent}
     <div class="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
       <CheckCircle2 size={18} class="mt-0.5 shrink-0" />
-      <span>Thanks for reaching out — your message has been sent. Our team will get back to you shortly.</span>
+      <span>{$t('ui.thanks_for_reaching_out_your')}</span>
     </div>
   {:else if errorMessage}
     <div class="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">

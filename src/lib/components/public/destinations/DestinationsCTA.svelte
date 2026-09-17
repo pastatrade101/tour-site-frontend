@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * Closing conversion band for the destinations index.
    *
@@ -85,14 +86,12 @@
 
   <div class="destinations-cta-shell container-shell relative py-20 md:py-28">
     <div class="destinations-cta-copy mx-auto max-w-3xl text-center" use:fadeUpOnScroll={{ y: 16 }}>
-      <p class="destinations-cta-eyebrow text-[11px] font-bold uppercase tracking-[0.2em] text-goldfinch-gold">Plan with Goldfinch</p>
+      <p class="destinations-cta-eyebrow text-[11px] font-bold uppercase tracking-[0.2em] text-goldfinch-gold">{$t('ui.plan_with_goldfinch')}</p>
 
       <h2
         id="destinations-cta-heading"
         class="mt-5 font-serif text-4xl font-bold leading-[1.08] text-white md:text-5xl lg:text-[56px]"
-      >
-        Not sure where to begin?
-      </h2>
+      >{$t('ui.not_sure_where_to_begin')}</h2>
 
       <p class="destinations-cta-body mx-auto mt-6 max-w-2xl text-base leading-8 text-white/80 md:text-lg md:leading-9">
         Tell us roughly when you would like to travel and what you would like to see, and our planners
@@ -104,9 +103,7 @@
           class="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-7 text-[15px] font-bold text-heading shadow-lg shadow-black/20 transition duration-200 ease-out hover:-translate-y-0.5 hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green sm:w-auto"
           href="/plan-my-trip"
           on:click={() => trackEvent('cta_click', { cta_name: 'Plan my trip', cta_location: 'destinations_cta' })}
-        >
-          Plan my trip
-          <ArrowRight size={17} strokeWidth={2.4} aria-hidden="true" />
+        >{$t('ui.plan_my_trip')}<ArrowRight size={17} strokeWidth={2.4} aria-hidden="true" />
         </a>
 
         {#if waHref}
@@ -117,9 +114,7 @@
             rel="noopener noreferrer"
             on:click={() => trackEvent('whatsapp_click', { cta_location: 'destinations_cta' })}
           >
-            <MessageCircle size={17} strokeWidth={2.4} aria-hidden="true" />
-            Talk on WhatsApp
-          </a>
+            <MessageCircle size={17} strokeWidth={2.4} aria-hidden="true" />{$t('ui.talk_on_whatsapp')}</a>
         {/if}
       </div>
 

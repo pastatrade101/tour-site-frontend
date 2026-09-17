@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
   import {
@@ -182,7 +183,7 @@
                 {:else}{initials}{/if}
               </span>
               <div class="leading-tight">
-                <p class="text-xs font-medium text-ink/70">Designed by</p>
+                <p class="text-xs font-medium text-ink/70">{$t('ui.designed_by')}</p>
                 <p class="text-sm font-bold text-ink">{defaultSpecialist.name}</p>
               </div>
             </div>

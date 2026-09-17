@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
@@ -535,7 +536,7 @@
      with two titles and two canonicals. -->
 
 {#if loading}
-  <div class="tour-detail-skeleton bg-[#fbfaf6]" aria-busy="true" aria-label="Loading tour itinerary">
+  <div class="tour-detail-skeleton bg-[#fbfaf6]" aria-busy="true" aria-label={$t('ui.loading_tour_itinerary')}>
     <section class="relative min-h-[390px] overflow-hidden bg-deep-green md:min-h-[460px]">
       <div class="skeleton-shimmer absolute inset-0 opacity-20"></div>
       <div class="container-shell relative flex min-h-[390px] flex-col justify-end pb-9 md:min-h-[460px] md:pb-12">
@@ -598,8 +599,7 @@
 
     <div class="tour-detail-hero-shell container-shell relative flex min-h-[390px] flex-col justify-end pb-8 pt-16 md:min-h-[460px] md:pb-12 md:pt-20 lg:pb-14">
       <a href="/tours" class="absolute left-0 top-6 hidden items-center gap-1.5 text-[13px] font-medium text-white/90 transition hover:text-goldfinch-gold md:top-8 md:inline-flex">
-        <ArrowLeft class="h-3.5 w-3.5" /> Back to tours
-      </a>
+        <ArrowLeft class="h-3.5 w-3.5" />{$t('ui.back_to_tours')}</a>
 
       <div class="tour-hero-copy relative w-full max-w-4xl [text-shadow:0_2px_18px_rgba(39,43,34,0.42)]">
         {#if categoryLabel}
@@ -613,9 +613,7 @@
             type="button"
             class="inline-flex items-center justify-center rounded-[6px] bg-goldfinch-gold px-5 py-3 text-sm font-bold text-heading transition hover:brightness-105"
             on:click={() => openPlanner('hero')}
-          >
-            Plan This Trip
-          </button>
+          >{$t('ui.plan_this_trip')}</button>
         </div>
         {#if heroStats.length}
           <div class="tour-hero-stats mt-5 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
@@ -663,9 +661,9 @@
         <section id="overview" class="tour-section scroll-mt-32">
           <div class="section-label">
             <span></span>
-            <p>Overview</p>
+            <p>{$t('ui.overview')}</p>
           </div>
-          <h2 class="mt-3 font-serif text-[28px] font-semibold leading-tight text-heading sm:text-[32px] md:text-[38px]">About This Safari</h2>
+          <h2 class="mt-3 font-serif text-[28px] font-semibold leading-tight text-heading sm:text-[32px] md:text-[38px]">{$t('ui.about_this_safari')}</h2>
           {#if tourDescription}
             <RichText value={tourDescription} className="mt-4 space-y-4 text-[15px] leading-relaxed text-ink/70" />
           {/if}
@@ -688,24 +686,23 @@
             type="button"
             class="mt-5 inline-flex items-center gap-1 text-[14px] font-semibold text-clay transition hover:text-heading"
             on:click={() => openPlanner('overview-customize')}
-          >
-            Customize this route <ArrowRight size={14} />
+          >{$t('ui.customize_this_route')}<ArrowRight size={14} />
           </button>
         </section>
 
         {#if snapshotRows.length}
           <section class="tour-section">
-            <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Safari Snapshot</h2>
-            <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">A quick look at the published route, day by day.</p>
+            <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">{$t('ui.safari_snapshot')}</h2>
+            <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">{$t('ui.a_quick_look_at_the')}</p>
 
             <div class="mt-6 hidden overflow-hidden rounded-t-[10px] border border-ink/10 md:block">
               <table class="w-full border-collapse text-[14px]">
                 <thead>
                   <tr class="bg-deep-green text-left text-white">
-                    <th class="w-[92px] min-w-[92px] whitespace-nowrap px-4 py-3 font-semibold">Day</th>
-                    <th class="px-4 py-3 font-semibold">Place</th>
-                    <th class="px-4 py-3 font-semibold">Highlights</th>
-                    <th class="px-4 py-3 font-semibold">Hotel Options</th>
+                    <th class="w-[92px] min-w-[92px] whitespace-nowrap px-4 py-3 font-semibold">{$t('ui.day')}</th>
+                    <th class="px-4 py-3 font-semibold">{$t('ui.place')}</th>
+                    <th class="px-4 py-3 font-semibold">{$t('label.highlights')}</th>
+                    <th class="px-4 py-3 font-semibold">{$t('ui.hotel_options')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -736,7 +733,7 @@
 
         {#if tour.customization_options?.length}
           <section class="tour-section">
-            <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Ways to Customize This Trip</h2>
+            <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">{$t('ui.ways_to_customize_this_trip')}</h2>
             {#if tour.customization_intro}
               <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">{tour.customization_intro}</p>
             {/if}
@@ -752,17 +749,14 @@
             type="button"
             class="mt-6 inline-flex items-center justify-center rounded-[6px] bg-goldfinch-gold px-5 py-2.5 text-[14px] font-bold text-heading transition hover:brightness-105"
             on:click={() => openPlanner('customize')}
-          >
-            Customize This Trip <ArrowRight size={15} />
+          >{$t('ui.customize_this_trip')}<ArrowRight size={15} />
           </button>
           </section>
         {/if}
 
         <section id="day-by-day" class="tour-section scroll-mt-32">
-          <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Day by Day</h2>
-          <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">
-            This is the published itinerary for this tour. The planning team can adjust it around your dates and preferred pace.
-          </p>
+          <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">{$t('ui.day_by_day')}</h2>
+          <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">{$t('ui.this_is_the_published_itinerary')}</p>
 
           {#if itineraryDays.length}
             <!-- The same renderer the safari-package pages use, so a day card
@@ -771,18 +765,14 @@
               <ItineraryDays days={itineraryDays} {lodgeMedia} />
             </div>
           {:else}
-            <div class="mt-6 rounded-[12px] border border-ink/10 bg-sand/35 p-5 text-[14px] leading-6 text-ink/70">
-              The day-by-day itinerary has not been published for this tour yet. Send a request and the team will share the current route.
-            </div>
+            <div class="mt-6 rounded-[12px] border border-ink/10 bg-sand/35 p-5 text-[14px] leading-6 text-ink/70">{$t('ui.the_daybyday_itinerary_has_not')}</div>
           {/if}
         </section>
 
         {#if accommodationBlocks.length}
           <section id="accommodation" class="tour-section scroll-mt-32">
-            <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Accommodation</h2>
-            <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">
-              These are the accommodations attached to the published itinerary days for this tour.
-            </p>
+            <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">{$t('nav.accommodation')}</h2>
+            <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">{$t('ui.these_are_the_accommodations_attached')}</p>
 
             <div class="tour-accommodation-grid mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {#each accommodationBlocks as block (block.key)}
@@ -832,8 +822,7 @@
                         </div>
                       {/if}
                       {#if block.href}
-                        <span class="mt-4 inline-flex items-center gap-1 text-[13px] font-bold text-goldfinch-gold">
-                          View accommodation <ArrowRight size={14} />
+                        <span class="mt-4 inline-flex items-center gap-1 text-[13px] font-bold text-goldfinch-gold">{$t('ui.view_accommodation')}<ArrowRight size={14} />
                         </span>
                       {/if}
                     </div>
@@ -848,21 +837,19 @@
         {/if}
 
         <section id="prices" class="tour-section scroll-mt-32">
-          <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">Tour Rates</h2>
-          <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">
-            Rates are shown only from the published tour data. Your final quote is confirmed after dates and availability are checked.
-          </p>
+          <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">{$t('ui.tour_rates')}</h2>
+          <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">{$t('ui.rates_are_shown_only_from')}</p>
 
           {#if pricingSeasons.length}
             <div class="mt-6 overflow-x-auto rounded-[10px] border border-ink/10 bg-surface shadow-sm">
               <table class="w-full min-w-[820px] border-collapse text-[14px]">
-                <thead><tr class="bg-[#34382d] text-left text-white"><th class="sticky left-0 z-10 min-w-40 bg-[#34382d] px-5 py-5 text-[15px] font-bold">Season</th>{#each groupColumns as group}<th class="min-w-28 whitespace-nowrap px-4 py-5 text-left text-[15px] font-bold">{groupLabel(group)}</th>{/each}</tr></thead>
+                <thead><tr class="bg-[#34382d] text-left text-white"><th class="sticky left-0 z-10 min-w-40 bg-[#34382d] px-5 py-5 text-[15px] font-bold">{$t('ui.season')}</th>{#each groupColumns as group}<th class="min-w-28 whitespace-nowrap px-4 py-5 text-left text-[15px] font-bold">{groupLabel(group)}</th>{/each}</tr></thead>
                 <tbody>{#each pricingSeasons as season,index}<tr class={index%2===0?'bg-surface':'bg-[#f5f1e9]'}><th class={`sticky left-0 z-10 border-t border-ink/8 px-5 py-6 text-left ${index%2===0?'bg-surface':'bg-[#f5f1e9]'}`}><span class="block max-w-32 text-[16px] font-extrabold leading-6 text-heading">{season.season_name}</span></th>{#each groupColumns as group}{@const key=`${group.minimum_travelers}:${group.maximum_travelers??''}`}{@const rate=groupRate(season,key)}<td class="border-t border-ink/8 px-4 py-6 text-left text-[15px] leading-6 text-ink/65"><span class="block">{rate.label}</span>{#if rate.amount}<span class="block font-semibold text-ink/70">{rate.amount}</span>{/if}</td>{/each}</tr>{/each}</tbody>
               </table>
             </div>
             <p class="mt-4 text-[13px] leading-6 text-ink/55">
               Prices are {normaliseLabel(pricingSeasons[0].pricing_basis).toLowerCase()} in {pricingSeasons[0].currency} and based on shared double/twin accommodation unless stated otherwise. Final pricing depends on travel dates, lodge availability, group size and route adjustments.
-              <span class="md:hidden"> Swipe horizontally to compare party sizes.</span>
+              <span class="md:hidden">{$t('ui.swipe_horizontally_to_compare_party')}</span>
             </p>
           {:else}
           <div class="tour-rates-mobile mt-5 grid gap-2.5 md:hidden">
@@ -884,9 +871,9 @@
             <table class="w-full border-collapse text-[14px]">
               <thead>
                 <tr class="bg-deep-green text-left text-white">
-                  <th class="px-4 py-3 font-semibold">Item</th>
-                  <th class="px-4 py-3 font-semibold">Published detail</th>
-                  <th class="hidden px-4 py-3 font-semibold md:table-cell">Note</th>
+                  <th class="px-4 py-3 font-semibold">{$t('ui.item')}</th>
+                  <th class="px-4 py-3 font-semibold">{$t('ui.published_detail')}</th>
+                  <th class="hidden px-4 py-3 font-semibold md:table-cell">{$t('ui.note')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -905,16 +892,15 @@
             type="button"
             class="mt-5 inline-flex items-center justify-center rounded-[6px] bg-goldfinch-gold px-5 py-2.5 text-[14px] font-bold text-heading transition hover:brightness-105"
             on:click={() => openPlanner('prices')}
-          >
-            Get My Exact Quote <ArrowRight size={15} />
+          >{$t('ui.get_my_exact_quote')}<ArrowRight size={15} />
           </button>
         </section>
 
         <section id="inclusions" class="tour-section scroll-mt-32">
-          <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">What's Included</h2>
+          <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">{$t('ui.whats_included')}</h2>
           <div class="tour-two-col-grid mt-6 grid gap-4 md:grid-cols-2">
             <div class="rounded-[12px] border border-ink/10 bg-surface p-5">
-              <h3 class="font-serif text-[18px] font-semibold text-heading">Included</h3>
+              <h3 class="font-serif text-[18px] font-semibold text-heading">{$t('ui.included')}</h3>
               {#if inclusions.length}
                 <ul class="mt-3 space-y-2">
                   {#each inclusions as item}
@@ -925,12 +911,12 @@
                   {/each}
                 </ul>
               {:else}
-                <p class="mt-3 text-[14.5px] leading-6 text-ink/65">Published inclusions are not listed on this tour yet.</p>
+                <p class="mt-3 text-[14.5px] leading-6 text-ink/65">{$t('ui.published_inclusions_are_not_listed')}</p>
               {/if}
             </div>
 
             <div class="rounded-[12px] border border-ink/10 bg-sand/45 p-5">
-              <h3 class="font-serif text-[18px] font-semibold text-heading">Not Included</h3>
+              <h3 class="font-serif text-[18px] font-semibold text-heading">{$t('ui.not_included_2')}</h3>
               {#if exclusions.length}
                 <ul class="mt-3 space-y-2">
                   {#each exclusions as item}
@@ -941,7 +927,7 @@
                   {/each}
                 </ul>
               {:else}
-                <p class="mt-3 text-[14.5px] leading-6 text-ink/65">Published exclusions are not listed on this tour yet.</p>
+                <p class="mt-3 text-[14.5px] leading-6 text-ink/65">{$t('ui.published_exclusions_are_not_listed')}</p>
               {/if}
             </div>
           </div>
@@ -949,8 +935,7 @@
             type="button"
             class="mt-6 inline-flex items-center justify-center rounded-[6px] bg-goldfinch-gold px-5 py-2.5 text-[14px] font-bold text-heading transition hover:brightness-105"
             on:click={() => openPlanner('inclusions')}
-          >
-            Ask What's Included <ArrowRight size={15} />
+          >{$t('ui.ask_whats_included')}<ArrowRight size={15} />
           </button>
         </section>
 
@@ -965,8 +950,7 @@
               class="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[8px] border border-forest/20 bg-surface px-4 text-sm font-bold text-forest transition hover:border-forest/40 hover:bg-sand/40"
               aria-label={`View specialist ${tourSpecialist.name}`}
               on:click={() => (specialistOpen = true)}
-            >
-              View Specialist <ArrowRight size={15} strokeWidth={2.5} />
+            >{$t('ui.view_specialist')}<ArrowRight size={15} strokeWidth={2.5} />
             </button>
           {/if}
         </div>
@@ -976,17 +960,16 @@
 
   <ReviewsWidget
     eyebrow="Traveller stories"
-    title="Travellers Who Planned Tanzania With Us"
-    subtitle="Real approved reviews from Goldfinch travellers."
+    title={$t('ui.travellers_who_planned_tanzania_with')}
+    subtitle={$t('ui.real_approved_reviews_from_goldfinch')}
   />
 
   {#if relatedTours.length}
     <section class="border-t border-ink/[0.06] bg-sand/30 py-14 md:py-20">
       <div class="container-shell">
         <div class="flex flex-wrap items-end justify-between gap-4">
-          <SectionHeader eyebrow="You might also like" title="More tours" description="Other published trips travellers book with us." />
-          <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href="/tours">
-            Browse all tours <ArrowRight size={16} />
+          <SectionHeader eyebrow="You might also like" title={$t('ui.more_tours')} description="Other published trips travellers book with us." />
+          <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href="/tours">{$t('ui.browse_all_tours')}<ArrowRight size={16} />
           </a>
         </div>
         <div class="mt-9 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -1002,9 +985,8 @@
     <section class="py-14 md:py-20">
       <div class="container-shell">
         <div class="flex flex-wrap items-end justify-between gap-4">
-          <SectionHeader eyebrow="Stories &amp; guides" title="From the journal" description="Travel inspiration, tips and stories from the field." />
-          <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href="/blog">
-            Read the blog <ArrowRight size={16} />
+          <SectionHeader eyebrow="Stories &amp; guides" title={$t('ui.from_the_journal')} description="Travel inspiration, tips and stories from the field." />
+          <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href="/blog">{$t('ui.read_the_blog')}<ArrowRight size={16} />
           </a>
         </div>
         <div class="mt-9 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -1019,8 +1001,8 @@
   <section id="good-to-know" class="scroll-mt-32 border-t border-ink/10 bg-sand/25 py-14 md:py-20">
     <div class="container-shell">
       <div class="mx-auto max-w-4xl">
-        <div class="section-label"><span></span><p>Good to Know</p></div>
-        <h2 class="mt-3 font-serif text-[28px] font-semibold leading-tight text-heading sm:text-[32px] md:text-[38px]">Frequently Asked Questions</h2>
+        <div class="section-label"><span></span><p>{$t('ui.good_to_know_2')}</p></div>
+        <h2 class="mt-3 font-serif text-[28px] font-semibold leading-tight text-heading sm:text-[32px] md:text-[38px]">{$t('ui.frequently_asked_questions')}</h2>
         {#if faqs.length}
           <ol class="relative mt-10">
             {#each faqs as item, index}
@@ -1034,7 +1016,7 @@
             {/each}
           </ol>
         {:else}
-          <div class="mt-6 rounded-[12px] border border-ink/10 bg-surface p-5 text-[14px] leading-6 text-ink/70">No public FAQ entries are published yet. Send your question in the trip request and the team will reply with the latest details.</div>
+          <div class="mt-6 rounded-[12px] border border-ink/10 bg-surface p-5 text-[14px] leading-6 text-ink/70">{$t('ui.no_public_faq_entries_are')}</div>
         {/if}
       </div>
     </div>
@@ -1051,20 +1033,18 @@
         type="button"
         class="inline-flex h-11 items-center justify-center rounded-[6px] bg-goldfinch-gold px-5 text-[14px] font-bold text-heading transition hover:brightness-105"
         on:click={() => openPlanner('mobile-sticky')}
-      >
-        Plan This Trip
-      </button>
+      >{$t('ui.plan_this_trip')}</button>
     </div>
   </div>
 
   {#if sheetOpen}
     <div class="fixed inset-0 z-[80] lg:hidden" role="dialog" aria-modal="true">
-      <button class="absolute inset-0 cursor-default bg-black/60" type="button" aria-label="Close planner" on:click={closeSheet}></button>
+      <button class="absolute inset-0 cursor-default bg-black/60" type="button" aria-label={$t('ui.close_planner')} on:click={closeSheet}></button>
       <div class="tour-planner-sheet absolute inset-x-0 bottom-0 flex max-h-[92dvh] flex-col overflow-hidden rounded-t-[16px] bg-deep-green">
         <button
           type="button"
           on:click={closeSheet}
-          aria-label="Close"
+          aria-label={$t('ui.close')}
           class="absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
         >
           <X class="h-4 w-4" />
@@ -1078,12 +1058,12 @@
 
   {#if specialistOpen && tourSpecialist}
     <div class="fixed inset-0 z-[200] grid place-items-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={`Specialist ${tourSpecialist.name}`}>
-      <button class="absolute inset-0 cursor-default" type="button" aria-label="Close specialist" on:click={() => (specialistOpen = false)}></button>
+      <button class="absolute inset-0 cursor-default" type="button" aria-label={$t('ui.close_specialist')} on:click={() => (specialistOpen = false)}></button>
       <div class="relative z-10 w-full max-w-md">
         <button
           type="button"
           class="absolute -right-2 -top-2 z-20 grid h-10 w-10 place-items-center rounded-full bg-deep-green text-white shadow-lg transition hover:bg-forest"
-          aria-label="Close specialist"
+          aria-label={$t('ui.close_specialist')}
           on:click={() => (specialistOpen = false)}
         >
           <X size={18} />

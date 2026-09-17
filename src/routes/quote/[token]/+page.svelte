@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * The quotation as the traveller sees it.
    *
@@ -95,7 +96,7 @@
 <main class="min-h-screen bg-canvas py-8 md:py-14">
   <div class="mx-auto w-full max-w-2xl px-4">
     <header class="text-center">
-      <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-clay">Your quotation</p>
+      <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.your_quotation')}</p>
       <h1 class="mt-2 font-serif text-3xl font-semibold leading-tight text-heading md:text-[40px]">{quote.title}</h1>
       <div class="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm text-ink/55">
         <span>Reference {quote.quote_code}</span>
@@ -119,9 +120,7 @@
     </header>
 
     {#if expired && !accepted && !declined}
-      <p class="mt-6 rounded-[8px] border border-clay/25 bg-clay/[0.06] px-4 py-3 text-center text-sm text-clay">
-        This quotation has expired. Message us and we'll gladly prepare an up-to-date price.
-      </p>
+      <p class="mt-6 rounded-[8px] border border-clay/25 bg-clay/[0.06] px-4 py-3 text-center text-sm text-clay">{$t('ui.this_quotation_has_expired_message')}</p>
     {/if}
 
     <section class="mt-6 overflow-hidden rounded-[12px] border border-ink/10 bg-surface shadow-[0_18px_50px_rgba(57,61,50,0.07)]">
@@ -133,7 +132,7 @@
         <dl class="grid grid-cols-2 gap-4 text-sm">
           {#if travellers}
             <div>
-              <dt class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45"><Users size={12} /> Travellers</dt>
+              <dt class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45"><Users size={12} />{$t('ui.travellers')}</dt>
               <dd class="mt-1 font-serif text-lg font-semibold text-heading">
                 {quote.adults} {Number(quote.adults) === 1 ? 'adult' : 'adults'}{#if Number(quote.children) > 0}, {quote.children} {Number(quote.children) === 1 ? 'child' : 'children'}{/if}
               </dd>
@@ -141,7 +140,7 @@
           {/if}
           {#if quote.travel_date}
             <div>
-              <dt class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45"><CalendarDays size={12} /> Travel date</dt>
+              <dt class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45"><CalendarDays size={12} />{$t('ui.travel_date')}</dt>
               <dd class="mt-1 font-serif text-lg font-semibold text-heading">{day(quote.travel_date)}</dd>
             </div>
           {/if}
@@ -175,7 +174,7 @@
 
         {#if inclusions.length}
           <div class="border-t border-ink/10 pt-4">
-            <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">What's included</p>
+            <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">{$t('ui.whats_included_2')}</p>
             <ul class="mt-2 grid gap-2">
               {#each inclusions as line}
                 <li class="flex items-start gap-2 text-sm text-ink/75">
@@ -191,7 +190,7 @@
           <!-- The most valuable list on the page. An unstated exclusion is how an
                agreed price turns into an argument at the gate. -->
           <div class="border-t border-ink/10 pt-4">
-            <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">Not included</p>
+            <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">{$t('ui.not_included')}</p>
             <ul class="mt-2 grid gap-2">
               {#each exclusions as line}
                 <li class="flex items-start gap-2 text-sm text-ink/70">
@@ -205,21 +204,21 @@
 
         {#if quote.notes}
           <div class="border-t border-ink/10 pt-4">
-            <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">Notes</p>
+            <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">{$t('ui.notes')}</p>
             <p class="mt-2 whitespace-pre-line text-sm leading-7 text-ink/75">{quote.notes}</p>
           </div>
         {/if}
 
         <div class="flex items-end justify-between gap-4 border-t border-ink/10 pt-4">
           <div>
-            <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">Total</p>
+            <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">{$t('ui.total')}</p>
             <p class="font-serif text-3xl font-semibold leading-tight text-heading">{money(quote.total_amount, quote.currency)}</p>
             {#if travellers > 1}
               <p class="mt-0.5 text-xs text-ink/50">for {travellers} travellers</p>
             {/if}
           </div>
           {#if quote.valid_until && !expired && !accepted}
-            <p class="text-right text-xs text-ink/50">Valid until<br /><span class="font-semibold text-heading">{day(quote.valid_until)}</span></p>
+            <p class="text-right text-xs text-ink/50">{$t('ui.valid_until')}<br /><span class="font-semibold text-heading">{day(quote.valid_until)}</span></p>
           {/if}
         </div>
 
@@ -228,16 +227,15 @@
                deciding whether to accept is entitled to know what saying yes
                commits them to paying, and when. -->
           <div class="rounded-[8px] bg-sand/40 p-4">
-            <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">Payment</p>
+            <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">{$t('ui.payment')}</p>
             {#if quote.deposit_amount != null}
-              <p class="mt-1.5 text-sm text-ink/75">
-                Deposit to confirm: <span class="font-semibold text-heading">{money(quote.deposit_amount, quote.currency)}</span>
+              <p class="mt-1.5 text-sm text-ink/75">{$t('ui.deposit_to_confirm')}<span class="font-semibold text-heading">{money(quote.deposit_amount, quote.currency)}</span>
               </p>
             {/if}
             {#if quote.payment_terms}
               <p class="mt-1 whitespace-pre-line text-sm leading-6 text-ink/70">{quote.payment_terms}</p>
             {/if}
-            <p class="mt-2 text-xs text-ink/50">Nothing is payable to accept this quotation.</p>
+            <p class="mt-2 text-xs text-ink/50">{$t('ui.nothing_is_payable_to_accept')}</p>
           </div>
         {/if}
       </div>
@@ -247,15 +245,14 @@
     {#if accepted}
       <section class="mt-6 rounded-[12px] border border-forest/20 bg-forest/[0.05] p-5 md:p-6">
         <p class="flex items-center gap-2 font-serif text-xl font-semibold text-heading">
-          <CheckCircle2 size={20} class="text-forest" /> Thank you — this quotation is accepted
-        </p>
+          <CheckCircle2 size={20} class="text-forest" />{$t('ui.thank_you_this_quotation_is')}</p>
         <p class="mt-2 text-sm leading-7 text-ink/70">
           {#if quote.accepted_at}Recorded on {day(quote.accepted_at)}. {/if}Nothing has been charged.
         </p>
         <ol class="mt-4 grid gap-3 border-t border-forest/15 pt-4 text-sm text-ink/75">
-          <li class="flex gap-3"><span class="font-serif font-semibold text-forest">1</span> We confirm availability for your dates.</li>
-          <li class="flex gap-3"><span class="font-serif font-semibold text-forest">2</span> We come back to you with the booking details to complete.</li>
-          <li class="flex gap-3"><span class="font-serif font-semibold text-forest">3</span> Payment is arranged with you directly — there is nothing to pay right now.</li>
+          <li class="flex gap-3"><span class="font-serif font-semibold text-forest">1</span>{$t('ui.we_confirm_availability_for_your')}</li>
+          <li class="flex gap-3"><span class="font-serif font-semibold text-forest">2</span>{$t('ui.we_come_back_to_you')}</li>
+          <li class="flex gap-3"><span class="font-serif font-semibold text-forest">3</span>{$t('ui.payment_is_arranged_with_you')}</li>
         </ol>
       </section>
     {:else if declined}
@@ -268,14 +265,9 @@
            whether their message arrived, and stops them sending it again. -->
       <section class="mt-6 rounded-[12px] border border-clay/25 bg-clay/[0.05] p-5 md:p-6">
         <p class="flex items-center gap-2 font-serif text-xl font-semibold text-heading">
-          <MessageCircle size={20} class="text-clay" /> We're working on your changes
-        </p>
-        <p class="mt-2 text-sm leading-7 text-ink/70">
-          Thank you — we have your message and a specialist is putting together an updated quotation. You'll get a new link as soon as it's ready.
-        </p>
-        <p class="mt-2 text-sm leading-7 text-ink/60">
-          The version below is still the current one, and you can still accept it if you'd rather not wait.
-        </p>
+          <MessageCircle size={20} class="text-clay" />{$t('ui.were_working_on_your_changes')}</p>
+        <p class="mt-2 text-sm leading-7 text-ink/70">{$t('ui.thank_you_we_have_your')}</p>
+        <p class="mt-2 text-sm leading-7 text-ink/60">{$t('ui.the_version_below_is_still')}</p>
       </section>
     {/if}
 
@@ -288,14 +280,12 @@
       {#if actionable}
         {#if mode === 'accept'}
           <form method="POST" action="?/accept" use:enhance={submit} class="rounded-[12px] border border-ink/10 bg-surface p-5 md:p-6">
-            <p class="font-serif text-xl font-semibold text-heading">Accept this quotation</p>
-            <p class="mt-1.5 text-sm leading-6 text-ink/60">
-              Just so we know who is travelling and how to reach you. Every field is optional — you can send it as it is.
-            </p>
+            <p class="font-serif text-xl font-semibold text-heading">{$t('ui.accept_this_quotation')}</p>
+            <p class="mt-1.5 text-sm leading-6 text-ink/60">{$t('ui.just_so_we_know_who')}</p>
 
             <div class="mt-4 grid gap-3">
               <label class="grid gap-1.5">
-                <span class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">Lead traveller</span>
+                <span class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">{$t('ui.lead_traveller')}</span>
                 <input
                   name="lead_traveller"
                   type="text"
@@ -306,7 +296,7 @@
               </label>
               <div class="grid gap-3 sm:grid-cols-2">
                 <label class="grid gap-1.5">
-                  <span class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">Email</span>
+                  <span class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">{$t('form.email')}</span>
                   <input
                     name="email"
                     type="email"
@@ -315,7 +305,7 @@
                   />
                 </label>
                 <label class="grid gap-1.5">
-                  <span class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">Phone</span>
+                  <span class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">{$t('ui.phone')}</span>
                   <input
                     name="phone"
                     type="tel"
@@ -325,11 +315,11 @@
                 </label>
               </div>
               <label class="grid gap-1.5">
-                <span class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">Anything we should know</span>
+                <span class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">{$t('ui.anything_we_should_know')}</span>
                 <textarea
                   name="notes"
                   rows="3"
-                  placeholder="Dietary needs, room preferences, flight times…"
+                  placeholder={$t('ui.dietary_needs_room_preferences_flight')}
                   class="rounded-[8px] border border-ink/15 bg-canvas px-3 py-2.5 text-sm leading-6 text-heading outline-none focus:border-forest"
                 ></textarea>
               </label>
@@ -347,21 +337,17 @@
                 type="button"
                 on:click={() => (mode = 'idle')}
                 class="flex h-12 items-center justify-center rounded-[10px] border border-ink/15 px-6 text-sm font-semibold text-ink/60 transition hover:text-heading"
-              >
-                Cancel
-              </button>
+              >{$t('ui.cancel')}</button>
             </div>
           </form>
         {:else if mode === 'decline'}
           <form method="POST" action="?/decline" use:enhance={submit} class="rounded-[12px] border border-ink/10 bg-surface p-5 md:p-6">
-            <p class="font-serif text-xl font-semibold text-heading">This doesn't work for me</p>
-            <p class="mt-1.5 text-sm leading-6 text-ink/60">
-              We'll close this quotation. If you tell us why, we'll use it to put together something better.
-            </p>
+            <p class="font-serif text-xl font-semibold text-heading">{$t('ui.this_doesnt_work_for_me')}</p>
+            <p class="mt-1.5 text-sm leading-6 text-ink/60">{$t('ui.well_close_this_quotation_if')}</p>
             <textarea
               name="reason"
               rows="3"
-              placeholder="Too expensive, wrong dates, changed plans…"
+              placeholder={$t('ui.too_expensive_wrong_dates_changed')}
               class="mt-4 w-full rounded-[8px] border border-ink/15 bg-canvas px-3 py-2.5 text-sm leading-6 text-heading outline-none focus:border-forest"
             ></textarea>
             <div class="mt-4 flex flex-col gap-2 sm:flex-row-reverse">
@@ -376,14 +362,12 @@
                 type="button"
                 on:click={() => (mode = 'idle')}
                 class="flex h-12 items-center justify-center rounded-[10px] px-6 text-sm font-semibold text-ink/60 transition hover:text-heading"
-              >
-                Back
-              </button>
+              >{$t('form.back')}</button>
             </div>
           </form>
         {:else if mode === 'changes'}
           <form method="POST" action="?/requestChanges" use:enhance={submit} class="rounded-[12px] border border-ink/10 bg-surface p-5 md:p-6">
-            <p class="font-serif text-xl font-semibold text-heading">Ask for changes</p>
+            <p class="font-serif text-xl font-semibold text-heading">{$t('ui.ask_for_changes')}</p>
             <p class="mt-1.5 text-sm leading-6 text-ink/60">
               Tell us what you'd like different and we'll send you an updated quotation. This doesn't cancel anything — the current price stays open
               to you in the meantime.
@@ -392,7 +376,7 @@
               name="comment"
               rows="4"
               required
-              placeholder="Could we travel a week later? Could we swap the last two nights for something closer to the airport?"
+              placeholder={$t('ui.could_we_travel_a_week')}
               class="mt-4 w-full rounded-[8px] border border-ink/15 bg-canvas px-3 py-2.5 text-sm leading-6 text-heading outline-none focus:border-forest"
             ></textarea>
             <div class="mt-4 flex flex-col gap-2 sm:flex-row-reverse">
@@ -407,9 +391,7 @@
                 type="button"
                 on:click={() => (mode = 'idle')}
                 class="flex h-12 items-center justify-center rounded-[10px] border border-ink/15 px-6 text-sm font-semibold text-ink/60 transition hover:text-heading"
-              >
-                Back
-              </button>
+              >{$t('form.back')}</button>
             </div>
           </form>
         {:else}
@@ -418,8 +400,7 @@
             on:click={() => (mode = 'accept')}
             class="flex h-14 items-center justify-center gap-2 rounded-[10px] bg-forest px-6 text-[17px] font-bold text-white shadow-sm transition hover:brightness-110"
           >
-            <CheckCircle2 size={20} /> Accept quotation
-          </button>
+            <CheckCircle2 size={20} />{$t('ui.accept_quotation')}</button>
           <!-- Secondary, and deliberately not a decline. Most quotations that
                get turned down are turned down over one fixable detail, and
                before this the only way to raise that was to say no. -->
@@ -452,12 +433,9 @@
 
     {#if actionable && mode === 'idle'}
       <p class="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-ink/50">
-        <ShieldCheck size={13} /> No payment required to accept — it simply confirms this price works for you.
-      </p>
+        <ShieldCheck size={13} />{$t('ui.no_payment_required_to_accept')}</p>
       <p class="mt-3 text-center">
-        <button type="button" on:click={() => (mode = 'decline')} class="text-xs text-ink/40 underline underline-offset-4 transition hover:text-ink/70">
-          This doesn't work for me
-        </button>
+        <button type="button" on:click={() => (mode = 'decline')} class="text-xs text-ink/40 underline underline-offset-4 transition hover:text-ink/70">{$t('ui.this_doesnt_work_for_me')}</button>
       </p>
     {/if}
 

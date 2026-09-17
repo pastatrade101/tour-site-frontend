@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * DiscoveryRail — a horizontal, swipeable collection of destinations used for
    * the editorial discovery sections ("Featured by our specialists", "Classic
@@ -145,7 +146,7 @@
               class="group inline-flex h-11 items-center gap-1.5 rounded-full px-1 text-sm font-semibold text-forest transition duration-200 hover:text-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
               href={viewAllHref}
             >
-              <span class="underline decoration-goldfinch-gold/45 decoration-2 underline-offset-[6px]">View all</span>
+              <span class="underline decoration-goldfinch-gold/45 decoration-2 underline-offset-[6px]">{$t('ui.view_all')}</span>
               <ArrowRight size={15} class="transition-transform duration-200 ease-out group-hover:translate-x-0.5" />
             </a>
           {/if}

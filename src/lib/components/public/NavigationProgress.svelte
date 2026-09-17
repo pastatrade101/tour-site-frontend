@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * A thin progress bar across the top of the page while a navigation is in
    * flight.
@@ -41,7 +42,7 @@
     class="progress pointer-events-none fixed inset-x-0 top-0 z-[200] h-[3px] overflow-hidden bg-transparent"
     role="status"
     aria-live="polite"
-    aria-label="Loading the next page"
+    aria-label={$t('ui.loading_the_next_page')}
   >
     <span class="bar block h-full w-full bg-goldfinch-gold"></span>
   </div>

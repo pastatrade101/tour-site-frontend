@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount, createEventDispatcher } from 'svelte';
   import { fly } from 'svelte/transition';
   import { Check, ChevronDown, Search, SlidersHorizontal, X } from '@lucide/svelte';
@@ -71,13 +72,13 @@
     document.body.classList.add('tour-filter-open');
   };
 
-  $: destLabel = destSlug ? (destinationOptions.find((d) => d.slug === destSlug)?.name ?? 'Destination') : 'All destinations';
+  $: destLabel = destSlug ? (destinationOptions.find((d) => d.slug === destSlug)?.name ?? $t('filter.destination')) : $t('label.all_destinations');
   $: lengthActive = lengthLo > lenMin || lengthHi < lenMax;
   $: priceActive = priceLo > priceMin || priceHi < priceMax;
-  $: lenLabel = lengthActive ? `${lengthLo}–${lengthHi} days` : 'Any length';
-  $: priceLabel = currencyKey && priceActive ? `${money(priceLo)} — ${money(priceHi)}` : 'Any budget';
-  $: comfortLabel = selectedTiers.length ? `${selectedTiers.length} selected` : 'Any comfort';
-  $: typeLabel = selectedCategories.length ? `${selectedCategories.length} selected` : 'All types';
+  $: lenLabel = lengthActive ? `${lengthLo}–${lengthHi} ${$t('label.days_lower')}` : $t('filter.any_length');
+  $: priceLabel = currencyKey && priceActive ? `${money(priceLo)} — ${money(priceHi)}` : $t('label.any_budget');
+  $: comfortLabel = selectedTiers.length ? `${selectedTiers.length} ${$t('filter.n_selected')}` : $t('filter.any_comfort');
+  $: typeLabel = selectedCategories.length ? `${selectedCategories.length} ${$t('filter.n_selected')}` : $t('filter.all_types');
   $: moreCount = (persona ? 1 : 0) + (popularOnly ? 1 : 0);
   $: filteredDestinations = destQuery.trim()
     ? destinationOptions.filter((d) => d.name.toLowerCase().includes(destQuery.trim().toLowerCase()))
@@ -119,33 +120,33 @@
 <div class="relative" bind:this={rootEl}>
   <!-- Mobile: one trigger; all controls live in the full-page drawer. -->
   <button type="button" class="inline-flex h-9 w-auto shrink-0 items-center justify-between gap-2 rounded-[8px] border border-ink/12 bg-surface px-3 text-left shadow-sm md:hidden" aria-haspopup="dialog" aria-expanded={mobileOpen} on:click|stopPropagation={openMobile}>
-    <span class="inline-flex items-center gap-1.5 text-xs font-bold text-heading"><SlidersHorizontal size={15} /> Filter</span>
+    <span class="inline-flex items-center gap-1.5 text-xs font-bold text-heading"><SlidersHorizontal size={15} />{$t('filter.apply')}</span>
     {#if activeCount}<span class="grid h-6 min-w-6 place-items-center rounded-full bg-clay px-1.5 text-xs font-bold text-white">{activeCount}</span>{/if}
   </button>
 
   {#if mobileOpen}
-    <div class="fixed inset-0 z-[100] flex flex-col bg-canvas md:hidden" role="dialog" aria-modal="true" aria-label="Filter tours" in:fly={{ x: reduceMotion ? 0 : 96, duration: reduceMotion ? 0 : 420 }}>
+    <div class="fixed inset-0 z-[100] flex flex-col bg-canvas md:hidden" role="dialog" aria-modal="true" aria-label={$t('filter.tours')} in:fly={{ x: reduceMotion ? 0 : 96, duration: reduceMotion ? 0 : 420 }}>
       <header class="flex h-16 shrink-0 items-center justify-between border-b border-ink/10 bg-surface px-4">
         <div>
-          <p class="font-serif text-xl font-semibold text-heading">Filter tours</p>
-          <p class="text-xs text-ink/55">Choose what matters for your trip</p>
+          <p class="font-serif text-xl font-semibold text-heading">{$t('filter.tours')}</p>
+          <p class="text-xs text-ink/55">{$t('filter.choose_matters')}</p>
         </div>
-        <button type="button" class="grid h-10 w-10 place-items-center rounded-[8px] border border-ink/12 text-heading" on:click={closeMobile} aria-label="Close filters"><X size={19} /></button>
+        <button type="button" class="grid h-10 w-10 place-items-center rounded-[8px] border border-ink/12 text-heading" on:click={closeMobile} aria-label={$t('filter.close')}><X size={19} /></button>
       </header>
 
       <div class="mobile-filter-body flex-1 overflow-y-auto px-4 py-5">
         <div class="mx-auto grid max-w-xl gap-6">
           <section class="filter-group">
-            <label class="filter-title" for="mobile-tour-destination">Destination</label>
+            <label class="filter-title" for="mobile-tour-destination">{$t('filter.destination')}</label>
             <select id="mobile-tour-destination" class="mobile-select" value={destSlug} on:change={(e) => dispatch('destination', e.currentTarget.value)}>
-              <option value="">All destinations</option>
+              <option value="">{$t('label.all_destinations')}</option>
               {#each destinationOptions as d (d.slug)}<option value={d.slug}>{d.name}</option>{/each}
             </select>
           </section>
 
           {#if rangesReady}
             <section class="filter-group">
-              <div class="filter-title">Duration</div>
+              <div class="filter-title">{$t('label.duration')}</div>
               <RangeSlider min={lenMin} max={lenMax} bind:lo={lengthLo} bind:hi={lengthHi} format={days} />
               <div class="mt-3 flex flex-wrap gap-2">
                 {#each shortcuts as sc (sc.label)}
@@ -155,13 +156,13 @@
             </section>
 
             <section class="filter-group">
-              <div class="filter-title">Budget per person</div>
+              <div class="filter-title">{$t('filter.budget_pp')}</div>
               <RangeSlider min={priceMin} max={priceMax} step={50} bind:lo={priceLo} bind:hi={priceHi} format={money} />
             </section>
           {/if}
 
           <section class="filter-group">
-            <div class="filter-title">Comfort</div>
+            <div class="filter-title">{$t('filter.comfort')}</div>
             <div class="grid grid-cols-2 gap-2">
               {#each tiers as t (t.key)}
                 <label class:option-active={selectedTiers.includes(t.key)} class="mobile-option">
@@ -173,7 +174,7 @@
           </section>
 
           <section class="filter-group">
-            <div class="filter-title">Safari type</div>
+            <div class="filter-title">{$t('filter.safari_type')}</div>
             <div class="grid gap-2">
               {#each categoryOptions as c (c.slug)}
                 <label class:option-active={selectedCategories.includes(c.slug)} class="mobile-option">
@@ -186,7 +187,7 @@
 
           {#if personas.length}
             <section class="filter-group">
-              <div class="filter-title">Travel style</div>
+              <div class="filter-title">{$t('filter.travel_style')}</div>
               <div class="flex flex-wrap gap-2">
                 {#each personas as p (p.key)}
                   <button type="button" class:option-active={persona === p.key} class="mobile-chip" on:click={() => dispatch('persona', p.key)}>{p.label}</button>
@@ -197,14 +198,14 @@
 
           <label class:option-active={popularOnly} class="mobile-option">
             <input class="sr-only" type="checkbox" checked={popularOnly} on:change={() => dispatch('popular', !popularOnly)} />
-            <span>Best sellers only</span>{#if popularOnly}<Check size={16} />{/if}
+            <span>{$t('filter.best_sellers_only')}</span>{#if popularOnly}<Check size={16} />{/if}
           </label>
         </div>
       </div>
 
       <footer class="grid shrink-0 grid-cols-[auto_minmax(0,1fr)] gap-3 border-t border-ink/10 bg-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <button type="button" class="h-12 px-3 text-sm font-bold text-forest disabled:opacity-40" disabled={!activeCount} on:click={() => dispatch('clear')}>Clear</button>
-        <button type="button" class="h-12 rounded-[9px] bg-deep-green px-5 text-sm font-bold text-white" on:click={() => { closeMobile(); dispatch('apply'); }}>Apply filters</button>
+        <button type="button" class="h-12 px-3 text-sm font-bold text-forest disabled:opacity-40" disabled={!activeCount} on:click={() => dispatch('clear')}>{$t('filter.clear')}</button>
+        <button type="button" class="h-12 rounded-[9px] bg-deep-green px-5 text-sm font-bold text-white" on:click={() => { closeMobile(); dispatch('apply'); }}>{$t('filter.apply_filters')}</button>
       </footer>
     </div>
   {/if}
@@ -215,18 +216,18 @@
       <!-- Destination -->
       <div class="relative flex min-w-0 flex-1">
         <button type="button" class={trigger} aria-expanded={open === 'dest'} on:click|stopPropagation={() => toggle('dest')}>
-          <span class="gf-label">Destination</span>
+          <span class="gf-label">{$t('filter.destination')}</span>
           <span class="flex items-center gap-1 truncate text-sm font-bold text-heading">{destLabel} <ChevronDown size={14} class="shrink-0 text-ink/40" /></span>
         </button>
         {#if open === 'dest'}
           <div class={panel}>
             <div class="flex h-10 items-center gap-2 rounded-[8px] border border-ink/15 px-2.5">
               <Search size={15} class="text-ink/40" />
-              <input class="min-w-0 flex-1 bg-transparent text-sm outline-none" placeholder="Search destinations" bind:value={destQuery} />
+              <input class="min-w-0 flex-1 bg-transparent text-sm outline-none" placeholder={$t('filter.search_destinations')} bind:value={destQuery} />
             </div>
             <div class="mt-2 max-h-64 overflow-y-auto">
               <button type="button" class="flex w-full items-center justify-between rounded-[8px] px-2 py-2 text-sm hover:bg-sand/60" on:click={() => { dispatch('destination', ''); close(); }}>
-                All destinations {#if !destSlug}<Check size={15} class="text-goldfinch-gold" />{/if}
+                {$t('label.all_destinations')} {#if !destSlug}<Check size={15} class="text-goldfinch-gold" />{/if}
               </button>
               {#each filteredDestinations as d (d.slug)}
                 <button type="button" class="flex w-full items-center justify-between gap-2 rounded-[8px] px-2 py-2 text-left text-sm hover:bg-sand/60" on:click={() => { dispatch('destination', d.slug); close(); }}>
@@ -244,7 +245,7 @@
       <!-- Duration -->
       <div class="relative flex min-w-0 flex-1">
         <button type="button" class={trigger} aria-expanded={open === 'len'} on:click|stopPropagation={() => toggle('len')}>
-          <span class="gf-label">Duration</span>
+          <span class="gf-label">{$t('label.duration')}</span>
           <span class="flex items-center gap-1 truncate text-sm font-bold text-heading">{lenLabel} <ChevronDown size={14} class="shrink-0 text-ink/40" /></span>
         </button>
         {#if open === 'len'}
@@ -268,14 +269,14 @@
       <!-- Budget -->
       <div class="relative flex min-w-0 flex-1">
         <button type="button" class={trigger} aria-expanded={open === 'price'} on:click|stopPropagation={() => toggle('price')}>
-          <span class="gf-label">Budget</span>
+          <span class="gf-label">{$t('filter.budget')}</span>
           <span class="flex items-center gap-1 truncate text-sm font-bold text-heading">{priceLabel} <ChevronDown size={14} class="shrink-0 text-ink/40" /></span>
         </button>
         {#if open === 'price'}
           <div class={panel}>
             {#if rangesReady}
               <RangeSlider min={priceMin} max={priceMax} step={50} bind:lo={priceLo} bind:hi={priceHi} format={money} />
-              <p class="mt-2 text-xs text-ink/55">Per person, excluding international flights.</p>
+              <p class="mt-2 text-xs text-ink/55">{$t('filter.per_person_note')}</p>
             {/if}
           </div>
         {/if}
@@ -286,7 +287,7 @@
       <!-- Comfort -->
       <div class="relative flex min-w-0 flex-1">
         <button type="button" class={trigger} aria-expanded={open === 'comfort'} on:click|stopPropagation={() => toggle('comfort')}>
-          <span class="gf-label">Comfort</span>
+          <span class="gf-label">{$t('filter.comfort')}</span>
           <span class="flex items-center gap-1 truncate text-sm font-bold text-heading">{comfortLabel} <ChevronDown size={14} class="shrink-0 text-ink/40" /></span>
         </button>
         {#if open === 'comfort'}
@@ -309,7 +310,7 @@
       <!-- Safari type -->
       <div class="relative flex min-w-0 flex-1">
         <button type="button" class={trigger} aria-expanded={open === 'type'} on:click|stopPropagation={() => toggle('type')}>
-          <span class="gf-label">Safari type</span>
+          <span class="gf-label">{$t('filter.safari_type')}</span>
           <span class="flex items-center gap-1 truncate text-sm font-bold text-heading">{typeLabel} <ChevronDown size={14} class="shrink-0 text-ink/40" /></span>
         </button>
         {#if open === 'type'}
@@ -334,15 +335,15 @@
       <!-- More -->
       <div class="relative flex shrink-0">
         <button type="button" class={`${trigger} !flex-none`} aria-expanded={open === 'more'} on:click|stopPropagation={() => toggle('more')}>
-          <span class="gf-label">More</span>
+          <span class="gf-label">{$t('filter.more')}</span>
           <span class="flex items-center gap-1 whitespace-nowrap text-sm font-bold text-heading">
-            Filters{#if moreCount}<span class="ml-1 rounded-full bg-forest px-1.5 text-[11px] text-white">{moreCount}</span>{/if}
+            {$t('filter.filters')}{#if moreCount}<span class="ml-1 rounded-full bg-forest px-1.5 text-[11px] text-white">{moreCount}</span>{/if}
             <ChevronDown size={14} class="shrink-0 text-ink/40" />
           </span>
         </button>
         {#if open === 'more'}
           <div class={`${panel} left-auto right-0`}>
-            <p class="gf-label">Travel type</p>
+            <p class="gf-label">{$t('filter.travel_type')}</p>
             <div class="mt-2 flex flex-wrap gap-1.5">
               {#each personas as p (p.key)}
                 <button type="button" class={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${persona === p.key ? 'border-forest bg-forest text-white' : 'border-ink/15 text-ink/70 hover:border-goldfinch-gold/60'}`} on:click={() => dispatch('persona', p.key)}>
@@ -351,9 +352,7 @@
               {/each}
             </div>
             <label class="mt-4 flex cursor-pointer items-center gap-2.5 border-t border-ink/10 pt-3 text-sm">
-              <input type="checkbox" class="h-4 w-4 accent-forest" checked={popularOnly} on:change={() => dispatch('popular', !popularOnly)} />
-              Best sellers only
-            </label>
+              <input type="checkbox" class="h-4 w-4 accent-forest" checked={popularOnly} on:change={() => dispatch('popular', !popularOnly)} />{$t('filter.best_sellers_only')}</label>
           </div>
         {/if}
       </div>
@@ -361,10 +360,10 @@
       <!-- Actions -->
       <div class="tour-filter-actions flex shrink-0 items-center gap-2 pl-1">
         {#if activeCount}
-          <button type="button" class="whitespace-nowrap px-2 text-sm font-bold text-forest underline-offset-2 hover:underline" on:click={() => dispatch('clear')}>Clear all</button>
+          <button type="button" class="whitespace-nowrap px-2 text-sm font-bold text-forest underline-offset-2 hover:underline" on:click={() => dispatch('clear')}>{$t('filter.clear_all')}</button>
         {/if}
         <button type="button" class="gf-btn-primary whitespace-nowrap px-5" on:click={() => { close(); dispatch('apply'); }}>
-          View {resultCount} tour{resultCount === 1 ? '' : 's'} →
+          {$t('filter.view_results')} {resultCount} {resultCount === 1 ? $t('label.tour_one') : $t('label.tour_many')} →
         </button>
       </div>
     </div>
@@ -394,7 +393,7 @@
         <button class="chip" type="button" on:click={() => dispatch('price', { lo: priceMin, hi: priceMax })}>{priceLabel} <X size={13} /></button>
       {/if}
       {#if popularOnly}
-        <button class="chip" type="button" on:click={() => dispatch('popular', false)}>Best sellers <X size={13} /></button>
+        <button class="chip" type="button" on:click={() => dispatch('popular', false)}>{$t('filter.best_sellers')}<X size={13} /></button>
       {/if}
     </div>
   {/if}

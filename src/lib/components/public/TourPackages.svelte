@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { fadeUpOnScroll } from '$lib/animations';
   import { ArrowRight } from '@lucide/svelte';
   import DealCard from './DealCard.svelte';
@@ -60,16 +61,13 @@
       class="mt-10 flex flex-col items-center justify-between gap-4 rounded-[8px] border border-ink/10 bg-sand/50 p-5 text-center sm:flex-row sm:text-left md:p-6"
     >
       <div>
-        <p class="font-semibold text-heading">Can't find your perfect trip?</p>
-        <p class="text-sm text-ink/65">
-          Tell us what you have in mind and we'll build it from scratch — free.
-        </p>
+        <p class="font-semibold text-heading">{$t('ui.cant_find_your_perfect_trip')}</p>
+        <p class="text-sm text-ink/65">{$t('ui.tell_us_what_you_have')}</p>
       </div>
       <a
         class="inline-flex h-12 shrink-0 items-center gap-2 rounded-full bg-goldfinch-gold px-6 font-bold text-heading transition hover:brightness-105"
         href="/plan-my-trip"
-      >
-        Get a free quote <ArrowRight size={16} />
+      >{$t('ui.get_a_free_quote')}<ArrowRight size={16} />
       </a>
     </div>
   </div>

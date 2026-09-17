@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount, tick } from 'svelte';
   import { ArrowLeft, ArrowRight, Check, MessageCircle, Sparkles } from '@lucide/svelte';
   import { api } from '$lib/api/client';
@@ -207,7 +208,7 @@
   <div class="container-shell flex min-h-[70vh] flex-col items-center py-10 sm:py-12 md:py-16">
     <div class="min-w-0 w-full max-w-2xl">
       <div class="text-center">
-        <p class="font-serif text-xl italic text-clay">Trip Finder</p>
+        <p class="font-serif text-xl italic text-clay">{$t('ui.trip_finder')}</p>
         {#key isResults}
           <h1 class="gf-trip-mobile-heading mx-auto mt-4 max-w-[19rem] text-3xl font-extrabold leading-tight tracking-tight text-heading md:hidden">
             {headingText}
@@ -217,7 +218,7 @@
           </h1>
         {/key}
         {#if !isResults}
-          <p class="mx-auto mt-3 max-w-full break-words text-ink/70 sm:max-w-md">A few quick questions and we'll recommend trips that actually fit you.</p>
+          <p class="mx-auto mt-3 max-w-full break-words text-ink/70 sm:max-w-md">{$t('ui.a_few_quick_questions_and')}</p>
         {/if}
       </div>
 
@@ -226,7 +227,7 @@
         <div class="mt-6 min-w-0 rounded-[14px] border border-white/10 bg-deep-green p-3 shadow-[0_18px_40px_rgba(31,77,58,0.18)] sm:mt-8">
           <div class="flex items-center gap-3">
             {#if step > 0}
-              <button type="button" class="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] border border-white/15 bg-white/[0.06] text-white/75 transition hover:border-goldfinch-gold/45 hover:bg-white/[0.1] hover:text-white" aria-label="Back" on:click={back}>
+              <button type="button" class="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] border border-white/15 bg-white/[0.06] text-white/75 transition hover:border-goldfinch-gold/45 hover:bg-white/[0.1] hover:text-white" aria-label={$t('form.back')} on:click={back}>
                 <ArrowLeft size={16} />
               </button>
             {/if}
@@ -265,10 +266,10 @@
         </div>
 
         <p class="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm text-ink/70">
-          <span>Prefer to skip ahead?</span>
-          <a class="font-semibold text-forest hover:text-heading" href="/plan-my-trip">Talk to a specialist</a>
+          <span>{$t('ui.prefer_to_skip_ahead')}</span>
+          <a class="font-semibold text-forest hover:text-heading" href="/plan-my-trip">{$t('ui.talk_to_a_specialist')}</a>
           <span aria-hidden="true">·</span>
-          <a class="font-semibold text-forest hover:text-heading" href="/tours">See all tours</a>
+          <a class="font-semibold text-forest hover:text-heading" href="/tours">{$t('ui.see_all_tours')}</a>
         </p>
       {:else if loading}
         <div class="mt-10"><LoadingState message="Finding your best-fit trips…" /></div>
@@ -302,19 +303,16 @@
                   </p>
                   <div class="mt-4 flex flex-wrap gap-2.5">
                     <a class="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-goldfinch-gold px-4 text-sm font-bold text-heading transition hover:brightness-105" href={planHref(rec.tour.slug)}>
-                      <Sparkles size={15} /> Plan This Trip
-                    </a>
-                    <a class="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-ink/15 bg-surface px-4 text-sm font-semibold text-ink/70 transition hover:bg-sand/60" href={`/tours/${rec.tour.slug}`}>
-                      View Trip
-                    </a>
+                      <Sparkles size={15} />{$t('ui.plan_this_trip')}</a>
+                    <a class="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-ink/15 bg-surface px-4 text-sm font-semibold text-ink/70 transition hover:bg-sand/60" href={`/tours/${rec.tour.slug}`}>{$t('ui.view_trip')}</a>
                   </div>
                 </div>
               </article>
             {/each}
           {:else}
             <div class="rounded-[8px] border border-dashed border-ink/15 bg-surface p-8 text-center">
-              <p class="font-semibold text-heading">We couldn't auto-match a trip — but we can still help.</p>
-              <p class="mt-1 text-sm text-ink/70">Tell a specialist what you have in mind and we'll plan it around you.</p>
+              <p class="font-semibold text-heading">{$t('ui.we_couldnt_automatch_a_trip')}</p>
+              <p class="mt-1 text-sm text-ink/70">{$t('ui.tell_a_specialist_what_you')}</p>
             </div>
           {/if}
         </div>
@@ -322,16 +320,13 @@
         <!-- escape hatches -->
         <div class="mt-6 grid gap-3 sm:grid-cols-2">
           <a class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-deep-green px-5 font-bold text-white shadow-sm transition hover:bg-forest" href={specialistHref}>
-            <MessageCircle size={18} /> Talk to a specialist
-          </a>
-          <a class="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-ink/15 bg-surface px-5 font-semibold text-ink transition hover:bg-sand/60" href={allToursHref}>
-            See all tours <ArrowRight size={16} />
+            <MessageCircle size={18} />{$t('ui.talk_to_a_specialist')}</a>
+          <a class="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-ink/15 bg-surface px-5 font-semibold text-ink transition hover:bg-sand/60" href={allToursHref}>{$t('ui.see_all_tours')}<ArrowRight size={16} />
           </a>
         </div>
         <div class="mt-5 text-center">
           <button type="button" class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" on:click={restart}>
-            <Check size={15} /> Start over
-          </button>
+            <Check size={15} />{$t('ui.start_over')}</button>
         </div>
       {/if}
     </div>

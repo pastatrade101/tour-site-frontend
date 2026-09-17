@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { ArrowRight, MapPin } from '@lucide/svelte';
   import { currency, formatUsd } from '$lib/currency';
   import { sourceFor } from '$lib/img';
@@ -56,10 +57,9 @@
 
       <div class="mt-auto pt-5">
         {#if destination.score_budget_from}
-          <p class="mb-3 text-sm text-ink/60">Starting budget <span class="font-bold text-clay">{budgetLabel}</span></p>
+          <p class="mb-3 text-sm text-ink/60">{$t('ui.starting_budget')}<span class="font-bold text-clay">{budgetLabel}</span></p>
         {/if}
-        <span class="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[8px] bg-deep-green px-4 text-xs font-bold text-white transition group-hover:bg-forest">
-          View destination <ArrowRight size={14} strokeWidth={2.6} class="transition-transform group-hover:translate-x-0.5" />
+        <span class="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[8px] bg-deep-green px-4 text-xs font-bold text-white transition group-hover:bg-forest">{$t('ui.view_destination')}<ArrowRight size={14} strokeWidth={2.6} class="transition-transform group-hover:translate-x-0.5" />
         </span>
       </div>
     </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
@@ -23,5 +24,5 @@
 </svelte:head>
 
 <div class="grid min-h-[60vh] place-items-center px-6 text-center">
-  <p class="text-sm font-medium text-ink/60">Opening your trip…</p>
+  <p class="text-sm font-medium text-ink/60">{$t('ui.opening_your_trip')}</p>
 </div>

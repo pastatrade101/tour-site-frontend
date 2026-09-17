@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * Renders one configured field.
    *
@@ -178,7 +179,7 @@
     <div class="grid grid-cols-[112px_minmax(0,1fr)] gap-2">
       <select
         class="{INPUT} {H} appearance-none border-transparent px-2.5 font-semibold"
-        aria-label="Country dialling code"
+        aria-label={$t('ui.country_dialling_code')}
         value={dialCode}
         on:change={(event) => setPhone(event.currentTarget.value, phoneNumber)}
       >
@@ -321,7 +322,7 @@
       value={String(value ?? '')}
       on:change={(event) => setValue(event.currentTarget.value)}
     >
-      <option value="">Please choose…</option>
+      <option value="">{$t('ui.please_choose')}</option>
       {#each field.options ?? [] as option}
         <option value={option.value}>{option.label}</option>
       {/each}

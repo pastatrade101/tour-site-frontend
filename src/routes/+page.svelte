@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { page } from '$app/stores';
   import { localeParam } from '$lib/faqEntities';
   import { onMount } from 'svelte';
@@ -376,7 +377,7 @@
     slides={heroSlides}
     primaryCta={{ label: cms('hero', 'button_text', 'Plan My Trip'), href: cms('hero', 'button_url', '/plan-my-trip') }}
     secondaryCta={{
-      label: typeof heroExtra.secondary_cta_text === 'string' ? heroExtra.secondary_cta_text : 'Talk to a Travel Advisor',
+      label: typeof heroExtra.secondary_cta_text === 'string' ? heroExtra.secondary_cta_text : $t('cta.talk_to_advisor'),
       href: typeof heroExtra.secondary_cta_url === 'string' ? heroExtra.secondary_cta_url : '/contact'
     }}
     trustPoints={arr(heroExtra.trust_points)}
@@ -408,7 +409,7 @@
     subtitle={cms('featured_destinations', 'subtitle', 'Some places are best for wildlife. Others are better for beaches, scenery or culture. We help you combine them in the right order.')}
   />
 {:else if isSectionActive('featured_destinations') && deferredLoading}
-  <ContentShimmer cards={3} label="Loading featured destinations" />
+  <ContentShimmer cards={3} label={$t('ui.loading_featured_destinations')} />
 {/if}
 
 <!-- 4 · Featured itineraries -->
@@ -422,7 +423,7 @@
     ctaLabel={cms('featured_tours', 'button_text', 'Browse all itineraries')}
   />
 {:else if isSectionActive('featured_tours') && deferredLoading}
-  <ContentShimmer cards={3} label="Loading featured itineraries" />
+  <ContentShimmer cards={3} label={$t('ui.loading_featured_itineraries')} />
 {/if}
 
 <!-- 5 · Why Goldfinch -->
@@ -470,7 +471,7 @@
     subtitle={cms('reviews_section', 'subtitle', 'Real guests, real routes and the planning details that made their trips work.')}
   />
 {:else if isSectionActive('reviews_section') && deferredLoading}
-  <ContentShimmer cards={3} label="Loading traveller stories" />
+  <ContentShimmer cards={3} label={$t('ui.loading_traveller_stories')} />
 {/if}
 
 <!-- The accreditations, immediately under the reviews they back up. -->
@@ -492,7 +493,7 @@
     {imageVariants}
   />
 {:else if sections.migration_section?.is_active !== false && deferredLoading}
-  <ContentShimmer cards={3} label="Loading migration calendar" />
+  <ContentShimmer cards={3} label={$t('ui.loading_migration_calendar')} />
 {/if}
 
 <!-- 10b · Gallery preview -->
@@ -522,7 +523,7 @@
   </div>
 </section>
 {:else if isSectionActive('gallery_preview') && deferredLoading}
-  <ContentShimmer cards={3} label="Loading safari gallery" />
+  <ContentShimmer cards={3} label={$t('ui.loading_safari_gallery')} />
 {/if}
 
 <!-- 11 · Blog — hidden when there are no posts -->
@@ -542,7 +543,7 @@
   </div>
 </section>
 {:else if isSectionActive('blog_preview') && deferredLoading}
-  <ContentShimmer cards={3} label="Loading latest stories" />
+  <ContentShimmer cards={3} label={$t('ui.loading_latest_stories')} />
 {/if}
 
 <!-- 13 · FAQ -->
@@ -559,7 +560,7 @@
   </div>
 </section>
 {:else if isSectionActive('faq') && deferredLoading}
-  <ContentShimmer cards={3} label="Loading frequently asked questions" />
+  <ContentShimmer cards={3} label={$t('ui.loading_frequently_asked_questions')} />
 {/if}
 <!-- 9 · Planning form band (closing section, as in the reference layout) -->
 {#if isSectionActive('plan_dream')}

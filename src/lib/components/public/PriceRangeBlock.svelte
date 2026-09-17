@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { ArrowRight, ShieldCheck } from '@lucide/svelte';
   import Img from '$lib/components/public/Img.svelte';
 
@@ -49,11 +50,8 @@
 
   <div class="mt-7 flex flex-col items-center justify-center gap-4 sm:flex-row sm:justify-between">
     <p class="inline-flex items-center gap-2 text-sm text-ink/70">
-      <ShieldCheck size={18} class="shrink-0 text-forest" />
-      Typical starting prices — your exact cost depends on season, lodges and group size. No hidden costs.
-    </p>
-    <a class="inline-flex h-11 shrink-0 items-center gap-2 rounded-[8px] bg-deep-green px-6 font-bold text-white transition hover:bg-forest" href="/plan-my-trip">
-      Get your exact price <ArrowRight size={18} />
+      <ShieldCheck size={18} class="shrink-0 text-forest" />{$t('ui.typical_starting_prices_your_exact')}</p>
+    <a class="inline-flex h-11 shrink-0 items-center gap-2 rounded-[8px] bg-deep-green px-6 font-bold text-white transition hover:bg-forest" href="/plan-my-trip">{$t('ui.get_your_exact_price')}<ArrowRight size={18} />
     </a>
   </div>
 </div>

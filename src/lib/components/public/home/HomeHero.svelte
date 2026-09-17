@@ -151,7 +151,7 @@
         <Img
           src={slide.imageUrl}
           variantsMap={imageVariants}
-          alt={slide.title || slide.label || 'Tanzania safari landscape'}
+          alt={slide.title || slide.label || $t('ui.tanzania_safari')}
           width={1920}
           height={1200}
           sizes="100vw"
@@ -274,7 +274,7 @@
 
   <div class="hero-controls absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-2 md:bottom-5">
     {#if displaySlides.length > 1}
-      <div class="flex items-center gap-2" aria-label="Hero slides">
+      <div class="flex items-center gap-2" aria-label={$t('ui.hero_slides')}>
         {#each displaySlides as slide, index}
           <button
             type="button"
@@ -287,7 +287,7 @@
         {/each}
       </div>
     {/if}
-    <a href="#experiences" class="hero-scroll-cue" aria-label="Scroll to explore" on:click={scrollToExplore}>
+    <a href="#experiences" class="hero-scroll-cue" aria-label={$t('ui.scroll_to_explore')} on:click={scrollToExplore}>
       <span>{$t('cta.explore')}</span>
       <ChevronDown size={18} strokeWidth={2.2} />
     </a>

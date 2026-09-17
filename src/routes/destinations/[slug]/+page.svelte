@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
   import { DEFAULT_LOCALE } from '$lib/i18n';
@@ -869,8 +870,7 @@
 
     <div class="container-shell relative flex min-h-[560px] flex-col justify-end pb-12 pt-20 md:min-h-[640px] md:pb-16 md:pt-24 lg:min-h-[680px] lg:pb-20">
       <a href="/destinations" class="absolute left-0 top-6 hidden items-center gap-1.5 text-[13px] font-medium text-white/90 transition hover:text-goldfinch-gold md:top-8 md:inline-flex">
-        <ArrowLeft class="h-3.5 w-3.5" /> Back to destinations
-      </a>
+        <ArrowLeft class="h-3.5 w-3.5" />{$t('ui.back_to_destinations')}</a>
 
       <div class="destination-hero-copy relative max-w-3xl pb-2 [text-shadow:0_2px_18px_rgba(39,43,34,0.42)] md:pb-4">
         {#if heroTags.length}
@@ -882,7 +882,7 @@
             {/each}
           </div>
         {/if}
-        <span class="text-[11px] font-bold uppercase tracking-[0.18em] text-goldfinch-gold drop-shadow">Destination guide</span>
+        <span class="text-[11px] font-bold uppercase tracking-[0.18em] text-goldfinch-gold drop-shadow">{$t('ui.destination_guide')}</span>
         <h1 class="mt-3 font-serif text-3xl font-semibold leading-[1.05] tracking-normal text-white sm:text-4xl md:text-5xl lg:text-[54px]" use:revealHeading>
           {destination.name}
         </h1>
@@ -890,12 +890,10 @@
           <p class="mt-4 max-w-2xl break-words text-[15px] font-medium leading-relaxed text-white md:text-base">{summary}</p>
         {/if}
         <div class="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <a class="inline-flex items-center justify-center gap-2 rounded-[6px] bg-goldfinch-gold px-5 py-3 text-sm font-bold text-heading transition hover:brightness-105" href={`/plan-my-trip?destination=${destination.slug}`} data-cta="destination-detail-hero-primary">
-            Plan this destination <ArrowRight size={17} />
+          <a class="inline-flex items-center justify-center gap-2 rounded-[6px] bg-goldfinch-gold px-5 py-3 text-sm font-bold text-heading transition hover:brightness-105" href={`/plan-my-trip?destination=${destination.slug}`} data-cta="destination-detail-hero-primary">{$t('ui.plan_this_destination')}<ArrowRight size={17} />
           </a>
           {#if availableTours.length}
-            <button type="button" class="inline-flex items-center justify-center gap-2 rounded-[6px] border border-white/35 bg-deep-green/30 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-deep-green/45" on:click={() => scrollToSection('recommended-trips')}>
-              See matching trips <ArrowRight size={17} />
+            <button type="button" class="inline-flex items-center justify-center gap-2 rounded-[6px] border border-white/35 bg-deep-green/30 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-deep-green/45" on:click={() => scrollToSection('recommended-trips')}>{$t('ui.see_matching_trips')}<ArrowRight size={17} />
             </button>
           {/if}
         </div>
@@ -959,7 +957,7 @@
   <section id="overview" class="scroll-mt-32 bg-canvas py-14 md:py-20">
     <div class="container-shell grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
       <aside class="lg:sticky lg:top-24" use:fadeUpOnScroll={{ y: 14 }}>
-        <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Overview</p>
+        <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.overview')}</p>
         <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[42px]">About {destination.name}</h2>
         {#if summary}
           <p class="mt-4 text-base leading-8 text-ink/70">{summary}</p>
@@ -1087,9 +1085,9 @@
     <section id="highlights" class="scroll-mt-32 bg-sand/45 py-14 md:py-20">
       <div class="container-shell">
         <div class="max-w-3xl" use:fadeUpOnScroll={{ y: 14 }}>
-          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Highlights</p>
+          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('label.highlights')}</p>
           <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">Highlights of {destination.name}</h2>
-          <p class="mt-3 text-base leading-7 text-ink/65">Cards below are built from published activities, gallery records, and guide notes attached to this destination.</p>
+          <p class="mt-3 text-base leading-7 text-ink/65">{$t('ui.cards_below_are_built_from')}</p>
         </div>
 
         <div class="mt-10 grid grid-cols-1 gap-[22px] md:grid-cols-2 md:gap-8 lg:grid-cols-3 lg:gap-9 lg:gap-y-11" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
@@ -1131,11 +1129,9 @@
     <section id="best-time" class="scroll-mt-32 bg-surface py-14 md:py-20">
       <div class="container-shell">
         <div class="max-w-[820px]">
-          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Best Time to Visit</p>
+          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.best_time_to_visit')}</p>
           <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">When to visit {destination.name}</h2>
-          <p class="mt-4 max-w-[820px] text-base leading-relaxed text-ink/65 md:text-lg">
-            Seasonal guidance below is rendered from the published guide content for this destination.
-          </p>
+          <p class="mt-4 max-w-[820px] text-base leading-relaxed text-ink/65 md:text-lg">{$t('ui.seasonal_guidance_below_is_rendered')}</p>
         </div>
 
         <div class="mt-10 grid gap-6">
@@ -1199,7 +1195,7 @@
     <section id="route-planning" class="scroll-mt-32 bg-canvas py-14 md:py-20">
       <div class="container-shell">
         <div class="max-w-[1180px]">
-          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Route Planning</p>
+          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.route_planning')}</p>
           <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">How {destination.name} fits into a route</h2>
           <p class="mt-4 max-w-[820px] text-base leading-relaxed text-ink/65 md:text-lg">
             This section uses published trips and gateway records linked to {destination.name}.
@@ -1212,9 +1208,7 @@
               <div class="flex h-[64px] w-[64px] items-center justify-center rounded-full bg-clay/10 md:h-[72px] md:w-[72px]">
                 <MapPin class="h-6 w-6 text-clay md:h-7 md:w-7" />
               </div>
-              <h3 class="mb-6 mt-5 font-serif text-[22px] font-semibold leading-[1.12] text-heading md:mb-7 md:text-[28px]">
-                Match the destination to the right route flow.
-              </h3>
+              <h3 class="mb-6 mt-5 font-serif text-[22px] font-semibold leading-[1.12] text-heading md:mb-7 md:text-[28px]">{$t('ui.match_the_destination_to_the')}</h3>
               {#if tripPoints.length}
                 <div class="space-y-3">
                   {#each tripPoints as point (point.id)}
@@ -1240,9 +1234,7 @@
             {#if routeRows.length}
               <div class="h-full rounded-[12px] border border-ink/10 bg-surface p-6 md:p-8">
                 <div class="mb-6 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-clay md:mb-7 md:text-[12px]">
-                  <Route class="h-3.5 w-3.5" />
-                  Published route ideas
-                </div>
+                  <Route class="h-3.5 w-3.5" />{$t('ui.published_route_ideas')}</div>
                 <ol class="divide-y divide-ink/10">
                   {#each routeRows as row, index (row.id)}
                     <li class="grid grid-cols-[auto_minmax(0,1fr)] gap-4 py-[18px] first:pt-0 last:pb-0">
@@ -1250,7 +1242,7 @@
                       <div class="min-w-0">
                         <a class="text-[15px] font-bold text-heading transition hover:text-clay md:text-[16px]" href={row.href}>{row.title}</a>
                         {#if row.route}<div class="mt-1 text-[13px] text-ink/65 md:text-[14px]">{row.route}</div>{/if}
-                        {#if row.best}<div class="mt-1 text-[13px] text-ink/60 md:text-[14px]"><span class="font-bold text-heading">Style: </span>{row.best}</div>{/if}
+                        {#if row.best}<div class="mt-1 text-[13px] text-ink/60 md:text-[14px]"><span class="font-bold text-heading">{$t('ui.style')}</span>{row.best}</div>{/if}
                       </div>
                     </li>
                   {/each}
@@ -1268,14 +1260,13 @@
       <div class="container-shell">
         <div class="flex flex-wrap items-end justify-between gap-4">
           <div class="max-w-3xl">
-            <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Available tours</p>
+            <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.available_tours')}</p>
             <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">Available {destination.name} tour packages</h2>
             <p class="mt-3 text-base leading-7 text-ink/65">
               Published tour packages currently linked to {destination.name}, grouped by the matching CMS tour styles below.
             </p>
           </div>
-          <a class="inline-flex h-11 items-center gap-2 rounded-[8px] border border-ink/10 bg-surface px-5 text-sm font-bold text-forest shadow-sm transition hover:border-forest/25 hover:text-heading" href={destinationToursHref(destination)}>
-            View all available tours <ArrowRight size={15} />
+          <a class="inline-flex h-11 items-center gap-2 rounded-[8px] border border-ink/10 bg-surface px-5 text-sm font-bold text-forest shadow-sm transition hover:border-forest/25 hover:text-heading" href={destinationToursHref(destination)}>{$t('ui.view_all_available_tours')}<ArrowRight size={15} />
           </a>
         </div>
 
@@ -1327,8 +1318,7 @@
                         Price on request
                       {/if}
                     </span>
-                    <span class="inline-flex items-center gap-1 font-bold text-heading">
-                      View style <ArrowRight size={14} class="transition group-hover:translate-x-0.5" />
+                    <span class="inline-flex items-center gap-1 font-bold text-heading">{$t('ui.view_style')}<ArrowRight size={14} class="transition group-hover:translate-x-0.5" />
                     </span>
                   </div>
                 </div>
@@ -1352,9 +1342,9 @@
         {#if activities.length}
           <div>
             <div class="max-w-3xl">
-              <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Things to do</p>
+              <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.things_to_do')}</p>
               <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[38px]">Experiences in {destination.name}</h2>
-              <p class="mt-3 text-base leading-7 text-ink/65">Published activities linked to this destination.</p>
+              <p class="mt-3 text-base leading-7 text-ink/65">{$t('ui.published_activities_linked_to_this')}</p>
             </div>
             <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
               {#each activities as activity (activity.id)}
@@ -1367,9 +1357,9 @@
         {#if lodgeFeatureCards.length}
           <div id="where-to-stay" class="scroll-mt-32">
             <div class="max-w-3xl">
-              <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Where to stay</p>
+              <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.where_to_stay')}</p>
               <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[38px]">Lodges & camps in {destination.name}</h2>
-              <p class="mt-3 text-base leading-7 text-ink/65">Published accommodation linked to this destination.</p>
+              <p class="mt-3 text-base leading-7 text-ink/65">{$t('ui.published_accommodation_linked_to_this')}</p>
             </div>
             <div class="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
               {#each lodgeFeatureCards as lodge (lodge.key)}
@@ -1403,8 +1393,7 @@
                       {#if lodge.summary}<p class="destination-accommodation-summary mt-1 text-[13px] font-semibold leading-5 text-white/90 drop-shadow">{lodge.summary}</p>{/if}
                     </div>
                     <div class="destination-accommodation-extra mt-4 overflow-hidden text-white md:max-h-0 md:opacity-0 md:transition-all md:duration-300 md:group-hover:max-h-32 md:group-hover:opacity-100 md:group-focus-within:max-h-32 md:group-focus-within:opacity-100">
-                      <span class="inline-flex items-center gap-1 text-[13px] font-bold text-goldfinch-gold">
-                        View accommodation <ArrowRight size={14} />
+                      <span class="inline-flex items-center gap-1 text-[13px] font-bold text-goldfinch-gold">{$t('ui.view_accommodation')}<ArrowRight size={14} />
                       </span>
                     </div>
                     <a class="absolute inset-0 z-10 rounded-[12px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-goldfinch-gold" href={lodge.href} aria-label={`View accommodation ${lodge.name}`} data-sveltekit-preload-data="hover"></a>
@@ -1422,11 +1411,9 @@
     <section id="travel-tips" class="scroll-mt-32 bg-surface py-14 md:py-20">
       <div class="container-shell">
         <div>
-          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Travel Tips</p>
+          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.travel_tips')}</p>
           <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">Helpful details for {destination.name}</h2>
-          <p class="mt-4 max-w-[820px] text-base leading-relaxed text-ink/65 md:text-lg">
-            These tabs are generated from published gateway and safety fields on the destination record.
-          </p>
+          <p class="mt-4 max-w-[820px] text-base leading-relaxed text-ink/65 md:text-lg">{$t('ui.these_tabs_are_generated_from')}</p>
 
           <div class="mt-8 overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-card md:mt-12 md:rounded-[12px]">
             <div class="flex overflow-x-auto border-b border-ink/10 bg-sand/55 md:grid md:grid-cols-3 md:overflow-visible">
@@ -1468,9 +1455,7 @@
 
               <div class="mt-9 flex items-start gap-3 rounded-[8px] border border-ink/10 bg-sand/70 px-5 py-4 md:px-6">
                 <Info class="mt-[2px] h-[18px] w-[18px] shrink-0 text-clay" strokeWidth={1.75} />
-                <p class="text-[14.5px] leading-[1.5] text-heading md:text-[15.5px]">
-                  For broader preparation details, read the full safety guide or ask the team in your trip request.
-                </p>
+                <p class="text-[14.5px] leading-[1.5] text-heading md:text-[15.5px]">{$t('ui.for_broader_preparation_details_read')}</p>
               </div>
             </div>
           </div>
@@ -1481,8 +1466,8 @@
 
   <ReviewsWidget
     eyebrow="Traveller stories"
-    title="Travellers Who Planned Tanzania With Us"
-    subtitle="Real approved reviews from Goldfinch travellers."
+    title={$t('ui.travellers_who_planned_tanzania_with')}
+    subtitle={$t('ui.real_approved_reviews_from_goldfinch')}
   />
 
   {#if otherDestinations.length}
@@ -1490,12 +1475,11 @@
       <div class="container-shell">
         <div class="flex flex-wrap items-end justify-between gap-4">
           <div class="max-w-3xl">
-            <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Keep exploring</p>
-            <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">More destinations</h2>
-            <p class="mt-3 text-base leading-7 text-ink/65">Other published destinations from the CMS.</p>
+            <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.keep_exploring')}</p>
+            <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">{$t('ui.more_destinations')}</h2>
+            <p class="mt-3 text-base leading-7 text-ink/65">{$t('ui.other_published_destinations_from_the')}</p>
           </div>
-          <a class="inline-flex h-11 items-center gap-2 rounded-[8px] border border-ink/10 bg-surface px-5 text-sm font-bold text-forest shadow-sm transition hover:border-forest/25 hover:text-heading" href="/destinations">
-            All destinations <ArrowRight size={15} />
+          <a class="inline-flex h-11 items-center gap-2 rounded-[8px] border border-ink/10 bg-surface px-5 text-sm font-bold text-forest shadow-sm transition hover:border-forest/25 hover:text-heading" href="/destinations">{$t('label.all_destinations')}<ArrowRight size={15} />
           </a>
         </div>
         <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.05 }}>
@@ -1511,12 +1495,12 @@
     <section id="good-to-know" class="scroll-mt-32 border-t border-ink/[0.06] bg-surface py-14 md:py-20">
       <div class="container-shell">
         <div class="max-w-3xl">
-          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">FAQ</p>
+          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.faq')}</p>
           <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">Questions about {destination.name}</h2>
           <!-- The list now leads with this destination's own questions and only
                then falls back to the general ones, so it can no longer claim
                every answer is destination-specific. -->
-          <p class="mt-4 text-base leading-8 text-ink/68">What travellers ask us most about this destination.</p>
+          <p class="mt-4 text-base leading-8 text-ink/68">{$t('ui.what_travellers_ask_us_most')}</p>
         </div>
         <ol class="relative mt-10 md:mt-12">
           {#each faqs as item, index (item.id)}
@@ -1539,18 +1523,15 @@
 
   <section class="bg-deep-green py-14 text-white md:py-20">
     <div class="container-shell text-center">
-      <p class="text-xs font-bold uppercase tracking-[0.18em] text-goldfinch-gold">Plan with a local specialist</p>
+      <p class="text-xs font-bold uppercase tracking-[0.18em] text-goldfinch-gold">{$t('ui.plan_with_a_local_specialist')}</p>
       <h2 class="mx-auto mt-3 max-w-3xl text-3xl font-bold leading-tight md:text-[42px]">Plan your {destination.name} safari with local support</h2>
       <p class="mx-auto mt-4 max-w-2xl break-words text-base leading-8 text-white/72">
         Share your dates, interests, and comfort level so the team can shape the right route around {destination.name}.
       </p>
       <div class="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-        <a class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-6 text-sm font-bold text-heading shadow-lg shadow-black/10 transition hover:brightness-105 sm:w-auto" href={`/plan-my-trip?destination=${destination.slug}`}>
-          Start planning <ArrowRight size={17} />
+        <a class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-6 text-sm font-bold text-heading shadow-lg shadow-black/10 transition hover:brightness-105 sm:w-auto" href={`/plan-my-trip?destination=${destination.slug}`}>{$t('ui.start_planning')}<ArrowRight size={17} />
         </a>
-        <a class="inline-flex h-12 w-full items-center justify-center rounded-[8px] border border-white/25 px-6 text-sm font-bold text-white transition hover:bg-white/10 sm:w-auto" href="/contact">
-          Contact us
-        </a>
+        <a class="inline-flex h-12 w-full items-center justify-center rounded-[8px] border border-white/25 px-6 text-sm font-bold text-white transition hover:bg-white/10 sm:w-auto" href="/contact">{$t('ui.contact_us')}</a>
       </div>
     </div>
   </section>

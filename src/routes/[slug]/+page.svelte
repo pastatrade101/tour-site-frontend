@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { page as pageStore } from '$app/stores';
   import Img from '$lib/components/public/Img.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
@@ -150,7 +151,7 @@
         <span class="absolute inset-0 bg-gradient-to-t from-deep-green via-deep-green/70 to-deep-green/35" aria-hidden="true"></span>
       {/if}
       <div class="package-hero-content container-shell relative py-16 md:py-24">
-        <a class="package-back" href="/safari-packages"><ArrowLeft size={16} /> Safari packages</a>
+        <a class="package-back" href="/safari-packages"><ArrowLeft size={16} />{$t('ui.safari_packages')}</a>
         <div class="max-w-[820px]">
           {#if record.hero_eyebrow}
             <p class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{record.hero_eyebrow}</p>
@@ -163,16 +164,13 @@
             <a
               href={formHref}
               class="inline-flex h-11 items-center justify-center rounded bg-goldfinch-gold px-5 text-sm font-semibold text-heading transition hover:brightness-105"
-            >
-              Plan this trip <ArrowRight size={17} class="ml-2 md:hidden" />
+            >{$t('ui.plan_this_trip_2')}<ArrowRight size={17} class="ml-2 md:hidden" />
             </a>
             {#if record.tours?.slug}
               <a
                 href={`/tours/${record.tours.slug}`}
                 class="inline-flex h-11 items-center justify-center rounded border border-white/30 px-5 text-sm font-semibold text-white transition hover:bg-white/10"
-              >
-                See the full tour
-              </a>
+              >{$t('ui.see_the_full_tour')}</a>
             {/if}
           </div>
         </div>

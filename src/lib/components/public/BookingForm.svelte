@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount, tick } from 'svelte';
   import { AlertCircle, ArrowLeft, ArrowRight, BedDouble, CalendarCheck, CalendarDays, CheckCircle2, ClipboardList, Clock, Copy, Download, FileText, Hash, Mail, MapPin, MessageCircle, MessageSquare, ShieldCheck, Sparkles, Star, User, Users, Wallet } from '@lucide/svelte';
   import type { Component } from 'svelte';
@@ -395,21 +396,21 @@
     <div class="flex items-center gap-3">
       <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-600"><CheckCircle2 size={26} /></span>
       <div>
-        <h3 class="text-xl font-bold text-heading">Thank you! Your request has been received.</h3>
-        <p class="mt-1 text-sm text-ink/70">A local travel specialist will contact you shortly.</p>
+        <h3 class="text-xl font-bold text-heading">{$t('ui.thank_you_your_request_has')}</h3>
+        <p class="mt-1 text-sm text-ink/70">{$t('ui.a_local_travel_specialist_will')}</p>
       </div>
     </div>
 
     {#if bookingCode}
       <div class="rounded-xl border border-emerald-200 bg-surface p-4">
-        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-ink/70">Your request reference</p>
+        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-ink/70">{$t('ui.your_request_reference')}</p>
         <div class="mt-1 flex items-center gap-3">
           <p class="text-2xl font-extrabold tracking-wide text-heading">{bookingCode}</p>
           <button class="inline-flex items-center gap-1.5 rounded-lg border border-ink/15 bg-surface px-2.5 py-1 text-xs font-semibold text-ink/70 transition hover:bg-sand" type="button" on:click={copyCode}>
             <Copy size={13} />{copied ? 'Copied' : 'Copy'}
           </button>
         </div>
-        <p class="mt-2 text-xs leading-5 text-ink/70">Keep this reference for your records. This is a trip planning request — no payment is required yet.</p>
+        <p class="mt-2 text-xs leading-5 text-ink/70">{$t('ui.keep_this_reference_for_your')}</p>
       </div>
     {/if}
 
@@ -417,21 +418,19 @@
          sticky panel, where a column split wraps both labels. -->
     <div class="grid gap-2.5">
       <a href={waHref} target="_blank" rel="noopener noreferrer" on:click={openWhatsApp} class="inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#25D366] px-5 text-sm font-bold text-white shadow-sm transition hover:brightness-105">
-        <MessageCircle size={17} /> Continue on WhatsApp
-      </a>
+        <MessageCircle size={17} />{$t('ui.continue_on_whatsapp')}</a>
       <button type="button" class="inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border border-ink/15 bg-surface px-5 text-sm font-bold text-heading shadow-sm transition hover:border-goldfinch-gold/50 hover:bg-sand" on:click={downloadQuotation}>
-        <Download size={17} /> Download quotation (PDF)
-      </button>
+        <Download size={17} />{$t('ui.download_quotation_pdf')}</button>
     </div>
 
-    <Button type="button" variant="secondary" on:click={resetForm}>Submit another request</Button>
+    <Button type="button" variant="secondary" on:click={resetForm}>{$t('ui.submit_another_request')}</Button>
   </div>
 {:else}
   <form class="booking-form gf-panel-dark relative flex max-h-[88svh] min-h-0 min-w-0 flex-col overflow-hidden rounded-[14px] border border-white/10 shadow-soft sm:max-h-[88vh] sm:rounded-2xl" on:focusin={keepFocusedFieldVisible} on:submit|preventDefault={submit} novalidate>
     <!-- Header + progress -->
     <div class="shrink-0 border-b border-white/10 px-4 py-3 sm:px-5 md:px-6">
-      <p class="text-xs font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">Booking request</p>
-      <h3 class="mt-0.5 font-serif text-xl font-semibold tracking-normal text-white">Request this trip with confidence</h3>
+      <p class="text-xs font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">{$t('ui.booking_request')}</p>
+      <h3 class="mt-0.5 font-serif text-xl font-semibold tracking-normal text-white">{$t('ui.request_this_trip_with_confidence')}</h3>
       {#if tour}
         <div class="booking-trip-context mt-2" title={tour.title}>
           <MapPin size={13} class="shrink-0 text-goldfinch-gold" />
@@ -448,17 +447,17 @@
     <div class="grid min-h-0 flex-1 gap-3 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5 md:px-6" bind:this={bodyEl}>
       {#if step === 0}
         <fieldset class="grid gap-3">
-          <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Trip details</legend>
+          <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{$t('ui.trip_details')}</legend>
           <div class="booking-field-grid">
             <label class="grid gap-1.5">
-              <span class="gf-label">Preferred travel date</span>
+              <span class="gf-label">{$t('ui.preferred_travel_date')}</span>
               <input class={cls('travel_date')} type="date" min={todayStr} bind:value={travel_date} on:input={() => clearErr('travel_date')} />
               {#if errors.travel_date}<span class="text-xs text-red-600">{errors.travel_date}</span>{/if}
             </label>
             <label class="grid gap-1.5">
-              <span class="gf-label">Are your dates flexible?</span>
+              <span class="gf-label">{$t('ui.are_your_dates_flexible')}</span>
               <select class={cls('date_flexibility')} bind:value={date_flexibility} on:change={() => clearErr('date_flexibility')}>
-                <option value="" disabled>Select…</option>
+                <option value="" disabled>{$t('ui.select_2')}</option>
                 {#each FLEX_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
               </select>
               {#if errors.date_flexibility}<span class="text-xs text-red-600">{errors.date_flexibility}</span>{/if}
@@ -466,13 +465,13 @@
           </div>
           <div class="booking-field-grid">
             <label class="grid gap-1.5">
-              <span class="gf-label">Trip duration</span>
+              <span class="gf-label">{$t('ui.trip_duration')}</span>
               <input class={cls('trip_duration')} bind:value={trip_duration} placeholder="e.g. 5 days / 4 nights" />
             </label>
             <label class="grid gap-1.5">
-              <span class="gf-label">Estimated budget per person</span>
+              <span class="gf-label">{$t('ui.estimated_budget_per_person')}</span>
               <select class={cls('budget_range')} bind:value={budget_range} on:change={() => clearErr('budget_range')}>
-                <option value="" disabled>Select budget…</option>
+                <option value="" disabled>{$t('ui.select_budget')}</option>
                 {#each BUDGET_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
               </select>
               {#if errors.budget_range}<span class="text-xs text-red-600">{errors.budget_range}</span>{/if}
@@ -480,21 +479,21 @@
           </div>
           <div class="booking-count-grid">
             <label class="grid gap-1.5">
-              <span class="gf-label">Adults</span>
+              <span class="gf-label">{$t('form.adults')}</span>
               <input class={cls('number_of_adults')} type="number" inputmode="numeric" min="1" bind:value={number_of_adults} on:input={() => clearErr('number_of_adults')} />
               {#if errors.number_of_adults}<span class="text-xs text-red-600">{errors.number_of_adults}</span>{/if}
             </label>
             <label class="grid gap-1.5">
-              <span class="gf-label">Children</span>
+              <span class="gf-label">{$t('ui.children')}</span>
               <input class={cls('number_of_children')} type="number" inputmode="numeric" min="0" bind:value={number_of_children} on:input={() => clearErr('number_of_children')} />
               {#if errors.number_of_children}<span class="text-xs text-red-600">{errors.number_of_children}</span>{/if}
             </label>
           </div>
         </fieldset>
         <fieldset class="grid gap-3">
-          <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Preferences</legend>
+          <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{$t('ui.preferences')}</legend>
           <div class="grid gap-2">
-            <span class="gf-label">What are you interested in? <span class="gf-hint">(select any)</span></span>
+            <span class="gf-label">{$t('ui.what_are_you_interested_in')}<span class="gf-hint">(select any)</span></span>
             <CategoryPicker
               selected={travel_interests}
               fallbackOptions={INTERESTS}
@@ -503,38 +502,37 @@
             />
           </div>
           <label class="grid gap-1.5">
-            <span class="gf-label">Accommodation preference</span>
+            <span class="gf-label">{$t('ui.accommodation_preference')}</span>
             <select class={cls('accommodation_preference')} bind:value={accommodation_preference}>
-              <option value="">No preference</option>
+              <option value="">{$t('ui.no_preference')}</option>
               {#each ACCOMMODATION_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
             </select>
           </label>
           <label class="grid gap-1.5">
-            <span class="gf-label">Special requests</span>
-            <textarea class="gf-textarea booking-textarea-short" rows={2} bind:value={special_requests} placeholder="Dietary needs, accessibility, celebrations, room preferences..."></textarea>
+            <span class="gf-label">{$t('form.special_requests')}</span>
+            <textarea class="gf-textarea booking-textarea-short" rows={2} bind:value={special_requests} placeholder={$t('ui.dietary_needs_accessibility_celebrations_room')}></textarea>
           </label>
           <label class="grid gap-1.5">
-            <span class="gf-label">Anything else we should know?</span>
-            <textarea class="gf-textarea booking-textarea" rows={3} bind:value={message} placeholder="Must-see places, special occasions, group details..."></textarea>
+            <span class="gf-label">{$t('ui.anything_else_we_should_know')}</span>
+            <textarea class="gf-textarea booking-textarea" rows={3} bind:value={message} placeholder={$t('ui.mustsee_places_special_occasions_group')}></textarea>
           </label>
         </fieldset>
       {:else}
         <fieldset class="grid gap-3">
           <legend class="mb-1 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">
-            <User size={13} /> Contact details
-          </legend>
-          <p class="-mt-0.5 mb-1 text-xs text-white/50">We'll use this to reach you about your trip.</p>
+            <User size={13} />{$t('ui.contact_details')}</legend>
+          <p class="-mt-0.5 mb-1 text-xs text-white/50">{$t('ui.well_use_this_to_reach')}</p>
           <div class="booking-field-grid">
             <label class="grid gap-1.5">
-              <span class="gf-label">Full name</span>
+              <span class="gf-label">{$t('form.full_name')}</span>
               <span class="gf-field">
                 <User size={15} class="gf-field-icon" />
-                <input class={cls('full_name')} bind:value={full_name} on:input={() => clearErr('full_name')} placeholder="Your name" autocomplete="name" />
+                <input class={cls('full_name')} bind:value={full_name} on:input={() => clearErr('full_name')} placeholder={$t('ui.your_name')} autocomplete="name" />
               </span>
               {#if errors.full_name}<span class="text-xs text-red-600">{errors.full_name}</span>{/if}
             </label>
             <label class="grid gap-1.5">
-              <span class="gf-label">Email</span>
+              <span class="gf-label">{$t('form.email')}</span>
               <span class="gf-field">
                 <Mail size={15} class="gf-field-icon" />
                 <input class={cls('email')} type="email" inputmode="email" autocapitalize="off" spellcheck="false" bind:value={email} on:input={() => clearErr('email')} placeholder="you@example.com" autocomplete="email" />
@@ -544,7 +542,7 @@
           </div>
           <div class="booking-field-grid">
             <label class="grid gap-1.5 sm:col-span-2">
-              <span class="gf-label">Phone / WhatsApp</span>
+              <span class="gf-label">{$t('ui.phone_whatsapp')}</span>
               <span class="gf-field">
                 <MessageCircle size={15} class="gf-field-icon" />
                 <input class={cls('phone')} type="tel" inputmode="tel" bind:value={phone} on:input={() => clearErr('phone')} placeholder="+255 ..." autocomplete="tel" />
@@ -563,10 +561,8 @@
                 : 'border-white/12 bg-white/[0.04] hover:border-white/20'}"
             >
               <input type="checkbox" class="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[#25D366]" bind:checked={whatsapp_opt_in} />
-              <span class="min-w-0 text-[13px] leading-5 text-white/85">
-                Contact me on WhatsApp about my trip, quotation and booking updates.
-                <span class="mt-1.5 block">
-                  <span class="rounded bg-[#25D366]/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#25D366]">Recommended</span>
+              <span class="min-w-0 text-[13px] leading-5 text-white/85">{$t('ui.contact_me_on_whatsapp_about')}<span class="mt-1.5 block">
+                  <span class="rounded bg-[#25D366]/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#25D366]">{$t('sort.recommended')}</span>
                   <span class="text-xs text-white/50"> — faster replies and real-time updates.</span>
                 </span>
               </span>
@@ -583,9 +579,8 @@
           -->
           <div>
             <p class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">
-              <ClipboardList size={13} /> Your request summary
-            </p>
-            <p class="mt-1 text-xs text-white/50">Please review your details below. You can go back to make changes.</p>
+              <ClipboardList size={13} />{$t('ui.your_request_summary')}</p>
+            <p class="mt-1 text-xs text-white/50">{$t('ui.please_review_your_details_below')}</p>
           </div>
           <div class="overflow-hidden rounded-xl border border-white/12">
             <dl class="divide-y divide-white/[0.08]">
@@ -612,20 +607,17 @@
 
           {#if indicative}
             <div class="rounded-xl border border-goldfinch-gold/30 bg-white/[0.06] p-4">
-              <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-goldfinch-gold">Indicative estimate</p>
+              <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-goldfinch-gold">{$t('ui.indicative_estimate')}</p>
               <p class="mt-1 text-lg font-extrabold text-white">{indicative.perPerson} <span class="text-xs font-semibold text-white/65">per person</span></p>
               <p class="mt-0.5 text-sm text-white/75">{indicative.perPerson} × {indicative.adults} adult{indicative.adults === 1 ? '' : 's'} ≈ <b class="text-white">{indicative.total}</b></p>
-              <p class="mt-1.5 text-[11px] leading-5 text-white/60">Indicative only — excludes international flights, visas and insurance. Your specialist confirms the final quote.</p>
+              <p class="mt-1.5 text-[11px] leading-5 text-white/60">{$t('ui.indicative_only_excludes_international_flights')}</p>
             </div>
           {/if}
 
           <div>
             <p class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">
-              <Sparkles size={13} /> What's next?
-            </p>
-            <p class="mt-1 text-xs leading-5 text-white/50">
-              Submit your request to get a reference number, or send us your details straight away on WhatsApp.
-            </p>
+              <Sparkles size={13} />{$t('ui.whats_next')}</p>
+            <p class="mt-1 text-xs leading-5 text-white/50">{$t('ui.submit_your_request_to_get')}</p>
           </div>
           <!--
             Stacked, not two-up. This panel is ~360px wide whatever the viewport
@@ -635,11 +627,9 @@
           -->
           <div class="grid gap-2.5">
             <a href={waHref} target="_blank" rel="noopener noreferrer" on:click={openWhatsApp} class="inline-flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#25D366] px-4 text-sm font-bold text-white shadow-sm transition hover:brightness-105">
-              <MessageCircle size={16} /> Send on WhatsApp
-            </a>
+              <MessageCircle size={16} />{$t('ui.send_on_whatsapp')}</a>
             <button type="button" class="inline-flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white/20 bg-white/[0.06] px-4 text-sm font-bold text-white transition hover:border-goldfinch-gold/50 hover:bg-white/[0.12]" on:click={downloadQuotation}>
-              <Download size={16} /> Download quotation (PDF)
-            </button>
+              <Download size={16} />{$t('ui.download_quotation_pdf')}</button>
           </div>
         </div>
       {/if}
@@ -668,12 +658,10 @@
       <div class:single-action={step === 0} class="booking-form-nav">
         {#if step > 0}
           <button type="button" class="gf-btn-ghost booking-nav-back" on:click={back}>
-            <ArrowLeft size={16} /> Back
-          </button>
+            <ArrowLeft size={16} />{$t('form.back')}</button>
         {/if}
         {#if step < LAST}
-          <button type="button" class="gf-btn-primary booking-nav-primary" on:click={next}>
-            Continue <ArrowRight size={16} strokeWidth={2.6} />
+          <button type="button" class="gf-btn-primary booking-nav-primary" on:click={next}>{$t('ui.continue')}<ArrowRight size={16} strokeWidth={2.6} />
           </button>
         {:else}
           <button type="submit" class="gf-btn-primary booking-nav-primary" disabled={submitting}>
@@ -683,9 +671,7 @@
       </div>
 
       <p class="flex items-center justify-center gap-1.5 text-center text-xs text-white/60">
-        <ShieldCheck size={13} class="text-forest" />
-        Your details are kept private and used only to plan your trip.
-      </p>
+        <ShieldCheck size={13} class="text-forest" />{$t('ui.your_details_are_kept_private')}</p>
     </div>
   </form>
 {/if}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { Clock, MapPin, Mountain } from '@lucide/svelte';
   import { tilt } from '$lib/animations';
   import { currency, formatUsd } from '$lib/currency';
@@ -73,8 +74,7 @@
 
     {#if priceLabel}
       <div class="mt-auto pt-4">
-        <p class="text-sm text-ink/70">
-          From <span class="font-bold text-ink">{priceLabel}</span>{#if activity.price_unit} · {activity.price_unit}{/if}
+        <p class="text-sm text-ink/70">{$t('label.from')}<span class="font-bold text-ink">{priceLabel}</span>{#if activity.price_unit} · {activity.price_unit}{/if}
         </p>
       </div>
     {/if}

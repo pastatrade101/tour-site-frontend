@@ -439,7 +439,7 @@
 
   <!-- ── main row: logo · navigation · actions ───────────────────────────── -->
   <div class="mx-auto flex h-16 w-full max-w-[1500px] items-stretch justify-between gap-4 px-4 text-white">
-    <a href="/" class="flex shrink-0 items-center gap-2.5" aria-label="Goldfinch Adventures home" on:click={() => activateLink('/')}>
+    <a href="/" class="flex shrink-0 items-center gap-2.5" aria-label={$t('ui.goldfinch_adventures_home')} on:click={() => activateLink('/')}>
       <img src="/favicon1.png" alt="Goldfinch Adventures" class="h-9 w-9 shrink-0 object-contain" />
       <span class="text-lg font-extrabold tracking-normal text-white">Goldfinch</span>
     </a>
@@ -665,7 +665,7 @@
         <input
           class="min-w-0 flex-1 bg-transparent text-sm font-medium text-white outline-none placeholder:text-white/45"
           aria-label={$t('placeholder.search_tours')}
-          placeholder="Search safaris, Kilimanjaro, Zanzibar..."
+          placeholder={$t('ui.search_safaris_kilimanjaro_zanzibar')}
           autofocus
           bind:value={searchQuery}
         />
@@ -710,10 +710,10 @@
 
         <form class="mt-5 flex h-11 items-center rounded-full bg-[#f1f1f1] px-2 transition focus-within:ring-2 focus-within:ring-goldfinch-gold/30" on:submit|preventDefault={submitSearch} role="search">
           <button class="grid h-8 w-8 shrink-0 place-items-center rounded-full text-[#111]" type="submit" aria-label={$t('a11y.search_tours')}><Search size={17} strokeWidth={2.6} /></button>
-          <input class="min-w-0 flex-1 bg-transparent px-1 text-sm font-medium outline-none placeholder:text-[#a9a9a9]" aria-label={$t('placeholder.search_tours')} placeholder="Search tours..." bind:value={searchQuery} />
+          <input class="min-w-0 flex-1 bg-transparent px-1 text-sm font-medium outline-none placeholder:text-[#a9a9a9]" aria-label={$t('placeholder.search_tours')} placeholder={$t('ui.search_tours')} bind:value={searchQuery} />
         </form>
 
-        <nav class="mt-5 grid gap-1" aria-label="Mobile" data-sveltekit-preload-code="tap" data-sveltekit-preload-data="tap">
+        <nav class="mt-5 grid gap-1" aria-label={$t('ui.mobile')} data-sveltekit-preload-code="tap" data-sveltekit-preload-data="tap">
           {#each NAV as item}
             {@const active = isActive(path, item.href)}
             {@const links = item.dropdown === 'destinations' ? destinations : item.dropdown === 'tours' ? tours : item.dropdown === 'accommodation' ? lodges : item.dropdown === 'safariStyles' ? categories : []}
@@ -778,8 +778,7 @@
           </div>
           {#if $canInstall}
             <button type="button" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-forest px-4 py-3 text-sm font-bold text-white transition hover:bg-deep-green" on:click={() => { void promptInstall(); menuOpen = false; }}>
-              <ArrowDownToLine size={18} strokeWidth={2.6} /> Install app
-            </button>
+              <ArrowDownToLine size={18} strokeWidth={2.6} />{$t('ui.install_app')}</button>
           {/if}
           <a class="flex items-center gap-3 rounded-2xl bg-[#25D366]/10 px-4 py-3" href={waHref} target="_blank" rel="noopener noreferrer" on:click={() => { trackEvent('whatsapp_click'); menuOpen = false; }}>
             <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#25D366] text-white"><MessageCircle size={20} strokeWidth={2.6} /></span>

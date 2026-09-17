@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { afterUpdate, onMount } from 'svelte';
   import { fade, fly } from 'svelte/transition';
   import { ArrowUpRight, MapPin, MessageCircle, Send, Sparkles, Star, X } from '@lucide/svelte';
@@ -239,10 +240,10 @@
     }`}
     type="button"
     on:click={() => ($aiAdvisorOpen = true)}
-    aria-label="Open the Goldfinch AI Travel Advisor"
+    aria-label={$t('ui.open_the_goldfinch_ai_travel')}
   >
     <LottieChatIcon size={40} />
-    <span class="hidden sm:inline">Ask our AI advisor</span>
+    <span class="hidden sm:inline">{$t('ui.ask_our_ai_advisor')}</span>
   </button>
 {/if}
 
@@ -251,7 +252,7 @@
   <div
     class="fixed inset-0 z-[60] flex flex-col bg-surface md:inset-auto md:bottom-6 md:right-6 md:h-[640px] md:max-h-[85vh] md:w-[400px] md:rounded-[16px] md:border md:border-ink/10 md:shadow-[0_30px_80px_rgba(57,61,50,0.28)]"
     role="dialog"
-    aria-label="Goldfinch AI Travel Advisor"
+    aria-label={$t('ui.goldfinch_ai_travel_advisor')}
     transition:fly={motion(20, 220)}
   >
     <!-- Header -->
@@ -260,10 +261,10 @@
         <span class="grid h-9 w-9 place-items-center rounded-full bg-surface/15"><LottieChatIcon size={24} /></span>
         <div class="leading-tight">
           <p class="text-sm font-bold">{brand.aiAdvisorName}</p>
-          <p class="text-[11px] text-white/70">AI assistant · replies are guidance, not a final booking</p>
+          <p class="text-[11px] text-white/70">{$t('ui.ai_assistant_replies_are_guidance')}</p>
         </div>
       </div>
-      <button class="rounded-full p-1.5 text-white/80 transition hover:bg-surface/10 hover:text-white" type="button" on:click={() => ($aiAdvisorOpen = false)} aria-label="Close advisor">
+      <button class="rounded-full p-1.5 text-white/80 transition hover:bg-surface/10 hover:text-white" type="button" on:click={() => ($aiAdvisorOpen = false)} aria-label={$t('ui.close_advisor')}>
         <X size={18} />
       </button>
     </header>
@@ -280,7 +281,7 @@
             {#if m.text}
               <p class="max-w-[90%] whitespace-pre-wrap rounded-[14px] rounded-bl-sm bg-surface px-3.5 py-2.5 text-sm leading-6 text-ink shadow-sm">{@html formatReply(m.text)}</p>
             {:else if loading && i === messages.length - 1}
-              <p class="inline-flex w-fit items-center gap-1 rounded-[14px] rounded-bl-sm bg-surface px-3.5 py-3 shadow-sm" aria-label="Advisor is typing">
+              <p class="inline-flex w-fit items-center gap-1 rounded-[14px] rounded-bl-sm bg-surface px-3.5 py-3 shadow-sm" aria-label={$t('ui.advisor_is_typing')}>
                 <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-black/40" style="animation-delay:0ms"></span>
                 <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-black/40" style="animation-delay:120ms"></span>
                 <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-black/40" style="animation-delay:240ms"></span>
@@ -308,8 +309,7 @@
                         {/each}
                       </ul>
                     {/if}
-                    <a class="mt-2 inline-flex items-center gap-1 text-[12px] font-bold text-forest transition hover:text-heading" href={rec.cta}>
-                      View this trip <ArrowUpRight size={13} strokeWidth={2.6} />
+                    <a class="mt-2 inline-flex items-center gap-1 text-[12px] font-bold text-forest transition hover:text-heading" href={rec.cta}>{$t('ui.view_this_trip')}<ArrowUpRight size={13} strokeWidth={2.6} />
                     </a>
                   </article>
                 {/each}
@@ -356,7 +356,7 @@
       {/if}
 
       {#if handoff}
-        <p class="rounded-[10px] border border-goldfinch-gold/30 bg-goldfinch-gold/10 px-3 py-2 text-[12px] font-medium text-clay">A Goldfinch specialist will follow up with you personally.</p>
+        <p class="rounded-[10px] border border-goldfinch-gold/30 bg-goldfinch-gold/10 px-3 py-2 text-[12px] font-medium text-clay">{$t('ui.a_goldfinch_specialist_will_follow')}</p>
       {/if}
     </div>
 
@@ -366,17 +366,15 @@
         <input
           class="min-w-0 flex-1 rounded-full border border-ink/15 bg-surface px-4 py-2.5 text-sm outline-none transition focus:border-forest"
           bind:value={input}
-          placeholder="Ask about destinations, dates, budget…"
-          aria-label="Message the AI advisor"
+          placeholder={$t('ui.ask_about_destinations_dates_budget')}
+          aria-label={$t('ui.message_the_ai_advisor')}
           autocomplete="off"
         />
-        <button class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-forest text-white transition hover:bg-deep-green disabled:opacity-50" type="submit" disabled={loading || !input.trim()} aria-label="Send">
+        <button class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-forest text-white transition hover:bg-deep-green disabled:opacity-50" type="submit" disabled={loading || !input.trim()} aria-label={$t('ui.send')}>
           <Send size={17} />
         </button>
       </div>
-      <p class="mt-2 px-1 text-[10.5px] leading-4 text-ink/70">
-        By chatting you agree we may store your messages and any details you share to help plan your trip. No payment is taken here.
-      </p>
+      <p class="mt-2 px-1 text-[10.5px] leading-4 text-ink/70">{$t('ui.by_chatting_you_agree_we')}</p>
       {#if turnstileSiteKey}<div bind:this={turnstileMount} class="hidden"></div>{/if}
     </form>
   </div>

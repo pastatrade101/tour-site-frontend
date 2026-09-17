@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * The route options panel, laid out exactly as the supplied design: route
    * tabs, a wide photo, then one card holding the intro, highlights, a
@@ -131,7 +132,7 @@
   <div
     class="route-tabs -mx-4 mt-8 flex gap-[10px] overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0"
     role="tablist"
-    aria-label="Route options"
+    aria-label={$t('ui.route_options')}
   >
     {#each resolved as item, i (i)}
       <button
@@ -186,7 +187,7 @@
         <!-- Tour highlights -->
         {#if highlights.length}
           <div class="mt-9 border-t border-ink/[0.18] pt-8">
-            <h3 class={SUB}>Tour Highlights</h3>
+            <h3 class={SUB}>{$t('ui.tour_highlights')}</h3>
             <ul class="mt-4 grid gap-x-8 gap-y-2.5 md:grid-cols-2">
               {#each highlights as item, i (i)}
                 <li class="flex gap-2.5 text-[14.5px] leading-snug text-heading">
@@ -200,13 +201,13 @@
 
         <!-- Prices for this route -->
         <div class="mt-9 border-t border-ink/[0.18] pt-8">
-          <h3 class={SUB}>Prices for This Route</h3>
+          <h3 class={SUB}>{$t('ui.prices_for_this_route')}</h3>
           <p class="mt-3 max-w-[820px] text-[15px] leading-relaxed text-ink/70">
             Pricing depends on accommodation style, travel date, availability and the number of travellers.
             Choose a comfort level below to see the starting structure.
           </p>
           {#if route.comfort.length > 1}
-            <div class="comfort-tabs -mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible" role="tablist" aria-label="Price comfort level">
+            <div class="comfort-tabs -mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible" role="tablist" aria-label={$t('ui.price_comfort_level')}>
               {#each route.comfort as level, i (i)}
                 <button
                   class={`h-11 shrink-0 rounded-[10px] border px-5 text-[14px] font-semibold tracking-[0.02em] transition ${
@@ -257,12 +258,8 @@
                 </div>
               {/if}
             </div>
-            <p class="mt-5 text-[13px] italic leading-relaxed text-ink/55">
-              Final price is confirmed after checking flights, accommodation availability and your group size.
-            </p>
-            <a class={`mt-5 ${GOLD}`} href={formHref}>
-              Check This Price for My Date
-              <ArrowRight size={16} />
+            <p class="mt-5 text-[13px] italic leading-relaxed text-ink/55">{$t('ui.final_price_is_confirmed_after')}</p>
+            <a class={`mt-5 ${GOLD}`} href={formHref}>{$t('ui.check_this_price_for_my')}<ArrowRight size={16} />
             </a>
           </div>
         </div>
@@ -270,7 +267,7 @@
         <!-- Day by day, with accommodation folded into day one -->
         {#if days.length}
           <div class="mt-9 border-t border-ink/[0.18] pt-8">
-            <h3 class={SUB}>Day by Day Itinerary</h3>
+            <h3 class={SUB}>{$t('ui.day_by_day_itinerary')}</h3>
             <div class="route-itinerary mt-4 overflow-hidden rounded-[12px] border border-ink/[0.16] bg-surface">
               {#each days as day, i (i)}
                 <div class={i > 0 ? 'border-t border-ink/[0.12]' : ''}>
@@ -298,11 +295,9 @@
                       {#if i === 0 && (route.stayNote || selectedStays.length)}
                         <div class="mt-7 border-t border-ink/[0.12] pt-6">
                           <h4 class="font-serif flex items-center gap-2 text-[17px] font-semibold text-heading md:text-[19px]">
-                            <Tent size={18} class="text-clay" />
-                            Accommodation Options
-                          </h4>
+                            <Tent size={18} class="text-clay" />{$t('ui.accommodation_options')}</h4>
                           {#if route.comfort.length > 1}
-                            <div class="comfort-tabs -mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible" role="tablist" aria-label="Accommodation comfort level">
+                            <div class="comfort-tabs -mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible" role="tablist" aria-label={$t('ui.accommodation_comfort_level')}>
                               {#each route.comfort as level, li (li)}
                                 <button
                                   class={`h-11 shrink-0 rounded-[10px] border px-5 text-[14px] font-semibold tracking-[0.02em] transition ${
@@ -349,9 +344,7 @@
                                 {/each}
                               </div>
                             {/if}
-                            <p class="mt-5 text-[13px] italic leading-relaxed text-ink/55">
-                              Final accommodation depends on route choice, travel date, availability and preferred comfort level.
-                            </p>
+                            <p class="mt-5 text-[13px] italic leading-relaxed text-ink/55">{$t('ui.final_accommodation_depends_on_route')}</p>
                           </div>
                         </div>
                       {/if}
@@ -366,17 +359,13 @@
         <!-- Route CTA — horizontal -->
         <div class="mt-9 flex flex-col gap-4 border-t border-ink/[0.18] pt-8 md:flex-row md:items-center md:justify-between">
           <div class="max-w-[720px]">
-            <h3 class="font-serif text-[19px] font-semibold text-heading md:text-[22px]">
-              Want This Route Checked for Your Date?
-            </h3>
+            <h3 class="font-serif text-[19px] font-semibold text-heading md:text-[22px]">{$t('ui.want_this_route_checked_for')}</h3>
             <p class={`mt-2 ${BODY}`}>
               Share your preferred start date and group size. We'll check flights, accommodation and route
               availability before sending a proposal.
             </p>
           </div>
-          <a class={`shrink-0 ${GOLD}`} href={formHref}>
-            Send Request
-            <ArrowRight size={16} />
+          <a class={`shrink-0 ${GOLD}`} href={formHref}>{$t('ui.send_request')}<ArrowRight size={16} />
           </a>
         </div>
       </div>

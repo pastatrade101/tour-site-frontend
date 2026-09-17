@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { CheckCircle2, Mail, Send } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import { getAttribution } from '$lib/analytics';
@@ -49,11 +50,11 @@
   {#if done}
     <div class="flex items-center gap-3 text-heading">
       <CheckCircle2 size={22} class="shrink-0 text-emerald-600" />
-      <p class="text-sm font-semibold">On its way — check your inbox shortly. A specialist will follow up to help you plan.</p>
+      <p class="text-sm font-semibold">{$t('ui.on_its_way_check_your')}</p>
     </div>
   {:else}
-    <p class="text-sm font-bold text-heading">Want it in your inbox?</p>
-    <p class="mt-0.5 text-xs text-ink/70">We'll email you this itinerary — no obligation.</p>
+    <p class="text-sm font-bold text-heading">{$t('ui.want_it_in_your_inbox')}</p>
+    <p class="mt-0.5 text-xs text-ink/70">{$t('ui.well_email_you_this_itinerary')}</p>
     <form class="mt-3 flex flex-col gap-2 sm:flex-row" on:submit|preventDefault={submit}>
       <div class="relative flex-1">
         <Mail class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink/40" size={16} />

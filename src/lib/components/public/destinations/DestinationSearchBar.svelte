@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * One inline filter row: search, a dropdown per facet group, then the CTA.
    *
@@ -15,7 +16,7 @@
   export let activeGroup = '';
   export let activeFacet = '';
   export let resultCount = 0;
-  export let placeholder = 'Search destinations, parks, islands or wildlife…';
+  export let placeholder = '';
 
   const dispatch = createEventDispatcher<{ facet: { group: string; facet: string }; clear: void }>();
   let mobileOpen = false;
@@ -41,7 +42,7 @@
   // "All experience" reads wrong, and naive pluralisation gives "All wildlifes".
   // Group labels are a known, small set, so they are spelled out.
   const ALL_LABELS: Record<string, string> = {
-    experience: 'All experiences',
+    experience: $t('ui.all_experiences'),
     region: 'All regions',
     wildlife: 'All wildlife',
     'length of stay': 'Any length'
@@ -77,24 +78,24 @@
 
 {#if mobileOpen}
   <div class="fixed inset-0 z-[100] bg-black/45 md:hidden" role="presentation">
-    <button type="button" class="absolute inset-0" aria-label="Close filters" on:click={closeMobile}></button>
-    <div class="destination-filter-drawer absolute inset-y-0 right-0 flex w-[min(92vw,420px)] flex-col bg-canvas shadow-[-18px_0_50px_rgba(15,23,42,0.2)]" role="dialog" aria-modal="true" aria-label="Filter destinations">
+    <button type="button" class="absolute inset-0" aria-label={$t('filter.close')} on:click={closeMobile}></button>
+    <div class="destination-filter-drawer absolute inset-y-0 right-0 flex w-[min(92vw,420px)] flex-col bg-canvas shadow-[-18px_0_50px_rgba(15,23,42,0.2)]" role="dialog" aria-modal="true" aria-label={$t('ui.filter_destinations')}>
     <header class="flex h-16 shrink-0 items-center justify-between border-b border-ink/10 bg-surface px-4">
       <div>
-        <p class="font-serif text-xl font-semibold text-heading">Filter destinations</p>
-        <p class="text-xs text-ink/55">Find places that fit your trip</p>
+        <p class="font-serif text-xl font-semibold text-heading">{$t('ui.filter_destinations')}</p>
+        <p class="text-xs text-ink/55">{$t('ui.find_places_that_fit_your')}</p>
       </div>
-      <button type="button" class="grid h-10 w-10 place-items-center rounded-[8px] border border-ink/12 text-heading" on:click={closeMobile} aria-label="Close filters"><X size={19} /></button>
+      <button type="button" class="grid h-10 w-10 place-items-center rounded-[8px] border border-ink/12 text-heading" on:click={closeMobile} aria-label={$t('filter.close')}><X size={19} /></button>
     </header>
 
     <div class="flex-1 overflow-y-auto px-4 py-5">
       <div class="mx-auto grid max-w-xl gap-6">
         <section class="mobile-filter-group">
-          <label class="mobile-filter-title" for="mobile-destination-search">Search</label>
+          <label class="mobile-filter-title" for="mobile-destination-search">{$t('cta.search')}</label>
           <div class="flex h-12 items-center gap-2.5 rounded-[9px] border border-ink/14 bg-surface px-3.5">
             <Search size={17} class="text-ink/40" />
-            <input id="mobile-destination-search" type="search" class="min-w-0 flex-1 bg-transparent text-sm font-semibold text-heading outline-none" {placeholder} bind:value />
-            {#if value.trim()}<button type="button" class="grid h-8 w-8 place-items-center text-ink/45" on:click={() => (value = '')} aria-label="Clear search"><X size={15} /></button>{/if}
+            <input id="mobile-destination-search" type="search" class="min-w-0 flex-1 bg-transparent text-sm font-semibold text-heading outline-none" placeholder={placeholder || $t('ui.search_destinations_long')} bind:value />
+            {#if value.trim()}<button type="button" class="grid h-8 w-8 place-items-center text-ink/45" on:click={() => (value = '')} aria-label={$t('ui.clear_search')}><X size={15} /></button>{/if}
           </div>
         </section>
 
@@ -114,8 +115,8 @@
     </div>
 
     <footer class="grid shrink-0 grid-cols-[auto_minmax(0,1fr)] gap-3 border-t border-ink/10 bg-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-      <button type="button" class="h-12 px-3 text-sm font-bold text-forest disabled:opacity-40" disabled={!hasFilter} on:click={() => dispatch('clear')}>Clear</button>
-      <button type="button" class="h-12 rounded-[9px] bg-deep-green px-5 text-sm font-bold text-white" on:click={() => { closeMobile(); jumpToResults(); }}>Apply filters</button>
+      <button type="button" class="h-12 px-3 text-sm font-bold text-forest disabled:opacity-40" disabled={!hasFilter} on:click={() => dispatch('clear')}>{$t('filter.clear')}</button>
+      <button type="button" class="h-12 rounded-[9px] bg-deep-green px-5 text-sm font-bold text-white" on:click={() => { closeMobile(); jumpToResults(); }}>{$t('filter.apply_filters')}</button>
     </footer>
     </div>
   </div>
@@ -130,15 +131,15 @@
       <input
         class="h-full min-w-0 flex-1 bg-transparent text-[15px] font-medium text-heading outline-none placeholder:text-ink/40"
         type="search"
-        {placeholder}
-        aria-label="Search destinations"
+        placeholder={placeholder || $t('ui.search_destinations_long')}
+        aria-label={$t('filter.search_destinations')}
         bind:value
       />
       {#if value.trim()}
         <button
           type="button"
           class="grid h-8 w-8 shrink-0 place-items-center rounded-full text-ink/40 transition hover:bg-ink/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
-          aria-label="Clear search"
+          aria-label={$t('ui.clear_search')}
           on:click={() => (value = '')}
         >
           <X size={15} />
@@ -173,7 +174,7 @@
     </div>
 
     {#if hasFilter}
-      <button type="button" class="h-12 shrink-0 px-3 text-sm font-bold text-forest md:h-14" on:click={() => dispatch('clear')}>Clear</button>
+      <button type="button" class="h-12 shrink-0 px-3 text-sm font-bold text-forest md:h-14" on:click={() => dispatch('clear')}>{$t('filter.clear')}</button>
     {/if}
     <button type="button" class="destination-filter-submit inline-flex h-12 shrink-0 items-center justify-center rounded-[10px] bg-deep-green px-5 text-sm font-extrabold text-white transition hover:bg-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold md:h-14" on:click={jumpToResults}>
       View {resultCount}

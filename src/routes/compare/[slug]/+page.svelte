@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { ArrowRight, Sparkles } from '@lucide/svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
@@ -92,7 +93,7 @@
     <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-deep-green/80 to-deep-green/40"></div>
     <div class="container-shell relative py-14 md:py-20">
       <nav class="mb-5 flex items-center gap-2 text-sm text-white/70">
-        <a class="font-medium transition hover:text-white" href="/compare">Compare</a>
+        <a class="font-medium transition hover:text-white" href="/compare">{$t('ui.compare')}</a>
         <span class="text-white/30">/</span>
         <span class="font-medium text-white">{cmp.title}</span>
       </nav>
@@ -129,7 +130,7 @@
     <div class="mt-8 flex items-start gap-3 rounded-2xl border border-goldfinch-gold/30 bg-savanna/20 p-5 md:p-6">
       <Sparkles size={22} class="mt-0.5 shrink-0 text-goldfinch-gold" />
       <div>
-        <p class="text-sm font-bold uppercase tracking-[0.14em] text-clay">Our honest verdict</p>
+        <p class="text-sm font-bold uppercase tracking-[0.14em] text-clay">{$t('ui.our_honest_verdict')}</p>
         <RichText value={cmp.verdict} className="mt-2 text-base leading-7 text-ink/80" />
         <a class="mt-4 inline-flex h-11 items-center gap-2 rounded-xl bg-deep-green px-6 font-bold text-white transition hover:bg-forest" href={ctaHref}>
           {cmp.cta.label} <ArrowRight size={16} />
@@ -139,7 +140,7 @@
 
     {#if cmp.faqs?.length}
       <div class="mt-10">
-        <h2 class="text-2xl font-bold text-heading">Common questions</h2>
+        <h2 class="text-2xl font-bold text-heading">{$t('ui.common_questions')}</h2>
         <div class="mt-8">
           <FAQAccordion faqs={cmp.faqs.map((faq, index) => ({ id: `comparison-faq-${index}`, question: faq.q, answer: faq.a }))} />
         </div>
@@ -148,7 +149,7 @@
 
     {#if others.length}
       <div class="mt-12">
-        <h2 class="text-xl font-bold text-heading">More comparisons</h2>
+        <h2 class="text-xl font-bold text-heading">{$t('ui.more_comparisons')}</h2>
         <div class="mt-4 grid gap-4 sm:grid-cols-2">
           {#each others as o (o.slug)}
             <a class="group flex items-center justify-between gap-3 rounded-2xl border border-ink/10 bg-surface p-5 transition hover:border-goldfinch-gold/40" href={`/compare/${o.slug}`}>
@@ -165,7 +166,7 @@
   </section>
 {:else if loaded}
   <section class="container-shell py-20 text-center">
-    <h1 class="text-2xl font-bold text-heading">Comparison not found</h1>
-    <a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-forest hover:text-heading" href="/compare">See all comparisons <ArrowRight size={16} /></a>
+    <h1 class="text-2xl font-bold text-heading">{$t('ui.comparison_not_found')}</h1>
+    <a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-forest hover:text-heading" href="/compare">{$t('ui.see_all_comparisons')}<ArrowRight size={16} /></a>
   </section>
 {/if}

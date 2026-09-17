@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { ArrowUpRight, MapPin, Timer } from '@lucide/svelte';
   import { fadeUpOnScroll, revealHeading, staggeredCardReveal, tilt } from '$lib/animations';
@@ -115,11 +116,9 @@
 <section class="bg-surface py-14 md:py-20" use:fadeUpOnScroll={{ y: 18 }}>
   <div class="container-shell">
     <div class="mx-auto max-w-2xl text-center">
-      <p class="font-serif text-xl italic text-clay">Things to do</p>
-      <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-heading md:text-[40px]" use:revealHeading>Popular Activities</h2>
-      <p class="mx-auto mt-3 max-w-[620px] text-[15px] leading-7 text-ink/70 md:text-base">
-        A curated list of the most-loved experiences across our East-Africa destinations.
-      </p>
+      <p class="font-serif text-xl italic text-clay">{$t('ui.things_to_do')}</p>
+      <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-heading md:text-[40px]" use:revealHeading>{$t('ui.popular_activities')}</h2>
+      <p class="mx-auto mt-3 max-w-[620px] text-[15px] leading-7 text-ink/70 md:text-base">{$t('ui.a_curated_list_of_the')}</p>
     </div>
 
     <div
@@ -175,9 +174,7 @@
               <a
                 href={activity.href}
                 class="inline-flex items-center gap-1.5 rounded-[8px] bg-forest px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-deep-green"
-              >
-                Explore
-                <ArrowUpRight size={16} strokeWidth={2.6} class="transition-transform duration-300 group-hover:translate-x-0.5" />
+              >{$t('cta.explore')}<ArrowUpRight size={16} strokeWidth={2.6} class="transition-transform duration-300 group-hover:translate-x-0.5" />
               </a>
 
               {#if activity.price != null}
@@ -196,8 +193,7 @@
       <a
         class="inline-flex h-12 items-center gap-2 rounded-full bg-forest px-7 font-bold text-white shadow-sm transition hover:bg-deep-green"
         href="/tours"
-      >
-        View all activities <ArrowUpRight size={18} strokeWidth={2.6} />
+      >{$t('ui.view_all_activities')}<ArrowUpRight size={18} strokeWidth={2.6} />
       </a>
     </div>
   </div>

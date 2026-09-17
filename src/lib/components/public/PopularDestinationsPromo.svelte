@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount, onDestroy } from 'svelte';
   import { ArrowRight, ChevronDown, MapPin, Star } from '@lucide/svelte';
   import { goto } from '$app/navigation';
@@ -101,16 +102,16 @@
 
         <div class="relative max-w-md">
           <p class="font-serif text-3xl italic text-savanna">discover</p>
-          <p class="mt-4 text-xs font-bold uppercase tracking-[0.2em] text-white/80">Limited green-season departures</p>
+          <p class="mt-4 text-xs font-bold uppercase tracking-[0.2em] text-white/80">{$t('ui.limited_greenseason_departures')}</p>
           <p class="mt-5 flex items-baseline gap-2 font-extrabold leading-none text-goldfinch-gold">
             <span class="text-6xl">20%</span><span class="text-xl text-white/85">better value</span>
           </p>
-          <p class="mt-4 text-xl font-bold">New safari experiences in Tanzania</p>
+          <p class="mt-4 text-xl font-bold">{$t('ui.new_safari_experiences_in_tanzania')}</p>
 
           <div class="mt-7 flex h-14 items-center gap-2 rounded-lg bg-surface/95 px-3 shadow-lg">
             <MapPin size={18} class="shrink-0 text-forest" />
-            <select class="h-12 w-full cursor-pointer appearance-none bg-transparent text-sm font-semibold text-ink outline-none" bind:value={dest} aria-label="Choose a destination">
-              <option value="">Where do you want to go?</option>
+            <select class="h-12 w-full cursor-pointer appearance-none bg-transparent text-sm font-semibold text-ink outline-none" bind:value={dest} aria-label={$t('ui.choose_a_destination')}>
+              <option value="">{$t('ui.where_do_you_want_to')}</option>
               {#each destinations as d (d.slug)}
                 <option value={d.slug}>{d.name}</option>
               {/each}
@@ -122,8 +123,7 @@
             class="mt-5 inline-flex h-12 items-center gap-2 rounded-lg bg-goldfinch-gold px-7 font-bold text-heading shadow-lg transition hover:-translate-y-0.5 hover:brightness-105"
             type="button"
             on:click={bookNow}
-          >
-            Book Now <ArrowRight size={18} strokeWidth={2.6} />
+          >{$t('cta.book_now')}<ArrowRight size={18} strokeWidth={2.6} />
           </button>
         </div>
       </div>
@@ -132,14 +132,12 @@
       <div class="relative bg-sand/30 px-6 py-14 md:px-10 md:py-20">
         <span class="pointer-events-none absolute inset-0 opacity-[0.04]" style="background-image: radial-gradient(circle, #393D32 1px, transparent 1.5px); background-size: 24px 24px;" aria-hidden="true"></span>
         <div class="relative">
-          <p class="font-serif text-xl italic text-clay">Top Destinations</p>
-          <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-heading md:text-[40px]" use:revealHeading>Explore Popular Destinations</h2>
-          <p class="mt-3 max-w-xl text-[15px] leading-7 text-ink/70">
-            From the Serengeti's endless plains to Zanzibar's white-sand shores — handpicked places our local specialists know inside out.
-          </p>
+          <p class="font-serif text-xl italic text-clay">{$t('ui.top_destinations')}</p>
+          <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-heading md:text-[40px]" use:revealHeading>{$t('ui.explore_popular_destinations')}</h2>
+          <p class="mt-3 max-w-xl text-[15px] leading-7 text-ink/70">{$t('ui.from_the_serengetis_endless_plains')}</p>
 
           <!-- auto-sliding cards (hover to reveal info) -->
-          <div class="mt-8 overflow-hidden" role="group" aria-label="Popular destinations" bind:this={viewport} on:mouseenter={() => (paused = true)} on:mouseleave={() => (paused = false)}>
+          <div class="mt-8 overflow-hidden" role="group" aria-label={$t('ui.popular_destinations')} bind:this={viewport} on:mouseenter={() => (paused = true)} on:mouseleave={() => (paused = false)}>
             <div class="dest-track">
               {#each destinations as d, i (d.slug)}
                 {@const rating = ratingOf(d)}
@@ -161,11 +159,10 @@
 
                   <!-- info panel: name peeks; full info on hover -->
                   <div class="absolute inset-x-0 bottom-0 translate-y-[calc(100%-4rem)] bg-gradient-to-t from-deep-green via-deep-green/85 to-deep-green/0 p-4 text-white transition-transform duration-300 ease-out group-hover:translate-y-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-savanna">Destination</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-savanna">{$t('filter.destination')}</p>
                     <h3 class="text-lg font-extrabold leading-tight">{d.name}</h3>
                     <p class="mt-1.5 line-clamp-2 text-sm leading-5 text-white/80">{taglineOf(d)}</p>
-                    <span class="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-white/40 px-4 py-1.5 text-sm font-bold transition group-hover:bg-surface group-hover:text-heading">
-                      Discover <ArrowRight size={14} strokeWidth={2.6} />
+                    <span class="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-white/40 px-4 py-1.5 text-sm font-bold transition group-hover:bg-surface group-hover:text-heading">{$t('ui.discover')}<ArrowRight size={14} strokeWidth={2.6} />
                     </span>
                   </div>
                 </a>

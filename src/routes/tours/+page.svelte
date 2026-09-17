@@ -306,7 +306,7 @@
         </div>
       {/if}
 
-      <div class="mt-6 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3" aria-label="Tour collection details">
+      <div class="mt-6 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3" aria-label={$t('ui.tour_collection_details')}>
         <div class="hero-meta">
           <Compass size={18} class="shrink-0 text-goldfinch-gold" />
           <div><span>{allTours.length}</span><small>itineraries</small></div>
@@ -322,7 +322,7 @@
       </div>
 
       {#if heroSlides.length > 1}
-        <div class="mt-6 flex items-center gap-2" aria-label="Featured tour images">
+        <div class="mt-6 flex items-center gap-2" aria-label={$t('ui.featured_tour_images')}>
           {#each heroSlides as slide, index (slide.id)}
             <button
               type="button"
@@ -402,27 +402,27 @@
           <div class="min-w-0">
             <p class="text-base font-extrabold text-heading">
               {#if searchTerm}
-                Results for "{searchTerm}"
+                {$t('tours.results_for')} "{searchTerm}"
               {:else if destSlug}
-                {destName} tours
+                {destName} {$t('label.tours_suffix')}
               {:else}
-                Best matching tours
+                {$t('tours.best_matching')}
               {/if}
             </p>
             <p class="mt-1 text-xs text-ink/60">
-              {sorted.length} of {allTours.length} packages shown{#if featuredVisible} · {featuredVisible} recommended picks{/if}
+              {sorted.length} {$t('tours.of')} {allTours.length} {$t('tours.packages_shown')}{#if featuredVisible} · {featuredVisible} {$t('tours.recommended_picks')}{/if}
             </p>
           </div>
 
           <div class="flex w-full items-center gap-2 sm:w-auto">
             <label class="flex h-10 flex-1 items-center gap-2 rounded-[8px] border border-ink/15 bg-surface px-3 text-sm text-ink/70 sm:flex-none">
-              Sort
-              <select class="min-w-0 flex-1 bg-transparent text-sm font-semibold text-ink outline-none" bind:value={sort} aria-label="Sort tours">
-                <option value="recommended">Recommended</option>
-                <option value="price_asc">Price: low to high</option>
-                <option value="price_desc">Price: high to low</option>
-                <option value="duration_asc">Duration: short to long</option>
-                <option value="duration_desc">Duration: long to short</option>
+              {$t('label.sort')}
+              <select class="min-w-0 flex-1 bg-transparent text-sm font-semibold text-ink outline-none" bind:value={sort} aria-label={$t('a11y.sort_tours')}>
+                <option value="recommended">{$t('sort.recommended')}</option>
+                <option value="price_asc">{$t('sort.price_asc')}</option>
+                <option value="price_desc">{$t('sort.price_desc')}</option>
+                <option value="duration_asc">{$t('sort.duration_asc')}</option>
+                <option value="duration_desc">{$t('sort.duration_desc')}</option>
               </select>
             </label>
           </div>
@@ -449,27 +449,27 @@
               <button class="chip" type="button" on:click={() => { priceLo = priceMin; priceHi = priceMax; }}>{moneyFormatter(priceLo)}-{moneyFormatter(priceHi)} <X size={13} /></button>
             {/if}
             {#if popularOnly}
-              <button class="chip" type="button" on:click={() => (popularOnly = false)}>Best sellers <X size={13} /></button>
+              <button class="chip" type="button" on:click={() => (popularOnly = false)}>{$t('filter.best_sellers')}<X size={13} /></button>
             {/if}
-            <button class="text-sm font-bold text-forest underline-offset-2 hover:underline" type="button" on:click={clearAll}>Clear all</button>
+            <button class="text-sm font-bold text-forest underline-offset-2 hover:underline" type="button" on:click={clearAll}>{$t('filter.clear_all')}</button>
           </div>
         {/if}
       </div>
 
       <div class="mt-5" data-results-top>
         {#if loading}
-          <ContentShimmer cards={6} compact label="Loading tours" />
+          <ContentShimmer cards={6} compact label={$t('ui.loading_tours')} />
         {:else if error && allTours.length === 0}
           <ErrorState message={error} />
         {:else if sorted.length === 0}
           <div class="grid gap-4">
             <EmptyState
-              title="No tours match your filters"
+              title={$t('ui.no_tours_match_your_filters')}
               message="Try a wider budget, a different duration, or remove one filter. A custom trip can still be planned around your exact dates."
             />
             <div class="flex flex-wrap justify-center gap-3">
-              <button type="button" class="h-11 rounded-[8px] border border-ink/15 bg-surface px-4 text-sm font-bold text-ink" on:click={clearAll}>Clear filters</button>
-              <a class="inline-flex h-11 items-center rounded-[8px] bg-deep-green px-4 text-sm font-bold text-white" href="/plan-my-trip">Plan a custom trip</a>
+              <button type="button" class="h-11 rounded-[8px] border border-ink/15 bg-surface px-4 text-sm font-bold text-ink" on:click={clearAll}>{$t('ui.clear_filters')}</button>
+              <a class="inline-flex h-11 items-center rounded-[8px] bg-deep-green px-4 text-sm font-bold text-white" href="/plan-my-trip">{$t('ui.plan_a_custom_trip')}</a>
             </div>
           </div>
         {:else}
@@ -480,15 +480,14 @@
           </div>
 
           {#if totalPages > 1}
-            <nav class="mt-8 flex flex-wrap items-center justify-center gap-2" aria-label="Tour pages">
+            <nav class="mt-8 flex flex-wrap items-center justify-center gap-2" aria-label={$t('ui.tour_pages')}>
               <button
                 type="button"
                 class="inline-flex h-10 items-center gap-1.5 rounded-[8px] border border-ink/15 bg-surface px-3 text-sm font-bold text-ink disabled:opacity-40"
                 disabled={safePage === 1}
                 on:click={() => goToPage(safePage - 1)}
               >
-                <ArrowLeft size={15} /> Previous
-              </button>
+                <ArrowLeft size={15} />{$t('ui.previous')}</button>
 
               {#each Array(totalPages) as _, i}
                 {@const n = i + 1}
@@ -511,8 +510,7 @@
                 class="inline-flex h-10 items-center gap-1.5 rounded-[8px] border border-ink/15 bg-surface px-3 text-sm font-bold text-ink disabled:opacity-40"
                 disabled={safePage === totalPages}
                 on:click={() => goToPage(safePage + 1)}
-              >
-                Next <ArrowRight size={15} />
+              >{$t('ui.next')}<ArrowRight size={15} />
               </button>
             </nav>
             <p class="mt-3 text-center text-xs text-ink/55">
@@ -535,8 +533,8 @@
   <HomeDestinationsCarousel
     destinations={parkDestinations}
     eyebrow="Best parks"
-    title="Where These Safaris Take You"
-    subtitle="Some parks are best for big cats, others for scenery, migration timing or a quieter feel. We help you combine them in the right order."
+    title={$t('ui.where_these_safaris_take_you')}
+    subtitle={$t('ui.some_parks_are_best_for')}
   />
 {/if}
 
@@ -546,8 +544,8 @@
 
 <HomeHowPlanned
   eyebrow="How your trip is planned"
-  title="From First Note to Final Sundowner"
-  subtitle="You do not need to arrive with a finished itinerary. Share the basics, and we'll shape the route, pace and logistics around you."
+  title={$t('ui.from_first_note_to_final')}
+  subtitle={$t('ui.you_do_not_need_to')}
 />
 
 {#if tourReviews.length}
@@ -555,8 +553,8 @@
     reviews={tourReviews}
     summary={tourReviewSummary}
     eyebrow="Traveller stories"
-    title="Travellers Who Planned Tanzania With Us"
-    subtitle="Real guests, real routes and the planning details that made their trips work."
+    title={$t('ui.travellers_who_planned_tanzania_with')}
+    subtitle={$t('ui.real_guests_real_routes_and')}
   />
 {/if}
 
@@ -567,14 +565,10 @@
       <div>
         <div class="inline-flex items-center gap-2">
           <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
-          <span class="text-xs font-semibold uppercase tracking-[0.15em] text-clay">Good to know</span>
+          <span class="text-xs font-semibold uppercase tracking-[0.15em] text-clay">{$t('ui.good_to_know')}</span>
         </div>
-        <h2 class="font-serif mt-3 text-3xl leading-[1.1] tracking-tight text-heading sm:text-4xl md:text-[40px]">
-          Questions About These Safaris
-        </h2>
-        <p class="mt-4 max-w-md text-base leading-relaxed text-ink/70">
-          Honest answers to what travellers ask most before choosing a route.
-        </p>
+        <h2 class="font-serif mt-3 text-3xl leading-[1.1] tracking-tight text-heading sm:text-4xl md:text-[40px]">{$t('ui.questions_about_these_safaris')}</h2>
+        <p class="mt-4 max-w-md text-base leading-relaxed text-ink/70">{$t('ui.honest_answers_to_what_travellers')}</p>
       </div>
       <FAQAccordion faqs={tourFaqs} />
     </div>
@@ -583,10 +577,10 @@
 
 <HomePlanningBand
   eyebrow="Start planning"
-  title="Request Your Tanzania Safari Plan"
-  subtitle="Tell us your dates, group and the experiences you are considering. A local specialist will shape the route, timing and logistics around you."
+  title={$t('ui.request_your_tanzania_safari_plan')}
+  subtitle={$t('ui.tell_us_your_dates_group')}
 >
-  <LeadCaptureForm compact title="Start your trip plan" />
+  <LeadCaptureForm compact title={$t('ui.start_your_trip_plan')} />
 </HomePlanningBand>
 
 <style>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * The strip above the header: proof in the middle, switches on the right.
    *
@@ -92,9 +93,7 @@
 
       <span class="hidden h-3 w-px bg-white/25 md:inline-block" aria-hidden="true"></span>
       <a class="hidden items-center gap-1.5 transition hover:text-white md:inline-flex" href="/contact">
-        <CircleHelp size={13} />
-        Need help?
-      </a>
+        <CircleHelp size={13} />{$t('ui.need_help')}</a>
 
       {#if waHref}
         <span class="hidden h-3 w-px bg-white/25 md:inline-block" aria-hidden="true"></span>
@@ -106,9 +105,7 @@
           aria-label={waLabel}
           on:click={() => trackEvent('whatsapp_click', { cta_location: 'utility_bar' })}
         >
-          <MessageCircle size={13} />
-          WhatsApp
-        </a>
+          <MessageCircle size={13} />{$t('cta.whatsapp')}</a>
       {/if}
 
       {#if $canInstall}
@@ -118,8 +115,7 @@
           class="hidden items-center gap-1.5 transition hover:text-white lg:inline-flex"
           on:click={() => promptInstall()}
         >
-          <ArrowDownToLine size={13} /> Install app
-        </button>
+          <ArrowDownToLine size={13} />{$t('ui.install_app')}</button>
       {/if}
     </div>
   </div>

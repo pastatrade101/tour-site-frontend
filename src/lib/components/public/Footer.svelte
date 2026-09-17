@@ -175,7 +175,7 @@
                     on:click={() => trackEvent('whatsapp_click')}
                   >
                     <MessageCircle size={14} class="shrink-0" />
-                    <span>WhatsApp<span class="ml-1 text-white/55">{waNumber}</span></span>
+                    <span>{$t('cta.whatsapp')}<span class="ml-1 text-white/55">{waNumber}</span></span>
                   </a>
                 </li>
               {/if}
@@ -256,7 +256,7 @@
     </div>
 
     <div class="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between">
-      <p>© {year} {settingText(s, 'company_name') || brand.companyName}. All rights reserved.</p>
+      <p>© {year} {settingText(s, 'company_name') || brand.companyName}. {$t('footer.rights')}</p>
       <nav class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
         <a class="transition hover:text-white" href={privacyUrl}>{$t('footer.privacy')}</a>
         <a class="transition hover:text-white" href={termsUrl}>{$t('footer.terms')}</a>

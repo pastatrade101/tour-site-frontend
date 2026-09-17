@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { MapPin, Star } from '@lucide/svelte';
   import Img from '$lib/components/public/Img.svelte';
   import type { Testimonial } from '$lib/types';
@@ -43,8 +44,7 @@
     </div>
     {#if featured}
       <span class="flex shrink-0 items-center gap-1 rounded-[6px] bg-goldfinch-gold px-2 py-0.5 text-[11px] font-bold text-heading">
-        <Star size={10} fill="currentColor" />Featured
-      </span>
+        <Star size={10} fill="currentColor" />{$t('label.featured')}</span>
     {/if}
   </div>
 

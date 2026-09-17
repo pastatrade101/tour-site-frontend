@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { staggeredCardReveal } from '$lib/animations';
@@ -208,7 +209,7 @@
   <div class="destinations-all-shell container-shell">
     <div class="destinations-all-heading flex flex-wrap items-end justify-between gap-3 md:gap-4">
       <div class="min-w-0 flex-1 md:max-w-2xl">
-        <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">Every destination</p>
+        <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.every_destination')}</p>
         <h2 class="mt-2 font-serif text-[26px] font-bold leading-[1.08] text-heading sm:text-3xl md:mt-3 md:text-[42px]">
           {isFiltering ? 'Matching destinations' : 'Choose where your trip begins'}
         </h2>
@@ -227,7 +228,7 @@
     {:else}
       <!-- Never an empty grid: explain, offer a reset, and still show real places. -->
       <div class="mt-10 rounded-[10px] bg-surface px-6 py-14 text-center shadow-card">
-        <p class="font-serif text-2xl font-bold text-heading">Nothing matches that yet</p>
+        <p class="font-serif text-2xl font-bold text-heading">{$t('ui.nothing_matches_that_yet')}</p>
         <p class="mx-auto mt-3 max-w-md text-sm leading-7 text-ink/60">
           Try a different filter or search for a park, island or region — or start from the places our specialists
           recommend most.
@@ -236,14 +237,12 @@
           type="button"
           class="mt-6 inline-flex h-11 items-center rounded-full bg-forest px-6 text-sm font-bold text-white transition hover:bg-deep-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
           on:click={clearAll}
-        >
-          Clear filters
-        </button>
+        >{$t('ui.clear_filters')}</button>
       </div>
 
       {#if featured.length}
         <div class="mt-12">
-          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">You might start here</p>
+          <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.you_might_start_here')}</p>
           <div class="destinations-grid mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {#each featured.slice(0, 3) as destination (destination.id)}
               <DestinationCardPremium {destination} />

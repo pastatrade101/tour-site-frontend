@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * The stays index — deliberately an editorial index, not a card grid.
    *
@@ -218,10 +219,8 @@
 
   <div class="container-shell relative z-10 pb-14 pt-28 md:pb-20">
     <div class="max-w-3xl" use:fadeUpOnScroll={{ y: 16 }}>
-      <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-goldfinch-gold">Accommodation</p>
-      <h1 class="mt-4 font-serif text-4xl font-semibold leading-[1.05] md:text-[62px]">
-        Where you sleep shapes the whole trip
-      </h1>
+      <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-goldfinch-gold">{$t('nav.accommodation')}</p>
+      <h1 class="mt-4 font-serif text-4xl font-semibold leading-[1.05] md:text-[62px]">{$t('ui.where_you_sleep_shapes_the')}</h1>
       <p class="mt-5 max-w-2xl text-base leading-8 text-white/80 md:text-lg">
         {description}
       </p>
@@ -261,29 +260,29 @@
       <div class="flex flex-col gap-3 lg:flex-row">
         <label class="relative flex-1">
           <Search size={16} class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/40" />
-          <input bind:value={search} type="search" placeholder="Search stays or destinations…" class="h-12 w-full border-0 border-b border-ink/20 bg-transparent pl-10 pr-4 text-sm outline-none transition placeholder:text-ink/40 focus:border-goldfinch-gold" />
+          <input bind:value={search} type="search" placeholder={$t('ui.search_stays_or_destinations')} class="h-12 w-full border-0 border-b border-ink/20 bg-transparent pl-10 pr-4 text-sm outline-none transition placeholder:text-ink/40 focus:border-goldfinch-gold" />
         </label>
         <div class="grid grid-cols-2 gap-2 sm:flex">
           <select bind:value={activeDestination} class="h-12 min-w-0 border-0 border-b border-ink/20 bg-transparent px-2 text-sm font-semibold text-heading outline-none focus:border-goldfinch-gold">
-            <option value="all">All destinations</option>
+            <option value="all">{$t('label.all_destinations')}</option>
             {#each destinations as destination}<option value={destination}>{destination}</option>{/each}
           </select>
           <select bind:value={sortBy} class="h-12 min-w-0 border-0 border-b border-ink/20 bg-transparent px-2 text-sm font-semibold text-heading outline-none focus:border-goldfinch-gold">
-            <option value="recommended">Recommended</option><option value="destination">By destination</option><option value="name">Name A–Z</option>
+            <option value="recommended">{$t('sort.recommended')}</option><option value="destination">{$t('ui.by_destination')}</option><option value="name">{$t('ui.name_az')}</option>
           </select>
         </div>
       </div>
     </div>
   </section>
 
-  <nav class="sticky top-[var(--nav-h)] z-30 border-y border-ink/10 bg-canvas/95 shadow-[0_8px_24px_rgba(57,61,50,0.06)] backdrop-blur-md" aria-label="Accommodation filters">
+  <nav class="sticky top-[var(--nav-h)] z-30 border-y border-ink/10 bg-canvas/95 shadow-[0_8px_24px_rgba(57,61,50,0.06)] backdrop-blur-md" aria-label={$t('ui.accommodation_filters')}>
     <div class="container-shell">
       <div class="flex min-h-14 gap-7 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:min-h-16">
         {#each filters as filter (filter.key)}
           <button type="button" class={`flex min-h-14 shrink-0 items-center border-b-[3px] px-0.5 text-[13px] font-bold transition md:min-h-16 md:text-sm ${active === filter.key ? 'border-goldfinch-gold text-heading' : 'border-transparent text-ink/50 hover:text-heading'}`} on:click={() => selectFilter(filter.key)}>{filter.label} <span class="ml-1.5 text-xs text-ink/35">{countFor(filter)}</span></button>
         {/each}
         {#if active !== 'all' || activeDestination !== 'all' || search.trim()}
-          <button type="button" class="inline-flex min-h-14 shrink-0 items-center gap-1 text-xs font-bold text-clay md:min-h-16" on:click={resetFilters}>Clear <X size={13}/></button>
+          <button type="button" class="inline-flex min-h-14 shrink-0 items-center gap-1 text-xs font-bold text-clay md:min-h-16" on:click={resetFilters}>{$t('filter.clear')}<X size={13}/></button>
         {/if}
       </div>
     </div>
@@ -292,12 +291,12 @@
   <section id="accommodation-results" class="bg-canvas py-14 md:py-20">
     <div class="container-shell">
       <div class="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-        <div class="max-w-2xl"><p class="text-[11px] font-bold uppercase tracking-[0.18em] text-clay">Stays selected for the journey</p><h2 class="mt-3 font-serif text-3xl font-semibold leading-tight text-heading md:text-[42px]">Choose the safari first. We fit the right stay into it.</h2><p class="mt-3 text-sm leading-7 text-ink/65 md:text-base">Browse for inspiration, then open the safaris that use each property or ask us to shape a private route around it.</p></div>
-        <a class="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 bg-deep-green px-6 text-sm font-bold text-white transition hover:bg-forest md:w-auto" href="/tours">Explore safari itineraries <ArrowRight size={16}/></a>
+        <div class="max-w-2xl"><p class="text-[11px] font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.stays_selected_for_the_journey')}</p><h2 class="mt-3 font-serif text-3xl font-semibold leading-tight text-heading md:text-[42px]">{$t('ui.choose_the_safari_first_we')}</h2><p class="mt-3 text-sm leading-7 text-ink/65 md:text-base">{$t('ui.browse_for_inspiration_then_open')}</p></div>
+        <a class="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 bg-deep-green px-6 text-sm font-bold text-white transition hover:bg-forest md:w-auto" href="/tours">{$t('cta.explore_tours')}<ArrowRight size={16}/></a>
       </div>
 
       {#if featuredLodge}
-        <div class="mb-8 mt-10" use:fadeUpOnScroll={{ y: 14 }}><div class="mb-4 flex items-center gap-3"><span class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-clay"><Sparkles size={13}/> Goldfinch pick</span><span class="h-px flex-1 bg-ink/10"></span></div><LodgeCard lodge={featuredLodge} feature /></div>
+        <div class="mb-8 mt-10" use:fadeUpOnScroll={{ y: 14 }}><div class="mb-4 flex items-center gap-3"><span class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-clay"><Sparkles size={13}/>{$t('ui.goldfinch_pick')}</span><span class="h-px flex-1 bg-ink/10"></span></div><LodgeCard lodge={featuredLodge} feature /></div>
       {/if}
 
       {#if gridLodges.length}
@@ -329,9 +328,7 @@
                     class="shrink-0 text-[12px] font-bold text-clay underline-offset-4 hover:underline"
                     type="button"
                     on:click={() => selectFilter(`type:${group.key}`)}
-                  >
-                    See all
-                  </button>
+                  >{$t('cta.see_all')}</button>
                 </div>
 
                 <!--
@@ -371,7 +368,7 @@
           </div>
         {/if}
       {:else}
-        <div class="mt-10 border border-ink/10 bg-surface px-6 py-14 text-center"><p class="font-serif text-2xl text-heading">No stays match those filters.</p><button class="mt-4 font-bold text-clay underline-offset-4 hover:underline" type="button" on:click={resetFilters}>Show all stays</button></div>
+        <div class="mt-10 border border-ink/10 bg-surface px-6 py-14 text-center"><p class="font-serif text-2xl text-heading">{$t('ui.no_stays_match_those_filters')}</p><button class="mt-4 font-bold text-clay underline-offset-4 hover:underline" type="button" on:click={resetFilters}>{$t('ui.show_all_stays')}</button></div>
       {/if}
     </div>
   </section>
@@ -393,9 +390,8 @@
 
     <div class="container-shell relative z-10 py-20 md:py-28">
       <div class="max-w-3xl" use:fadeUpOnScroll={{ y: 16 }}>
-        <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-goldfinch-gold">Planning together</p>
-        <h2 class="mt-5 font-serif text-3xl font-semibold leading-[1.12] md:text-[46px]">
-          We match the stay to the route,<br class="hidden sm:block" /> not the other way round.
+        <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-goldfinch-gold">{$t('ui.planning_together')}</p>
+        <h2 class="mt-5 font-serif text-3xl font-semibold leading-[1.12] md:text-[46px]">{$t('ui.we_match_the_stay_to')}<br class="hidden sm:block" /> not the other way round.
         </h2>
         <p class="mt-5 max-w-xl text-base leading-8 text-white/70">
           Tell us how you want to travel and we will put the right camps and lodges in the right order — with the
@@ -406,15 +402,12 @@
           <a
             class="inline-flex h-13 items-center justify-center gap-2 rounded-full bg-goldfinch-gold px-8 py-3.5 text-sm font-extrabold text-heading transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green"
             href="/plan-my-trip"
-          >
-            Plan my trip <ArrowRight size={16} />
+          >{$t('ui.plan_my_trip')}<ArrowRight size={16} />
           </a>
           <a
             class="inline-flex items-center justify-center gap-2 rounded-full border border-white/25 px-8 py-3.5 text-sm font-bold text-white transition hover:border-white/60 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
             href="/contact"
-          >
-            Talk to a specialist
-          </a>
+          >{$t('ui.talk_to_a_specialist')}</a>
         </div>
 
         {#if heroStats.length}
@@ -438,15 +431,12 @@
   <section class="bg-canvas pb-24 pt-4">
     <div class="container-shell">
       <div class="max-w-xl border-t border-ink/10 pt-10">
-        <p class="font-serif text-2xl leading-snug text-heading">We are still adding our stays here.</p>
-        <p class="mt-3 text-sm leading-7 text-ink/60">
-          In the meantime, tell us how you want to travel and we will suggest the camps and lodges that fit your route.
-        </p>
+        <p class="font-serif text-2xl leading-snug text-heading">{$t('ui.we_are_still_adding_our')}</p>
+        <p class="mt-3 text-sm leading-7 text-ink/60">{$t('ui.in_the_meantime_tell_us')}</p>
         <a
           class="mt-6 inline-flex h-12 items-center gap-2 rounded-full bg-goldfinch-gold px-7 text-sm font-extrabold text-heading transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
           href="/plan-my-trip"
-        >
-          Plan my trip <ArrowRight size={16} />
+        >{$t('ui.plan_my_trip')}<ArrowRight size={16} />
         </a>
       </div>
     </div>

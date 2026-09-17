@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * The one enquiry form. Everything contextual arrives as config — this
    * component only knows about steps, validation, submission and analytics.
@@ -237,17 +238,16 @@
         <span class="mx-auto grid h-14 w-14 place-items-center rounded-full bg-goldfinch-gold text-heading">
           <Check size={26} strokeWidth={3} />
         </span>
-        <p class="mt-5 font-serif text-[22px] leading-tight">We have your request</p>
+        <p class="mt-5 font-serif text-[22px] leading-tight">{$t('ui.we_have_your_request')}</p>
         <p class="mx-auto mt-3 max-w-sm text-[14px] leading-7 text-white/70">
           A local specialist will confirm availability and send a personalised quotation within one business day. No
           payment is required.
         </p>
         {#if bookingCode}
-          <p class="mt-4 text-[13px] text-white/55">
-            Your reference: <span class="font-bold text-goldfinch-gold">{bookingCode}</span>
+          <p class="mt-4 text-[13px] text-white/55">{$t('ui.your_reference')}<span class="font-bold text-goldfinch-gold">{bookingCode}</span>
           </p>
         {/if}
-        <p class="mt-4 text-[13px] text-white/55">We have emailed you a copy.</p>
+        <p class="mt-4 text-[13px] text-white/55">{$t('ui.we_have_emailed_you_a')}</p>
       </div>
     {:else}
       <!-- persistent tour summary: one compact row, ~80px --------------------->
@@ -326,9 +326,7 @@
                 cta_location: 'enquiry_success'
               })}
           >
-            <MessageCircle size={17} />
-            Continue on WhatsApp
-          </a>
+            <MessageCircle size={17} />{$t('ui.continue_on_whatsapp')}</a>
         {/if}
         <!-- Nothing to close when the form is part of the page. -->
         {#if !inline}
@@ -338,9 +336,7 @@
               ? 'border border-white/25 text-white hover:bg-white/10'
               : 'bg-goldfinch-gold text-heading hover:brightness-105'}"
             on:click={close}
-          >
-            Close
-          </button>
+          >{$t('ui.close')}</button>
         {/if}
       </div>
     {:else}
@@ -351,8 +347,7 @@
             class="inline-flex h-11 items-center gap-1.5 rounded border border-white/25 px-4 text-[14px] font-bold text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
             on:click={back}
           >
-            <ArrowLeft size={16} /> Back
-          </button>
+            <ArrowLeft size={16} />{$t('form.back')}</button>
         {/if}
 
         <button

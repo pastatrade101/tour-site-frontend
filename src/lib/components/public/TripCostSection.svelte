@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { Check, ShieldCheck } from '@lucide/svelte';
   import { currency as currencyStore, formatUsd } from '$lib/currency';
 
@@ -22,25 +23,21 @@
 </script>
 
 <section class="rounded-[8px] border border-ink/10 bg-surface p-6 shadow-soft md:p-7">
-  <h2 class="text-xl font-bold tracking-normal text-heading md:text-2xl">What this trip costs</h2>
+  <h2 class="text-xl font-bold tracking-normal text-heading md:text-2xl">{$t('ui.what_this_trip_costs')}</h2>
 
   {#if priceFrom}
     <div class="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
       <span class="text-3xl font-extrabold text-heading">{lowLabel}</span>
       <span class="text-sm font-medium text-ink/70">per person, from</span>
     </div>
-    <p class="mt-2 text-sm leading-6 text-ink/65">
-      Most travellers on a trip like this spend between
-      <span class="font-semibold text-ink">{lowLabel}</span> and roughly
+    <p class="mt-2 text-sm leading-6 text-ink/65">{$t('ui.most_travellers_on_a_trip')}<span class="font-semibold text-ink">{lowLabel}</span> and roughly
       <span class="font-semibold text-ink">{highLabel}</span> per person — your exact price depends on the choices below.
     </p>
   {:else}
-    <p class="mt-3 text-sm leading-6 text-ink/65">
-      Pricing is tailored to your dates, group and travel style. Tell us what you have in mind and we'll give you an honest, itemised quote.
-    </p>
+    <p class="mt-3 text-sm leading-6 text-ink/65">{$t('ui.pricing_is_tailored_to_your')}</p>
   {/if}
 
-  <p class="mt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">What changes your price</p>
+  <p class="mt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">{$t('ui.what_changes_your_price')}</p>
   <div class="mt-3 grid gap-3 sm:grid-cols-2">
     {#each drivers as d}
       <div class="flex items-start gap-2.5 rounded-xl border border-ink/10 bg-sand/30 p-3">
@@ -56,15 +53,11 @@
   <div class="mt-5 flex items-start gap-3 rounded-2xl border border-forest/20 bg-forest/[0.05] p-4">
     <ShieldCheck size={20} class="mt-0.5 shrink-0 text-forest" />
     <p class="text-sm leading-6 text-ink/75">
-      <span class="font-semibold text-ink">No hidden costs.</span>
-      We itemise everything — park fees, lodges, transfers and extras — and confirm the full price before you decide.
-    </p>
+      <span class="font-semibold text-ink">{$t('ui.no_hidden_costs')}</span>{$t('ui.we_itemise_everything_park_fees')}</p>
   </div>
 
   <a
     class="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-deep-green px-6 font-bold text-white transition hover:bg-forest"
     href={planHref}
-  >
-    Get your exact price
-  </a>
+  >{$t('ui.get_your_exact_price')}</a>
 </section>

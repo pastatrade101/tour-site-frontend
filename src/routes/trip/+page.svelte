@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { CalendarDays, CheckCircle2, LogOut, MapPin, MessageCircle, Send, Users, Wallet } from '@lucide/svelte';
   import { api } from '$lib/api/client';
@@ -124,21 +125,20 @@
 <section class="container-shell py-10 md:py-14">
   {#if loading}
     <div class="grid min-h-[40vh] place-items-center">
-      <p class="text-sm font-medium text-ink/55">Loading your trip…</p>
+      <p class="text-sm font-medium text-ink/55">{$t('ui.loading_your_trip')}</p>
     </div>
   {:else if !trip}
     <!-- No / invalid / expired session -->
     <div class="mx-auto max-w-lg rounded-2xl border border-ink/10 bg-surface p-8 text-center shadow-soft">
       <span class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-goldfinch-gold/10 text-goldfinch-gold"><MapPin size={22} /></span>
-      <h1 class="mt-4 text-xl font-bold text-heading">Access your trip</h1>
+      <h1 class="mt-4 text-xl font-bold text-heading">{$t('ui.access_your_trip')}</h1>
       <p class="mt-2 text-sm leading-6 text-ink/65">
         Enter the email on your booking and we’ll send a fresh, secure link to view your trip. (Your previous link may have expired or been replaced.)
       </p>
 
       {#if requested}
         <div class="mt-5 flex items-start gap-2 rounded-xl border border-forest/20 bg-forest/[0.06] p-3 text-left text-sm font-medium text-forest">
-          <CheckCircle2 size={16} class="mt-0.5 shrink-0" /> If we found a trip for that email, a secure link is on its way. Please check your inbox.
-        </div>
+          <CheckCircle2 size={16} class="mt-0.5 shrink-0" />{$t('ui.if_we_found_a_trip')}</div>
       {:else}
         <div class="mt-5 flex flex-col gap-2 sm:flex-row">
           <input
@@ -161,19 +161,19 @@
           </button>
         </div>
       {/if}
-      <a href="/contact" class="mt-4 inline-block text-sm font-semibold text-forest hover:text-heading">Or contact us →</a>
+      <a href="/contact" class="mt-4 inline-block text-sm font-semibold text-forest hover:text-heading">{$t('ui.or_contact_us')}</a>
     </div>
   {:else}
     <!-- Header -->
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <p class="text-xs font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Your trip</p>
+        <p class="text-xs font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{$t('ui.your_trip')}</p>
         <h1 class="mt-1 text-2xl font-extrabold tracking-tight text-heading md:text-3xl">{trip.tour?.title ?? 'Your East Africa trip'}</h1>
-        <p class="mt-1 text-sm text-ink/60">Booking reference <span class="font-mono font-bold text-ink/80">{trip.booking_code}</span></p>
+        <p class="mt-1 text-sm text-ink/60">{$t('ui.booking_reference')}<span class="font-mono font-bold text-ink/80">{trip.booking_code}</span></p>
       </div>
       <div class="flex items-center gap-2">
         <span class={`inline-flex h-7 items-center rounded-full px-3 text-xs font-bold ${statusTone(trip.status)}`}>{titleCase(trip.status)}</span>
-        <button type="button" class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-ink/15 px-3 text-xs font-semibold text-ink/70 transition hover:bg-sand" on:click={logout}><LogOut size={14} /> Sign out</button>
+        <button type="button" class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-ink/15 px-3 text-xs font-semibold text-ink/70 transition hover:bg-sand" on:click={logout}><LogOut size={14} />{$t('ui.sign_out')}</button>
       </div>
     </div>
 
@@ -196,22 +196,22 @@
           <div class="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3">
             <div class="flex items-start gap-2.5">
               <CalendarDays size={18} class="mt-0.5 shrink-0 text-forest" />
-              <div><p class="text-[11px] font-semibold uppercase tracking-wide text-ink/45">Travel date</p><p class="text-sm font-semibold text-ink">{prettyDate(trip.travel_date)}</p></div>
+              <div><p class="text-[11px] font-semibold uppercase tracking-wide text-ink/45">{$t('ui.travel_date')}</p><p class="text-sm font-semibold text-ink">{prettyDate(trip.travel_date)}</p></div>
             </div>
             <div class="flex items-start gap-2.5">
               <Users size={18} class="mt-0.5 shrink-0 text-forest" />
-              <div><p class="text-[11px] font-semibold uppercase tracking-wide text-ink/45">Travellers</p><p class="text-sm font-semibold text-ink">{trip.number_of_adults} adult{trip.number_of_adults === 1 ? '' : 's'}{trip.number_of_children ? `, ${trip.number_of_children} child${trip.number_of_children === 1 ? '' : 'ren'}` : ''}</p></div>
+              <div><p class="text-[11px] font-semibold uppercase tracking-wide text-ink/45">{$t('ui.travellers')}</p><p class="text-sm font-semibold text-ink">{trip.number_of_adults} adult{trip.number_of_adults === 1 ? '' : 's'}{trip.number_of_children ? `, ${trip.number_of_children} child${trip.number_of_children === 1 ? '' : 'ren'}` : ''}</p></div>
             </div>
             {#if trip.tour?.duration_days}
               <div class="flex items-start gap-2.5">
                 <MapPin size={18} class="mt-0.5 shrink-0 text-forest" />
-                <div><p class="text-[11px] font-semibold uppercase tracking-wide text-ink/45">Duration</p><p class="text-sm font-semibold text-ink">{trip.tour.duration_days} days</p></div>
+                <div><p class="text-[11px] font-semibold uppercase tracking-wide text-ink/45">{$t('label.duration')}</p><p class="text-sm font-semibold text-ink">{trip.tour.duration_days} days</p></div>
               </div>
             {/if}
           </div>
           {#if trip.special_requests}
             <div class="border-t border-ink/10 px-5 py-4">
-              <p class="text-[11px] font-semibold uppercase tracking-wide text-ink/45">Your notes</p>
+              <p class="text-[11px] font-semibold uppercase tracking-wide text-ink/45">{$t('ui.your_notes')}</p>
               <p class="mt-1 text-sm leading-6 text-ink/75">{trip.special_requests}</p>
             </div>
           {/if}
@@ -220,7 +220,7 @@
         <!-- Itinerary -->
         {#if trip.itinerary.length}
           <div class="rounded-2xl border border-ink/10 bg-surface p-5 shadow-soft md:p-6">
-            <h2 class="text-lg font-bold text-heading">Day-by-day itinerary</h2>
+            <h2 class="text-lg font-bold text-heading">{$t('ui.daybyday_itinerary')}</h2>
             <ol class="mt-4 grid gap-4">
               {#each trip.itinerary as day (day.day_number)}
                 <li class="flex gap-4">
@@ -244,11 +244,11 @@
       <div class="grid content-start gap-6">
         <!-- Payments -->
         <div class="rounded-2xl border border-ink/10 bg-surface p-5 shadow-soft md:p-6">
-          <div class="flex items-center gap-2"><Wallet size={18} class="text-forest" /><h2 class="text-lg font-bold text-heading">Payments</h2></div>
+          <div class="flex items-center gap-2"><Wallet size={18} class="text-forest" /><h2 class="text-lg font-bold text-heading">{$t('ui.payments')}</h2></div>
           <dl class="mt-4 grid gap-2.5 text-sm">
-            <div class="flex items-center justify-between"><dt class="text-ink/55">Trip total</dt><dd class="font-semibold text-ink">{money(trip.estimated_amount, trip.currency)}</dd></div>
-            <div class="flex items-center justify-between"><dt class="text-ink/55">Paid</dt><dd class="font-semibold text-forest">{money(trip.amount_paid, trip.currency)}</dd></div>
-            <div class="flex items-center justify-between border-t border-ink/10 pt-2.5"><dt class="font-semibold text-ink">Balance due</dt><dd class="text-base font-extrabold text-heading">{money(trip.balance_due, trip.currency)}</dd></div>
+            <div class="flex items-center justify-between"><dt class="text-ink/55">{$t('ui.trip_total')}</dt><dd class="font-semibold text-ink">{money(trip.estimated_amount, trip.currency)}</dd></div>
+            <div class="flex items-center justify-between"><dt class="text-ink/55">{$t('ui.paid')}</dt><dd class="font-semibold text-forest">{money(trip.amount_paid, trip.currency)}</dd></div>
+            <div class="flex items-center justify-between border-t border-ink/10 pt-2.5"><dt class="font-semibold text-ink">{$t('ui.balance_due')}</dt><dd class="text-base font-extrabold text-heading">{money(trip.balance_due, trip.currency)}</dd></div>
           </dl>
           <span class={`mt-3 inline-flex h-6 items-center rounded-full px-2.5 text-[11px] font-bold ${statusTone(trip.payment_status)}`}>{titleCase(trip.payment_status)}</span>
 
@@ -262,23 +262,22 @@
               {/each}
             </ul>
           {/if}
-          <p class="mt-4 text-xs leading-5 text-ink/50">To pay your deposit or balance, message your specialist below and we’ll send secure payment instructions.</p>
+          <p class="mt-4 text-xs leading-5 text-ink/50">{$t('ui.to_pay_your_deposit_or')}</p>
         </div>
 
         <!-- Message -->
         <div class="rounded-2xl border border-ink/10 bg-surface p-5 shadow-soft md:p-6">
-          <div class="flex items-center gap-2"><MessageCircle size={18} class="text-forest" /><h2 class="text-lg font-bold text-heading">Message your specialist</h2></div>
+          <div class="flex items-center gap-2"><MessageCircle size={18} class="text-forest" /><h2 class="text-lg font-bold text-heading">{$t('ui.message_your_specialist')}</h2></div>
           {#if messageSent}
             <div class="mt-4 flex items-start gap-2 rounded-xl border border-forest/20 bg-forest/[0.06] p-3 text-sm font-medium text-forest">
-              <CheckCircle2 size={16} class="mt-0.5 shrink-0" /> Thanks — your message is with our team. We’ll reply by email shortly.
-            </div>
-            <button type="button" class="mt-3 text-sm font-semibold text-forest hover:text-heading" on:click={() => (messageSent = false)}>Send another</button>
+              <CheckCircle2 size={16} class="mt-0.5 shrink-0" />{$t('ui.thanks_your_message_is_with')}</div>
+            <button type="button" class="mt-3 text-sm font-semibold text-forest hover:text-heading" on:click={() => (messageSent = false)}>{$t('ui.send_another')}</button>
           {:else}
             <textarea
               bind:value={messageText}
               rows="4"
               maxlength="4000"
-              placeholder="Ask a question, request a change, or arrange a payment…"
+              placeholder={$t('ui.ask_a_question_request_a')}
               class="mt-3 w-full rounded-xl border border-ink/15 bg-surface px-3 py-2.5 text-sm text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
             ></textarea>
             {#if messageError}<p class="mt-2 text-xs font-medium text-red-600">{messageError}</p>{/if}

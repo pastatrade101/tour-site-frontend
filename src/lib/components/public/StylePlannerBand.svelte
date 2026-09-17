@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * The inline planner on a safari-style page.
    *
@@ -170,11 +171,11 @@
     <div class="min-w-0 lg:col-span-8">
       {#if submitted}
         <div class="rounded-2xl border border-goldfinch-gold/30 bg-white/[0.06] p-6">
-          <p class="font-serif text-2xl font-semibold">Thank you — we have your request.</p>
+          <p class="font-serif text-2xl font-semibold">{$t('form.thank_you')}</p>
           {#if bookingCode}
-            <p class="mt-2 text-sm text-white/75">Your reference is <span class="font-bold text-goldfinch-gold">{bookingCode}</span>.</p>
+            <p class="mt-2 text-sm text-white/75">{$t('form.your_reference_is')}<span class="font-bold text-goldfinch-gold">{bookingCode}</span>.</p>
           {/if}
-          <p class="mt-2 text-sm leading-6 text-white/70">A local specialist will shape this around your dates and be in touch.</p>
+          <p class="mt-2 text-sm leading-6 text-white/70">{$t('ui.a_local_specialist_will_shape')}</p>
         </div>
       {:else}
         <form on:submit|preventDefault={step === TOTAL ? submit : next}>
@@ -186,20 +187,20 @@
           {#if step === 1}
             <div class="grid gap-4 sm:grid-cols-3">
               <label class="grid gap-1.5">
-                <span class={labelClass}>Travellers</span>
+                <span class={labelClass}>{$t('ui.travellers')}</span>
                 <input class={fieldClass} type="number" min="1" inputmode="numeric" bind:value={travellers} />
               </label>
               <label class="grid gap-1.5">
-                <span class={labelClass}>Travel date</span>
+                <span class={labelClass}>{$t('ui.travel_date')}</span>
                 <!-- A picker rather than free text. Nothing in the past, since
                      a trip cannot start before today. -->
                 <input class={fieldClass} type="date" min={todayStr} bind:value={travelDate} />
               </label>
               <label class="grid gap-1.5">
-                <span class={labelClass}>Number of days</span>
+                <span class={labelClass}>{$t('ui.number_of_days')}</span>
                 <span class="relative block">
                   <select class={selectClass} bind:value={days}>
-                    <option value="">Select</option>
+                    <option value="">{$t('ui.select')}</option>
                     {#each DAY_OPTIONS as option (option)}
                       <option value={option}>{option} {option === '1' ? 'day' : 'days'}</option>
                     {/each}
@@ -212,41 +213,41 @@
             <div class="grid gap-4 {hasStartPoints ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}">
               {#if hasStartPoints}
                 <label>
-                  <span class={labelClass}>Starting point</span>
+                  <span class={labelClass}>{$t('ui.starting_point')}</span>
                   <span class="relative block">
                     <select class={selectClass} bind:value={startPoint}>
-                      <option value="">Select</option>
+                      <option value="">{$t('ui.select')}</option>
                       {#each startPoints as point}
                         <option value={String(point.name)}>{point.name}</option>
                       {/each}
-                      <option value="Not sure yet">Not sure yet</option>
+                      <option value="Not sure yet">{$t('ui.not_sure_yet')}</option>
                     </select>
                     <ChevronDown class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/65" size={18} />
                   </span>
                 </label>
               {/if}
               <label>
-                <span class={labelClass}>Comfort level</span>
+                <span class={labelClass}>{$t('ui.comfort_level')}</span>
                 <span class="relative block">
                   <select class={selectClass} bind:value={comfort}>
-                    <option value="">Select</option>
+                    <option value="">{$t('ui.select')}</option>
                     {#each ACCOMMODATION as option}
                       <option value={option.value}>{option.label}</option>
                     {/each}
-                    <option value="Not sure yet">Not sure yet</option>
+                    <option value="Not sure yet">{$t('ui.not_sure_yet')}</option>
                   </select>
                   <ChevronDown class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/65" size={18} />
                 </span>
               </label>
               <label>
-                <span class={labelClass}>Main interest</span>
+                <span class={labelClass}>{$t('ui.main_interest')}</span>
                 <span class="relative block">
                   <select class={selectClass} bind:value={interest}>
-                    <option value="">Select</option>
+                    <option value="">{$t('ui.select')}</option>
                     {#each interests as option}
                       <option value={option.name}>{option.name}</option>
                     {/each}
-                    <option value="Not sure yet">Not sure yet</option>
+                    <option value="Not sure yet">{$t('ui.not_sure_yet')}</option>
                   </select>
                   <ChevronDown class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/65" size={18} />
                 </span>
@@ -255,15 +256,15 @@
           {:else}
             <div class="grid gap-4 sm:grid-cols-3">
               <label class="grid gap-1.5">
-                <span class={labelClass}>Name</span>
+                <span class={labelClass}>{$t('ui.name')}</span>
                 <input class={fieldClass} type="text" autocomplete="name" bind:value={fullName} />
               </label>
               <label class="grid gap-1.5">
-                <span class={labelClass}>Email</span>
+                <span class={labelClass}>{$t('form.email')}</span>
                 <input class={fieldClass} type="email" autocomplete="email" bind:value={email} />
               </label>
               <label class="grid gap-1.5">
-                <span class={labelClass}>WhatsApp number</span>
+                <span class={labelClass}>{$t('ui.whatsapp_number')}</span>
                 <input class={fieldClass} type="tel" autocomplete="tel" bind:value={phone} placeholder="+255 …" />
               </label>
             </div>
@@ -272,9 +273,7 @@
                  for separately here as it is on every other form. -->
             <label class="mt-3 flex cursor-pointer items-start gap-2.5">
               <input type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 accent-[#25D366]" bind:checked={whatsappOptIn} />
-              <span class="text-xs leading-5 text-white/70">
-                Contact me on WhatsApp about my trip, quotation and booking updates.
-                <span class="text-white/45">Optional — we reply by email either way.</span>
+              <span class="text-xs leading-5 text-white/70">{$t('ui.contact_me_on_whatsapp_about')}<span class="text-white/45">{$t('ui.optional_we_reply_by_email')}</span>
               </span>
             </label>
           {/if}
@@ -289,7 +288,7 @@
                 class="inline-flex h-11 items-center justify-center gap-1.5 rounded-[10px] border border-white/25 px-5 text-[13px] font-semibold text-white transition hover:bg-white/10"
                 type="button"
                 on:click={back}
-              ><ChevronLeft size={16} /> Back</button>
+              ><ChevronLeft size={16} />{$t('form.back')}</button>
             {/if}
             <button
               class="inline-flex h-11 items-center justify-center gap-1.5 rounded-[10px] bg-goldfinch-gold px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-heading transition hover:brightness-105 disabled:opacity-60"

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * The popup shell every enquiry form lives in.
    *
@@ -152,7 +153,7 @@
             <button
               type="button"
               class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green"
-              aria-label="Close this form"
+              aria-label={$t('ui.close_this_form')}
               on:click={close}
             >
               <X size={17} />
@@ -163,7 +164,7 @@
         {#if steps.length > 1}
           <!-- Numbered rail rather than a bar: it costs a third of the height
                and says which step you are on without a separate caption. -->
-          <ol class="mt-3 flex items-center gap-2" aria-label="Progress">
+          <ol class="mt-3 flex items-center gap-2" aria-label={$t('ui.progress')}>
             {#each steps as label, index}
               {@const state = index < stepIndex ? 'done' : index === stepIndex ? 'current' : 'todo'}
               <li class="flex min-w-0 items-center gap-2" class:flex-1={index < steps.length - 1}>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * The trip request form — one form, used everywhere.
    *
@@ -228,11 +229,11 @@
       <span class={`mx-auto grid h-12 w-12 place-items-center rounded-full ${dark ? 'bg-goldfinch-gold/20 text-goldfinch-gold' : 'bg-forest/10 text-forest'}`}>
         <Check size={22} />
       </span>
-      <h3 class={`font-serif text-2xl font-semibold ${dark ? 'text-white' : 'text-heading'}`}>Thank you — we have your request.</h3>
+      <h3 class={`font-serif text-2xl font-semibold ${dark ? 'text-white' : 'text-heading'}`}>{$t('form.thank_you')}</h3>
       {#if bookingCode}
-        <p class={hintCls}>Your reference is <b class={dark ? 'text-goldfinch-gold' : 'text-clay'}>{bookingCode}</b>.</p>
+        <p class={hintCls}>{$t('form.your_reference_is')}<b class={dark ? 'text-goldfinch-gold' : 'text-clay'}>{bookingCode}</b>.</p>
       {/if}
-      <p class={hintCls}>A local specialist will come back to you shortly, in the language you chose.</p>
+      <p class={hintCls}>{$t('form.specialist_replies')}</p>
     </div>
   {:else}
     {#if showHeader}
@@ -293,7 +294,7 @@
         </label>
 
         <label class="grid gap-1.5">
-          <span class={labelCls}>Adults <span class="gf-req">*</span></span>
+          <span class={labelCls}>{$t('form.adults')}<span class="gf-req">*</span></span>
           <span class="relative block">
             <User size={16} class={iconCls} />
             <select class={`${fieldCls} appearance-none`} bind:value={adults} on:change={() => clearErr('adults')}>
@@ -326,20 +327,20 @@
           {#if errors.language}<span class={errCls}>{errors.language}</span>{/if}
           <!-- Only in the card. In a band this one hint sat under a single
                column and pushed that field out of line with its neighbours. -->
-          {#if !inline}<span class={hintCls}>This helps us prepare the best options in your language.</span>{/if}
+          {#if !inline}<span class={hintCls}>{$t('form.language_helps')}</span>{/if}
         </label>
       {:else}
         <label class="grid gap-1.5">
-          <span class={labelCls}>Full name <span class="gf-req">*</span></span>
+          <span class={labelCls}>{$t('form.full_name')}<span class="gf-req">*</span></span>
           <span class="relative block">
             <User size={16} class={iconCls} />
-            <input class={fieldCls} autocomplete="name" bind:value={full_name} on:input={() => clearErr('full_name')} placeholder="Your full name" />
+            <input class={fieldCls} autocomplete="name" bind:value={full_name} on:input={() => clearErr('full_name')} placeholder={$t('form.your_full_name')} />
           </span>
           {#if errors.full_name}<span class={errCls}>{errors.full_name}</span>{/if}
         </label>
 
         <label class="grid gap-1.5">
-          <span class={labelCls}>Email <span class="gf-req">*</span></span>
+          <span class={labelCls}>{$t('form.email')}<span class="gf-req">*</span></span>
           <span class="relative block">
             <Mail size={16} class={iconCls} />
             <input class={fieldCls} type="email" autocomplete="email" bind:value={email} on:input={() => clearErr('email')} placeholder="you@example.com" />
@@ -348,7 +349,7 @@
         </label>
 
         <div class="grid gap-1.5">
-          <span class={labelCls}>WhatsApp <span class="gf-hint">(optional)</span></span>
+          <span class={labelCls}>{$t('cta.whatsapp')}<span class="gf-hint">(optional)</span></span>
           <div class="grid grid-cols-[7.5rem_1fr] gap-2.5">
             <span class="relative block">
               <select class="gf-input appearance-none pr-2 text-xs" bind:value={dialCode}>
@@ -360,20 +361,20 @@
               type="tel"
               autocomplete="tel"
               bind:value={phone}
-              placeholder="Phone number"
+              placeholder={$t('form.phone')}
             />
           </div>
         </div>
 
         <label class="grid gap-1.5">
-          <span class={labelCls}>Special requests <span class="gf-hint">(optional)</span></span>
+          <span class={labelCls}>{$t('form.special_requests')}<span class="gf-hint">(optional)</span></span>
           <span class="relative block">
             <PencilLine size={16} class="trip-icon pointer-events-none absolute left-3 top-3" />
             <textarea
               class="gf-textarea pl-10"
               rows="3"
               bind:value={special_requests}
-              placeholder="Dietary needs, hotel pickup details, honeymoon, room preference, budget range, or anything else we should know."
+              placeholder={$t('ui.dietary_needs_hotel_pickup_details')}
             ></textarea>
           </span>
         </label>
@@ -411,17 +412,14 @@
       {#if step === 1 && inline}
         <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
           <button type="button" class={`flex items-center gap-1.5 text-[13px] font-semibold ${dark ? 'text-white/70 hover:text-white' : 'text-ink/60 hover:text-heading'}`} on:click={back}>
-            <ArrowLeft size={14} /> Back
-          </button>
-          <p class={`flex items-center gap-1.5 ${hintCls}`}><Lock size={12} /> Your info is never shared with third parties.</p>
+            <ArrowLeft size={14} />{$t('form.back')}</button>
+          <p class={`flex items-center gap-1.5 ${hintCls}`}><Lock size={12} />{$t('form.never_shared')}</p>
         </div>
       {:else if step === 1}
         <button type="button" class="gf-btn-ghost w-full" on:click={back}>
-          <ArrowLeft size={15} /> Back
-        </button>
+          <ArrowLeft size={15} />{$t('form.back')}</button>
         <p class={`flex items-center justify-center gap-1.5 ${hintCls}`}>
-          <Lock size={13} /> Your info is secure and never shared with third parties.
-        </p>
+          <Lock size={13} />{$t('form.secure_never_shared')}</p>
       {/if}
     </form>
   {/if}

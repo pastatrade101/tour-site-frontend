@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   import { createEventDispatcher, onMount, tick } from 'svelte';
   import { X } from '@lucide/svelte';
   import type { FacetGroup } from '$lib/destinationFacets';
@@ -196,7 +197,7 @@
         bind:this={trackEl}
         class="relative inline-flex shrink-0 items-center gap-0.5 rounded-full bg-sand/60 p-1 ring-1 ring-inset ring-ink/[0.08]"
         role="tablist"
-        aria-label="Browse destinations by"
+        aria-label={$t('ui.browse_destinations_by')}
       >
         <span
           class="gf-marker pointer-events-none absolute bottom-1 left-0 top-1 rounded-full bg-surface shadow-card ring-1 ring-goldfinch-gold/45"
@@ -241,9 +242,7 @@
             aria-label={activeLabel ? `Clear the ${activeLabel} filter` : 'Clear filter'}
             on:click={() => dispatch('clear')}
           >
-            <X size={14} strokeWidth={2.5} aria-hidden="true" />
-            Clear
-          </button>
+            <X size={14} strokeWidth={2.5} aria-hidden="true" />{$t('filter.clear')}</button>
         {/if}
       </div>
 

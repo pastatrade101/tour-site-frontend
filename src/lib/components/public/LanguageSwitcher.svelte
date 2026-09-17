@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n/ui';
   /**
    * Language switcher. Every option links to the SAME page in that language —
    * the visitor is never bounced to the homepage for changing language.
@@ -106,7 +107,7 @@
       type="button"
       aria-haspopup="listbox"
       aria-expanded={open}
-      aria-label="Change language"
+      aria-label={$t('ui.change_language')}
       on:click={() => (open = !open)}
     >
       <!-- The flag, with the globe kept as the fallback for a language whose
@@ -126,7 +127,7 @@
         class="fixed z-[130] max-h-[min(60vh,340px)] overflow-y-auto rounded-[10px] border border-ink/10 bg-surface p-1.5 shadow-[0_20px_50px_rgba(57,61,50,0.18)]"
         style={`top:${pos.top}px; left:${pos.left}px; width:${pos.width}px;`}
         role="listbox"
-        aria-label="Language"
+        aria-label={$t('label.language')}
       >
         {#each options as language (language.code)}
           <li>
