@@ -1087,7 +1087,7 @@
         <div class="max-w-3xl" use:fadeUpOnScroll={{ y: 14 }}>
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('label.highlights')}</p>
           <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">Highlights of {destination.name}</h2>
-          <p class="mt-3 text-base leading-7 text-ink/65">{$t('ui.cards_below_are_built_from')}</p>
+          <p class="mt-3 text-base leading-7 text-ink/65">{$t('ui.things_to_do_here_with')}</p>
         </div>
 
         <div class="mt-10 grid grid-cols-1 gap-[22px] md:grid-cols-2 md:gap-8 lg:grid-cols-3 lg:gap-9 lg:gap-y-11" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
@@ -1131,7 +1131,7 @@
         <div class="max-w-[820px]">
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.best_time_to_visit')}</p>
           <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">When to visit {destination.name}</h2>
-          <p class="mt-4 max-w-[820px] text-base leading-relaxed text-ink/65 md:text-lg">{$t('ui.seasonal_guidance_below_is_rendered')}</p>
+          <p class="mt-4 max-w-[820px] text-base leading-relaxed text-ink/65 md:text-lg">{$t('ui.when_to_come_month_by')}</p>
         </div>
 
         <div class="mt-10 grid gap-6">
@@ -1234,7 +1234,7 @@
             {#if routeRows.length}
               <div class="h-full rounded-[12px] border border-ink/10 bg-surface p-6 md:p-8">
                 <div class="mb-6 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-clay md:mb-7 md:text-[12px]">
-                  <Route class="h-3.5 w-3.5" />{$t('ui.published_route_ideas')}</div>
+                  <Route class="h-3.5 w-3.5" />{$t('ui.route_ideas')}</div>
                 <ol class="divide-y divide-ink/10">
                   {#each routeRows as row, index (row.id)}
                     <li class="grid grid-cols-[auto_minmax(0,1fr)] gap-4 py-[18px] first:pt-0 last:pb-0">
@@ -1344,7 +1344,7 @@
             <div class="max-w-3xl">
               <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.things_to_do')}</p>
               <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[38px]">Experiences in {destination.name}</h2>
-              <p class="mt-3 text-base leading-7 text-ink/65">{$t('ui.published_activities_linked_to_this')}</p>
+              <p class="mt-3 text-base leading-7 text-ink/65">{$t('ui.things_to_do_in_this')}</p>
             </div>
             <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
               {#each activities as activity (activity.id)}
@@ -1359,7 +1359,7 @@
             <div class="max-w-3xl">
               <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.where_to_stay')}</p>
               <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[38px]">Lodges & camps in {destination.name}</h2>
-              <p class="mt-3 text-base leading-7 text-ink/65">{$t('ui.published_accommodation_linked_to_this')}</p>
+              <p class="mt-3 text-base leading-7 text-ink/65">{$t('ui.places_to_stay_in_this')}</p>
             </div>
             <div class="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
               {#each lodgeFeatureCards as lodge (lodge.key)}
@@ -1413,7 +1413,7 @@
         <div>
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.travel_tips')}</p>
           <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">Helpful details for {destination.name}</h2>
-          <p class="mt-4 max-w-[820px] text-base leading-relaxed text-ink/65 md:text-lg">{$t('ui.these_tabs_are_generated_from')}</p>
+          <p class="mt-4 max-w-[820px] text-base leading-relaxed text-ink/65 md:text-lg">{$t('ui.how_to_get_here_and')}</p>
 
           <div class="mt-8 overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-card md:mt-12 md:rounded-[12px]">
             <div class="flex overflow-x-auto border-b border-ink/10 bg-sand/55 md:grid md:grid-cols-3 md:overflow-visible">
@@ -1477,7 +1477,7 @@
           <div class="max-w-3xl">
             <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.keep_exploring')}</p>
             <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">{$t('ui.more_destinations')}</h2>
-            <p class="mt-3 text-base leading-7 text-ink/65">{$t('ui.other_published_destinations_from_the')}</p>
+            <p class="mt-3 text-base leading-7 text-ink/65">{$t('ui.more_places_we_travel_to')}</p>
           </div>
           <a class="inline-flex h-11 items-center gap-2 rounded-[8px] border border-ink/10 bg-surface px-5 text-sm font-bold text-forest shadow-sm transition hover:border-forest/25 hover:text-heading" href="/destinations">{$t('label.all_destinations')}<ArrowRight size={15} />
           </a>

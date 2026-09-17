@@ -34,19 +34,20 @@
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { toMetaText } from '$lib/richText';
   import { getTourDestinationLabel, getTourDestinations } from '$lib/tourDestinations';
+  import {
+    galleryForStay as buildGallery,
+    imageFromLodgeMedia,
+    loadLodgeMedia,
+    stayKey,
+    type MediaImage,
+    type Stay
+  } from '$lib/lodgeMedia';
   import type { BlogPost, FAQ, ItineraryDay, Tour, TravelStyle } from '$lib/types';
   import type { PageData } from './$types';
 
   type Icon = typeof CalendarDays;
   type FactCard = { icon: Icon; label: string; value: string };
   type SnapshotRow = { day: string; place: string; highlights: string; hotel: string };
-  type Stay = NonNullable<ItineraryDay['lodge']>;
-  type MediaImage = {
-    src: string;
-    caption: string;
-    record?: Record<string, unknown>;
-    fields?: string[];
-  };
   type AccommodationBlock = {
     key: string;
     label: string;
@@ -170,51 +171,8 @@
     return `${sorted.length === 1 ? 'Day' : 'Days'} ${sorted.join(', ')}`;
   };
 
-  const stayKey = (stay: Stay | null | undefined): string => String(stay?.id || stay?.slug || '').trim();
-
-  const imageFromStay = (stay: Stay): MediaImage | null => {
-    const src = stay.hero_image_url || stay.image_url || '';
-    return src
-      ? {
-          src,
-          caption: stay.name,
-          record: stay as unknown as Record<string, unknown>,
-          fields: ['hero_image_url', 'image_url', 'cover_image_url']
-        }
-      : null;
-  };
-
-  const imageFromLodgeMedia = (row: Record<string, unknown>, stay: Stay): MediaImage | null => {
-    const src = String(row.image_url || row.file_url || row.url || '').trim();
-    if (!src) return null;
-    return {
-      src,
-      caption: String(row.caption || row.alt_text || stay.name),
-      record: row,
-      fields: ['image_url', 'file_url', 'url']
-    };
-  };
-
-  const galleryForStay = (stay: Stay): MediaImage[] => {
-    const gallery: MediaImage[] = [];
-    const add = (image: MediaImage | null | undefined) => {
-      if (!image?.src || gallery.some((item) => item.src === image.src)) return;
-      gallery.push(image);
-    };
-    add(imageFromStay(stay));
-    for (const row of stay.lodge_images ?? []) {
-      add(imageFromLodgeMedia(row as unknown as Record<string, unknown>, stay));
-    }
-    for (const image of lodgeMedia[stayKey(stay)] ?? []) add(image);
-    return gallery;
-  };
-
-  const dayImage = (day: ItineraryDay): MediaImage | null => {
-    if (day.image_url) return { src: day.image_url, caption: `Day ${day.day_number}: ${day.title}`, record: day as unknown as Record<string, unknown>, fields: ['image_url'] };
-    if (day.lodge?.hero_image_url) return { src: day.lodge.hero_image_url, caption: day.lodge.name, record: day.lodge as unknown as Record<string, unknown>, fields: ['hero_image_url', 'image_url', 'cover_image_url'] };
-    if (day.lodge?.image_url) return { src: day.lodge.image_url, caption: day.lodge.name, record: day.lodge as unknown as Record<string, unknown>, fields: ['hero_image_url', 'image_url', 'cover_image_url'] };
-    return null;
-  };
+  /** The stay's pictures, plus anything fetched for it below. */
+  const galleryForStay = (stay: Stay): MediaImage[] => buildGallery(stay, lodgeMedia[stayKey(stay)] ?? []);
 
   const scrollToSection = (id: string) => {
     if (!browser) return;
@@ -418,35 +376,16 @@
     }
   };
 
-  const loadLodgeMedia = async (current: Tour) => {
-    const stays = new Map<string, Stay>();
-    for (const day of current.itinerary_days ?? []) {
-      if (!day.lodge?.id) continue;
-      const key = stayKey(day.lodge);
-      if (key) stays.set(key, day.lodge);
-    }
-    if (!stays.size) {
-      lodgeMedia = {};
-      return;
-    }
-
-    const results = await Promise.allSettled(
-      [...stays.entries()].map(async ([key, stay]) => {
-        // Fetch by the linked lodge id. Itinerary data can contain a stale or
-        // missing slug, while the public gallery endpoint is id-based.
-        const response = await api.lodges.gallery(stay.id);
-        const images = (response.data.images ?? [])
-          .map((row) => imageFromLodgeMedia(row as unknown as Record<string, unknown>, stay))
-          .filter(Boolean) as MediaImage[];
-        return [key, images.slice(0, 6)] as const;
-      })
+  /**
+   * Galleries for the properties this tour stays at. The day cards and the
+   * accommodation tab both read them, so the page loads them once here rather
+   * than letting the day renderer fetch its own.
+   */
+  const hydrateLodgeMedia = async (current: Tour) => {
+    lodgeMedia = await loadLodgeMedia(
+      (current.itinerary_days ?? []).map((day) => day.lodge),
+      {}
     );
-
-    const next: Record<string, MediaImage[]> = {};
-    for (const result of results) {
-      if (result.status === 'fulfilled' && result.value[1].length) next[result.value[0]] = result.value[1];
-    }
-    lodgeMedia = next;
   };
 
   /**
@@ -468,7 +407,7 @@
     const stylesRequest = api.travelStyles.list({ status: 'published', limit: 100 }).catch(() => null);
     travelStyles = (await stylesRequest)?.data.items ?? [];
     void loadRelated(record);
-    void loadLodgeMedia(record);
+    void hydrateLodgeMedia(record);
     trackEvent('tour_page_view', {
       tour_id: record.id,
       tour_title: record.title,
@@ -756,7 +695,7 @@
 
         <section id="day-by-day" class="tour-section scroll-mt-32">
           <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">{$t('ui.day_by_day')}</h2>
-          <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">{$t('ui.this_is_the_published_itinerary')}</p>
+          <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">{$t('ui.here_is_how_the_days')}</p>
 
           {#if itineraryDays.length}
             <!-- The same renderer the safari-package pages use, so a day card
@@ -765,14 +704,14 @@
               <ItineraryDays days={itineraryDays} {lodgeMedia} />
             </div>
           {:else}
-            <div class="mt-6 rounded-[12px] border border-ink/10 bg-sand/35 p-5 text-[14px] leading-6 text-ink/70">{$t('ui.the_daybyday_itinerary_has_not')}</div>
+            <div class="mt-6 rounded-[12px] border border-ink/10 bg-sand/35 p-5 text-[14px] leading-6 text-ink/70">{$t('ui.the_daybyday_route_for_this')}</div>
           {/if}
         </section>
 
         {#if accommodationBlocks.length}
           <section id="accommodation" class="tour-section scroll-mt-32">
             <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">{$t('nav.accommodation')}</h2>
-            <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">{$t('ui.these_are_the_accommodations_attached')}</p>
+            <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">{$t('ui.where_you_stay_on_this')}</p>
 
             <div class="tour-accommodation-grid mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {#each accommodationBlocks as block (block.key)}
@@ -838,7 +777,7 @@
 
         <section id="prices" class="tour-section scroll-mt-32">
           <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">{$t('ui.tour_rates')}</h2>
-          <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">{$t('ui.rates_are_shown_only_from')}</p>
+          <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">{$t('ui.this_is_the_starting_price')}</p>
 
           {#if pricingSeasons.length}
             <div class="mt-6 overflow-x-auto rounded-[10px] border border-ink/10 bg-surface shadow-sm">
@@ -872,7 +811,7 @@
               <thead>
                 <tr class="bg-deep-green text-left text-white">
                   <th class="px-4 py-3 font-semibold">{$t('ui.item')}</th>
-                  <th class="px-4 py-3 font-semibold">{$t('ui.published_detail')}</th>
+                  <th class="px-4 py-3 font-semibold">{$t('ui.detail')}</th>
                   <th class="hidden px-4 py-3 font-semibold md:table-cell">{$t('ui.note')}</th>
                 </tr>
               </thead>
@@ -911,7 +850,7 @@
                   {/each}
                 </ul>
               {:else}
-                <p class="mt-3 text-[14.5px] leading-6 text-ink/65">{$t('ui.published_inclusions_are_not_listed')}</p>
+                <p class="mt-3 text-[14.5px] leading-6 text-ink/65">{$t('ui.whats_included_is_not_listed')}</p>
               {/if}
             </div>
 
@@ -927,7 +866,7 @@
                   {/each}
                 </ul>
               {:else}
-                <p class="mt-3 text-[14.5px] leading-6 text-ink/65">{$t('ui.published_exclusions_are_not_listed')}</p>
+                <p class="mt-3 text-[14.5px] leading-6 text-ink/65">{$t('ui.whats_not_included_is_not')}</p>
               {/if}
             </div>
           </div>
@@ -1016,7 +955,7 @@
             {/each}
           </ol>
         {:else}
-          <div class="mt-6 rounded-[12px] border border-ink/10 bg-surface p-5 text-[14px] leading-6 text-ink/70">{$t('ui.no_public_faq_entries_are')}</div>
+          <div class="mt-6 rounded-[12px] border border-ink/10 bg-surface p-5 text-[14px] leading-6 text-ink/70">{$t('ui.no_questions_have_been_answered')}</div>
         {/if}
       </div>
     </div>

@@ -553,7 +553,7 @@
     {#if selectedStay.name}
       <div class="mt-2 flex items-center gap-2 rounded-[8px] border border-goldfinch-gold/30 bg-goldfinch-gold/[0.08] px-3 py-2.5 text-white">
         <BedDouble size={16} class="shrink-0 text-goldfinch-gold" />
-        <div class="min-w-0"><span class="block text-[9px] font-bold uppercase tracking-[0.14em] text-white/50">{$t('ui.accommodation_attached')}</span><span class="block truncate text-sm font-bold">{selectedStay.name}</span></div>
+        <div class="min-w-0"><span class="block text-[9px] font-bold uppercase tracking-[0.14em] text-white/50">{$t('ui.your_chosen_stay')}</span><span class="block truncate text-sm font-bold">{selectedStay.name}</span></div>
         <button type="button" class="ml-auto grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/15 text-white/65 transition hover:border-white/35 hover:text-white" aria-label={`Remove ${selectedStay.name} from this request`} title={$t('ui.remove_stay')} on:click={removeSelectedStay}><X size={14}/></button>
       </div>
     {/if}

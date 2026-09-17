@@ -11,13 +11,13 @@
    * section belong to the page, because a tour page and a landing page
    * introduce the same days with different words.
    */
-  import { ArrowRight, BedDouble, ChevronDown, Compass, MapPin, Utensils } from '@lucide/svelte';
+  import { BedDouble, ChevronDown, Compass, MapPin, Utensils } from '@lucide/svelte';
   import Img from './Img.svelte';
   import RichText from './RichText.svelte';
+  import StayCard from './StayCard.svelte';
+  import { loadLodgeMedia, stayKey, type MediaImage } from '$lib/lodgeMedia';
   import type { ItineraryDay } from '$lib/types';
 
-  type Stay = NonNullable<ItineraryDay['lodge']>;
-  type MediaImage = { src: string; caption: string; record?: Record<string, unknown>; fields?: string[] };
   // Same shape the tour page used: the constructor type, taken from a concrete
   // icon. `import type { Icon }` gives the instance type, which svelte:component
   // will not accept.
@@ -30,49 +30,31 @@
    * fetches these; a caller without them still gets the lodge's own images.
    */
   export let lodgeMedia: Record<string, MediaImage[]> = {};
+  /**
+   * Fetch those photographs here instead, for a caller that has no reason to
+   * hold them itself. Off by default so a page that already loads them — the
+   * tour page, which also shows them on its accommodation tab — does not ask
+   * for the same galleries twice.
+   */
+  export let autoloadMedia = false;
   /** Which day starts open. -1 opens none. */
   export let openIndex = 0;
 
-  const LODGE_TYPES: Record<string, string> = {
-    tented_camp: 'Tented camp',
-    mobile_camp: 'Mobile camp',
-    lodge: 'Lodge',
-    hotel: 'Hotel',
-    treehouse: 'Treehouse'
+  /** Galleries fetched here. A prop-supplied one always wins. */
+  let fetched: Record<string, MediaImage[]> = {};
+  const requested = new Set<string>();
+  $: media = { ...fetched, ...lodgeMedia };
+
+  const hydrateMedia = async (list: ItineraryDay[]) => {
+    const next = await loadLodgeMedia(
+      list.map((day) => day.lodge),
+      fetched,
+      requested
+    );
+    if (next !== fetched) fetched = next;
   };
 
-  const normaliseLabel = (value: string | null | undefined): string =>
-    String(value ?? '')
-      .replace(/[_-]+/g, ' ')
-      .trim()
-      .replace(/\b\w/g, (char) => char.toUpperCase());
-
-  const stayKey = (stay: Stay | null | undefined): string => String(stay?.id || stay?.slug || '').trim();
-
-  const imageFromStay = (stay: Stay): MediaImage | null => {
-    const src = stay.hero_image_url || stay.image_url || '';
-    return src
-      ? { src, caption: stay.name, record: stay as unknown as Record<string, unknown>, fields: ['hero_image_url', 'image_url', 'cover_image_url'] }
-      : null;
-  };
-
-  const imageFromLodgeMedia = (row: Record<string, unknown>, stay: Stay): MediaImage | null => {
-    const src = String(row.image_url || row.file_url || row.url || '').trim();
-    if (!src) return null;
-    return { src, caption: String(row.caption || row.alt_text || stay.name), record: row, fields: ['image_url', 'file_url', 'url'] };
-  };
-
-  const galleryForStay = (stay: Stay): MediaImage[] => {
-    const gallery: MediaImage[] = [];
-    const add = (image: MediaImage | null | undefined) => {
-      if (!image?.src || gallery.some((item) => item.src === image.src)) return;
-      gallery.push(image);
-    };
-    add(imageFromStay(stay));
-    for (const row of stay.lodge_images ?? []) add(imageFromLodgeMedia(row as unknown as Record<string, unknown>, stay));
-    for (const image of lodgeMedia[stayKey(stay)] ?? []) add(image);
-    return gallery;
-  };
+  $: if (autoloadMedia) void hydrateMedia(days ?? []);
 
   const dayImage = (day: ItineraryDay): MediaImage | null => {
     if (day.image_url) return { src: day.image_url, caption: `Day ${day.day_number}: ${day.title}`, record: day as unknown as Record<string, unknown>, fields: ['image_url'] };
@@ -190,50 +172,7 @@
 
           {#if day.lodge}
             {@const stay = day.lodge}
-            {@const gallery = galleryForStay(stay)}
-            <div class="tour-day-accommodation">
-              <div class="mb-3.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink/60 md:text-[11px]">Accommodation - {stay.name}</div>
-              <div class="tour-day-accommodation-card overflow-hidden rounded-[12px] border border-ink/10 bg-surface">
-                {#if gallery.length}
-                  <div class="tour-day-accommodation-gallery grid grid-cols-4 gap-1 overflow-hidden rounded-t-[11px] bg-sand p-1">
-                    {#each gallery.slice(0, 4) as image, imageIndex}
-                      <div class={`relative aspect-[4/3] min-w-0 overflow-hidden bg-sand ${imageIndex === 0 ? 'rounded-tl-[8px]' : ''} ${imageIndex === Math.min(gallery.length, 4) - 1 ? 'rounded-tr-[8px]' : ''}`}>
-                        <Img
-                          src={image.record ? '' : image.src}
-                          record={image.record}
-                          fields={image.fields ?? []}
-                          alt={image.caption}
-                          width={360}
-                          sizes="(max-width: 768px) 23vw, 175px"
-                          className="h-full w-full object-cover transition duration-500 hover:scale-[1.03]"
-                        />
-                        {#if imageIndex === 3 && gallery.length > 4}
-                          <div class="pointer-events-none absolute inset-0 grid place-items-center bg-heading/55 px-2 text-center text-xs font-extrabold tracking-wide text-white backdrop-blur-[1px] sm:text-sm">
-                            +{gallery.length - 4} {gallery.length - 4 === 1 ? 'photo' : 'photos'}
-                          </div>
-                        {/if}
-                      </div>
-                    {/each}
-                  </div>
-                {/if}
-                <div class="p-4 md:p-5">
-                  <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div class="min-w-0">
-                      <h4 class="font-serif text-[19px] font-semibold leading-snug text-heading">{stay.name}</h4>
-                      <p class="mt-1 text-[13px] font-medium text-ink/60">
-                        {[LODGE_TYPES[String(stay.lodge_type)] ?? '', stay.accommodation_level ? normaliseLabel(stay.accommodation_level) : '', stay.destinations?.name ?? ''].filter(Boolean).join(' / ')}
-                      </p>
-                    </div>
-                    <a
-                      class="inline-flex shrink-0 items-center gap-1 rounded-[6px] border border-ink/10 px-3 py-2 text-[12px] font-bold text-forest transition hover:border-goldfinch-gold hover:text-heading"
-                      href={`/accommodation/${stay.slug}`}
-                      data-sveltekit-preload-data="hover"
-                    >{$t('ui.view_accommodation')}<ArrowRight size={13} />
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <StayCard {stay} extra={media[stayKey(stay)] ?? []} label={`Accommodation - ${stay.name}`} />
           {/if}
         </div>
       </details>
@@ -282,17 +221,5 @@
       padding: 0.9rem;
     }
 
-    .tour-day-accommodation-card {
-      border-radius: 12px;
-    }
-
-    .tour-day-accommodation-card :global(.p-4) {
-      padding: 0.9rem;
-    }
-
-    .tour-day-accommodation-card a {
-      width: 100%;
-      justify-content: center;
-    }
   }
 </style>

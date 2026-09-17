@@ -3,8 +3,14 @@
   /**
    * The route options panel, laid out exactly as the supplied design: route
    * tabs, a wide photo, then one card holding the intro, highlights, a
-   * comfort-tabbed price panel, the day-by-day accordion with accommodation
-   * folded into day one, and a horizontal closing CTA.
+   * comfort-tabbed price panel, where you sleep, the day-by-day itinerary and
+   * a horizontal closing CTA.
+   *
+   * The days are drawn by ItineraryDays — the same component the tour pages
+   * use. This panel had its own accordion: a title, a paragraph, and nothing
+   * else. No main stop, no meals, no activities, and a property reduced to one
+   * thumbnail tucked inside day one. Two renderers for one thing, and the
+   * thinner one was the version a landing page showed first.
    *
    * The content is not typed twice. A route names real published tours, one
    * per comfort level, and the photo, wording, price, highlights, days and
@@ -12,11 +18,14 @@
    * cannot drift, and a route whose tour is unpublished drops out rather than
    * rendering a broken tab.
    */
-  import { ArrowRight, Check, ChevronDown, Tent } from '@lucide/svelte';
+  import { ArrowRight, Check, Tent } from '@lucide/svelte';
   import Img from './Img.svelte';
+  import ItineraryDays from './ItineraryDays.svelte';
   import RichText from './RichText.svelte';
+  import StayCard from './StayCard.svelte';
   import { currency, formatUsd } from '$lib/currency';
   import { enumLabel } from '$lib/accommodationEnums';
+  import { loadLodgeMedia, stayKey, type MediaImage, type Stay } from '$lib/lodgeMedia';
   import { parseRouteTour, lines, str } from '$lib/safariPackageBlocks';
   import type { ItineraryDay, Lodge, Tour } from '$lib/types';
 
@@ -83,43 +92,34 @@
   $: priceLabel = priced?.tour?.price_from ? formatUsd(priced.tour.price_from, $currency) : '';
 
   /**
-   * Explicit CMS picks lead; the tour itinerary is the safe legacy fallback.
+   * The property an editor selected for this comfort tab.
    *
-   * One property per comfort tab, which is what the editor now offers. Pages
-   * saved while it accepted several still hold them, so the first is taken
-   * rather than all — the alternative is a page that contradicts the form that
-   * produced it until someone happens to re-save it.
+   * One per tab, which is what the editor now offers. Pages saved while it
+   * accepted several still hold them, so the first is taken rather than all —
+   * the alternative is a page that contradicts the form that produced it until
+   * someone happens to re-save it.
    *
-   * The fallback below is deliberately NOT capped. Those are the lodges on the
-   * tour's own itinerary — the places you genuinely sleep across a multi-stop
-   * route — which is a different question from which single property this tab
-   * is featuring.
+   * There is no longer a fallback list assembled from the tour's itinerary:
+   * the day cards below show the property each day stays at, so repeating them
+   * up here said the same thing twice.
    */
-  $: selectedStays = (() => {
-    if (stayed?.lodges?.length) {
-      return stayed.lodges.slice(0, 1).map((lodge) => ({
-        name: lodge.name,
-        href: lodge.slug ? `/accommodation/${lodge.slug}` : '',
-        src: lodge.hero_image_url || lodge.image_url || lodge.cover_image_url || '',
-        location: lodge.destinations?.name ?? ''
-      }));
-    }
-    const seen = new Set<string>();
-    const out: { name: string; href: string; src: string; location: string }[] = [];
-    for (const day of daysOf(stayed?.tour)) {
-      const lodge = day.lodge as { id?: string; name?: string; slug?: string; hero_image_url?: string; lodge_images?: { image_url?: string }[]; destinations?: { name?: string } } | undefined;
-      if (!lodge) continue;
-      const src = lodge.hero_image_url || lodge.lodge_images?.[0]?.image_url;
-      const key = lodge.id || src || lodge.name || '';
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      out.push({ name: lodge.name ?? 'Accommodation on this route', href: lodge.slug ? `/accommodation/${lodge.slug}` : '', src: src ?? '', location: lodge.destinations?.name ?? '' });
-    }
-    return out.slice(0, 3);
-  })();
+  $: selectedStays = (stayed?.lodges ?? []).slice(0, 1) as unknown as Stay[];
 
-  let openDay = 0;
-  $: if (activeRoute >= 0) openDay = 0;
+  /**
+   * Photographs for the selected property, so its card carries the same
+   * four-up gallery the itinerary days do rather than one thumbnail. The day
+   * cards fetch their own — this is only the editor's pick, which is not on
+   * any itinerary.
+   */
+  let stayMedia: Record<string, MediaImage[]> = {};
+  const requestedStays = new Set<string>();
+
+  const hydrateStayMedia = async (list: Stay[]) => {
+    const next = await loadLodgeMedia(list, stayMedia, requestedStays);
+    if (next !== stayMedia) stayMedia = next;
+  };
+
+  $: void hydrateStayMedia(selectedStays);
 
   const GOLD =
     'route-cta inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-6 text-[14px] font-bold text-heading transition hover:brightness-105';
@@ -264,94 +264,56 @@
           </div>
         </div>
 
-        <!-- Day by day, with accommodation folded into day one -->
+        <!-- Where you sleep: the property an editor chose for this comfort
+             level, shown with its own photographs. No list assembled from the
+             itinerary any more — the day cards below carry those lodges, and
+             printing them twice said the same thing in two voices. -->
+        {#if route.stayNote || selectedStays.length}
+          <div class="mt-9 border-t border-ink/[0.18] pt-8">
+            <h3 class={`${SUB} flex items-center gap-2`}>
+              <Tent size={18} class="text-clay" />{$t('ui.accommodation_options')}
+            </h3>
+            {#if route.comfort.length > 1}
+              <div class="comfort-tabs -mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible" role="tablist" aria-label={$t('ui.accommodation_comfort_level')}>
+                {#each route.comfort as level, li (li)}
+                  <button
+                    class={`h-11 shrink-0 rounded-[10px] border px-5 text-[14px] font-semibold tracking-[0.02em] transition ${
+                      li === (stayLevel[activeRoute] ?? 0)
+                        ? 'border-deep-green bg-deep-green text-surface'
+                        : 'border-ink/[0.16] bg-canvas text-heading hover:bg-sand/70'
+                    }`}
+                    type="button"
+                    role="tab"
+                    aria-selected={li === (stayLevel[activeRoute] ?? 0)}
+                    on:click={() => (stayLevel[activeRoute] = li)}
+                  >
+                    {level.label}
+                  </button>
+                {/each}
+              </div>
+            {/if}
+            {#if route.stayNote}
+              <p class={`mt-4 max-w-[820px] ${BODY}`}>{route.stayNote}</p>
+            {/if}
+            {#if selectedStays.length}
+              <div class="mt-5 grid gap-5 lg:grid-cols-2">
+                {#each selectedStays as stay (stayKey(stay))}
+                  <StayCard {stay} extra={stayMedia[stayKey(stay)] ?? []} />
+                {/each}
+              </div>
+            {/if}
+            <p class="mt-5 text-[13px] italic leading-relaxed text-ink/55">{$t('ui.final_accommodation_depends_on_route')}</p>
+          </div>
+        {/if}
+
+        <!-- Day by day, through the renderer the tour pages use. The days,
+             their facts and the property each one stays at are the linked
+             tour's own records, so this panel and that tour cannot disagree. -->
         {#if days.length}
           <div class="mt-9 border-t border-ink/[0.18] pt-8">
             <h3 class={SUB}>{$t('ui.day_by_day_itinerary')}</h3>
-            <div class="route-itinerary mt-4 overflow-hidden rounded-[12px] border border-ink/[0.16] bg-surface">
-              {#each days as day, i (i)}
-                <div class={i > 0 ? 'border-t border-ink/[0.12]' : ''}>
-                  <button
-                    class="route-day-toggle flex w-full items-center gap-4 px-5 py-5 text-left md:px-8 md:py-7"
-                    type="button"
-                    aria-expanded={i === openDay}
-                    on:click={() => (openDay = i === openDay ? -1 : i)}
-                  >
-                    <span class="inline-flex h-7 shrink-0 items-center rounded-[8px] bg-deep-green px-3 text-[11px] font-bold uppercase tracking-[0.1em] text-surface">
-                      Day {day.day_number ?? i + 1}
-                    </span>
-                    <span class="font-serif flex-1 text-[16px] font-semibold leading-snug text-heading md:text-[19px]">
-                      {day.title ?? ''}
-                    </span>
-                    <ChevronDown size={20} class={`shrink-0 text-heading transition-transform ${i === openDay ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {#if i === openDay}
-                    <div class="route-day-body px-5 pb-6 md:px-8 md:pb-8">
-                      {#if day.description}
-                        <RichText value={day.description} className={`mt-2 max-w-[820px] ${BODY}`} />
-                      {/if}
-
-                      {#if i === 0 && (route.stayNote || selectedStays.length)}
-                        <div class="mt-7 border-t border-ink/[0.12] pt-6">
-                          <h4 class="font-serif flex items-center gap-2 text-[17px] font-semibold text-heading md:text-[19px]">
-                            <Tent size={18} class="text-clay" />{$t('ui.accommodation_options')}</h4>
-                          {#if route.comfort.length > 1}
-                            <div class="comfort-tabs -mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible" role="tablist" aria-label={$t('ui.accommodation_comfort_level')}>
-                              {#each route.comfort as level, li (li)}
-                                <button
-                                  class={`h-11 shrink-0 rounded-[10px] border px-5 text-[14px] font-semibold tracking-[0.02em] transition ${
-                                    li === (stayLevel[activeRoute] ?? 0)
-                                      ? 'border-deep-green bg-deep-green text-surface'
-                                      : 'border-ink/[0.16] bg-canvas text-heading hover:bg-sand/70'
-                                  }`}
-                                  type="button"
-                                  role="tab"
-                                  aria-selected={li === (stayLevel[activeRoute] ?? 0)}
-                                  on:click={() => (stayLevel[activeRoute] = li)}
-                                >
-                                  {level.label}
-                                </button>
-                              {/each}
-                            </div>
-                          {/if}
-                          <div class="route-stays mt-4 rounded-[12px] border border-ink/[0.12] bg-surface p-5 md:p-8">
-                            {#if route.stayNote}
-                              <p class={`max-w-[820px] ${BODY}`}>{route.stayNote}</p>
-                            {/if}
-                            {#if selectedStays.length}
-                              <div class="route-stay-grid mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                {#each selectedStays as stay, ii (ii)}
-                                  <div class="route-stay-card overflow-hidden rounded-[10px] border border-ink/10 bg-canvas">
-                                    {#if stay.src}
-                                      <Img
-                                        src={stay.src}
-                                        alt={stay.name}
-                                        width={520}
-                                        sizes="(max-width: 639px) 100vw, (max-width: 1023px) 48vw, 32vw"
-                                        className="h-[140px] w-full object-cover md:h-[160px]"
-                                      />
-                                    {/if}
-                                    <div class="p-3">
-                                      {#if stay.href}
-                                        <a class="text-[13.5px] font-bold text-heading transition hover:text-clay" href={stay.href}>{stay.name}</a>
-                                      {:else}
-                                        <p class="text-[13.5px] font-bold text-heading">{stay.name}</p>
-                                      {/if}
-                                      {#if stay.location}<p class="mt-0.5 text-[11.5px] text-ink/55">{stay.location}</p>{/if}
-                                    </div>
-                                  </div>
-                                {/each}
-                              </div>
-                            {/if}
-                            <p class="mt-5 text-[13px] italic leading-relaxed text-ink/55">{$t('ui.final_accommodation_depends_on_route')}</p>
-                          </div>
-                        </div>
-                      {/if}
-                    </div>
-                  {/if}
-                </div>
-              {/each}
+            <div class="route-itinerary mt-4">
+              <ItineraryDays {days} autoloadMedia />
             </div>
           </div>
         {/if}
@@ -374,8 +336,7 @@
 {/if}
 
 <style>
-  .route-tabs button:focus-visible, .comfort-tabs button:focus-visible,
-  .route-day-toggle:focus-visible, .route-cta:focus-visible {
+  .route-tabs button:focus-visible, .comfort-tabs button:focus-visible, .route-cta:focus-visible {
     outline: 2px solid rgb(var(--c-clay)); outline-offset: -3px;
   }
   @media (max-width: 767px) {
@@ -389,14 +350,6 @@
     .route-cta :global(svg) { flex-shrink: 0; }
     .route-price { padding: 16px 0 0; border: 0; border-top: 1px solid rgb(var(--c-ink) / 0.12); border-radius: 0; background: transparent; }
     .route-price-value { font-size: 19px; line-height: 1.4; }
-    .route-day-toggle { flex-wrap: wrap; gap: 10px; padding: 16px 12px; }
-    .route-day-toggle > span:first-child { padding-inline: 8px; font-size: 10px; }
-    .route-day-toggle > span:nth-child(2) { min-width: 0; font-size: 15px; }
-    .route-day-body { padding: 0 12px 20px; }
-    .route-stays { border: 0; border-radius: 0; padding: 0; }
-    .route-stay-grid { gap: 16px; }
-    .route-stay-card { border: 0; background: transparent; }
-    .route-stay-card > div { padding: 12px 0 0; }
     .comfort-tabs button { padding-inline: 14px; font-size: 13px; }
   }
 </style>

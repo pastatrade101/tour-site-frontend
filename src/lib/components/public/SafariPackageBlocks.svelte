@@ -239,7 +239,7 @@
           {#if title}<h2 class={HEADING}>{title}</h2>{/if}
           {#if intro}<p class={INTRO}>{intro}</p>{/if}
           <div class="package-itinerary mt-8">
-            <ItineraryDays days={itineraryDays} />
+            <ItineraryDays days={itineraryDays} autoloadMedia />
           </div>
         </div>
       </section>
