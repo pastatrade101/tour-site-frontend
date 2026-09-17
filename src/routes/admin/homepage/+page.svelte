@@ -346,8 +346,8 @@
     {
       key: 'partners',
       label: 'Partner logos',
-      surface: 'orphan',
-      description: 'Trusted partner logo strip shown on the homepage. Use the logo rows editor to manage logos.',
+      surface: 'public',
+      description: 'Accreditation and partner logos, shown under the reviews on the homepage. Use the logo rows editor to manage logos; with none added the strip does not appear.',
       fields: ['title', 'extra: logos'],
       preset: {
         title: 'Trusted by leading travel partners',

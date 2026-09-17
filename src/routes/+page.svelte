@@ -17,6 +17,7 @@
   import HomeAdvisorNote from '$lib/components/public/home/HomeAdvisorNote.svelte';
   import HomeHowPlanned from '$lib/components/public/home/HomeHowPlanned.svelte';
   import HomeTravellerStories from '$lib/components/public/home/HomeTravellerStories.svelte';
+  import PartnerStrip from '$lib/components/public/PartnerStrip.svelte';
   import HomePlanningBand from '$lib/components/public/home/HomePlanningBand.svelte';
   import MigrationCalendar from '$lib/components/public/MigrationCalendar.svelte';
   import LeadCaptureForm from '$lib/components/public/LeadCaptureForm.svelte';
@@ -221,6 +222,17 @@
     }))
     .filter((item) => item.name && item.slug);
   $: experienceItems = experienceOverrides.length ? experienceOverrides : categoryExperienceItems;
+
+  /**
+   * The accreditation logos under the reviews. They live on the `partners`
+   * homepage section, which is where the admin's logo editor already writes
+   * them — the strip simply had no caller until now. No logos, no strip.
+   */
+  $: partnerLogos = arr<{ image_url?: string; name?: string; url?: string }>(
+    (sections.partners?.extra_data as Record<string, unknown> | undefined)?.logos
+  )
+    .filter((logo) => String(logo?.image_url ?? '').trim())
+    .map((logo) => ({ image_url: String(logo.image_url), name: logo.name, url: logo.url }));
 
   // "Plan your dream" band bullets — CMS-overridable via extra_data.points,
   // falling back to the current text.
@@ -459,6 +471,11 @@
   />
 {:else if isSectionActive('reviews_section') && deferredLoading}
   <ContentShimmer cards={3} label="Loading traveller stories" />
+{/if}
+
+<!-- The accreditations, immediately under the reviews they back up. -->
+{#if isSectionActive('partners')}
+  <PartnerStrip logos={partnerLogos} title={cms('partners', 'title', '')} />
 {/if}
 
 <!-- ── Goldfinch-only sections (not in the reference layout) — each stays
