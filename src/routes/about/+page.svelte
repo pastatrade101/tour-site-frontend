@@ -92,7 +92,10 @@
 <!-- ── Hero ─────────────────────────────────────────────────────────────── -->
 <section class="relative isolate overflow-hidden bg-deep-green text-white">
   <Img src={heroImage} alt="" width={1800} sizes="100vw" eager className="absolute inset-0 h-full w-full object-cover" />
-  <div class="absolute inset-0 bg-[linear-gradient(105deg,rgba(12,16,12,0.86)_0%,rgba(12,16,12,0.55)_45%,rgba(12,16,12,0.25)_100%)]"></div>
+  <div
+    class="absolute inset-0"
+    style="background: linear-gradient(105deg, rgb(var(--c-deep-green) / 0.86) 0%, rgb(var(--c-deep-green) / 0.55) 45%, rgb(var(--c-deep-green) / 0.25) 100%)"
+  ></div>
   <div class="container-shell relative grid gap-10 py-20 md:py-28 lg:grid-cols-[1.35fr_0.65fr] lg:items-center">
     <div class="max-w-2xl [text-shadow:0_2px_18px_rgba(0,0,0,0.45)]">
       <p class="text-sm font-extrabold uppercase tracking-[0.22em] text-goldfinch-gold">About</p>
@@ -131,7 +134,7 @@
 <!-- ── Our Story ────────────────────────────────────────────────────────── -->
 <section class="bg-surface py-16 md:py-24" use:sectionReveal>
   <div class="container-shell grid gap-10 lg:grid-cols-2 lg:items-center">
-    <div class="overflow-hidden rounded-[14px] shadow-[0_24px_60px_rgba(57,61,50,0.16)]" use:fadeUpOnScroll={{ y: 16 }}>
+    <div class="overflow-hidden rounded-[14px] shadow-[0_24px_60px_rgb(var(--c-deep-green)/0.16)]" use:fadeUpOnScroll={{ y: 16 }}>
       <Img
         src={settingText(s, 'about_story_image') || heroImage}
         alt="Safari in Tanzania"
@@ -172,7 +175,7 @@
 </section>
 
 <!-- ── Why travel with us ───────────────────────────────────────────────── -->
-<section class="bg-canvas py-16 md:py-24" use:sectionReveal>
+<section class="bg-surface py-16 md:py-24" use:sectionReveal>
   <div class="container-shell">
     <div class="max-w-2xl">
       <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Why Travel With Us</p>
@@ -289,7 +292,7 @@
 {/if}
 
 <!-- ── Partners + guest reviews ─────────────────────────────────────────── -->
-<section class="bg-canvas py-16 md:py-20" use:sectionReveal>
+<section class="bg-surface py-16 md:py-20" use:sectionReveal>
   <div class="container-shell grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
     <div>
       <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Our Partners</p>
@@ -304,7 +307,7 @@
     </div>
 
     {#if activeT}
-      <div class="rounded-[16px] border border-goldfinch-gold/20 bg-surface p-7 shadow-[0_18px_50px_rgba(57,61,50,0.08)] md:p-9">
+      <div class="rounded-[16px] border border-goldfinch-gold/20 bg-surface p-7 shadow-[0_18px_50px_rgb(var(--c-deep-green)/0.08)] md:p-9">
         <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">What Our Guests Say</p>
         <Quote size={30} class="mt-4 text-goldfinch-gold/40" />
         {#if activeT.rating}
@@ -345,13 +348,16 @@
 </section>
 
 <!-- ── FAQ ──────────────────────────────────────────────────────────────── -->
-<section class="bg-sand/40 py-16 md:py-20" use:sectionReveal>
+<section class="bg-surface py-16 md:py-20" use:sectionReveal>
   <div class="container-shell">
     <div class="mx-auto max-w-2xl text-center">
       <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Frequently Asked Questions</p>
       <h2 class="mt-3 font-serif text-3xl font-semibold text-heading md:text-[38px]">Everything You Need to Know</h2>
     </div>
-    <div class="mx-auto mt-12 max-w-4xl md:mt-14">
+    <!-- The sand tint used to hold this block together. On white the questions
+         would sit on nothing, so the panel does that job instead — the same
+         border, radius and shadow the cards further up the page already use. -->
+    <div class="mx-auto mt-12 max-w-4xl rounded-[16px] border border-ink/10 bg-surface p-2 shadow-card md:mt-14 md:p-4">
       <FAQAccordion {faqs} />
     </div>
   </div>
@@ -360,7 +366,10 @@
 <!-- ── Final CTA ────────────────────────────────────────────────────────── -->
 <section class="relative isolate overflow-hidden bg-deep-green text-white">
   <Img src={heroImage} alt="" width={1800} sizes="100vw" className="absolute inset-0 h-full w-full object-cover opacity-45" />
-  <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(12,16,12,0.7),rgba(12,16,12,0.82))]"></div>
+  <div
+    class="absolute inset-0"
+    style="background: linear-gradient(180deg, rgb(var(--c-deep-green) / 0.7), rgb(var(--c-deep-green) / 0.82))"
+  ></div>
   <div class="container-shell relative py-16 text-center md:py-20">
     <Sparkles size={24} class="mx-auto text-goldfinch-gold" />
     <h2 class="mt-4 font-serif text-3xl font-semibold md:text-[42px]">Your African Adventure Starts Here</h2>
