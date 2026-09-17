@@ -343,7 +343,7 @@
      collapsed straight through this wrapper, opening a strip where the cream
      page canvas showed between the hero and the white results area. -->
 <div class="bg-white">
-<section class="tour-shell min-w-0 pb-12 pt-6">
+<section class="tour-shell min-w-0 bg-surface pb-12 pt-6">
 
 
   <div class="grid min-w-0 gap-6">
@@ -359,7 +359,7 @@
            is static, but on a relative element top shifts the paint position —
            the panel drifted a nav-height down, opening a gap above itself and
            landing on the cards below. -->
-      <div class="results-panel sticky top-[var(--nav-h)] z-20 -mx-3 border-y border-ink/10 bg-[#fbfaf6]/95 px-3 py-3 backdrop-blur lg:relative lg:top-auto lg:mx-0 lg:rounded-[8px] lg:border lg:bg-white lg:p-4 lg:backdrop-blur-none">
+      <div class="results-panel sticky top-[var(--nav-h)] z-20 -mx-3 border-y border-ink/10 bg-surface/95 px-3 py-3 backdrop-blur lg:relative lg:top-auto lg:mx-0 lg:rounded-[8px] lg:border lg:bg-white lg:p-4 lg:backdrop-blur-none">
         <div class="results-filter-slot">
           <TourFilterBar
                 {destinationOptions}
@@ -528,6 +528,9 @@
 
 <!-- ── Supporting content, below the filtered grid ─────────────────────────── -->
 
+<!-- White through, like the homepage. These four are shared components, so
+     the background belongs at the call site, not inside them. -->
+<div class="bg-surface">
 {#if parkDestinations.length}
   <HomeDestinationsCarousel
     destinations={parkDestinations}
@@ -557,6 +560,7 @@
   />
 {/if}
 
+</div>
 {#if tourFaqs.length}
   <section class="bg-surface py-14 md:py-20">
     <div class="tour-shell grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
@@ -670,8 +674,8 @@
     gap: 0.375rem;
     max-width: 100%;
     border-radius: 999px;
-    border: 1px solid rgba(31, 77, 58, 0.2);
-    background: rgba(31, 77, 58, 0.06);
+    border: 1px solid rgb(var(--c-forest) / 0.2);
+    background: rgb(var(--c-forest) / 0.06);
     padding: 0.35rem 0.75rem;
     font-size: 0.8125rem;
     font-weight: 700;
@@ -679,8 +683,8 @@
     transition: background 0.15s, border-color 0.15s;
   }
   :global(.chip:hover) {
-    border-color: rgba(31, 77, 58, 0.34);
-    background: rgba(31, 77, 58, 0.12);
+    border-color: rgb(var(--c-forest) / 0.34);
+    background: rgb(var(--c-forest) / 0.12);
   }
   :global(.metric) {
     min-width: 0;
