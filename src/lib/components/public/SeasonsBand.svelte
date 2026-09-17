@@ -59,7 +59,7 @@
   };
 </script>
 
-<section class="bg-canvas py-14 md:py-20" use:fadeUpOnScroll>
+<section class="bg-surface py-14 md:py-20" use:fadeUpOnScroll>
   <div class="container-shell">
     <div class="mx-auto max-w-2xl text-center">
       <p class="text-sm font-semibold uppercase tracking-[0.16em] text-goldfinch-gold">{eyebrow}</p>

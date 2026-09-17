@@ -369,7 +369,7 @@
      ───────────────────────────────────────────────────────────────────────── -->
 
 <!-- 1 · Hero -->
-<main class="home-motion-root" use:homepageMotion>
+<main class="home-motion-root bg-surface" use:homepageMotion>
 {#if isSectionActive('hero')}
   <HomeHero
     eyebrow={typeof heroExtra.eyebrow === 'string' ? heroExtra.eyebrow : 'Tanzania & East Africa specialists'}
@@ -501,7 +501,7 @@
 
 <!-- 10b · Gallery preview -->
 {#if isSectionActive('gallery_preview') && galleryDisplay.length}
-<section class="border-y border-ink/10 bg-sand/35 py-14 md:py-20" use:sectionReveal>
+<section class="border-y border-ink/10 bg-surface py-14 md:py-20" use:sectionReveal>
   <div class="container-shell">
     <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between md:gap-10">
       <div class="max-w-2xl" use:fadeUpOnScroll={{ y: 14 }}>
@@ -531,7 +531,7 @@
 
 <!-- 11 · Blog — hidden when there are no posts -->
 {#if isSectionActive('blog_preview') && posts.length}
-<section class="relative overflow-hidden bg-canvas py-14 md:py-20" use:sectionReveal>
+<section class="relative overflow-hidden bg-surface py-14 md:py-20" use:sectionReveal>
   <div class="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-surface/70 to-transparent" aria-hidden="true"></div>
   <div class="container-shell">
     <div class="flex flex-wrap items-end justify-between gap-4">

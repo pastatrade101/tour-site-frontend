@@ -43,7 +43,7 @@
 </script>
 
 {#if active && hasEntries}
-  <section class="relative overflow-hidden bg-canvas py-14 md:py-20" use:sectionReveal>
+  <section class="relative overflow-hidden bg-surface py-14 md:py-20" use:sectionReveal>
     <div class="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-surface/70 to-transparent" aria-hidden="true"></div>
     <div class="container-shell">
       <div class="relative mx-auto max-w-2xl text-center" use:fadeUpOnScroll={{ y: 14 }}>
