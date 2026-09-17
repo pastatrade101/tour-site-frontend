@@ -18,8 +18,6 @@
   import HomeHowPlanned from '$lib/components/public/home/HomeHowPlanned.svelte';
   import HomeTravellerStories from '$lib/components/public/home/HomeTravellerStories.svelte';
   import HomePlanningBand from '$lib/components/public/home/HomePlanningBand.svelte';
-  import SeasonsBand from '$lib/components/public/SeasonsBand.svelte';
-  import ImpactBand from '$lib/components/public/ImpactBand.svelte';
   import MigrationCalendar from '$lib/components/public/MigrationCalendar.svelte';
   import LeadCaptureForm from '$lib/components/public/LeadCaptureForm.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
@@ -184,8 +182,6 @@
       })
     );
   $: whyExtra = (sections.why_us?.extra_data ?? {}) as Record<string, unknown>;
-  $: seasonsExtra = (sections.seasons?.extra_data ?? {}) as Record<string, unknown>;
-  $: impactExtra = (sections.impact?.extra_data ?? {}) as Record<string, unknown>;
   $: faqExtra = (sections.faq?.extra_data ?? {}) as Record<string, unknown>;
   $: howExtra = (sections.how_it_works?.extra_data ?? {}) as Record<string, unknown>;
   $: experiencesExtra = (sections.experiences?.extra_data ?? {}) as Record<string, unknown>;
@@ -225,18 +221,6 @@
     }))
     .filter((item) => item.name && item.slug);
   $: experienceItems = experienceOverrides.length ? experienceOverrides : categoryExperienceItems;
-  $: seasonsProps = clean({ eyebrow: seasonsExtra.eyebrow, title: sections.seasons?.title, subtitle: sections.seasons?.subtitle, seasons: arr(seasonsExtra.seasons) });
-  $: impactProps = clean({
-    eyebrow: impactExtra.eyebrow,
-    title: sections.impact?.title,
-    body: sections.impact?.subtitle,
-    points: arr(impactExtra.points),
-    imageUrl: sections.impact?.image_url,
-    badge: impactExtra.badge,
-    badgeLabel: impactExtra.badge_label,
-    primaryCta: sections.impact?.button_text,
-    primaryCtaUrl: sections.impact?.button_url
-  });
 
   // "Plan your dream" band bullets — CMS-overridable via extra_data.points,
   // falling back to the current text.
@@ -480,11 +464,6 @@
 <!-- ── Goldfinch-only sections (not in the reference layout) — each stays
      CMS-toggleable so they can be switched off for a pure reference flow. ── -->
 
-<!-- 8c · Best times to visit -->
-{#if isSectionActive('seasons')}
-  <SeasonsBand {...seasonsProps} />
-{/if}
-
 <!-- 8d · Serengeti Great Migration calendar (self-hiding until entries exist) -->
 {#if migrationEntries.length}
   <MigrationCalendar
@@ -547,11 +526,6 @@
 </section>
 {:else if isSectionActive('blog_preview') && deferredLoading}
   <ContentShimmer cards={3} label="Loading latest stories" />
-{/if}
-
-<!-- 12 · Impact -->
-{#if isSectionActive('impact')}
-  <ImpactBand {...impactProps} {imageVariants} />
 {/if}
 
 <!-- 13 · FAQ -->

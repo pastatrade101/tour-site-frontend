@@ -274,18 +274,6 @@
       }
     },
     {
-      key: 'seasons',
-      label: 'Seasons',
-      surface: 'public',
-      description: 'Best-time-to-visit band. Extra JSON can override the seasonal cards.',
-      fields: ['title', 'subtitle', 'extra: eyebrow, seasons'],
-      preset: {
-        title: 'Best Times to Visit Tanzania',
-        subtitle: 'Every season has its magic - here is an honest guide so we can match your trip to what matters most to you.',
-        extra_data: { eyebrow: 'When to go' }
-      }
-    },
-    {
       key: 'migration_section',
       label: 'Migration calendar',
       surface: 'public',
@@ -393,20 +381,6 @@
         button_text: 'View all',
         button_url: '/blog',
         extra_data: { eyebrow: 'Stories' }
-      }
-    },
-    {
-      key: 'impact',
-      label: 'Impact band',
-      surface: 'public',
-      description: 'Responsible travel band with image, badge, points and primary CTA.',
-      fields: ['title', 'subtitle', 'image', 'button', 'extra: eyebrow, points, badge, badge_label'],
-      preset: {
-        title: 'Every Safari You Book Creates Change',
-        subtitle: 'Travel done right protects the places and people that make Tanzania extraordinary. A share of every trip funds conservation and local communities.',
-        button_text: 'Learn about our impact',
-        button_url: '/about',
-        extra_data: { eyebrow: 'Our impact' }
       }
     },
     {
