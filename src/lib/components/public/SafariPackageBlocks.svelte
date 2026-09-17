@@ -19,7 +19,7 @@
   import SafariRouteOptions from './SafariRouteOptions.svelte';
   import StylePlannerBand from './StylePlannerBand.svelte';
   import TourCard from './TourCard.svelte';
-  import { MONTHS, arr, lines, rows, str, type Block } from '$lib/safariPackageBlocks';
+  import { arr, lines, rows, str, type Block } from '$lib/safariPackageBlocks';
   import { advisorNoteEnabled, advisorNoteFromBlock, type AdvisorNoteSection } from '$lib/advisorNote';
   import type { FAQ, ItineraryDay, Lodge, Tour } from '$lib/types';
 
@@ -76,10 +76,6 @@
     tent: Tent
   };
 
-  const monthsOf = (value: unknown) =>
-    arr<unknown>(value)
-      .map((entry) => String(entry ?? '').trim())
-      .filter((month) => MONTHS.includes(month));
 
   /** Supports both the new icon-picker rows and legacy `icon | label` values. */
   const priceFactors = (value: unknown): { icon: string; text: string }[] =>
@@ -192,32 +188,6 @@
               </ul>
             {/if}
           </div>
-        </div>
-      </section>
-    {/if}
-
-  {:else if block.type === 'season'}
-    {@const months = monthsOf(block.months)}
-    {#if months.length}
-      <section id={`package-section-${index}`} data-package-label={NAV_LABELS[block.type]} class={`${surface(index)} ${SECTION}`}>
-        <div class={SHELL}>
-          {#if eyebrow}
-            <div class="inline-flex items-center gap-2">
-              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
-              <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
-            </div>
-          {/if}
-          {#if title}<h2 class={HEADING}>{title}</h2>{/if}
-          {#if intro}<p class={INTRO}>{intro}</p>{/if}
-          <div class="mt-7 grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-12">
-            {#each MONTHS as month (month)}
-              {@const best = months.includes(month)}
-              <div class={`rounded-[8px] border px-2 py-2.5 text-center text-[11px] font-bold uppercase tracking-wide ${best ? 'border-goldfinch-gold bg-goldfinch-gold/15 text-heading' : 'border-ink/10 bg-surface text-ink/40'}`}>
-                {month.slice(0, 3)}
-              </div>
-            {/each}
-          </div>
-          {#if str(block.note)}<p class="mt-4 text-sm leading-6 text-ink/60">{str(block.note)}</p>{/if}
         </div>
       </section>
     {/if}
@@ -504,47 +474,6 @@
       </section>
     {/if}
 
-  {:else if block.type === 'advice'}
-    {@const cards = rows<{ title?: string; body?: string; best_for?: string; note?: string }>(block.cards)}
-    {#if cards.length}
-      <section id={`package-section-${index}`} data-package-label={NAV_LABELS[block.type]} class={`${surface(index)} ${SECTION}`}>
-        <div class={SHELL}>
-          {#if eyebrow}
-            <div class="inline-flex items-center gap-2">
-              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
-              <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
-            </div>
-          {/if}
-          {#if title}<h2 class={HEADING}>{title}</h2>{/if}
-          {#if intro}<p class={INTRO}>{intro}</p>{/if}
-          <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {#each cards as card, i (i)}
-              <div class="overflow-hidden rounded-[12px] border border-ink/12 bg-surface">
-                <div class="h-[3px] w-full bg-clay" aria-hidden="true"></div>
-                <div class="package-card-content p-5">
-                  {#if str(card.title)}<h3 class="font-serif text-lg font-semibold leading-snug text-heading">{str(card.title)}</h3>{/if}
-                  {#if str(card.body)}<p class="mt-2.5 text-[14.5px] leading-relaxed text-ink/70">{str(card.body)}</p>{/if}
-                  {#if str(card.best_for)}<p class="mt-4 text-[13.5px] font-semibold leading-relaxed text-heading">Best for: {str(card.best_for)}</p>{/if}
-                  {#if str(card.note)}<p class="mt-2 text-[13px] italic leading-relaxed text-ink/55">{str(card.note)}</p>{/if}
-                </div>
-              </div>
-            {/each}
-          </div>
-          {#if str(block.help_text) || str(block.cta_label)}
-            <div class="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-              {#if str(block.help_text)}<p class="text-[14.5px] leading-relaxed text-ink/70">{str(block.help_text)}</p>{/if}
-              {#if str(block.cta_label)}
-                <a class={GOLD} href={formHref}>
-                  {str(block.cta_label)}
-                  <ArrowRight size={16} />
-                </a>
-              {/if}
-            </div>
-          {/if}
-        </div>
-      </section>
-    {/if}
-
   {:else if block.type === 'expectations'}
     {@const can = lines(block.can)}
     {@const cannot = lines(block.cannot)}
@@ -671,51 +600,6 @@
       </section>
     {/if}
 
-  {:else if block.type === 'durations'}
-    {@const options = rows<{ title?: string; body?: string; best_for?: string; href?: string; cta_label?: string }>(block.options)}
-    {#if options.length}
-      <section id={index === blocks.findIndex((item) => item.type === 'durations') ? 'compare-durations' : `compare-durations-${index}`} class={`scroll-mt-20 ${surface(index)} ${SECTION}`}>
-        <div class={SHELL}>
-          {#if eyebrow}
-            <div class="inline-flex items-center gap-2">
-              <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
-              <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-clay">{eyebrow}</span>
-            </div>
-          {/if}
-          {#if title}<h2 class={HEADING}>{title}</h2>{/if}
-          {#if intro}<p class={INTRO}>{intro}</p>{/if}
-          <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {#each options as option, i (i)}
-              {@const href = str(option.href).trim()}
-              <!-- No link means this is the page the reader is already on. -->
-              <div class={`package-card-content flex flex-col rounded-[12px] p-5 ${href ? 'border border-ink/12 bg-surface' : 'bg-deep-green text-white'}`}>
-                {#if str(option.title)}
-                  <h3 class={`font-serif text-lg font-semibold leading-snug ${href ? 'text-heading' : 'text-white'}`}>{str(option.title)}</h3>
-                {/if}
-                {#if str(option.body)}
-                  <p class={`mt-2.5 flex-1 text-sm leading-relaxed ${href ? 'text-ink/70' : 'text-white/80'}`}>{str(option.body)}</p>
-                {/if}
-                {#if str(option.best_for)}
-                  <p class={`mt-4 text-[11px] font-bold uppercase tracking-[0.13em] ${href ? 'text-clay' : 'text-goldfinch-gold'}`}>
-                    Best for: {str(option.best_for)}
-                  </p>
-                {/if}
-                {#if href}
-                  <a class="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-4 text-[13.5px] font-bold text-heading transition hover:brightness-105" {href}>
-                    {str(option.cta_label) || 'See this option'}
-                    <ArrowRight size={15} />
-                  </a>
-                {:else}
-                  <span class="mt-4 inline-flex h-10 items-center justify-center rounded-[10px] border border-white/25 px-4 text-[13.5px] font-semibold text-white/80">
-                    You are viewing this option
-                  </span>
-                {/if}
-              </div>
-            {/each}
-          </div>
-        </div>
-      </section>
-    {/if}
   {/if}
 {/each}
 

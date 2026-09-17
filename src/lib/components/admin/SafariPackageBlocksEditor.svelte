@@ -17,7 +17,7 @@
   import PackageIconPicker from './PackageIconPicker.svelte';
   import { api } from '$lib/api/client';
   import { PROPERTY_CATEGORIES, enumLabel } from '$lib/accommodationEnums';
-  import { BLOCK_TYPES, MONTHS, blockSpec, emptyBlock, type Block, type FieldSpec } from '$lib/safariPackageBlocks';
+  import { BLOCK_TYPES, blockSpec, emptyBlock, type Block, type FieldSpec } from '$lib/safariPackageBlocks';
   import type { Lodge, Tour } from '$lib/types';
 
   // `any` on the value bag deliberately: these are jsonb fields of mixed type,
@@ -88,10 +88,6 @@
     setField(index, field.key, itemRows(blocks[index][field.key]).filter((_, i) => i !== rowIndex));
   };
 
-  const toggleMonth = (index: number, key: string, month: string) => {
-    const current = Array.isArray(blocks[index][key]) ? (blocks[index][key] as string[]) : [];
-    setField(index, key, current.includes(month) ? current.filter((m) => m !== month) : [...current, month]);
-  };
 
   const comfortRows = (blockIndex: number, routeKey: string, routeIndex: number, key: string) =>
     itemRows(itemRows(blocks[blockIndex][routeKey])[routeIndex]?.[key]);
@@ -217,22 +213,6 @@
                   bind:value={blocks[index][field.key]}
                 />
                 <span class="text-[11px] text-ink/45">{field.hint ?? 'One per line.'}</span>
-              </div>
-            {:else if field.kind === 'months'}
-              <div class="grid gap-1.5">
-                <span class={label}>{field.label}</span>
-                <div class="flex flex-wrap gap-1.5">
-                  {#each MONTHS as month (month)}
-                    {@const on = Array.isArray(block[field.key]) && (block[field.key] as string[]).includes(month)}
-                    <button
-                      type="button"
-                      class={`rounded border px-2.5 py-1.5 text-[12px] font-semibold transition ${on ? 'border-goldfinch-gold bg-goldfinch-gold/15 text-heading' : 'border-ink/15 text-ink/60 hover:border-goldfinch-gold/50'}`}
-                      on:click={() => toggleMonth(index, field.key, month)}
-                    >
-                      {month.slice(0, 3)}
-                    </button>
-                  {/each}
-                </div>
               </div>
             {:else if field.kind === 'items'}
               <div class="grid gap-2">

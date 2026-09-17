@@ -27,9 +27,7 @@ export type FieldKind =
   /** A list of objects; `fields` describes one row. */
   | 'items'
   /** A route's accommodation-category tabs, tours and selected properties. */
-  | 'routeComforts'
-  /** Months of the year, chosen as chips. */
-  | 'months';
+  | 'routeComforts';
 
 export type FieldSpec = {
   key: string;
@@ -97,18 +95,6 @@ export const BLOCK_TYPES: BlockSpec[] = [
       intro,
       { key: 'image_url', label: 'Photo', kind: 'image' },
       { key: 'items', label: 'Highlights', kind: 'lines', hint: 'One per line.' }
-    ]
-  },
-  {
-    type: 'season',
-    label: 'Best time to travel',
-    blurb: 'The months this trip is at its best, and why.',
-    fields: [
-      eyebrow,
-      title,
-      intro,
-      { key: 'months', label: 'Best months', kind: 'months' },
-      { key: 'note', label: 'Note under the strip', kind: 'textarea' }
     ]
   },
   {
@@ -257,29 +243,6 @@ export const BLOCK_TYPES: BlockSpec[] = [
     ]
   },
   {
-    type: 'advice',
-    label: 'Which route suits you',
-    blurb: '"Choose this if…" cards, for a reader who cannot pick between the routes.',
-    fields: [
-      eyebrow,
-      title,
-      intro,
-      {
-        key: 'cards',
-        label: 'Cards',
-        kind: 'items',
-        fields: [
-          { key: 'title', label: 'Heading', kind: 'text', placeholder: 'Choose Tarangire & Ngorongoro if…' },
-          { key: 'body', label: 'Body', kind: 'textarea' },
-          { key: 'best_for', label: 'Best for', kind: 'text' },
-          { key: 'note', label: 'Caveat', kind: 'text' }
-        ]
-      },
-      { key: 'help_text', label: 'Line above the help button', kind: 'text', placeholder: "Still not sure? Send us your dates and we'll recommend the best route." },
-      { key: 'cta_label', label: 'Help button', kind: 'text', placeholder: 'Help Me Choose' }
-    ]
-  },
-  {
     type: 'expectations',
     label: 'What it can and cannot be',
     blurb: 'Two honest lists. Sets expectations before someone books a trip that is too short for what they want.',
@@ -333,28 +296,6 @@ export const BLOCK_TYPES: BlockSpec[] = [
     ]
   },
   {
-    type: 'durations',
-    label: 'Compare trip lengths',
-    blurb: 'The shorter and longer versions of this trip, so a reader can size it correctly. Leave a link empty to mark the one they are already on.',
-    fields: [
-      eyebrow,
-      title,
-      intro,
-      {
-        key: 'options',
-        label: 'Lengths',
-        kind: 'items',
-        fields: [
-          { key: 'title', label: 'Heading', kind: 'text', placeholder: '3-Day Safari from Zanzibar' },
-          { key: 'body', label: 'Body', kind: 'textarea' },
-          { key: 'best_for', label: 'Best for', kind: 'text' },
-          { key: 'href', label: 'Link', kind: 'text', hint: 'A path on this site. Leave empty for the page you are on — it renders as "you are viewing this option".', placeholder: '/3-day-safari-from-zanzibar' },
-          { key: 'cta_label', label: 'Button', kind: 'text', placeholder: 'Ask About 3-Day Safari' }
-        ]
-      }
-    ]
-  },
-  {
     type: 'advisor',
     label: "Advisor's note",
     blurb:
@@ -402,7 +343,7 @@ export const emptyBlock = (type: string): Block => {
   const block: Block = { type };
   for (const field of spec?.fields ?? []) {
     if (field.kind === 'items') block[field.key] = [];
-    else if (field.kind === 'lines' || field.kind === 'months') block[field.key] = [];
+    else if (field.kind === 'lines') block[field.key] = [];
     else if (field.kind === 'number') block[field.key] = null;
     else block[field.key] = '';
   }
