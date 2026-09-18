@@ -32,6 +32,7 @@
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import SpecialistCard from '$lib/components/public/SpecialistCard.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
+  import TourRates from '$lib/components/public/TourRates.svelte';
   import { toMetaText } from '$lib/richText';
   import { getTourDestinationLabel, getTourDestinations } from '$lib/tourDestinations';
   import {
@@ -72,28 +73,6 @@
     lodge: 'Lodge',
     hotel: 'Hotel',
     treehouse: 'Treehouse'
-  };
-
-  const PRICE_TYPE_LABELS: Record<string, string> = {
-    per_person: 'Per person',
-    per_group: 'Per group',
-    per_child: 'Per child',
-    single_supplement: 'Single supplement',
-    upgrade: 'Upgrade',
-    discount: 'Discount'
-  };
-
-  const formatPublishedRate = (amount: number, currencyCode: string): string => {
-    const code = String(currencyCode || 'USD').trim().toUpperCase();
-    try {
-      return new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency: code,
-        maximumFractionDigits: Number.isInteger(amount) ? 0 : 2
-      }).format(amount);
-    } catch {
-      return `${code} ${Number(amount).toLocaleString()}`;
-    }
   };
 
   export let data: PageData;
@@ -289,37 +268,6 @@
     return blocks;
   })();
   $: visibleTabs = TABS.filter((tab) => tab.id !== 'accommodation' || accommodationBlocks.length);
-  $: publishedPriceOptions = [...(tour?.tour_price_options ?? [])].sort(
-    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
-  );
-  $: priceRows = publishedPriceOptions.length
-    ? publishedPriceOptions.map((option) => ({
-        label: option.title || option.label || PRICE_TYPE_LABELS[option.price_type] || 'Rate',
-        value: formatPublishedRate(option.price, option.currency || tour?.currency || 'USD'),
-        note: [PRICE_TYPE_LABELS[option.price_type] || normaliseLabel(option.price_type), option.description]
-          .filter(Boolean)
-          .join(' - ')
-      }))
-    : [{
-        label: 'Starting price',
-        value: priceFromLabel,
-        note: tour?.price_from
-          ? 'Final pricing depends on dates and confirmed availability.'
-          : 'Your specialist will quote this from live availability.'
-      }];
-  $: pricingSeasons = [...(tour?.tour_pricing_seasons ?? [])]
-    .filter((season) => season.status === 'ACTIVE')
-    .sort((a,b)=>(a.sort_order??0)-(b.sort_order??0))
-    .map((season)=>({...season,group_prices:[...(season.group_prices??[])].sort((a,b)=>(a.sort_order??0)-(b.sort_order??0))}));
-  $: groupColumns = [...new Map(pricingSeasons.flatMap((season)=>season.group_prices).map((price)=>[`${price.minimum_travelers}:${price.maximum_travelers??''}`,price])).values()]
-    .sort((a,b)=>a.minimum_travelers-b.minimum_travelers);
-  const groupLabel=(price:{minimum_travelers:number;maximum_travelers?:number|null})=>price.minimum_travelers===1&&price.maximum_travelers===1?'Solo':price.maximum_travelers===null||price.maximum_travelers===undefined?`${price.minimum_travelers}+ people`:`${price.minimum_travelers} people`;
-  const groupRate=(season:NonNullable<Tour['tour_pricing_seasons']>[number],key:string)=>{
-    const price=season.group_prices.find((item)=>`${item.minimum_travelers}:${item.maximum_travelers??''}`===key);
-    if(!price||price.price_status==='NOT_AVAILABLE')return {label:'Not available',amount:''};
-    if(price.price_status==='ON_REQUEST'||price.price==null)return {label:'On request',amount:''};
-    return {label:'From',amount:formatPublishedRate(Number(price.price),season.currency)};
-  };
   $: touristTripLd = tour
     ? {
         '@type': 'TouristTrip',
@@ -779,53 +727,7 @@
           <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">{$t('ui.tour_rates')}</h2>
           <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink/70">{$t('ui.this_is_the_starting_price')}</p>
 
-          {#if pricingSeasons.length}
-            <div class="mt-6 overflow-x-auto rounded-[10px] border border-ink/10 bg-surface shadow-sm">
-              <table class="w-full min-w-[820px] border-collapse text-[14px]">
-                <thead><tr class="bg-[#34382d] text-left text-white"><th class="sticky left-0 z-10 min-w-40 bg-[#34382d] px-5 py-5 text-[15px] font-bold">{$t('ui.season')}</th>{#each groupColumns as group}<th class="min-w-28 whitespace-nowrap px-4 py-5 text-left text-[15px] font-bold">{groupLabel(group)}</th>{/each}</tr></thead>
-                <tbody>{#each pricingSeasons as season,index}<tr class={index%2===0?'bg-surface':'bg-[#f5f1e9]'}><th class={`sticky left-0 z-10 border-t border-ink/8 px-5 py-6 text-left ${index%2===0?'bg-surface':'bg-[#f5f1e9]'}`}><span class="block max-w-32 text-[16px] font-extrabold leading-6 text-heading">{season.season_name}</span></th>{#each groupColumns as group}{@const key=`${group.minimum_travelers}:${group.maximum_travelers??''}`}{@const rate=groupRate(season,key)}<td class="border-t border-ink/8 px-4 py-6 text-left text-[15px] leading-6 text-ink/65"><span class="block">{rate.label}</span>{#if rate.amount}<span class="block font-semibold text-ink/70">{rate.amount}</span>{/if}</td>{/each}</tr>{/each}</tbody>
-              </table>
-            </div>
-            <p class="mt-4 text-[13px] leading-6 text-ink/55">
-              Prices are {normaliseLabel(pricingSeasons[0].pricing_basis).toLowerCase()} in {pricingSeasons[0].currency} and based on shared double/twin accommodation unless stated otherwise. Final pricing depends on travel dates, lodge availability, group size and route adjustments.
-              <span class="md:hidden">{$t('ui.swipe_horizontally_to_compare_party')}</span>
-            </p>
-          {:else}
-          <div class="tour-rates-mobile mt-5 grid gap-2.5 md:hidden">
-            {#each priceRows as row}
-              <article class="rounded-[8px] border border-ink/10 bg-surface p-4">
-                <div class="flex min-w-0 items-start justify-between gap-4">
-                  <h3 class="min-w-0 text-[13px] font-semibold leading-snug text-heading">{row.label}</h3>
-                  <p class="max-w-[58%] break-words text-right text-[14px] font-extrabold leading-snug text-forest">{row.value}</p>
-                </div>
-                {#if row.note}
-                  <p class="mt-2 border-t border-ink/8 pt-2 text-[11.5px] leading-5 text-ink/60">{row.note}</p>
-                {/if}
-              </article>
-            {/each}
-          </div>
-          {/if}
-
-          {#if !pricingSeasons.length}<div class="tour-rates-table mt-6 hidden overflow-hidden rounded-t-[10px] border border-ink/10 md:block">
-            <table class="w-full border-collapse text-[14px]">
-              <thead>
-                <tr class="bg-deep-green text-left text-white">
-                  <th class="px-4 py-3 font-semibold">{$t('ui.item')}</th>
-                  <th class="px-4 py-3 font-semibold">{$t('ui.detail')}</th>
-                  <th class="hidden px-4 py-3 font-semibold md:table-cell">{$t('ui.note')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each priceRows as row, index}
-                  <tr class={index % 2 === 0 ? 'bg-surface' : 'bg-sand/35'}>
-                    <td class="border-t border-ink/5 px-4 py-3 align-top font-semibold text-heading">{row.label}</td>
-                    <td class="border-t border-ink/5 px-4 py-3 align-top text-ink/75">{row.value}</td>
-                    <td class="hidden border-t border-ink/5 px-4 py-3 align-top text-ink/60 md:table-cell">{row.note}</td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>{/if}
+          <TourRates {tour} />
 
           <button
             type="button"

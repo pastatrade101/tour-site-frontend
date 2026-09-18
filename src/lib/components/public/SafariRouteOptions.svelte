@@ -23,7 +23,7 @@
   import ItineraryDays from './ItineraryDays.svelte';
   import RichText from './RichText.svelte';
   import StayCard from './StayCard.svelte';
-  import { currency, formatUsd } from '$lib/currency';
+  import TourRates from './TourRates.svelte';
   import { enumLabel } from '$lib/accommodationEnums';
   import { loadLodgeMedia, stayKey, type MediaImage, type Stay } from '$lib/lodgeMedia';
   import { parseRouteTour, lines, str } from '$lib/safariPackageBlocks';
@@ -89,7 +89,20 @@
 
   $: days = daysOf(priced?.tour);
   $: highlights = (headTour?.highlights ?? []).map(String).filter((item) => item.trim());
-  $: priceLabel = priced?.tour?.price_from ? formatUsd(priced.tour.price_from, $currency) : '';
+
+  /** What the rates table does not say. An absent fact is left out, not filled in. */
+  $: priceFacts = [
+    priced?.tour.duration_days
+      ? `${priced.tour.duration_days} day${priced.tour.duration_days === 1 ? '' : 's'}${
+          priced.tour.duration_nights
+            ? `, ${priced.tour.duration_nights} night${priced.tour.duration_nights === 1 ? '' : 's'}`
+            : ''
+        }`
+      : '',
+    priced?.tour.start_location ? `Starts ${priced.tour.start_location}` : '',
+    priced?.tour.group_size ?? '',
+    priced?.tour.difficulty_level ?? ''
+  ].filter(Boolean) as string[];
 
   /**
    * The property an editor selected for this comfort tab.
@@ -202,10 +215,7 @@
         <!-- Prices for this route -->
         <div class="mt-9 border-t border-ink/[0.18] pt-8">
           <h3 class={SUB}>{$t('ui.prices_for_this_route')}</h3>
-          <p class="mt-3 max-w-[820px] text-[15px] leading-relaxed text-ink/70">
-            Pricing depends on accommodation style, travel date, availability and the number of travellers.
-            Choose a comfort level below to see the starting structure.
-          </p>
+          <p class="mt-3 max-w-[820px] text-[15px] leading-relaxed text-ink/70">{$t('ui.pricing_depends_on_accommodation_style')}</p>
           {#if route.comfort.length > 1}
             <div class="comfort-tabs -mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible" role="tablist" aria-label={$t('ui.price_comfort_level')}>
               {#each route.comfort as level, i (i)}
@@ -231,32 +241,19 @@
             {#if priced?.tour.short_description}
               <p class="mt-2 max-w-[760px] text-[14.5px] leading-relaxed text-ink/70">{priced.tour.short_description}</p>
             {/if}
-            {#if priceLabel}<p class="route-price-value mt-4 text-[14.5px] font-semibold text-clay">From {priceLabel} per person</p>{/if}
+
+            <!-- The tour's own published rates, through the renderer the tour
+                 page uses: the seasonal table when the tour is priced by
+                 season, the rate rows otherwise. -->
+            <TourRates tour={priced?.tour ?? null} />
+
             <div class="mt-5 grid gap-2 sm:grid-cols-2">
-              {#if priced?.tour.duration_days}
+              {#each priceFacts as fact}
                 <div class="flex gap-2 text-[14px] leading-snug text-heading">
                   <Check size={15} class="mt-[3px] shrink-0 text-clay" />
-                  <span>{priced.tour.duration_days} day{priced.tour.duration_days === 1 ? '' : 's'}{priced.tour.duration_nights ? `, ${priced.tour.duration_nights} night${priced.tour.duration_nights === 1 ? '' : 's'}` : ''}</span>
+                  <span>{fact}</span>
                 </div>
-              {/if}
-              {#if priced?.tour.start_location}
-                <div class="flex gap-2 text-[14px] leading-snug text-heading">
-                  <Check size={15} class="mt-[3px] shrink-0 text-clay" />
-                  <span>Starts {priced.tour.start_location}</span>
-                </div>
-              {/if}
-              {#if priced?.tour.group_size}
-                <div class="flex gap-2 text-[14px] leading-snug text-heading">
-                  <Check size={15} class="mt-[3px] shrink-0 text-clay" />
-                  <span>{priced.tour.group_size}</span>
-                </div>
-              {/if}
-              {#if priced?.tour.difficulty_level}
-                <div class="flex gap-2 text-[14px] leading-snug text-heading">
-                  <Check size={15} class="mt-[3px] shrink-0 text-clay" />
-                  <span>{priced.tour.difficulty_level}</span>
-                </div>
-              {/if}
+              {/each}
             </div>
             <p class="mt-5 text-[13px] italic leading-relaxed text-ink/55">{$t('ui.final_price_is_confirmed_after')}</p>
             <a class={`mt-5 ${GOLD}`} href={formHref}>{$t('ui.check_this_price_for_my')}<ArrowRight size={16} />
@@ -322,10 +319,7 @@
         <div class="mt-9 flex flex-col gap-4 border-t border-ink/[0.18] pt-8 md:flex-row md:items-center md:justify-between">
           <div class="max-w-[720px]">
             <h3 class="font-serif text-[19px] font-semibold text-heading md:text-[22px]">{$t('ui.want_this_route_checked_for')}</h3>
-            <p class={`mt-2 ${BODY}`}>
-              Share your preferred start date and group size. We'll check flights, accommodation and route
-              availability before sending a proposal.
-            </p>
+            <p class={`mt-2 ${BODY}`}>{$t('ui.share_your_preferred_start_date')}</p>
           </div>
           <a class={`shrink-0 ${GOLD}`} href={formHref}>{$t('ui.send_request')}<ArrowRight size={16} />
           </a>
@@ -349,7 +343,6 @@
     .route-cta { width: 100%; min-height: 48px; height: auto; gap: 8px; padding: 12px; font-size: 13px; text-align: center; color: #272b22; }
     .route-cta :global(svg) { flex-shrink: 0; }
     .route-price { padding: 16px 0 0; border: 0; border-top: 1px solid rgb(var(--c-ink) / 0.12); border-radius: 0; background: transparent; }
-    .route-price-value { font-size: 19px; line-height: 1.4; }
     .comfort-tabs button { padding-inline: 14px; font-size: 13px; }
   }
 </style>
