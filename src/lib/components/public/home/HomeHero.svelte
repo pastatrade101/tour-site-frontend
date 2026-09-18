@@ -9,6 +9,15 @@
 
   type Cta = { label: string; href: string };
   type QuickLink = { label: string; href: string };
+  /**
+   * How a photograph meets the hero frame.
+   *
+   * 'contain' shows the whole photograph at any viewport — the default.
+   * 'scale-down' is contain that never enlarges a small image beyond its real
+   * pixels. 'cover' fills the frame and crops whatever does not fit, which is
+   * what makes a picture look slightly enlarged.
+   */
+  type HeroImageFit = 'cover' | 'contain' | 'scale-down';
   type HeroSlide = {
     imageUrl: string;
     label?: string;
@@ -21,6 +30,14 @@
     primaryHref?: string;
     secondaryLabel?: string;
     secondaryHref?: string;
+    /** Overrides the section-wide fit for this slide only. */
+    fit?: HeroImageFit | '';
+  };
+
+  const FIT_CLASS: Record<HeroImageFit, string> = {
+    cover: 'object-cover',
+    contain: 'object-contain',
+    'scale-down': 'object-scale-down'
   };
 
   export let eyebrow = '';
@@ -32,6 +49,17 @@
   export let imageUrl = '';
   export let imageVariants: ImageVariantMap = {};
   export let slides: HeroSlide[] = [];
+  /**
+   * Section-wide default; a slide may override it.
+   *
+   * 'contain' rather than 'cover': a hero that crops decides for the client
+   * which half of their photograph a visitor sees, and on a tall phone that
+   * is most of it. The whole picture is shown, and the blurred backdrop below
+   * fills whatever the frame has left over.
+   */
+  export let imageFit: HeroImageFit = 'contain';
+  /** Which part of a cropped photograph to keep. Empty keeps the stylesheet default. */
+  export let imagePosition = '';
   export let trustPoints: string[] = [];
   export let quickLinks: QuickLink[] = [];
   // Quick planner. `experiences` are REAL published tour categories, so the
@@ -147,7 +175,28 @@
 <section data-hero class="home-hero relative isolate overflow-hidden">
   <div class="absolute inset-0 bg-deep-green" aria-hidden="true">
     {#each displaySlides as slide, index (slide.imageUrl)}
-      <div class:active={index === activeSlide} class="hero-slide absolute inset-0">
+      {@const fit = (slide.fit || imageFit) as HeroImageFit}
+      <div
+        class:active={index === activeSlide}
+        class:is-fitted={fit !== 'cover'}
+        class="hero-slide absolute inset-0"
+        style={imagePosition ? `--hero-focus: ${imagePosition}` : undefined}
+      >
+        {#if fit !== 'cover'}
+          <!-- The whole photograph is shown, which leaves the frame wider or
+               taller than the picture. A blurred copy of the same file fills
+               that remainder, so the hero still covers the viewport without a
+               second image to load or a bar of flat colour. -->
+          <Img
+            src={slide.imageUrl}
+            variantsMap={imageVariants}
+            alt=""
+            width={960}
+            sizes="100vw"
+            eager={index === 0}
+            className="hero-slide-backdrop absolute inset-0 h-full w-full object-cover"
+          />
+        {/if}
         <Img
           src={slide.imageUrl}
           variantsMap={imageVariants}
@@ -156,7 +205,7 @@
           height={1200}
           sizes="100vw"
           eager={index === 0}
-          className="hero-slide-image absolute inset-0 h-full w-full object-cover"
+          className={`hero-slide-image absolute inset-0 h-full w-full ${FIT_CLASS[fit] ?? FIT_CLASS.cover}`}
         />
       </div>
     {/each}
@@ -313,12 +362,28 @@
   }
 
   .hero-slide :global(.hero-slide-image) {
+    object-position: var(--hero-focus, 50% 50%);
     transform: scale(1.035);
     transition: transform 8s cubic-bezier(0.2, 0.65, 0.3, 1);
   }
 
   .hero-slide.active :global(.hero-slide-image) {
     transform: scale(1);
+  }
+
+  /* A slide asked to show the whole photograph must not be enlarged into the
+     frame on the way in — the slow push is a crop effect, and it is exactly
+     the "slightly zoomed" look that fitting is chosen to avoid. */
+  .hero-slide.is-fitted :global(.hero-slide-image),
+  .hero-slide.is-fitted.active :global(.hero-slide-image) {
+    transform: none;
+  }
+
+  /* Blurred far enough that it reads as atmosphere rather than a second,
+     badly cropped photograph. */
+  .hero-slide :global(.hero-slide-backdrop) {
+    transform: scale(1.12);
+    filter: blur(28px) saturate(0.85) brightness(0.72);
   }
 
   .hero-slide-dot {
@@ -391,7 +456,15 @@
     }
 
     .hero-slide :global(.hero-slide-image) {
-      object-position: center center;
+      object-position: var(--hero-focus, center center);
+    }
+
+    /* A landscape photograph shown whole inside a portrait screen leaves the
+       frame taller than the picture. Sitting it at the top keeps it above the
+       copy and the planner, which occupy the lower half on a phone — centred,
+       the picture ends up behind them. */
+    .hero-slide.is-fitted :global(.hero-slide-image) {
+      object-position: var(--hero-focus, center top);
     }
 
     .home-hero :global(*) {

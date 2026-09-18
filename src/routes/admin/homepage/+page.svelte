@@ -102,8 +102,8 @@
       key: 'hero',
       label: 'Hero section',
       surface: 'public',
-      description: 'Main first-screen homepage hero with image, heading, overlay and primary/secondary calls to action.',
-      fields: ['title', 'subtitle', 'image', 'button', 'extra: eyebrow, title_highlight, secondary_cta, overlay'],
+      description: 'Main first-screen homepage hero with image, heading, overlay and primary/secondary calls to action. Image fit decides whether a photograph is shown whole or cropped to fill the screen.',
+      fields: ['title', 'subtitle', 'image', 'button', 'extra: eyebrow, title_highlight, secondary_cta, overlay, slides, image fit'],
       preset: {
         title: 'Plan East Africa With Confidence',
         subtitle: 'Honest safari, Kilimanjaro, gorilla trekking and beach advice from local experts.',
@@ -557,6 +557,8 @@
   };
   type HeroSlideRow = {
     eyebrow: string;
+    /** '' means "use the section setting". */
+    image_fit: string;
     image_url: string;
     primary_label: string;
     primary_url: string;
@@ -625,16 +627,31 @@
     'best_for_label',
     'primary_cta_prefix',
     'primary_count',
-    'hero_slides'
+    'hero_slides',
+    'hero_image_fit'
   ];
 
+  /**
+   * How the hero meets its photographs. 'cover' is what it has always done —
+   * fill the frame and crop the rest, which is why a picture can look a little
+   * enlarged. The other two show the whole photograph instead.
+   */
+  const HERO_FIT_OPTIONS = [
+    { label: 'Contain — show the whole photo (default)', value: 'contain' },
+    { label: 'Fit — whole photo, never enlarged', value: 'scale-down' },
+    { label: 'Cover — fill the hero, crop the edges', value: 'cover' }
+  ];
+  const HERO_FIT_VALUES = HERO_FIT_OPTIONS.map((option) => option.value);
+  const HERO_SLIDE_FIT_OPTIONS = [{ label: 'Use the section setting', value: '' }, ...HERO_FIT_OPTIONS];
+  let heroImageFit = 'contain';
+
   const emptyHeroSlide = (): HeroSlideRow => ({
-    image_url: '', eyebrow: '', title: '', title_highlight: '', subtitle: '', primary_label: '', primary_url: '', secondary_label: '', secondary_url: ''
+    image_url: '', image_fit: '', eyebrow: '', title: '', title_highlight: '', subtitle: '', primary_label: '', primary_url: '', secondary_label: '', secondary_url: ''
   });
   const extraToHeroSlides = (ed: Record<string, unknown>): HeroSlideRow[] =>
     Array.isArray(ed.hero_slides)
       ? (ed.hero_slides as Array<Record<string, unknown>>).slice(0, 5).map((slide) => ({
-          image_url: String(slide.image_url ?? slide.imageUrl ?? ''), eyebrow: String(slide.eyebrow ?? ''),
+          image_url: String(slide.image_url ?? slide.imageUrl ?? ''), image_fit: HERO_FIT_VALUES.includes(String(slide.image_fit ?? '')) ? String(slide.image_fit) : '', eyebrow: String(slide.eyebrow ?? ''),
           title: String(slide.title ?? ''), title_highlight: String(slide.title_highlight ?? slide.highlight ?? ''),
           subtitle: String(slide.subtitle ?? slide.description ?? ''), primary_label: String(slide.primary_label ?? slide.primaryLabel ?? ''),
           primary_url: String(slide.primary_url ?? slide.primaryHref ?? ''), secondary_label: String(slide.secondary_label ?? slide.secondaryLabel ?? ''),
@@ -644,7 +661,7 @@
   const heroSlidesToExtra = () => heroSlides
     .filter((slide) => slide.image_url.trim())
     .map((slide) => ({
-      image_url: slide.image_url.trim(), eyebrow: slide.eyebrow.trim(), title: slide.title.trim(), title_highlight: slide.title_highlight.trim(), subtitle: slide.subtitle.trim(),
+      image_url: slide.image_url.trim(), image_fit: slide.image_fit, eyebrow: slide.eyebrow.trim(), title: slide.title.trim(), title_highlight: slide.title_highlight.trim(), subtitle: slide.subtitle.trim(),
       primary_label: slide.primary_label.trim(), primary_url: slide.primary_url.trim(), secondary_label: slide.secondary_label.trim(), secondary_url: slide.secondary_url.trim()
     }));
   const addHeroSlide = () => { if (heroSlides.length < 5) heroSlides = [...heroSlides, emptyHeroSlide()]; };
@@ -832,6 +849,7 @@
     experiencePrimaryCtaPrefix = key === 'experiences' ? String(ed.primary_cta_prefix ?? 'Explore') : 'Explore';
     experiencePrimaryCount = key === 'experiences' ? String(ed.primary_count ?? 6) : '6';
     heroSlides = key === 'hero' ? extraToHeroSlides(ed) : [];
+    heroImageFit = key === 'hero' && HERO_FIT_VALUES.includes(String(ed.hero_image_fit ?? '')) ? String(ed.hero_image_fit) : 'contain';
   };
 
   const addLogo = () => {
@@ -1342,7 +1360,7 @@
     }
 
     if (form.section_key.trim() === 'hero') {
-      extra = { ...extra, hero_slides: heroSlidesToExtra() };
+      extra = { ...extra, hero_slides: heroSlidesToExtra(), hero_image_fit: heroImageFit };
     }
 
     saving = true;
@@ -1780,6 +1798,15 @@
               </button>
             </div>
 
+            <div class="grid gap-2 rounded-[8px] border border-ink/10 bg-surface p-3">
+              <AdminSelect label="Hero image fit" name="hero_image_fit" bind:value={heroImageFit} options={HERO_FIT_OPTIONS} />
+              <p class="text-[11px] leading-5 text-ink/50">
+                Applies to every slide and to the main hero image. Contain and Fit show the whole photograph, with a
+                blurred copy of it filling whatever the screen has left over. Cover fills the screen instead and crops
+                what does not fit — <b>Crop / focus</b>, under Background &amp; overlay, chooses which part it keeps.
+              </p>
+            </div>
+
             {#if heroSlides.length === 0}
               <p class="rounded-[8px] border border-dashed border-ink/15 bg-surface/60 py-4 text-center text-xs text-ink/50">No custom slides yet. The hero will use its main image until you add one.</p>
             {/if}
@@ -1796,6 +1823,7 @@
                 </summary>
                 <div class="mt-4 grid gap-4 border-t border-ink/10 pt-4">
                   <MediaPicker label="Slide image" media={mediaItems} uploadFolder="homepage/hero-slides" aspect="aspect-[16/9]" bind:value={slide.image_url} />
+                  <AdminSelect label="Image fit for this slide" name={`hero_slide_${i}_fit`} bind:value={slide.image_fit} options={HERO_SLIDE_FIT_OPTIONS} />
                   <div class="grid gap-4 sm:grid-cols-2">
                     <AdminFormInput label="Eyebrow" name={`hero_slide_${i}_eyebrow`} bind:value={slide.eyebrow} placeholder="Tanzania & East Africa specialists" counter={70} />
                     <AdminFormInput label="Heading" name={`hero_slide_${i}_title`} bind:value={slide.title} placeholder="Plan your African safari," counter={70} />

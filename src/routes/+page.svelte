@@ -139,8 +139,29 @@
   // The CMS background stays as the last candidate: it is what the hero shows
   // when there is no published tour or destination photograph to show instead,
   // and it drops out on its own as soon as there is.
+  /**
+   * How the hero meets its photographs, set in Admin → Homepage → Hero.
+   * Unset or unrecognised shows the whole photograph, so a stray value can
+   * never crop the first screen.
+   */
+  const HERO_FITS = ['cover', 'contain', 'scale-down'] as const;
+  const heroFit = (value: unknown): (typeof HERO_FITS)[number] | '' => {
+    const candidate = String(value ?? '').trim();
+    return (HERO_FITS as readonly string[]).includes(candidate)
+      ? (candidate as (typeof HERO_FITS)[number])
+      : '';
+  };
+  $: heroImageFit = heroFit(heroExtra.hero_image_fit) || 'contain';
+  // The existing "Crop / focus" field. 'center' is the stylesheet default, so
+  // it is passed as empty rather than as an override of itself.
+  $: heroImagePosition =
+    typeof heroExtra.media_position === 'string' && heroExtra.media_position.trim() !== 'center'
+      ? heroExtra.media_position.trim()
+      : '';
+
   $: heroCmsSlides = arr<Record<string, unknown>>(heroExtra.hero_slides)
     .map((slide) => ({
+      fit: heroFit(slide.image_fit ?? slide.fit),
       imageUrl: String(slide.image_url ?? slide.imageUrl ?? '').trim(),
       label: String(slide.title ?? '').trim(),
       eyebrow: String(slide.eyebrow ?? '').trim(),
@@ -375,6 +396,8 @@
     description={cms('hero', 'subtitle', 'Great Migration river crossings, honest safari, Kilimanjaro and Zanzibar advice — planned around you by Tanzanian local experts.')}
     imageUrl={heroImageResolved}
     slides={heroSlides}
+    imageFit={heroImageFit}
+    imagePosition={heroImagePosition}
     primaryCta={{ label: cms('hero', 'button_text', 'Plan My Trip'), href: cms('hero', 'button_url', '/plan-my-trip') }}
     secondaryCta={{
       label: typeof heroExtra.secondary_cta_text === 'string' ? heroExtra.secondary_cta_text : $t('cta.talk_to_advisor'),
