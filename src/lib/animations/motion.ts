@@ -42,8 +42,7 @@ const HOME_MOTION_CARDS = [
   '.migration-card',
   '.gallery-card',
   '.blog-card',
-  '.impact-point',
-  '.faq-item'
+  '.impact-point'
 ].join(',');
 
 let gsapContext: Promise<GsapContext | null> | null = null;
@@ -321,7 +320,7 @@ export const homepageMotion: Action<HTMLElement> = (node) => {
       const cards = Array.from(section.querySelectorAll<HTMLElement>(HOME_MOTION_CARDS));
       cards.forEach((card, index) => {
         card.classList.add('home-motion-card');
-        card.style.setProperty('--home-card-index', String(Math.min(index, 9)));
+        card.style.setProperty('--home-card-index', String(Math.min(index, 6)));
       });
       sectionObserver.observe(section);
     });

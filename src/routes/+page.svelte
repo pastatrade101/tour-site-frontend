@@ -572,7 +572,7 @@
 <!-- 13 · FAQ -->
 {#if isSectionActive('faq') && homepageFaqs.length}
   <JsonLd data={faqLd(homepageFaqs.map((f) => ({ q: f.question, a: f.answer })))} />
-<section class="relative overflow-hidden bg-surface py-14 md:py-20" use:sectionReveal>
+<section class="home-faq relative overflow-hidden bg-surface py-14 md:py-20" use:sectionReveal>
   <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-forest/20 to-transparent" aria-hidden="true"></div>
   <div class="container-shell grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
     <div>
@@ -603,25 +603,39 @@
 </main>
 
 <style>
+  /* Shared finishing touches; each section keeps its existing layout and CMS content. */
+  .home-motion-root :global(h1), .home-motion-root :global(h2) { text-wrap:balance; }
+  .home-motion-root :global(h2) { font-weight:600; line-height:1.13; letter-spacing:-.025em; }
+  .home-motion-root :global(p) { text-wrap:pretty; }
+  .home-motion-root :global(section:not([data-hero]) > .container-shell) { position:relative; }
+  .home-motion-root :global(.home-experiences), .home-motion-root :global(.home-destinations),
+  .home-motion-root :global(.home-itineraries), .home-motion-root :global(.home-why-choose),
+  .home-motion-root :global(.home-how-planned), .home-motion-root :global(.home-traveller-stories),
+  .home-faq { padding-block:clamp(3.5rem,6vw,5.5rem); }
+  .home-motion-root :global(.home-destinations), .home-motion-root :global(.home-how-planned) { background:rgb(var(--c-canvas)/.55); }
+  .home-motion-root :global(.destination-card) { border-radius:16px; border:1px solid rgb(var(--c-ink)/.1); }
+  .home-motion-root :global([data-review-card]) { border:1px solid rgb(var(--c-ink)/.09); background:rgb(var(--c-canvas)/.6); }
+  .home-motion-root :global(.home-advisor-note) { padding-block:clamp(2.5rem,5vw,4rem); }
+  .home-motion-root :global(.home-planning-band) { border-top:3px solid rgb(var(--c-goldfinch-gold)/.7); }
+  .home-motion-root :global(a:focus-visible), .home-motion-root :global(button:focus-visible) { outline:2px solid rgb(var(--c-goldfinch-gold)); outline-offset:4px; }
+  .home-faq { background:rgb(var(--c-canvas)/.45); }
+  .home-faq :global(.faq-timeline) { padding:28px; border:1px solid rgb(var(--c-ink)/.1); border-radius:16px; background:rgb(var(--c-surface)); }
+  @media (min-width:1024px) { .home-motion-root :global(h2) { font-size:clamp(2rem,3vw,2.75rem); } }
+  @media (max-width:639px) { .home-faq :global(.faq-timeline) { padding:20px 16px; } }
+
   :global(.home-motion-ready .home-motion-section) {
     opacity: 1;
-    transform: translate3d(0, 34px, 0);
-    transition: opacity 800ms cubic-bezier(0.16, 1, 0.3, 1), transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translate3d(0, 16px, 0);
+    transition: opacity 400ms cubic-bezier(0.16, 1, 0.3, 1), transform 450ms cubic-bezier(0.16, 1, 0.3, 1);
   }
   :global(.home-motion-ready .home-motion-section.home-motion-visible) { opacity: 1; transform: none; }
   :global(.home-motion-ready .home-motion-card) {
     opacity: 1;
-    transform: translate3d(0, 22px, 0) scale(0.985);
-    transition: opacity 650ms cubic-bezier(0.16, 1, 0.3, 1), transform 700ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 350ms ease, border-color 350ms ease;
-    transition-delay: calc(100ms + var(--home-card-index, 0) * 65ms);
+    transform: translate3d(0, 10px, 0);
+    transition: opacity 300ms cubic-bezier(0.16, 1, 0.3, 1), transform 350ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: calc(var(--home-card-index, 0) * 40ms);
   }
   :global(.home-motion-ready .home-motion-visible .home-motion-card) { opacity: 1; transform: none; }
-  @media (hover: hover) and (pointer: fine) {
-    :global(.home-motion-ready .home-motion-visible .home-motion-card:hover) {
-      transform: translate3d(0, -6px, 0) scale(1.008);
-      box-shadow: 0 22px 55px rgb(25 35 25 / 0.12);
-    }
-  }
   :global(.home-motion-reduced .home-motion-section), :global(.home-motion-reduced .home-motion-card) { opacity: 1; transform: none; }
   @media (prefers-reduced-motion: reduce) {
     :global(.home-motion-ready .home-motion-section), :global(.home-motion-ready .home-motion-card) { opacity: 1; transform: none; transition: none; }

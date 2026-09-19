@@ -344,6 +344,12 @@
 </section>
 
 <style>
+  .hero-copy h1 { max-width:18ch; text-wrap:balance; }
+  .hero-copy p { text-wrap:pretty; line-height:1.7; }
+  .hero-planner-card { box-shadow:0 12px 32px rgb(0 0 0/.12); }
+  .hero-planner-select { transition:border-color 180ms ease, box-shadow 180ms ease; }
+  .hero-planner-select:hover { border-color:rgb(var(--c-goldfinch-gold)/.65); }
+
   .home-hero {
     display: flex;
     min-height: calc(100svh - 134px);

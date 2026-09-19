@@ -50,7 +50,7 @@
             <h2 class="mt-4 font-serif text-3xl font-semibold leading-[1.08] tracking-normal text-heading sm:text-4xl lg:text-[46px]">{title}</h2>
           {/if}
           {#if subtitle}
-            <p class="mt-3 max-w-2xl text-[15px] leading-7 text-ink/65 lg:hidden">{subtitle}</p>
+            <p class="mt-3 max-w-2xl text-[15px] leading-7 text-ink/65">{subtitle}</p>
           {/if}
         </div>
         <a href={ctaHref} data-cta="browse-all-itineraries" class="group hidden shrink-0 items-center gap-3 pb-1 text-[15px] font-bold text-clay transition hover:text-heading lg:inline-flex">
@@ -82,6 +82,9 @@
 {/if}
 
 <style>
+  .package-card { border-radius:1rem; }
+  .package-tab:focus-visible { outline:2px solid rgb(var(--c-clay)); outline-offset:3px; }
+
   .filter-rail {
     display: flex;
     flex-wrap: wrap;
@@ -120,18 +123,12 @@
     background: rgb(var(--c-deep-green));
     color: white;
     box-shadow: 0 4px 12px rgb(var(--c-deep-green) / 0.16);
-    animation: chip-select 240ms ease-out;
+
   }
 
   .package-tab.active :global(.chip-icon) { color: rgb(var(--c-goldfinch-gold)); transform: scale(1.06); }
 
   .package-grid { animation: cards-enter 280ms ease-out both; }
-
-  @keyframes chip-select {
-    0% { transform: scale(0.96); }
-    65% { transform: scale(1.025); }
-    100% { transform: scale(1); }
-  }
 
   @keyframes cards-enter {
     from { opacity: 0; transform: translateY(8px); }

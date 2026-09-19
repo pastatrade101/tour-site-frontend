@@ -76,6 +76,7 @@
 
   const addBlock = () => {
     if (!addType) return;
+    if (addType === 'enquiry' && blocks.some((block) => block.type === 'enquiry')) return;
     const next = emptyBlock(addType);
     blocks = orderedPackageBlocks([...blocks, next]);
     activeBlock = next;
@@ -175,6 +176,9 @@
     <ShieldCheck size={22} />
     <div><strong>Your content. A consistent design.</strong><p>Choose a section and fill in the details. Section order, spacing, image sizes and mobile layout are handled for you.</p></div>
   </div>
+  {#if blocks.filter((block) => block.type === 'enquiry').length > 1}
+    <p class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-ink/70">This package has more than one enquiry section. Only the first appears on the page. Edit that section for your quote form; the extra sections are kept here until you remove them.</p>
+  {/if}
   {#if pendingRemoval}
     <div class="editor-notice" role="alert">
       <div><strong>Remove {pendingRemoval.label}?</strong><p>You can undo this removal before saving.</p></div>
@@ -434,8 +438,8 @@
     <div class="section-library">
       {#each orderedPackageBlocks(BLOCK_TYPES.map((spec) => ({ type: spec.type }))) as choice}
         {@const spec = blockSpec(choice.type)!}
-        <button type="button" disabled={blocks.length >= 60} on:click={() => { addType = spec.type; addBlock(); }}>
-          <LayoutTemplate size={18} /><strong>{spec.label}</strong><span>{spec.blurb}</span>
+        <button type="button" disabled={blocks.length >= 60 || (spec.type === 'enquiry' && blocks.some((block) => block.type === 'enquiry'))} on:click={() => { addType = spec.type; addBlock(); }}>
+          <LayoutTemplate size={18} /><strong>{spec.label}</strong><span>{spec.type === 'enquiry' && blocks.some((block) => block.type === 'enquiry') ? 'Already on this page. Edit the existing enquiry section above.' : spec.blurb}</span>
         </button>
       {/each}
     </div>
@@ -469,7 +473,8 @@
   .section-add span { font-size:12px; font-weight:400; color:rgb(var(--c-ink)/.5); }
   .section-library { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)); gap:12px; }
   .section-library button { display:grid; gap:8px; padding:20px; border:1px solid rgb(var(--c-ink)/.12); border-radius:10px; background:rgb(var(--c-surface)); text-align:left; }
-  .section-library button:hover { border-color:rgb(var(--c-forest)); }
+  .section-library button:disabled { opacity:.5; cursor:default; }
+  .section-library button:not(:disabled):hover { border-color:rgb(var(--c-forest)); }
   .section-library strong { font-size:14px; }
   .section-library span { font-size:12px; line-height:1.6; color:rgb(var(--c-ink)/.6); }
   .package-editor button:focus-visible { outline:2px solid rgb(var(--c-forest)); outline-offset:3px; }

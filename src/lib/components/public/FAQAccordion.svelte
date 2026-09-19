@@ -71,7 +71,7 @@
     border: 1px solid rgb(var(--c-ink) / 0.2);
     background: rgb(var(--c-surface));
     color: rgb(var(--c-heading));
-    transition: color 240ms ease, background-color 240ms ease, border-color 240ms ease, box-shadow 240ms ease, transform 240ms ease;
+    transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease;
   }
 
   .faq-connector {
@@ -100,18 +100,11 @@
   .faq-item.is-active .faq-connector::before { transform: scaleY(0.45); }
 
   .faq-item.is-active .faq-number {
-    box-shadow: 0 8px 20px rgb(var(--c-clay) / 0.22), 0 0 0 4px rgb(var(--c-clay) / 0.09);
-    animation: faq-number-pop 420ms cubic-bezier(0.2, 0.9, 0.2, 1);
+    box-shadow: 0 0 0 3px rgb(var(--c-clay) / 0.08);
   }
 
-  .faq-item.is-upcoming { opacity: 0.72; }
-  .faq-item { transition: opacity 240ms ease; }
-
-  @keyframes faq-number-pop {
-    0% { transform: scale(0.86); }
-    65% { transform: scale(1.08); }
-    100% { transform: scale(1); }
-  }
+  .faq-item { min-width:0; overflow-wrap:anywhere; }
+  .faq-item h3 { text-wrap:pretty; }
 
   @media (prefers-reduced-motion: reduce) {
     .faq-number, .faq-connector::before, .faq-item { animation: none; transition: none; }

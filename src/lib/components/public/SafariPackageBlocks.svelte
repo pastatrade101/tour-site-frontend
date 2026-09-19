@@ -428,14 +428,13 @@
       </section>
     {/if}
 
-  {:else if block.type === 'enquiry'}
+  {:else if block.type === 'enquiry' && index === firstEnquiry}
     <!-- The same planner band a safari-style page closes with, questions laid
          out across the band rather than a button that opens a dialog. Reused
          rather than re-cut so a lead from here is shaped like every other one. -->
-    <!-- A page usually closes with two of these. Only the first answers to
-         #lead-form — every "Plan this trip" link on the page points there, and
-         two elements sharing one id is one id too many. -->
-    <div id={index === firstEnquiry ? 'lead-form' : `lead-form-${index}`} data-package-enquiry class="scroll-mt-24">
+    <!-- Older packages may contain repeated enquiry blocks. Keep one form
+         and one anchor without deleting any saved CMS content. -->
+    <div id="lead-form" data-package-enquiry class="scroll-mt-24">
       <StylePlannerBand
         eyebrow={eyebrow || 'Plan this safari'}
         title={title || 'Plan this trip with a local specialist'}

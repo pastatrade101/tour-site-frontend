@@ -73,7 +73,7 @@
 </script>
 
 <article
-  class={`group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-[#E3DCCB] shadow-[0_8px_24px_-16px_rgba(57,61,50,0.35)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_38px_-16px_rgba(57,61,50,0.42)] ${whiteSurface ? 'bg-white' : 'bg-surface'}`}
+  class={`tour-card group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-[#E3DCCB] shadow-[0_8px_24px_-16px_rgba(57,61,50,0.35)] ${whiteSurface ? 'bg-white' : 'bg-surface'}`}
   data-tour-card
 >
   <div class="relative aspect-[4/3] w-full overflow-hidden bg-sand">
@@ -154,3 +154,18 @@
     </div>
   </div>
 </article>
+
+<style>
+  .tour-card { isolation:isolate; transition:transform 220ms cubic-bezier(.2,0,0,1), box-shadow 220ms ease, border-color 180ms ease; }
+  .tour-card h3 { overflow-wrap:anywhere; text-wrap:pretty; }
+  .tour-card:focus-within { border-color:rgb(var(--c-clay)/.5); }
+  .tour-card a:focus-visible { outline:2px solid rgb(var(--c-clay)); outline-offset:-3px; border-radius:4px; }
+  @media (hover:hover) and (pointer:fine) {
+    .tour-card:hover { transform:translateY(-3px); border-color:rgb(var(--c-forest)/.25); box-shadow:0 12px 26px -15px rgb(57 61 50/.32); }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    .tour-card { transition:none; }
+    .tour-card:hover { transform:none; }
+    .tour-card :global(img) { transform:none!important; transition:none!important; }
+  }
+</style>
