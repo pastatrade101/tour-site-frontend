@@ -42,6 +42,8 @@
   /** Body copy sits under the page's own headings, so H2 is off by default. */
   export let headings: 'none' | 'h3' | 'h2h3' = 'h3';
   export let hint = '';
+  /** Content-only toolbar for template-managed package sections. */
+  export let compact = false;
 
   let element: HTMLDivElement;
   let editor: Editor | null = null;
@@ -278,7 +280,7 @@
         {#if groupIndex > 0 && group.length}
           <span class="mx-1 h-5 w-px bg-ink/12" aria-hidden="true"></span>
         {/if}
-        {#each group as control}
+        {#each group.filter((control) => !compact || !['Underline', 'Quote', 'Heading 2', 'Heading 3'].includes(control.label)) as control}
           <button
             type="button"
             class="grid h-8 min-w-8 place-items-center rounded px-1.5 text-ink/70 transition hover:bg-ink/[0.07] hover:text-ink disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/40"

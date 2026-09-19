@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
 import { attachedFaqQuery, generalFaqQuery, mergeFaqs } from '$lib/faqEntities';
-import { parseRouteTour } from '$lib/safariPackageBlocks';
+import { lines, routeTourSlugs } from '$lib/safariPackageBlocks';
 import { localeFromPath, withLocale } from '$lib/i18n';
 import type { FAQ, Lodge, SafariPackage, Tour } from '$lib/types';
 
@@ -43,15 +43,12 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
 
   const fromTourBlocks = sections
     .filter((block) => block?.type === 'tours')
-    .flatMap((block) => (block.tour_slugs as unknown[]) ?? []);
+    .flatMap((block) => lines(block.tour_slugs));
 
   const fromRouteBlocks = sections
     .filter((block) => block?.type === 'routes')
     .flatMap((block) => (block.routes as Array<Record<string, unknown>>) ?? [])
-    .flatMap((route) => [
-      ...((route?.tours as unknown[]) ?? []).map((line) => parseRouteTour(String(line ?? '')).slug),
-      ...((route?.comforts as Array<Record<string, unknown>>) ?? []).map((comfort) => String(comfort?.tour_slug ?? '').trim())
-    ]);
+    .flatMap((route) => routeTourSlugs(route));
 
   const accommodationIds = [
     ...new Set(

@@ -8,6 +8,7 @@
     '/admin': 'Dashboard',
     '/admin/analytics': 'Analytics',
     '/admin/tours': 'Tours',
+    '/admin/safari-packages': 'Safari Packages',
     '/admin/tours/new': 'New Tour',
     '/admin/itineraries': 'Itineraries',
     '/admin/available-dates': 'Available Dates',
@@ -37,11 +38,12 @@
 
   $: path = $page.url.pathname;
   $: isLogin = path === '/admin/login';
+  $: isPackagePreview = path === '/admin/safari-packages/preview';
   $: title = titles[path] ?? 'Admin';
   $: if (browser && !isLogin && !localStorage.getItem('admin_token')) goto('/admin/login');
 </script>
 
-{#if isLogin}
+{#if isLogin || isPackagePreview}
   <slot />
 {:else}
   <AdminLayout {title} currentPath={path}>

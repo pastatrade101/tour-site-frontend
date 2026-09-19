@@ -8,7 +8,7 @@
    * same card for the property an editor selected, rather than the single
    * thumbnail it used to draw.
    */
-  import { ArrowRight } from '@lucide/svelte';
+  import { ArrowRight, MapPin } from '@lucide/svelte';
   import Img from './Img.svelte';
   import { galleryForStay, type MediaImage, type Stay } from '$lib/lodgeMedia';
 
@@ -17,6 +17,8 @@
   export let extra: MediaImage[] = [];
   /** The small line above the card. Empty renders none. */
   export let label = '';
+  /** A larger, editorial gallery for the package's featured properties. */
+  export let featured = false;
 
   const LODGE_TYPES: Record<string, string> = {
     tented_camp: 'Tented camp',
@@ -43,7 +45,7 @@
     .join(' / ');
 </script>
 
-<div class="tour-day-accommodation">
+<div class="tour-day-accommodation" class:featured-stay={featured}>
   {#if label}
     <div class="mb-3.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink/60 md:text-[11px]">{label}</div>
   {/if}
@@ -53,17 +55,18 @@
            used to leave three empty cells in a four-column grid. -->
       <div
         class="tour-day-accommodation-gallery grid gap-1 overflow-hidden rounded-t-[11px] bg-sand p-1"
-        style={`grid-template-columns: repeat(${shown.length}, minmax(0, 1fr));`}
+        class:single-photo={shown.length === 1}
+        style={featured ? '' : `grid-template-columns: repeat(${shown.length}, minmax(0, 1fr));`}
       >
         {#each shown as image, imageIndex}
-          <div class={`relative min-w-0 overflow-hidden bg-sand ${shown.length === 1 ? 'aspect-[16/9]' : 'aspect-[4/3]'} ${imageIndex === 0 ? 'rounded-tl-[8px]' : ''} ${imageIndex === shown.length - 1 ? 'rounded-tr-[8px]' : ''}`}>
+          <div class={`stay-photo relative min-w-0 overflow-hidden bg-sand ${shown.length === 1 ? 'aspect-[16/9]' : 'aspect-[4/3]'} ${imageIndex === 0 ? 'rounded-tl-[8px]' : ''} ${imageIndex === shown.length - 1 ? 'rounded-tr-[8px]' : ''}`}>
             <Img
               src={image.record ? '' : image.src}
               record={image.record}
               fields={image.fields ?? []}
               alt={image.caption}
-              width={shown.length === 1 ? 900 : 360}
-              sizes={shown.length === 1 ? '(max-width: 768px) 92vw, 700px' : '(max-width: 768px) 23vw, 175px'}
+              width={featured || shown.length === 1 ? 900 : 360}
+              sizes={featured || shown.length === 1 ? '(max-width: 768px) 92vw, 700px' : '(max-width: 768px) 23vw, 175px'}
               className="h-full w-full object-cover transition duration-500 hover:scale-[1.03]"
             />
             {#if imageIndex === 3 && gallery.length > 4}
@@ -78,8 +81,12 @@
     <div class="p-4 md:p-5">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div class="min-w-0">
+          {#if featured && stay.accommodation_level}<p class="stay-category">{normaliseLabel(stay.accommodation_level.toLowerCase())}</p>{/if}
           <h4 class="font-serif text-[19px] font-semibold leading-snug text-heading">{stay.name}</h4>
-          {#if summary}<p class="mt-1 text-[13px] font-medium text-ink/60">{summary}</p>{/if}
+          {#if featured}
+            {#if stay.destinations?.name}<p class="stay-location"><MapPin size={13} />{stay.destinations.name}</p>{/if}
+            {#if LODGE_TYPES[String(stay.lodge_type)]}<p class="mt-1 text-xs text-ink/50">{LODGE_TYPES[String(stay.lodge_type)]}</p>{/if}
+          {:else if summary}<p class="mt-1 text-[13px] font-medium text-ink/60">{summary}</p>{/if}
         </div>
         {#if stay.slug}
           <a
@@ -95,6 +102,18 @@
 </div>
 
 <style>
+  .featured-stay .tour-day-accommodation-card { border-radius:12px; background:rgb(var(--c-surface)); }
+  .featured-stay .tour-day-accommodation-gallery { grid-template-columns:repeat(3,minmax(0,1fr)); padding:0; gap:3px; border-radius:0; }
+  .featured-stay .stay-photo { aspect-ratio:16/9; border-radius:0; }
+  .featured-stay .stay-photo:first-child { grid-column:1/-1; aspect-ratio:2/1; }
+  .featured-stay .tour-day-accommodation-gallery:has(.stay-photo:nth-child(2)):not(:has(.stay-photo:nth-child(3))) { grid-template-columns:1fr; }
+  .featured-stay .tour-day-accommodation-gallery:has(.stay-photo:nth-child(3)):not(:has(.stay-photo:nth-child(4))) { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .featured-stay .tour-day-accommodation-gallery.single-photo .stay-photo { aspect-ratio:16/9; }
+  .featured-stay h4 { font-size:23px; overflow-wrap:anywhere; }
+  .featured-stay a { min-height:40px; margin-top:8px; }
+  .stay-category { display:inline-block; margin-bottom:10px; padding:4px 8px; border-radius:4px; background:rgb(var(--c-sand)/.7); color:rgb(var(--c-forest)); font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+  .stay-location { display:flex; align-items:center; gap:5px; margin-top:8px; font-size:12px; line-height:1.6; color:rgb(var(--c-ink)/.6); }
+  .stay-location :global(svg) { flex-shrink:0; }
   /* Carried over with the markup from ItineraryDays: on a phone the card sits
      tighter and the link runs the full width, so it is a tappable bar rather
      than a small target in the corner. */

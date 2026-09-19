@@ -75,12 +75,12 @@ export const BLOCK_TYPES: BlockSpec[] = [
   },
   {
     type: 'prose',
-    label: 'Written section',
-    blurb: 'A heading and formatted copy. The workhorse block.',
+    label: 'Overview & story',
+    blurb: 'Tell the story of the trip. Typography and the companion note use the page’s fixed layout.',
     fields: [
       eyebrow,
       title,
-      { key: 'body', label: 'Body', kind: 'richtext' },
+      { key: 'body', label: 'Trip overview', kind: 'richtext', hint: 'Write in short paragraphs. Use lists for highlights; spacing and text sizes are automatic.' },
       { key: 'aside_title', label: 'Side card label', kind: 'text', hint: 'Fill both to show a card beside the copy; leave either empty and the copy runs full width.', placeholder: 'Keep in mind' },
       { key: 'aside_body', label: 'Side card text', kind: 'textarea' }
     ]
@@ -214,9 +214,9 @@ export const BLOCK_TYPES: BlockSpec[] = [
   },
   {
     type: 'routes',
-    label: 'Route options (tabbed)',
+    label: 'Route options',
     blurb:
-      'The alternative routes for this trip, each as a tab. Points at real published tours — the photo, wording, price and day-by-day come from them, so this page and the tour pages can never disagree.',
+      'Choose the tours travellers can take. Photos, prices and day-by-day details come from those tours automatically.',
     fields: [
       eyebrow,
       title,
@@ -225,18 +225,19 @@ export const BLOCK_TYPES: BlockSpec[] = [
         key: 'routes',
         label: 'Routes',
         kind: 'items',
-        hint: 'One per tab. Three or four reads best.',
+        hint: 'Give each route a descriptive name, such as Tarangire & Ngorongoro. Three or four routes work best.',
         fields: [
-          { key: 'tab', label: 'Tab label', kind: 'text', placeholder: 'Tarangire & Ngorongoro' },
+          { key: 'tab', label: 'Short route name (optional)', kind: 'text', placeholder: 'Uses the selected tour title', hint: 'Leave blank to use the tour title, or write a clear short name such as Tarangire & Ngorongoro. Generic labels like Option 1 automatically use the tour title.' },
           {
             key: 'comforts',
             label: 'Accommodation levels',
             kind: 'routeComforts',
-            hint: 'Choose a CMS accommodation category, then the matching tour and the one property to feature beneath that category tab. Leave the property on "No specific property" to show the lodges from the chosen tour\'s own itinerary instead. The page uses these selections for its connected price and accommodation tabs.'
+            hint: 'Select a comfort level, then its published tour. Optionally feature properties from the accommodation library. The tour’s own stays remain in its itinerary.'
           },
           { key: 'best_for', label: 'Best for', kind: 'text', placeholder: 'first-time safari travellers who want the classic route.' },
-          { key: 'note', label: 'Caveat under the route', kind: 'textarea', placeholder: 'This route is busier and needs careful flight and lodge timing.' },
-          { key: 'stay_note', label: 'Accommodation note', kind: 'textarea', hint: 'Shown inside day one, above the lodges from the chosen comfort level. Leave blank and the accommodation panel only appears if those tours have lodge photos.', placeholder: 'A comfortable lodge or tented camp with better rest between safari activities.' }
+          { key: 'note', label: 'Useful route note', kind: 'textarea', placeholder: 'This route is busier and needs careful flight and lodge timing.' },
+          { key: 'stay_note', label: 'Introduction above accommodation cards (optional)', kind: 'textarea', hint: 'Appears below “Accommodation Options”, before the property photos.', placeholder: 'A comfortable lodge or tented camp with better rest between safari activities.' },
+          { key: 'stay_disclaimer', label: 'Paragraph below accommodation cards', kind: 'textarea', hint: 'This is the note below the lodge cards. Leave blank to keep the standard availability note shown here.', placeholder: 'Final accommodation depends on route choice, travel date, availability and preferred comfort level.' }
         ]
       },
       { key: 'cta_label', label: 'Button under each route', kind: 'text', placeholder: 'Send request for this route' }
@@ -335,6 +336,22 @@ export const parseRouteTour = (line: string): { label: string; slug: string } =>
   return { label: rest.length ? first.trim() : '', slug };
 };
 
+/** Generic numbering is a placeholder, never a useful traveller-facing name. */
+export const routeDisplayName = (label: unknown, tourTitle: unknown): string => {
+  const custom = str(label).trim();
+  return !custom || /^(?:option|route|choice)\s*[-#:]?\s*\d+$/i.test(custom)
+    ? str(tourTitle).trim()
+    : custom;
+};
+
+/** Use current selections when present; legacy tour lines are fallback only. */
+export const routeTourSlugs = (route: Record<string, unknown>): string[] => {
+  const comforts = Array.isArray(route.comforts) ? route.comforts : [];
+  return comforts.length
+    ? comforts.map((entry) => str(entry?.tour_slug).trim()).filter(Boolean)
+    : lines(route.tours).map((line) => parseRouteTour(line).slug).filter(Boolean);
+};
+
 export const blockSpec = (type: string): BlockSpec | undefined => BLOCK_TYPES.find((spec) => spec.type === type);
 
 /** A new block with every field present and empty, so the editor has rows to fill. */
@@ -366,7 +383,7 @@ export const arr = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value a
 
 /** Non-blank strings only — an empty line an editor left behind is not content. */
 export const lines = (value: unknown): string[] =>
-  arr<unknown>(value)
+  (typeof value === 'string' ? value.split('\n') : arr<unknown>(value))
     .map((entry) => str(entry).trim())
     .filter(Boolean);
 
@@ -424,7 +441,7 @@ const eachLinesField = (block: Block, run: (key: string) => void) => {
 /** Stored → editable: arrays of lines become one string per line. */
 export const blocksForEditing = (source: unknown): Block[] =>
   arr<Block>(source).map((block) => {
-    const next: Block = { ...block, type: str(block.type) };
+    const next: Block = { ...structuredClone(block), type: str(block.type) };
     if (next.type === 'priceguide') next.factors = priceFactorsForEditing(next.factors);
     if (next.type === 'routes') {
       next.routes = arr<Record<string, unknown>>(next.routes).map((route) => ({
@@ -446,10 +463,10 @@ export const blocksForEditing = (source: unknown): Block[] =>
 /** Editable → stored: those strings become arrays again, blanks dropped. */
 export const blocksForSaving = (source: unknown): Block[] =>
   arr<Block>(source).map((block) => {
-    const next: Block = { ...block, type: str(block.type) };
+    const next: Block = { ...structuredClone(block), type: str(block.type) };
     eachLinesField(next, (path) => {
       const [key, sub] = path.split('.');
-      const split = (value: unknown) => str(value).split('\n').map((line) => line.trim()).filter(Boolean);
+      const split = (value: unknown) => lines(value);
       if (sub) {
         next[key] = arr<Record<string, unknown>>(next[key]).map((row) => ({ ...row, [sub]: split(row[sub]) }));
       } else {

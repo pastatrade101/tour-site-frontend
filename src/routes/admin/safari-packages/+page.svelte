@@ -13,13 +13,16 @@
    *     guard tells them what the page is still missing. It warns; it never
    *     blocks.
    */
-  import { onMount } from 'svelte';
-  import { AlertTriangle, CheckCircle2, ExternalLink, FileText, LayoutTemplate, Loader2, Plus, Save, Search } from '@lucide/svelte';
+  import { onMount, tick } from 'svelte';
+  import { beforeNavigate } from '$app/navigation';
+  import { AlertTriangle, CheckCircle2, ArrowLeft, Eye, ExternalLink, Pencil, FileText, LayoutTemplate, Loader2, Plus, Save, Search } from '@lucide/svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
+  import SafariPackagePreview from '$lib/components/admin/SafariPackagePreview.svelte';
+  import { orderedPackageBlocks, starterPackageBlocks } from '$lib/packagePresentation';
   import SafariPackageBlocksEditor from '$lib/components/admin/SafariPackageBlocksEditor.svelte';
   import { api } from '$lib/api/client';
   import { assessPackageDifferentiation, type Assessment } from '$lib/packageDifferentiation';
@@ -32,6 +35,11 @@
   let tours: Tour[] = [];
   let loading = true;
   let listError = '';
+  let searchQuery = '';
+  let statusFilter = 'all';
+  $: filteredRows = rows.filter((row) => (statusFilter === 'all' || row.status === statusFilter) && `${row.name} ${row.slug}`.toLowerCase().includes(searchQuery.trim().toLowerCase()));
+  $: publishedCount = rows.filter((row) => row.status === 'published').length;
+  $: draftCount = rows.filter((row) => row.status === 'draft').length;
 
   let open = false;
   let editingId: string | null = null;
@@ -56,16 +64,17 @@
     og_image_url: ''
   });
 
-  type TabKey = 'basics' | 'content' | 'seo';
+  type TabKey = 'basics' | 'content' | 'seo' | 'preview';
 
   /**
    * Three tabs rather than one long column. The blocks editor alone can run to
    * a dozen sections, which put Save far below the fold.
    */
   const TABS = [
-    ['basics', FileText, 'Basics'],
+    ['basics', FileText, 'Page details'],
     ['content', LayoutTemplate, 'Page content'],
-    ['seo', Search, 'SEO & indexing']
+    ['seo', Search, 'Search settings'],
+    ['preview', Eye, 'Preview']
   ] as const;
 
   let activeTab: TabKey = 'basics';
@@ -73,11 +82,19 @@
 
   const selectTab = (tab: TabKey) => {
     activeTab = tab;
-    if (typeof document !== 'undefined') document.querySelector('main')?.scrollTo({ top: 0 });
+    if (typeof document !== 'undefined') document.querySelector('.package-workspace-content')?.scrollTo({ top: 0 });
   };
 
   let form = blank();
   let blocks: Block[] = [];
+  let baseline = '';
+  $: currentDraft = JSON.stringify({ form, blocks });
+  $: dirty = open && baseline !== currentDraft;
+  const rememberDraft = () => { baseline = JSON.stringify({ form, blocks }); };
+  const canLeave = () => !dirty || confirm('Discard your unsaved changes to this package?');
+  const closeEditor = () => { if (canLeave()) open = false; };
+  const beforeUnload = (event: BeforeUnloadEvent) => { if (dirty) { event.preventDefault(); event.returnValue = ''; } };
+  beforeNavigate(({ cancel }) => { if (!canLeave()) cancel(); });
   /**
    * How many published days the linked tour has.
    *
@@ -116,18 +133,23 @@
     }
   });
 
-  const startCreate = () => {
+  const startCreate = async () => {
+    if (!canLeave()) return;
+    activeTab = 'basics';
+    attemptedSave = false;
     editingId = null;
     form = blank();
-    blocks = [];
+    blocks = starterPackageBlocks();
     linkedDayCount = 0;
     formError = '';
     acknowledged = '';
     open = true;
+    await tick();
+    rememberDraft();
   };
 
   const startEdit = async (row: Row) => {
-    if (opening) return;
+    if (opening || !canLeave()) return;
     opening = true;
     formError = '';
     try {
@@ -152,10 +174,14 @@
         meta_description: full.meta_description ?? '',
         og_image_url: full.og_image_url ?? ''
       };
-      blocks = blocksForEditing(full.sections);
+      blocks = orderedPackageBlocks(blocksForEditing(full.sections));
+      activeTab = 'basics';
+      attemptedSave = false;
       linkedDayCount = (full.tours?.itinerary_days ?? []).length;
       acknowledged = '';
       open = true;
+      await tick();
+      rememberDraft();
     } catch (error) {
       // Refusing to open is the point: an empty form here saves an empty page.
       toast = error instanceof Error ? error.message : 'Could not open that package.';
@@ -270,6 +296,23 @@
     }
   };
 
+  const containFocus = (node: HTMLElement) => {
+    const previous = document.activeElement as HTMLElement | null;
+    const focusable = () => Array.from(node.querySelectorAll<HTMLElement>('button, a[href], input, select, textarea, iframe, [tabindex]'))
+      .filter((element) => element.tabIndex >= 0 && !element.hasAttribute('disabled') && element.getClientRects().length > 0);
+    const trap = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return;
+      const elements = focusable();
+      const first = elements[0];
+      const last = elements.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    node.addEventListener('keydown', trap);
+    queueMicrotask(() => focusable()[0]?.focus());
+    return { destroy() { node.removeEventListener('keydown', trap); if (previous?.isConnected) previous.focus(); } };
+  };
+
   const VERDICT_STYLE: Record<string, string> = {
     strong: 'border-forest/30 bg-forest/[0.07] text-forest',
     moderate: 'border-goldfinch-gold/40 bg-goldfinch-gold/10 text-heading',
@@ -277,79 +320,66 @@
   };
 </script>
 
-<AdminPageHeader title="Safari packages" description="Landing pages composed from content blocks." />
+<svelte:window on:beforeunload={beforeUnload} />
 
-{#if toast}
-  <p class="mb-4 rounded-[10px] border border-ink/12 bg-sand/50 px-4 py-3 text-sm text-heading">{toast}</p>
-{/if}
-
-<div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-  <p class="text-sm text-ink/60">{rows.length} page{rows.length === 1 ? '' : 's'}</p>
-  <button type="button" class="inline-flex h-10 items-center gap-1.5 rounded bg-goldfinch-gold px-4 text-sm font-bold text-heading transition hover:brightness-105" on:click={startCreate}>
-    <Plus size={15} /> New package
-  </button>
-</div>
-
-{#if loading}
-  <p class="text-sm text-ink/60">Loading…</p>
-{:else if listError}
-  <p class="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{listError}</p>
-{:else if !rows.length}
-  <p class="rounded-[10px] border border-ink/12 bg-sand/35 px-4 py-4 text-sm text-ink/70">
-    No safari packages yet. Create one to start a landing page.
-  </p>
-{:else}
-  <div class="overflow-x-auto rounded-[12px] border border-ink/12">
-    <table class="w-full min-w-[720px] border-collapse text-left text-sm">
-      <thead class="bg-sand/50">
-        <tr>
-          <th class="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-ink/60">Page</th>
-          <th class="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-ink/60">Status</th>
-          <th class="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-ink/60">Indexable</th>
-          <th class="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-ink/60">Blocks</th>
-          <th class="px-4 py-3"></th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each rows as row (row.id)}
-          <tr class="border-t border-ink/8">
-            <td class="px-4 py-3">
-              <span class="font-semibold text-heading">{row.name}</span>
-              <span class="mt-0.5 block text-[12px] text-ink/50">/{row.slug}</span>
-            </td>
-            <td class="px-4 py-3 capitalize text-ink/70">{row.status}</td>
-            <td class="px-4 py-3">
-              {#if row.indexable === true}
-                <span class="rounded bg-forest/10 px-2 py-1 text-[11px] font-bold text-forest">Indexable</span>
-              {:else}
-                <span class="rounded bg-ink/8 px-2 py-1 text-[11px] font-bold text-ink/55">No index</span>
-              {/if}
-            </td>
-            <td class="px-4 py-3 text-ink/60">{(row.sections ?? []).length}</td>
-            <td class="px-4 py-3">
-              <div class="flex justify-end gap-2">
-                <a class="rounded border border-ink/15 px-2.5 py-1.5 text-[12px] font-semibold text-forest transition hover:border-goldfinch-gold" href={`/${row.slug}`} target="_blank" rel="noopener noreferrer">
-                  View <ExternalLink size={12} class="inline" />
-                </a>
-                <button type="button" class="rounded border border-ink/15 px-2.5 py-1.5 text-[12px] font-semibold text-heading transition hover:border-goldfinch-gold disabled:opacity-40" disabled={opening} on:click={() => startEdit(row)}>
-                  {#if opening}<Loader2 size={12} class="inline animate-spin" />{/if} Edit
-                </button>
-                <button type="button" class="rounded border border-ink/15 px-2.5 py-1.5 text-[12px] font-semibold text-red-600 transition hover:border-red-300" on:click={() => remove(row)}>Delete</button>
-              </div>
-            </td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
+{#if !open}
+  <AdminPageHeader title="Safari packages" description="Thoughtfully presented trips. One consistent design, with all your safari content in one place." />
+  {#if toast}<p class="package-message" role="status">{toast}</p>{/if}
+  <div class="package-list-summary">
+    <div><span>ALL PACKAGES</span><strong>{rows.length}</strong><p>Safari landing pages</p></div>
+    <div><span>PUBLISHED</span><strong>{publishedCount}</strong><p>Available on your website</p></div>
+    <div><span>DRAFTS</span><strong>{draftCount}</strong><p>Ready for your next edit</p></div>
   </div>
+  <section class="package-library" aria-label="Safari package library">
+    <div class="package-library-toolbar">
+      <label class="package-search"><Search size={17} /><span class="sr-only">Search safari packages</span><input type="search" bind:value={searchQuery} placeholder="Search by package name…" /></label>
+      <label class="package-filter"><span class="sr-only">Filter by status</span><select bind:value={statusFilter}><option value="all">All statuses</option><option value="published">Published</option><option value="draft">Drafts</option><option value="archived">Archived</option></select></label>
+      <button type="button" class="package-primary" on:click={startCreate}><Plus size={16} /> New package</button>
+    </div>
+    {#if loading}
+      <p class="package-list-empty" role="status">Loading your safari packages…</p>
+    {:else if listError}
+      <div class="package-list-empty" role="alert"><p>{listError}</p><button type="button" class="mt-4 underline" on:click={loadList}>Try again</button></div>
+    {:else if !filteredRows.length}
+      <div class="package-list-empty"><LayoutTemplate size={28} /><h2>{rows.length ? 'No matching packages' : 'Your next safari starts here'}</h2><p>{rows.length ? 'Try a different name or status.' : 'Create a package, choose its tours and add your story. The page layout is already taken care of.'}</p></div>
+    {:else}
+      <div class="package-table-scroll">
+        <table class="package-library-table">
+          <thead><tr><th>Package</th><th>Visibility</th><th>Content</th><th><span class="sr-only">Actions</span></th></tr></thead>
+          <tbody>
+            {#each filteredRows as row (row.id)}
+              <tr>
+                <td><div class="package-row-title">
+                  {#if row.hero_image_url}<img src={row.hero_image_url} alt="" loading="lazy" />{:else}<span class="package-thumbnail"><LayoutTemplate size={22} /></span>{/if}
+                  <div><strong>{row.name}</strong><span>/{row.slug}</span></div>
+                </div></td>
+                <td><span class="package-status" class:published={row.status === 'published'} class:draft={row.status === 'draft'}>{row.status || 'Draft'}</span><span class="package-seo">{row.indexable === true ? 'Search indexing on' : 'Search indexing off'}</span></td>
+                <td><span class="package-section-count">{(row.sections ?? []).length} sections</span></td>
+                <td><div class="package-row-actions">
+                  <button type="button" class="package-edit" disabled={opening} on:click={() => startEdit(row)}><Pencil size={14} /> Edit</button>
+                  <a href={`/${row.slug}`} target="_blank" rel="noopener noreferrer" aria-label={`View ${row.name}`}><ExternalLink size={16} /></a>
+                  <details class="package-more"><summary aria-label={`More actions for ${row.name}`}>•••</summary><div><button type="button" on:click={() => remove(row)}>Delete package</button></div></details>
+                </div></td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+      <p class="package-library-footer">{filteredRows.length} of {rows.length} packages · Every page uses the same protected layout.</p>
+    {/if}
+  </section>
 {/if}
 
 {#if open}
-  <section class="mt-8 rounded-[14px] border border-ink/12 bg-canvas p-5 md:p-6">
-    <h2 class="font-serif text-2xl font-semibold text-heading">{editingId ? 'Edit package' : 'New package'}</h2>
-
-    <div class="mt-4 flex gap-1 overflow-x-auto rounded-2xl border border-ink/10 bg-surface p-1.5 shadow-sm">
-      {#each TABS as [tab, Icon, label] (tab)}
+  <div class="package-workspace" role="dialog" aria-modal="true" aria-label="Safari package editor" tabindex="-1" use:containFocus>
+    <header class="package-workspace-header">
+      <button type="button" class="workspace-back" on:click={closeEditor}><ArrowLeft size={18} /><span>All packages</span></button>
+      <div class="workspace-heading"><span>{editingId ? 'EDIT SAFARI PACKAGE' : 'NEW SAFARI PACKAGE'}</span><h2>{form.name || 'Create your safari page'}</h2></div>
+      <span class="package-status" class:published={form.status === 'published'} class:draft={form.status === 'draft'}>{form.status}</span>
+    </header>
+    <div class="package-workspace-content">
+    <div class="workspace-tabs" aria-label="Package editing steps">
+      {#each TABS as [tab, Icon, label], step (tab)}
         <button
           class={`flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/20 ${
             activeTab === tab ? 'bg-forest text-white shadow-sm' : 'text-ink/55 hover:bg-sand/50 hover:text-ink'
@@ -358,7 +388,7 @@
           aria-current={activeTab === tab}
           on:click={() => selectTab(tab)}
         >
-          <Icon size={15} />
+          <span class="workspace-step">{step + 1}</span><Icon size={15} />
           {label}
           {#if tab === 'basics' && attemptedSave && form.name.trim().length < 2}
             <span class="h-1.5 w-1.5 rounded-full bg-clay" title="Something here is blocking the save"></span>
@@ -372,8 +402,8 @@
       media pickers and rich-text fields for every section, and tearing those
       down on a tab click would be both slow and a good way to lose an edit.
     -->
-    <div class="mt-6 grid gap-6" class:hidden={activeTab !== 'basics'}>
-    <div class="grid gap-4 md:grid-cols-2">
+    <div class="mt-6 grid gap-6 md:grid-cols-2" class:hidden={activeTab !== 'basics'}>
+    <div class="grid gap-4 md:col-span-2 md:grid-cols-2">
       <div class="grid gap-1.5">
         <AdminFormInput label="Name" name="name" bind:value={form.name} placeholder="2-Day Safari from Zanzibar" />
         {#if attemptedSave && form.name.trim().length < 2}
@@ -381,14 +411,15 @@
         {/if}
       </div>
       <AdminFormInput label="Slug" name="slug" bind:value={form.slug} placeholder="Left blank, made from the name" />
-      <AdminFormInput label="Hero eyebrow" name="hero_eyebrow" bind:value={form.hero_eyebrow} />
-      <AdminFormInput label="Hero heading" name="hero_title" bind:value={form.hero_title} />
+      <AdminFormInput label="Small label above the title" name="hero_eyebrow" counter={40} bind:value={form.hero_eyebrow} />
+      <AdminFormInput label="Page headline" name="hero_title" counter={100} bind:value={form.hero_title} />
     </div>
 
-    <AdminTextArea label="Hero subtitle" name="hero_subtitle" rows={2} bind:value={form.hero_subtitle} />
-    <MediaPicker label="Hero image" bind:value={form.hero_image_url} on:change={(event) => (form.hero_image_url = event.detail ?? '')} />
+    <p class="text-xs leading-5 text-ink/55 md:col-span-2">Use a short, descriptive headline and two or three sentences. The page handles line breaks, image cropping and spacing on every screen.</p>
+    <AdminTextArea label="Short introduction" name="hero_subtitle" counter={320} rows={3} bind:value={form.hero_subtitle} />
+    <MediaPicker label="Cover photograph" bind:value={form.hero_image_url} on:change={(event) => (form.hero_image_url = event.detail ?? '')} />
 
-    <div class="grid gap-4 md:grid-cols-2">
+    <div class="grid gap-4 md:col-span-2 md:grid-cols-2">
       <AdminSelect
         label="Linked tour"
         name="tour_id"
@@ -407,15 +438,19 @@
         ]}
       />
     </div>
-    <p class="-mt-2 text-[12px] text-ink/55">
-      The day-by-day block renders the linked tour's published days. Without a tour it draws nothing.
+    <p class="-mt-2 text-[12px] text-ink/55 md:col-span-2">
+      Optional: select a tour for a standalone itinerary section. Route options have their own tours, selected under Page content.
     </p>
     </div>
 
     <!-- ── Page content ───────────────────────────────────────────────── -->
     <div class="mt-6" class:hidden={activeTab !== 'content'}>
-      <SafariPackageBlocksEditor bind:blocks />
+      {#key editingId ?? 'new'}<SafariPackageBlocksEditor bind:blocks />{/key}
     </div>
+
+    {#if activeTab === 'preview'}
+      <div class="mt-6"><SafariPackagePreview record={{ ...form, id: editingId ?? '' }} {blocks} availableTours={tours} /></div>
+    {/if}
 
     <!-- ── SEO & indexing ─────────────────────────────────────────────── -->
     <div class="mt-6 grid gap-6" class:hidden={activeTab !== 'seo'}>
@@ -489,11 +524,14 @@
       <p class="mt-6 rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{formError}</p>
     {/if}
 
-    <!-- Sticky, so Save stays reachable however long the blocks tab runs. -->
-    <div class="sticky bottom-0 z-20 mt-6 -mx-5 flex flex-wrap items-center justify-between gap-3 border-t border-ink/12 bg-canvas px-5 py-3 shadow-[0_-8px_24px_rgba(57,61,50,0.06)] md:-mx-6 md:px-6">
-      <p class="text-[12px] text-ink/55">{editingId ? 'Editing an existing page.' : 'New pages start as a draft, not indexable.'}</p>
+    </div>
+
+    <!-- Save stays reachable however long the page content runs. -->
+    <div class="package-workspace-footer">
+      <p class="text-[12px] text-ink/55">{dirty ? 'Unsaved changes' : editingId ? 'All changes saved' : 'New draft'} · {form.status === 'published' ? 'Saving updates the live page.' : 'Visible only after publishing.'}</p>
       <div class="flex flex-wrap gap-3">
-        <button type="button" class="inline-flex h-11 items-center rounded border border-ink/20 px-5 text-sm font-semibold text-heading transition hover:bg-sand/50" on:click={() => (open = false)}>
+        {#if activeTab !== 'preview'}<button type="button" class="inline-flex h-11 items-center gap-2 rounded border border-forest/30 px-4 text-sm font-semibold text-forest" on:click={() => selectTab('preview')}><Eye size={15} /> Preview page</button>{/if}
+        <button type="button" class="inline-flex h-11 items-center rounded border border-ink/20 px-5 text-sm font-semibold text-heading transition hover:bg-sand/50" on:click={closeEditor}>
           Cancel
         </button>
         <button type="button" class="inline-flex h-11 items-center gap-2 rounded bg-goldfinch-gold px-5 text-sm font-bold text-heading transition hover:brightness-105 disabled:opacity-60" disabled={saving} on:click={save}>
@@ -502,5 +540,78 @@
         </button>
       </div>
     </div>
-  </section>
+  </div>
 {/if}
+
+
+<style>
+  .package-message { margin-block:16px; padding:14px 18px; border:1px solid rgb(var(--c-forest)/.2); border-radius:10px; background:rgb(var(--c-forest)/.04); color:rgb(var(--c-forest)); font-size:14px; }
+  .package-list-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-block:24px; }
+  .package-list-summary > div { padding:22px 24px; border:1px solid rgb(var(--c-ink)/.08); border-radius:12px; background:rgb(var(--c-surface)); }
+  .package-list-summary span { display:block; font-size:10px; letter-spacing:.12em; font-weight:700; color:rgb(var(--c-ink)/.5); }
+  .package-list-summary strong { display:block; margin-top:10px; font-size:30px; font-weight:600; letter-spacing:-.04em; color:rgb(var(--c-heading)); }
+  .package-list-summary p { margin-top:3px; font-size:12px; color:rgb(var(--c-ink)/.55); }
+  .package-library { background:rgb(var(--c-surface)); border:1px solid rgb(var(--c-ink)/.1); border-radius:14px; }
+  .package-library-toolbar { display:flex; flex-wrap:wrap; gap:12px; align-items:center; padding:20px; }
+  .package-search { display:flex; align-items:center; flex:1; min-width:180px; gap:10px; color:rgb(var(--c-ink)/.5); }
+  .package-search input { width:100%; min-width:0; height:44px; background:transparent; outline:0; font-size:14px; color:rgb(var(--c-ink)); }
+  .package-search:focus-within { color:rgb(var(--c-forest)); }
+  .package-filter select { min-height:42px; border:1px solid rgb(var(--c-ink)/.12); border-radius:7px; padding:8px 30px 8px 12px; font-size:13px; background:rgb(var(--c-surface)); }
+  .package-primary { display:inline-flex; align-items:center; justify-content:center; min-height:44px; gap:8px; padding:10px 18px; border-radius:8px; background:rgb(var(--c-forest)); color:white; font-size:13px; font-weight:600; }
+  .package-table-scroll { overflow-x:auto; padding-bottom:70px; margin-bottom:-70px; }
+  .package-library-table { width:100%; min-width:640px; border-collapse:collapse; text-align:left; }
+  .package-library-table th { padding:13px 20px; border-block:1px solid rgb(var(--c-ink)/.06); background:rgb(var(--c-canvas)/.5); color:rgb(var(--c-ink)/.45); font-size:10px; letter-spacing:.1em; text-transform:uppercase; }
+  .package-library-table td { padding:22px 20px; border-bottom:1px solid rgb(var(--c-ink)/.06); }
+  .package-row-title { display:flex; gap:14px; align-items:center; }
+  .package-row-title img,.package-thumbnail { width:66px; height:54px; flex-shrink:0; border-radius:8px; object-fit:cover; }
+  .package-thumbnail { display:grid; place-items:center; background:rgb(var(--c-sand)/.5); color:rgb(var(--c-forest)); }
+  .package-row-title strong { display:block; max-width:42ch; font-size:14px; font-weight:600; line-height:1.5; color:rgb(var(--c-heading)); overflow-wrap:anywhere; }
+  .package-row-title div > span { display:block; margin-top:4px; font-size:11px; line-height:1.6; color:rgb(var(--c-ink)/.45); overflow-wrap:anywhere; }
+  .package-status { display:inline-flex; align-items:center; gap:6px; padding:5px 9px; border-radius:5px; background:rgb(var(--c-ink)/.06); color:rgb(var(--c-ink)/.65); font-size:11px; font-weight:600; text-transform:capitalize; white-space:nowrap; }
+  .package-status::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+  .package-status.published { background:#eaf1e8; color:#416447; }
+  .package-status.draft { background:#faf1dd; color:#8a682d; }
+  .package-seo { display:block; margin-top:6px; font-size:10px; color:rgb(var(--c-ink)/.45); white-space:nowrap; }
+  .package-section-count { font-size:12px; color:rgb(var(--c-ink)/.6); white-space:nowrap; }
+  .package-row-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; }
+  .package-row-actions > a, .package-more summary { display:grid; place-items:center; width:34px; min-height:36px; border-radius:6px; color:rgb(var(--c-ink)/.55); cursor:pointer; list-style:none; }
+  .package-more summary::-webkit-details-marker { display:none; }
+  .package-edit { display:flex; align-items:center; gap:6px; min-height:36px; padding:8px 12px; border:1px solid rgb(var(--c-ink)/.15); border-radius:7px; font-size:12px; font-weight:600; color:rgb(var(--c-heading)); }
+  .package-more { position:relative; }
+  .package-more > div { position:absolute; right:0; top:100%; z-index:20; width:150px; padding:6px; border:1px solid rgb(var(--c-ink)/.12); border-radius:8px; background:white; box-shadow:0 8px 24px #00000012; }
+  .package-more button { width:100%; padding:10px; text-align:left; color:#a23131; font-size:12px; }
+  .package-library-footer { padding:18px 20px; font-size:11px; line-height:1.6; color:rgb(var(--c-ink)/.45); }
+  .package-list-empty { display:grid; justify-items:center; gap:12px; padding:60px 24px; text-align:center; color:rgb(var(--c-ink)/.6); font-size:14px; }
+  .package-list-empty h2 { font-size:20px; color:rgb(var(--c-heading)); font-weight:600; }
+  .package-list-empty p { max-width:55ch; line-height:1.8; }
+  .package-workspace { position:fixed; inset:0; z-index:65; display:flex; flex-direction:column; overflow:hidden; background:#f7f8f5; font-family:inherit; }
+  .package-workspace-header { display:flex; flex-shrink:0; align-items:center; gap:24px; padding:20px 32px; border-bottom:1px solid rgb(var(--c-ink)/.1); background:rgb(var(--c-surface)); }
+  .workspace-back { display:flex; flex-shrink:0; align-items:center; gap:8px; min-height:40px; padding-right:24px; border-right:1px solid rgb(var(--c-ink)/.12); color:rgb(var(--c-ink)/.65); font-size:13px; font-weight:600; }
+  .workspace-heading { flex:1; min-width:0; }
+  .workspace-heading > span { display:block; font-size:9px; font-weight:700; letter-spacing:.12em; color:rgb(var(--c-ink)/.45); }
+  .workspace-heading h2 { margin-top:5px; font-size:20px; font-weight:600; color:rgb(var(--c-heading)); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .package-workspace-content { width:100%; max-width:1480px; margin:0 auto; flex:1; min-height:0; overflow-y:auto; padding:0 40px 40px; }
+  .workspace-tabs { position:sticky; top:0; z-index:25; display:flex; gap:8px; overflow-x:auto; padding:20px 0; background:#f7f8f5; border-bottom:1px solid rgb(var(--c-ink)/.08); }
+  .workspace-step { display:grid; place-items:center; height:21px; width:21px; border-radius:50%; border:1px solid currentColor; font-size:10px; opacity:.75; }
+  .workspace-tabs :global(svg) { display:none; }
+  .package-workspace-footer { display:flex; flex-shrink:0; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding:16px 32px; border-top:1px solid rgb(var(--c-ink)/.1); background:rgb(var(--c-surface)); }
+  .package-workspace-footer > p { flex:1; min-width:180px; }
+  button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible { outline:2px solid rgb(var(--c-forest)); outline-offset:3px; }
+  @media(max-width:767px) {
+    .package-list-summary { gap:8px; margin-block:16px; }
+    .package-list-summary > div { padding:16px 12px; }
+    .package-list-summary span { font-size:8px; letter-spacing:.07em; }
+    .package-list-summary strong { font-size:25px; }
+    .package-list-summary p { font-size:10px; line-height:1.5; }
+    .package-library-toolbar { padding:14px; gap:10px; }
+    .package-search { flex-basis:100%; }
+    .package-filter { flex:1; }.package-filter select { width:100%; }
+    .package-workspace-header { gap:12px; padding:14px 16px; }
+    .workspace-back { padding-right:12px; }.workspace-back span { display:none; }
+    .workspace-heading h2 { font-size:16px; }.workspace-heading > span { font-size:8px; }
+    .package-workspace-content { padding:0 16px 24px; }
+    .workspace-tabs { padding-block:14px; gap:4px; }.workspace-tabs button { padding:10px 12px; font-size:12px; }
+    .workspace-step { display:none; }
+    .package-workspace-footer { padding:12px 16px; }.package-workspace-footer > p { flex-basis:100%; font-size:11px; }
+  }
+</style>

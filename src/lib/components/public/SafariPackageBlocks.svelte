@@ -20,7 +20,7 @@
   import SafariRouteOptions from './SafariRouteOptions.svelte';
   import StylePlannerBand from './StylePlannerBand.svelte';
   import TourCard from './TourCard.svelte';
-  import { arr, lines, rows, str, type Block } from '$lib/safariPackageBlocks';
+  import { arr, lines, rows, str, routeTourSlugs, type Block } from '$lib/safariPackageBlocks';
   import { advisorNoteEnabled, advisorNoteFromBlock, type AdvisorNoteSection } from '$lib/advisorNote';
   import type { FAQ, ItineraryDay, Lodge, Tour } from '$lib/types';
 
@@ -48,13 +48,13 @@
   export let homeSections: Record<string, AdvisorNoteSection | undefined> = {};
 
   /** Alternating bands stop a long page reading as one flat slab. */
-  const surface = (index: number) => (index % 2 === 0 ? 'bg-surface' : 'bg-canvas');
+  const surface = (index: number) => ['prose', 'expectations', 'advisor'].includes(blocks[index]?.type) ? 'bg-canvas' : 'bg-surface';
 
   /** The design's own shell: 1180px, not the site-wide container. */
-  const SHELL = 'mx-auto max-w-[1180px] px-4 md:px-6';
-  const SECTION = 'package-section scroll-mt-24 py-9 md:py-16';
+  const SHELL = 'package-shell mx-auto w-full max-w-[1200px] px-4 md:px-8';
+  const SECTION = 'package-section scroll-mt-24 py-12 md:py-20';
   const NAV_LABELS: Record<string, string> = { prose: 'Overview', highlights: 'Highlights', routes: 'Routes', itinerary: 'Itinerary', tiers: 'Prices', priceguide: 'Prices', inclusions: 'Included', gallery: 'Gallery', faq: 'FAQs' };
-  const HEADING = 'font-serif mt-3 max-w-[820px] text-[26px] font-semibold leading-[1.15] tracking-tight text-heading md:text-[34px]';
+  const HEADING = 'package-section-title font-serif mt-3 max-w-[820px] text-[28px] font-semibold leading-[1.18] tracking-tight text-heading md:text-[38px]';
   const INTRO = 'mt-4 max-w-3xl text-[15.5px] leading-relaxed text-ink/70';
   const GOLD =
     'inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-6 text-[14px] font-bold text-heading transition hover:brightness-105';
@@ -102,7 +102,7 @@
     {@const items = rows<{ label?: string; value?: string; icon?: string }>(block.items).filter((item) => str(item.value).trim())}
     {#if items.length}
       <section class="package-facts bg-[#272B22]">
-        <div class={`${SHELL} grid grid-cols-2 gap-x-5 gap-y-5 py-6 md:gap-x-8 sm:grid-cols-2 lg:grid-cols-5`}>
+        <div class={`${SHELL} package-facts-grid`}>
           {#each items as item, i (i)}
             {@const Icon = FACT_ICON[str(item.icon).trim().toLowerCase()]}
             <div class="package-fact flex min-w-0 items-start gap-2.5">
@@ -132,13 +132,13 @@
             </div>
           {/if}
           {#if title}<h2 class={HEADING}>{title}</h2>{/if}
-          <div class={hasAside ? 'mt-5 grid gap-8 lg:grid-cols-12' : ''}>
+          <div class={hasAside ? 'package-overview-grid mt-8 grid gap-8 lg:grid-cols-12' : ''}>
             <RichText
               value={str(block.body)}
-              className={`space-y-4 text-[15px] leading-8 text-ink/72 md:text-base ${hasAside ? 'lg:col-span-7' : 'mt-5'}`}
+              className={`package-overview-copy space-y-4 text-[15px] leading-8 text-ink/72 md:text-base ${hasAside ? 'lg:col-span-7' : 'mt-5'}`}
             />
             {#if hasAside}
-              <div class="lg:col-span-5">
+              <aside class="package-overview-note lg:col-span-5">
                 <div class="package-card-content rounded-[12px] border border-clay/20 bg-canvas p-6">
                   <div class="inline-flex items-center gap-2">
                     <span class="h-px w-6 bg-clay" aria-hidden="true"></span>
@@ -146,7 +146,7 @@
                   </div>
                   <p class="font-serif mt-3 text-[19px] leading-[1.35] text-heading">{asideBody}</p>
                 </div>
-              </div>
+              </aside>
             {/if}
           </div>
         </div>
@@ -458,7 +458,7 @@
     {/if}
 
   {:else if block.type === 'routes'}
-    {@const routeRows = rows<Record<string, unknown>>(block.routes)}
+    {@const routeRows = rows<Record<string, unknown>>(block.routes).filter((route) => routeTourSlugs(route).some((slug) => tours.some((tour) => tour.slug === slug)))}
     {#if routeRows.length}
       <section id={index === blocks.findIndex((item) => item.type === 'routes') ? 'route-options' : `route-options-${index}`} data-package-label={$t('ui.routes')} class={`scroll-mt-20 ${surface(index)} ${SECTION}`}>
         <div class={SHELL}>
@@ -470,7 +470,7 @@
           {/if}
           {#if title}<h2 class={HEADING}>{title}</h2>{/if}
           {#if intro}<p class={INTRO}>{intro}</p>{/if}
-          <SafariRouteOptions routes={routeRows} {tours} {lodges} {formHref} ctaLabel={str(block.cta_label) || 'Send request for this route'} />
+          <SafariRouteOptions idPrefix={`package-routes-${index}`} routes={routeRows} {tours} {lodges} {formHref} ctaLabel={str(block.cta_label) || 'Send request for this route'} />
         </div>
       </section>
     {/if}
@@ -605,11 +605,30 @@
 {/each}
 
 <style>
+  .package-section { overflow-wrap:anywhere; }
+  .package-section :global(*) { min-width:0; }
+  .package-section-title { text-wrap:balance; }
+  .package-facts-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr)); gap:24px; padding-block:28px; }
+  .package-fact { overflow-wrap:anywhere; }
+  .package-overview-copy { max-width:70ch; }
+  .package-overview-note > div { position:sticky; top:calc(var(--nav-h,70px) + 92px); background:rgb(var(--c-surface)/.65); border:0; border-left:3px solid rgb(var(--c-goldfinch-gold)); padding:26px; border-radius:0 10px 10px 0; }
+  .package-overview-note p { font-size:19px; line-height:1.6; }
+  /* Pasted content keeps its words and semantics; the template owns its type scale. */
+  .package-section :global(.rich) { overflow-wrap:anywhere; line-height:1.8; }
+  .package-section :global(.rich h2), .package-section :global(.rich h3), .package-section :global(.rich h4) { font-size:1.15em; line-height:1.4; margin-top:1.6em; }
+  .package-section :global(.rich p:empty) { display:none; }
+  .package-section :global(.rich br + br) { display:none; }
+  .package-section :global(.rich ul), .package-section :global(.rich ol) { padding-left:1.25em; }
+  .package-section :global(.rich > :first-child) { margin-top:0; }
+  .package-section :global(.rich > :last-child) { margin-bottom:0; }
+  .package-section :global(img) { max-width:100%; }
+
   .package-mobile-faq summary::-webkit-details-marker { display: none; }
   .package-mobile-faq details[open] :global(summary svg) { transform: rotate(180deg); }
   .package-mobile-faq summary:focus-visible { outline: 2px solid rgb(var(--c-clay)); outline-offset: 4px; border-radius: 8px; }
   @media (max-width: 767px) {
-    .package-section { overflow-wrap: anywhere; }
+    .package-facts-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px 16px; }
+    .package-overview-note > div { position:static; }
     /* Keep one 16px page gutter and at most one padded card on phones. */
     .package-card-content { padding: 16px; }
     .package-expectations { padding: 0; border-radius: 0; background: transparent; }

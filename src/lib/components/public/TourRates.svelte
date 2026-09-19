@@ -22,6 +22,8 @@
   export let tour: Tour | null = null;
   /** The line under the tables. Off where the page says it itself. */
   export let showFootnote = true;
+  /** Rate cards also fit narrow desktop sidebars without hiding any values. */
+  export let compact = false;
 
   const PRICE_TYPE_LABELS: Record<string, string> = {
     per_person: 'Per person',
@@ -118,6 +120,21 @@
 </script>
 
 {#if seasons.length}
+  {#if compact}
+    <div class="compact-seasons">
+      {#each seasons as season, index}
+        <details class="compact-season" open={index === 0}>
+          <summary>{season.season_name}</summary>
+          <dl>
+            {#each groupColumns as group}
+              {@const rate = groupRate(season, groupKey(group))}
+              <div><dt>{groupLabel(group)}</dt><dd>{rate.label}{#if rate.amount} <strong>{rate.amount}</strong>{/if}</dd></div>
+            {/each}
+          </dl>
+        </details>
+      {/each}
+    </div>
+  {:else}
   <div class="mt-6 overflow-x-auto rounded-[10px] border border-ink/10 bg-surface shadow-sm">
     <table class="w-full min-w-[820px] border-collapse text-[14px]">
       <thead>
@@ -146,18 +163,19 @@
       </tbody>
     </table>
   </div>
+  {/if}
   {#if showFootnote}
     <p class="mt-4 text-[13px] leading-6 text-ink/55">
       Prices are {normaliseLabel(seasons[0].pricing_basis).toLowerCase()} in {seasons[0].currency} and based on shared
       double/twin accommodation unless stated otherwise. Final pricing depends on travel dates, lodge availability,
       group size and route adjustments.
-      <span class="md:hidden">{$t('ui.swipe_horizontally_to_compare_party')}</span>
+      {#if !compact}<span class="md:hidden">{$t('ui.swipe_horizontally_to_compare_party')}</span>{/if}
     </p>
   {/if}
 {:else}
   <!-- One card per rate on a phone: a three-column table at 375px is a
        horizontal scroll for three words. -->
-  <div class="tour-rates-mobile mt-5 grid gap-2.5 md:hidden">
+  <div class={`tour-rates-mobile mt-5 grid gap-2.5 ${compact ? '' : 'md:hidden'}`}>
     {#each rows as row}
       <article class="rounded-[8px] border border-ink/10 bg-surface p-4">
         <div class="flex min-w-0 items-start justify-between gap-4">
@@ -171,6 +189,7 @@
     {/each}
   </div>
 
+  {#if !compact}
   <div class="tour-rates-table mt-6 hidden overflow-hidden rounded-t-[10px] border border-ink/10 md:block">
     <table class="w-full border-collapse text-[14px]">
       <thead>
@@ -191,4 +210,18 @@
       </tbody>
     </table>
   </div>
+  {/if}
 {/if}
+
+<style>
+  .compact-seasons { display:grid; gap:10px; margin-top:20px; }
+  .compact-season { overflow:hidden; border:1px solid rgb(var(--c-ink)/.1); border-radius:8px; background:rgb(var(--c-surface)); }
+  .compact-season summary { padding:13px 15px; cursor:pointer; background:rgb(var(--c-deep-green)); color:rgb(var(--c-surface)); font-size:12px; font-weight:600; line-height:1.5; }
+  .compact-season dl { padding:4px 15px; }
+  .compact-season dl > div { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; padding:10px 0; font-size:12px; line-height:1.5; }
+  .compact-season dl > div + div { border-top:1px solid rgb(var(--c-ink)/.08); }
+  .compact-season dt { font-weight:600; color:rgb(var(--c-heading)); }
+  .compact-season dd { display:flex; flex-wrap:wrap; gap:4px; color:rgb(var(--c-ink)/.65); }
+  .compact-season dd strong { color:rgb(var(--c-forest)); font-size:14px; }
+  .compact-season summary:focus-visible { outline:2px solid rgb(var(--c-goldfinch-gold)); outline-offset:-3px; }
+</style>

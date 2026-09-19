@@ -77,7 +77,13 @@
 </aside>
 
 <style>
-  .package-navigation, .package-dock { display: none; }
+  .package-dock { display:none; }
+  .package-navigation { position:sticky; top:var(--nav-h,70px); z-index:30; border-bottom:1px solid rgb(var(--c-ink)/.1); background:rgb(var(--c-surface)/.97); }
+  .package-navigation.empty { display:none; }
+  .package-navigation-track { display:flex; gap:28px; overflow-x:auto; max-width:1200px; margin-inline:auto; padding:0 32px; }
+  .package-navigation a { flex-shrink:0; display:flex; align-items:center; min-height:54px; border-bottom:2px solid transparent; font-size:13px; font-weight:600; color:rgb(var(--c-ink)/.6); }
+  .package-navigation a[aria-current] { color:rgb(var(--c-forest)); border-bottom-color:rgb(var(--c-clay)); }
+
   @media (max-width: 767px) {
     .package-navigation {
       position: sticky;

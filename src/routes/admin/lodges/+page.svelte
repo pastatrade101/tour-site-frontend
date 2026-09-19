@@ -319,7 +319,12 @@
   const fmt = (v?: string) => v ? new Intl.DateTimeFormat('en', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(v)) : '-';
   const price = (l: Lodge) => l.price_per_night_from != null ? `${l.currency ?? 'USD'} ${Math.round(l.price_per_night_from).toLocaleString()}/night` : '-';
 
-  onMount(() => { load(); loadDestinations(); });
+  onMount(() => {
+    void load();
+    void loadDestinations();
+    const editSlug = new URLSearchParams(window.location.search).get('edit');
+    if (editSlug) void api.lodges.get(editSlug).then((response) => openEdit(response.data as Lodge)).catch(() => showToast('Unable to open this property. Find it in the list below.', 'error'));
+  });
 </script>
 
 <ToastStack {toasts} on:dismiss={dismissToast} />
