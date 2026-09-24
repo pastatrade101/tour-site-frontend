@@ -18,6 +18,8 @@
    * cannot drift, and a route whose tour is unpublished drops out rather than
    * rendering a broken tab.
    */
+  import { getContext } from 'svelte';
+  import type { Writable } from 'svelte/store';
   import { ArrowRight, Check, Tent } from '@lucide/svelte';
   import Img from './Img.svelte';
   import ItineraryDays from './ItineraryDays.svelte';
@@ -36,11 +38,25 @@
   export let routes: RouteRow[] = [];
   export let tours: Tour[] = [];
   export let lodges: Lodge[] = [];
-  export let ctaLabel = 'Send request for this route';
+  /** Empty uses the translated default. */
+  export let ctaLabel = '';
   export let formHref = '#lead-form';
   export let idPrefix = 'package-routes';
 
   const tourBySlug = (slug: string, available: Tour[]) => available.find((tour) => tour.slug === slug);
+
+  /**
+   * Comfort tabs read in the traveller's language. The enum is what the CMS
+   * stores; anything outside these four keeps the old title-cased form.
+   */
+  const LEVEL_KEYS: Record<string, string> = {
+    BUDGET: 'tier.budget',
+    MID_RANGE: 'tier.mid_range',
+    LUXURY: 'tier.luxury',
+    PREMIUM_LUXURY: 'tier.premium_luxury'
+  };
+  const levelLabel = (level: string, translate: (key: string) => string) =>
+    LEVEL_KEYS[level.toUpperCase()] ? translate(LEVEL_KEYS[level.toUpperCase()]) : enumLabel(level);
 
   const selectedLodges = (ids: unknown, available: Lodge[]) =>
     (Array.isArray(ids) ? ids.map(String) : []).map((id) => available.find((lodge) => lodge.id === id)).filter((lodge): lodge is Lodge => Boolean(lodge));
@@ -51,7 +67,7 @@
       const selected = Array.isArray(route.comforts) ? (route.comforts as Record<string, unknown>[]) : [];
       const comfortSource = selected.length
         ? selected.map((entry) => ({
-            label: str(entry.accommodation_level) ? enumLabel(str(entry.accommodation_level)) : str(entry.label) || 'Safari stay',
+            label: str(entry.accommodation_level) ? levelLabel(str(entry.accommodation_level), $t) : str(entry.label) || $t('ui.safari_stay'),
             slug: str(entry.tour_slug),
             description: str(entry.description),
             lodges: selectedLodges(entry.accommodation_ids, lodges)
@@ -73,6 +89,19 @@
     .filter((route) => route.comfort.length);
 
   let activeRoute = 0;
+
+  /**
+   * The page's quote form offers the same routes. When a traveller opens a
+   * tab, or follows one of this panel's "request" buttons, the form is told —
+   * so it is already on that option when they reach it. Only an actual choice
+   * is passed on: the first tab being open by default is not the traveller
+   * picking it.
+   */
+  const pickedRoute = getContext<Writable<string> | undefined>('package-active-route');
+  const pickRoute = (index: number) => {
+    activeRoute = index;
+    pickedRoute?.set(resolved[index]?.tab ?? '');
+  };
   /** A single comfort choice keeps the price, accommodation and itinerary in sync. */
   let priceLevel: number[] = [];
 
@@ -97,13 +126,13 @@
   /** What the rates table does not say. An absent fact is left out, not filled in. */
   $: priceFacts = [
     priced?.tour.duration_days
-      ? `${priced.tour.duration_days} day${priced.tour.duration_days === 1 ? '' : 's'}${
+      ? `${priced.tour.duration_days} ${$t(priced.tour.duration_days === 1 ? 'label.day' : 'label.days')}${
           priced.tour.duration_nights
-            ? `, ${priced.tour.duration_nights} night${priced.tour.duration_nights === 1 ? '' : 's'}`
+            ? `, ${priced.tour.duration_nights} ${$t(priced.tour.duration_nights === 1 ? 'label.night' : 'label.nights')}`
             : ''
         }`
       : '',
-    priced?.tour.start_location ? `Starts ${priced.tour.start_location}` : '',
+    priced?.tour.start_location ? $t('ui.starts_in_place').replace('{place}', priced.tour.start_location) : '',
     priced?.tour.group_size ?? '',
     priced?.tour.difficulty_level ?? ''
   ].filter(Boolean) as string[];
@@ -164,11 +193,11 @@
         on:keydown={(event) => {
           const next = event.key === 'ArrowRight' ? (i + 1) % resolved.length : event.key === 'ArrowLeft' ? (i - 1 + resolved.length) % resolved.length : event.key === 'Home' ? 0 : event.key === 'End' ? resolved.length - 1 : -1;
           if (next < 0) return;
-          event.preventDefault(); activeRoute = next;
+          event.preventDefault(); pickRoute(next);
           document.getElementById(`${idPrefix}-tab-${next}`)?.focus();
         }}
         aria-selected={i === activeRoute}
-        on:click={() => (activeRoute = i)}
+        on:click={() => pickRoute(i)}
       >
         <!-- One line, the editor's own words. The counter and the tour title
              underneath it said the same thing twice at two sizes. -->
@@ -208,10 +237,10 @@
           <p class="mt-3 max-w-[880px] text-[15px] leading-relaxed text-ink/70">{route.note}</p>
         {/if}
         {#if route.bestFor}
-          <p class="mt-5 text-[14.5px] font-semibold text-heading">Best for: {route.bestFor}</p>
+          <p class="mt-5 text-[14.5px] font-semibold text-heading">{$t('ui.best_for')}: {route.bestFor}</p>
         {/if}
-        <a class={`mt-6 ${GOLD}`} href={formHref}>
-          {ctaLabel}
+        <a class={`mt-6 ${GOLD}`} href={formHref} on:click={() => pickRoute(activeRoute)}>
+          {ctaLabel || $t('ui.send_request_for_this_route')}
           <ArrowRight size={16} />
         </a>
 
@@ -330,7 +359,7 @@
               {/each}
             </div>
             <p class="mt-5 text-[13px] italic leading-relaxed text-ink/55">{$t('ui.final_price_is_confirmed_after')}</p>
-            <a class={`mt-5 ${GOLD}`} href={formHref}>{$t('ui.check_this_price_for_my')}<ArrowRight size={16} />
+            <a class={`mt-5 ${GOLD}`} href={formHref} on:click={() => pickRoute(activeRoute)}>{$t('ui.check_this_price_for_my')}<ArrowRight size={16} />
             </a>
           </div>
         </aside>
@@ -343,7 +372,7 @@
             <h3 class="font-serif text-[19px] font-semibold text-heading md:text-[22px]">{$t('ui.want_this_route_checked_for')}</h3>
             <p class={`mt-2 ${BODY}`}>{$t('ui.share_your_preferred_start_date')}</p>
           </div>
-          <a class={`shrink-0 ${GOLD}`} href={formHref}>{$t('ui.send_request')}<ArrowRight size={16} />
+          <a class={`shrink-0 ${GOLD}`} href={formHref} on:click={() => pickRoute(activeRoute)}>{$t('ui.send_request')}<ArrowRight size={16} />
           </a>
         </div>
       </div>

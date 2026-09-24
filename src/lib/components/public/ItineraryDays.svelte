@@ -56,21 +56,21 @@
 
   $: if (autoloadMedia) void hydrateMedia(days ?? []);
 
-  const dayImage = (day: ItineraryDay): MediaImage | null => {
-    if (day.image_url) return { src: day.image_url, caption: `Day ${day.day_number}: ${day.title}`, record: day as unknown as Record<string, unknown>, fields: ['image_url'] };
+  $: dayImage = (day: ItineraryDay): MediaImage | null => {
+    if (day.image_url) return { src: day.image_url, caption: `${$t('ui.day')} ${day.day_number}: ${day.title}`, record: day as unknown as Record<string, unknown>, fields: ['image_url'] };
     if (day.lodge?.hero_image_url) return { src: day.lodge.hero_image_url, caption: day.lodge.name, record: day.lodge as unknown as Record<string, unknown>, fields: ['hero_image_url', 'image_url', 'cover_image_url'] };
     if (day.lodge?.image_url) return { src: day.lodge.image_url, caption: day.lodge.name, record: day.lodge as unknown as Record<string, unknown>, fields: ['hero_image_url', 'image_url', 'cover_image_url'] };
     return null;
   };
 
   /** Only the facts a day actually carries. An absent one is left out, not filled in. */
-  const detailsForDay = (day: ItineraryDay): FactCard[] => {
+  $: detailsForDay = (day: ItineraryDay): FactCard[] => {
     const stay = day.lodge?.name || day.accommodation || '';
     return [
-      day.title ? { icon: MapPin, label: 'Main stop', value: day.title } : null,
-      stay ? { icon: BedDouble, label: 'Accommodation', value: stay } : null,
-      day.meals ? { icon: Utensils, label: 'Meals', value: day.meals } : null,
-      day.activities ? { icon: Compass, label: 'Activities', value: day.activities } : null
+      day.title ? { icon: MapPin, label: $t('ui.main_stop'), value: day.title } : null,
+      stay ? { icon: BedDouble, label: $t('nav.accommodation'), value: stay } : null,
+      day.meals ? { icon: Utensils, label: $t('ui.meals'), value: day.meals } : null,
+      day.activities ? { icon: Compass, label: $t('ui.activities'), value: day.activities } : null
     ].filter(Boolean) as FactCard[];
   };
 
@@ -128,7 +128,7 @@
             {day.day_number}
           </span>
           <span class="min-w-0 flex-1">
-            <span class="block text-[10.5px] font-bold uppercase tracking-[0.14em] text-clay/80">Day {day.day_number}</span>
+            <span class="block text-[10.5px] font-bold uppercase tracking-[0.14em] text-clay/80">{$t('ui.day')} {day.day_number}</span>
             <span class="mt-0.5 block font-serif text-[16.5px] font-bold leading-snug text-heading md:text-[18px]">{day.title}</span>
             <span class="mt-0.5 block text-[12.5px] text-ink/55">
               {[day.lodge?.name || day.accommodation || '', day.meals || ''].filter(Boolean).join(' / ')}
@@ -172,7 +172,7 @@
 
           {#if day.lodge}
             {@const stay = day.lodge}
-            <StayCard {stay} extra={media[stayKey(stay)] ?? []} label={`Accommodation - ${stay.name}`} />
+            <StayCard {stay} extra={media[stayKey(stay)] ?? []} label={`${$t('nav.accommodation')} - ${stay.name}`} />
           {/if}
         </div>
       </details>

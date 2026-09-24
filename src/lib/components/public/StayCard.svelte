@@ -20,13 +20,25 @@
   /** A larger, editorial gallery for the package's featured properties. */
   export let featured = false;
 
-  const LODGE_TYPES: Record<string, string> = {
-    tented_camp: 'Tented camp',
-    mobile_camp: 'Mobile camp',
-    lodge: 'Lodge',
-    hotel: 'Hotel',
-    treehouse: 'Treehouse'
+  /** Dictionary keys for the property type, by the value the CMS stores. */
+  const LODGE_TYPE_KEYS: Record<string, string> = {
+    tented_camp: 'ui.tented_camp',
+    mobile_camp: 'ui.mobile_camp',
+    lodge: 'ui.lodge',
+    hotel: 'ui.hotel',
+    treehouse: 'ui.treehouse'
   };
+  $: lodgeType = LODGE_TYPE_KEYS[String(stay.lodge_type)] ? $t(LODGE_TYPE_KEYS[String(stay.lodge_type)]) : '';
+
+  /** The comfort level in the reader's language; an unknown level keeps its CMS form. */
+  const LEVEL_KEYS: Record<string, string> = {
+    BUDGET: 'tier.budget',
+    MID_RANGE: 'tier.mid_range',
+    LUXURY: 'tier.luxury',
+    PREMIUM_LUXURY: 'tier.premium_luxury'
+  };
+  $: levelLabel = (level: string) =>
+    LEVEL_KEYS[level.toUpperCase()] ? $t(LEVEL_KEYS[level.toUpperCase()]) : normaliseLabel(level.toLowerCase());
 
   const normaliseLabel = (value: string | null | undefined): string =>
     String(value ?? '')
@@ -37,8 +49,8 @@
   $: gallery = galleryForStay(stay, extra);
   $: shown = gallery.slice(0, 4);
   $: summary = [
-    LODGE_TYPES[String(stay.lodge_type)] ?? '',
-    stay.accommodation_level ? normaliseLabel(stay.accommodation_level) : '',
+    lodgeType,
+    stay.accommodation_level ? levelLabel(stay.accommodation_level) : '',
     stay.destinations?.name ?? ''
   ]
     .filter(Boolean)
@@ -71,7 +83,7 @@
             />
             {#if imageIndex === 3 && gallery.length > 4}
               <div class="pointer-events-none absolute inset-0 grid place-items-center bg-heading/55 px-2 text-center text-xs font-extrabold tracking-wide text-white backdrop-blur-[1px] sm:text-sm">
-                +{gallery.length - 4} {gallery.length - 4 === 1 ? 'photo' : 'photos'}
+                {$t(gallery.length - 4 === 1 ? 'ui.n_more_photo' : 'ui.n_more_photos').replace('{n}', String(gallery.length - 4))}
               </div>
             {/if}
           </div>
@@ -81,11 +93,11 @@
     <div class="p-4 md:p-5">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div class="min-w-0">
-          {#if featured && stay.accommodation_level}<p class="stay-category">{normaliseLabel(stay.accommodation_level.toLowerCase())}</p>{/if}
+          {#if featured && stay.accommodation_level}<p class="stay-category">{levelLabel(stay.accommodation_level)}</p>{/if}
           <h4 class="font-serif text-[19px] font-semibold leading-snug text-heading">{stay.name}</h4>
           {#if featured}
             {#if stay.destinations?.name}<p class="stay-location"><MapPin size={13} />{stay.destinations.name}</p>{/if}
-            {#if LODGE_TYPES[String(stay.lodge_type)]}<p class="mt-1 text-xs text-ink/50">{LODGE_TYPES[String(stay.lodge_type)]}</p>{/if}
+            {#if lodgeType}<p class="mt-1 text-xs text-ink/50">{lodgeType}</p>{/if}
           {:else if summary}<p class="mt-1 text-[13px] font-medium text-ink/60">{summary}</p>{/if}
         </div>
         {#if stay.slug}

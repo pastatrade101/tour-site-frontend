@@ -20,7 +20,9 @@
   import SafariRouteOptions from './SafariRouteOptions.svelte';
   import StylePlannerBand from './StylePlannerBand.svelte';
   import TourCard from './TourCard.svelte';
-  import { arr, lines, rows, str, routeTourSlugs, type Block } from '$lib/safariPackageBlocks';
+  import { setContext } from 'svelte';
+  import { writable } from 'svelte/store';
+  import { arr, lines, rows, str, routeDisplayName, routeTourSlugs, type Block } from '$lib/safariPackageBlocks';
   import { advisorNoteEnabled, advisorNoteFromBlock, type AdvisorNoteSection } from '$lib/advisorNote';
   import type { FAQ, ItineraryDay, Lodge, Tour } from '$lib/types';
 
@@ -61,11 +63,61 @@
   /** The design's own shell: 1180px, not the site-wide container. */
   const SHELL = 'package-shell mx-auto w-full max-w-[1200px] px-4 md:px-8';
   const SECTION = 'package-section scroll-mt-24 py-12 md:py-20';
-  const NAV_LABELS: Record<string, string> = { prose: 'Overview', highlights: 'Highlights', routes: 'Routes', itinerary: 'Itinerary', tiers: 'Prices', priceguide: 'Prices', inclusions: 'Included', gallery: 'Gallery', faq: 'FAQs' };
+  /**
+   * The names on the sticky section tabs. Reactive, because they are the
+   * reader's language — PackageNavigation reads them off the sections.
+   */
+  $: NAV_LABELS = {
+    prose: $t('ui.overview'),
+    highlights: $t('label.highlights'),
+    routes: $t('ui.routes'),
+    itinerary: $t('ui.itinerary'),
+    tiers: $t('ui.prices'),
+    priceguide: $t('ui.prices'),
+    inclusions: $t('ui.included'),
+    gallery: $t('nav.gallery'),
+    faq: $t('ui.faqs')
+  } as Record<string, string>;
   const HEADING = 'package-section-title font-serif mt-3 max-w-[820px] text-[28px] font-semibold leading-[1.18] tracking-tight text-heading md:text-[38px]';
   const INTRO = 'mt-4 max-w-3xl text-[15.5px] leading-relaxed text-ink/70';
   const GOLD =
     'inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-goldfinch-gold px-6 text-[14px] font-bold text-heading transition hover:brightness-105';
+
+  /**
+   * The package's route options for the quote form, named exactly as the route
+   * tabs name them — the same function, the same fallback — so the form never
+   * offers a choice the page above did not show.
+   */
+  $: routeOptions = (() => {
+    const block = blocks.find((item) => item?.type === 'routes');
+    if (!block) return [];
+    return rows<Record<string, unknown>>(block.routes)
+      .map((route) => {
+        const tour = routeTourSlugs(route)
+          .map((slug) => tours.find((candidate) => candidate.slug === slug))
+          .find((candidate): candidate is Tour => Boolean(candidate));
+        return tour
+          ? {
+              label: routeDisplayName(route.tab, tour.title),
+              tourTitle: tour.title,
+              tourSlug: tour.slug,
+              // Lets the form fill "Number of days" once a route is chosen.
+              tourDays: tour.duration_days ?? null
+            }
+          : null;
+      })
+      .filter((option): option is { label: string; tourTitle: string; tourSlug: string; tourDays: number | null } =>
+        Boolean(option?.label)
+      );
+  })();
+
+  /**
+   * The route tab a traveller last opened, written by SafariRouteOptions and
+   * read by the quote form. Context rather than a module store: a store at
+   * module level is shared by every request the server renders at once.
+   */
+  const activeRouteLabel = writable('');
+  setContext('package-active-route', activeRouteLabel);
 
   /** Which enquiry block owns the #lead-form anchor. -1 when there is none. */
   $: firstEnquiry = blocks.findIndex((block) => block?.type === 'enquiry');
@@ -169,7 +221,7 @@
           {#if str(block.image_url)}
             <Img
               src={str(block.image_url)}
-              alt={title || 'Trip highlight'}
+              alt={title || $t('ui.trip_highlight')}
               width={900}
               sizes="(max-width: 1023px) 100vw, 46vw"
               className="aspect-[4/3] w-full rounded-2xl object-cover"
@@ -275,7 +327,7 @@
                 <dl class="mt-3 grid gap-3">
                   {#each lines(row.values) as cell, ci (ci)}
                     <div class="grid grid-cols-2 gap-3 border-t border-ink/10 pt-3 text-sm">
-                      <dt class="font-semibold text-ink/60">{columns[ci + 1] || `Option ${ci + 1}`}</dt>
+                      <dt class="font-semibold text-ink/60">{columns[ci + 1] || $t('ui.option_n').replace('{n}', String(ci + 1))}</dt>
                       <dd class="text-ink/80">{cell}</dd>
                     </div>
                   {/each}
@@ -444,13 +496,15 @@
          and one anchor without deleting any saved CMS content. -->
     <div id="lead-form" data-package-enquiry class="scroll-mt-24">
       <StylePlannerBand
-        eyebrow={eyebrow || 'Plan this safari'}
-        title={title || 'Plan this trip with a local specialist'}
+        eyebrow={eyebrow || $t('ui.plan_this_safari')}
+        title={title || $t('ui.plan_this_trip_with_a')}
         description={intro}
         {startPoints}
         {interests}
         {packageName}
         {packageSlug}
+        {routeOptions}
+        suggestedRoute={$activeRouteLabel}
       />
     </div>
 
@@ -477,7 +531,7 @@
           {/if}
           {#if title}<h2 class={HEADING}>{title}</h2>{/if}
           {#if intro}<p class={INTRO}>{intro}</p>{/if}
-          <SafariRouteOptions idPrefix={`package-routes-${index}`} routes={routeRows} {tours} {lodges} {formHref} ctaLabel={str(block.cta_label) || 'Send request for this route'} />
+          <SafariRouteOptions idPrefix={`package-routes-${index}`} routes={routeRows} {tours} {lodges} {formHref} ctaLabel={str(block.cta_label) || $t('ui.send_request_for_this_route')} />
         </div>
       </section>
     {/if}
@@ -500,7 +554,7 @@
             <div class="mt-7 grid gap-4 md:grid-cols-2">
               {#if can.length}
                 <div class="package-card-content rounded-[12px] border border-ink/10 bg-surface p-5">
-                  <h3 class="text-[11px] font-bold uppercase tracking-[0.14em] text-heading">{str(block.can_title) || 'What it can give you'}</h3>
+                  <h3 class="text-[11px] font-bold uppercase tracking-[0.14em] text-heading">{str(block.can_title) || $t('ui.what_it_can_give_you')}</h3>
                   <ul class="mt-4 grid gap-2.5">
                     {#each can as item, i (i)}
                       <li class="flex gap-2.5 text-[14.5px] leading-relaxed text-ink/70">
@@ -515,7 +569,7 @@
               {/if}
               {#if cannot.length}
                 <div class="package-card-content rounded-[12px] border border-ink/10 bg-surface p-5">
-                  <h3 class="text-[11px] font-bold uppercase tracking-[0.14em] text-heading">{str(block.cannot_title) || 'What it cannot give you'}</h3>
+                  <h3 class="text-[11px] font-bold uppercase tracking-[0.14em] text-heading">{str(block.cannot_title) || $t('ui.what_it_cannot_give_you')}</h3>
                   <ul class="mt-4 grid gap-2.5">
                     {#each cannot as item, i (i)}
                       <li class="flex gap-2.5 text-[14.5px] leading-relaxed text-ink/70">
@@ -575,7 +629,7 @@
 
           {#if factors.length}
             <div class="package-price-factors mt-8 rounded-[12px] border border-ink/10 bg-surface p-6">
-              <h3 class="font-serif text-lg font-semibold text-heading">{str(block.factors_title) || 'Why your quote may change'}</h3>
+              <h3 class="font-serif text-lg font-semibold text-heading">{str(block.factors_title) || $t('ui.why_your_quote_may_change')}</h3>
               <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {#each factors as factor, i (i)}
                   {@const Icon = FACT_ICON[factor.icon.trim().toLowerCase()]}

@@ -77,20 +77,23 @@
     })();
   });
 
-  const expertAdvice: Item[] = [
-    { label: 'Expert advice', href: '/expert-advice' },
-    { label: 'Compare destinations', href: '/compare' },
-    { label: 'Destination scores', href: '/destination-scores' },
-    { label: 'Travel styles', href: '/travel-styles' },
-    { label: 'Gallery', href: '/gallery' }
+  // Reactive: the labels are the reader's language, the links are not.
+  let expertAdvice: Item[] = [];
+  $: expertAdvice = [
+    { label: $t('footer.link_expert_advice'), href: '/expert-advice' },
+    { label: $t('footer.link_compare_destinations'), href: '/compare' },
+    { label: $t('footer.link_destination_scores'), href: '/destination-scores' },
+    { label: $t('footer.link_travel_styles'), href: '/travel-styles' },
+    { label: $t('nav.gallery'), href: '/gallery' }
   ];
 
-  const company: Item[] = [
-    { label: 'About us', href: '/about' },
-    { label: 'Experiences', href: '/experiences' },
-    { label: 'All tours', href: '/tours' },
-    { label: 'Health & safety', href: '/safety' },
-    { label: 'Contact', href: '/contact' }
+  let company: Item[] = [];
+  $: company = [
+    { label: $t('footer.link_about_us'), href: '/about' },
+    { label: $t('nav.experiences'), href: '/experiences' },
+    { label: $t('footer.link_all_tours'), href: '/tours' },
+    { label: $t('footer.link_health_safety'), href: '/safety' },
+    { label: $t('nav.contact'), href: '/contact' }
   ];
 
   const year = new Date().getFullYear();
@@ -108,7 +111,7 @@
     <div class="grid gap-10 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)] lg:gap-14">
       <!-- Brand -->
       <div>
-        <a href="/" class="flex items-center gap-2.5" aria-label={`${siteName} home`}>
+        <a href="/" class="flex items-center gap-2.5" aria-label={`${siteName} — ${$t('nav.home')}`}>
           <img src="/favicon1.png" alt={siteName} class="h-9 w-9 shrink-0 object-contain" />
           <span class="font-serif text-lg font-semibold text-goldfinch-gold">{siteName}</span>
         </a>
@@ -117,7 +120,7 @@
           href="/plan-my-trip"
           class="mt-6 inline-flex items-center gap-2 rounded-md bg-goldfinch-gold px-4 py-2.5 text-sm font-semibold text-heading transition hover:brightness-105"
         >
-          {brand.primaryCta}
+          {$t('cta.plan_my_trip')}
           <ArrowRight size={16} />
         </a>
 
