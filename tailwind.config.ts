@@ -25,7 +25,9 @@ export default {
         ink: 'rgb(var(--c-ink) / <alpha-value>)',
         clay: 'rgb(var(--c-clay) / <alpha-value>)',
         sand: 'rgb(var(--c-sand) / <alpha-value>)',
-        savanna: 'rgb(var(--c-savanna) / <alpha-value>)'
+        savanna: 'rgb(var(--c-savanna) / <alpha-value>)',
+        // The deeper gold a gold button turns on hover (#C68A1E).
+        'gold-hover': 'rgb(var(--c-gold-hover) / <alpha-value>)'
       },
       fontFamily: {
         // Brand type system: Inter for body/UI/labels, Source Serif 4 for

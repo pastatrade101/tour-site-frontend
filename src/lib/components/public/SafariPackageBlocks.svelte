@@ -109,7 +109,7 @@
   {#if block.type === 'facts'}
     {@const items = rows<{ label?: string; value?: string; icon?: string }>(block.items).filter((item) => str(item.value).trim())}
     {#if items.length}
-      <section class="package-facts bg-[#272B22]">
+      <section class="package-facts bg-forest">
         <div class={`${SHELL} package-facts-grid`}>
           {#each items as item, i (i)}
             {@const Icon = FACT_ICON[str(item.icon).trim().toLowerCase()]}
@@ -651,7 +651,7 @@
     .package-tour-cards :global(article > .p-5) { padding: 16px; }
 
     .package-section :global(h2) { font-size: 27px; line-height: 1.18; text-wrap: balance; }
-    .package-section :global(a.bg-goldfinch-gold) { min-height: 48px; height: auto; padding-block: 12px; text-align: center; color: #272b22; }
+    .package-section :global(a.bg-goldfinch-gold) { min-height: 48px; height: auto; padding-block: 12px; text-align: center; color: rgb(var(--c-forest)); }
     .package-fact { border-left: 1px solid rgb(255 255 255 / 0.14); padding-left: 12px; }
     .package-fact:last-child:nth-child(odd) { grid-column: 1 / -1; }
     .package-gallery, .package-tour-cards {

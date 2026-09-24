@@ -10,8 +10,9 @@
      Values from the Goldfinch brand guidelines. The admin Branding page can
      override them at runtime via a :root <style> tag. */
   --c-deep-green: 57 61 50; /* #393D32 — primary, structure, headings, dark bands */
-  --c-forest: 45 48 39; /* #2D3027 — green hover / deepest bands */
+  --c-forest: 39 43 34; /* #272B22 — darker olive: header, footer, deepest bands */
   --c-goldfinch-gold: 228 169 46; /* #E4A92E — action: buttons, accents, emphasis */
+  --c-gold-hover: 198 138 30; /* #C68A1E — the deeper gold a button turns on hover */
   --c-savanna: 241 227 200; /* #F1E3C8 — beige: soft cream, light text on dark */
   --c-sand: 241 227 200; /* #F1E3C8 — beige: soft panels, icon chips */
   --c-ink: 57 61 50; /* #393D32 — primary text */
@@ -27,7 +28,7 @@
 
   /* Theme surfaces (light). Dark values are overridden in `html.dark` below. */
   --c-surface: 255 255 255; /* #FFFFFF — clean cards / inputs */
-  --c-canvas: 243 239 231; /* #F3EFE7 — warm cream page background */
+  --c-canvas: 243 239 231; /* #F3EFE7 — soft beige: panels, callouts, cards */
   --c-heading: 57 61 50; /* #393D32 — heading text */
 }
 
@@ -36,7 +37,9 @@
    on the same element it's defined on does not pick up the .dark override. */
 html {
   color: #393d32;
-  background-color: #f3efe7;
+  /* #FEFEFE — the page itself is near-white. Cream (#F3EFE7, --c-canvas) is
+     for panels, callouts and cards that want to stand off the page. */
+  background-color: #fefefe;
   transition:
     background-color 0.25s ease,
     color 0.25s ease;
@@ -128,7 +131,7 @@ html.dark .bg-clay {
    buttons stay distinct. */
 html.dark .bg-forest,
 html.dark [class~="hover:bg-forest"]:hover {
-  background-color: rgb(45 48 39);
+  background-color: rgb(39 43 34); /* the light-mode forest, #272B22 */
 }
 
 body {

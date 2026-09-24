@@ -398,7 +398,7 @@
     .route-card { margin-top: 18px; overflow: visible; border: 0; border-radius: 0; }
     .route-card :global(.route-photo) { height: auto; aspect-ratio: 4 / 3; border-radius: 16px; }
     .route-panel { padding: 20px 0 0; border-radius: 0; background: transparent; }
-    .route-cta { width: 100%; min-height: 48px; height: auto; gap: 8px; padding: 12px; font-size: 13px; text-align: center; color: #272b22; }
+    .route-cta { width: 100%; min-height: 48px; height: auto; gap: 8px; padding: 12px; font-size: 13px; text-align: center; color: rgb(var(--c-forest)); }
     .route-cta :global(svg) { flex-shrink: 0; }
     .route-price { padding: 16px 0 0; border: 0; border-top: 1px solid rgb(var(--c-ink) / 0.12); border-radius: 0; background: transparent; }
     .comfort-tabs button { padding-inline: 14px; font-size: 13px; }

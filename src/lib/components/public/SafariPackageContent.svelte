@@ -96,7 +96,7 @@
 
 <style>
   .safari-package-page { overflow-wrap:anywhere; }
-  .package-hero { background:#252d22; }
+  .package-hero { background:rgb(var(--c-forest)); }
   .package-hero-content { max-width:1248px; padding-top:86px; padding-bottom:88px; }
   .package-hero-copy { max-width:790px; }
   .package-hero h1 { max-width:21ch; font-size:clamp(38px,4.2vw,62px); font-weight:500; line-height:1.08; letter-spacing:-.035em; text-wrap:balance; }
@@ -112,7 +112,7 @@
     .package-hero h1 + p { margin-top: 16px; max-width: 42ch; font-size: 15px; line-height: 1.65; }
     .package-hero-actions { display: grid; grid-template-columns: 1fr; margin-top: 24px; gap: 10px; }
     .package-hero-actions a { min-height: 50px; height: auto; padding: 12px 16px; border-radius: 12px; text-align: center; }
-    .package-hero-actions a:first-child { color: #272b22; }
+    .package-hero-actions a:first-child { color: rgb(var(--c-forest)); }
     .package-hero-actions a:focus-visible, .package-back:focus-visible { outline: 2px solid rgb(var(--c-goldfinch-gold)); outline-offset: 4px; }
     .safari-package-page :global([data-package-label]),
     .safari-package-page :global([data-package-enquiry]) { scroll-margin-top: calc(var(--nav-h, 70px) + 76px); }

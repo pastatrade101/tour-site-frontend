@@ -21,7 +21,7 @@
 
   const badgeStyles: Record<TourCardBadgeType, { background: string; color: string }> = {
     rust: { background: 'rgba(255,255,255,0.95)', color: '#393D32' },
-    gold: { background: 'rgba(228,169,46,0.45)', color: '#2D3027' },
+    gold: { background: 'rgba(228,169,46,0.45)', color: 'rgb(var(--c-forest))' },
     olive: { background: 'rgba(103,103,88,0.55)', color: '#FFFFFF' },
     default: { background: 'rgba(20,20,10,0.4)', color: '#FFFFFF' }
   };

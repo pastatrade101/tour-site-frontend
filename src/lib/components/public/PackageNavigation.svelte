@@ -146,7 +146,7 @@
     .package-dock-copy { flex: 1; min-width: 0; }
     .package-dock-copy span { display: block; color: rgb(var(--c-clay)); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
     .package-dock-copy strong { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; margin-top: 4px; font-size: 12px; line-height: 1.4; color: rgb(var(--c-heading)); }
-    .package-dock > a { display: inline-flex; min-height: 48px; flex-shrink: 0; align-items: center; gap: 8px; border-radius: 12px; padding: 0 16px; background: rgb(var(--c-goldfinch-gold)); color: #272b22; font-size: 13px; font-weight: 700; }
+    .package-dock > a { display: inline-flex; min-height: 48px; flex-shrink: 0; align-items: center; gap: 8px; border-radius: 12px; padding: 0 16px; background: rgb(var(--c-goldfinch-gold)); color: rgb(var(--c-forest)); font-size: 13px; font-weight: 700; }
     a:focus-visible { outline: 2px solid rgb(var(--c-clay)); outline-offset: 2px; }
     :global(html:has(.package-dock)) { --package-dock-space: 80px; }
     :global(body:has(.package-dock) footer) { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }

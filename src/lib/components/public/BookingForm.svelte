@@ -250,18 +250,18 @@
     const title = `${brand.name} Quotation${bookingCode ? ' ' + bookingCode : ''}`;
     return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title>
     <style>
-      *{box-sizing:border-box} body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#2d3027;margin:0;padding:40px;background:#fff}
+      *{box-sizing:border-box} body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#272b22;margin:0;padding:40px;background:#fff}
       .wrap{max-width:720px;margin:0 auto}
       .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #c79a3a;padding-bottom:16px}
       .brand{font-size:22px;font-weight:800;color:#1f4d3a} .co{font-size:12px;color:#6b6f63;margin-top:2px}
       .doc{text-align:right} .doc h1{font-size:16px;margin:0;color:#1f4d3a;text-transform:uppercase;letter-spacing:.06em} .doc p{margin:4px 0 0;font-size:12px;color:#6b6f63}
       .trip{margin:20px 0;padding:12px 16px;background:#f6f1e6;border-radius:10px;font-size:15px} .trip b{color:#1f4d3a}
       table{width:100%;border-collapse:collapse;margin-top:8px} th,td{text-align:left;padding:9px 10px;font-size:13px;border-bottom:1px solid #eee;vertical-align:top}
-      th{width:180px;color:#6b6f63;font-weight:600} td{color:#2d3027}
+      th{width:180px;color:#6b6f63;font-weight:600} td{color:#272b22}
       .price{margin-top:22px;padding:16px 18px;border:1px solid #e3dcc9;border-radius:12px;background:#faf7ef}
       .pl{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#8a7a4a;font-weight:700}
       .pv{margin:4px 0 0;font-size:22px;font-weight:800;color:#1f4d3a} .pv span{font-size:12px;font-weight:600;color:#6b6f63}
-      .pn{margin:6px 0 0;font-size:14px;color:#2d3027} .pd{margin:8px 0 0;font-size:11px;color:#8a8d82;line-height:1.5}
+      .pn{margin:6px 0 0;font-size:14px;color:#272b22} .pd{margin:8px 0 0;font-size:11px;color:#8a8d82;line-height:1.5}
       .foot{margin-top:26px;border-top:1px solid #eee;padding-top:14px;font-size:11px;color:#8a8d82;line-height:1.6}
       @media print{body{padding:0} .wrap{max-width:none}}
     </style></head><body><div class="wrap">

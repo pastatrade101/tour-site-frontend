@@ -30,7 +30,7 @@ export type Branding = {
 export const defaultColors: BrandColors = {
   clay: '#AA3D1D',
   deep_green: '#393D32',
-  forest: '#2D3027',
+  forest: '#272B22',
   goldfinch_gold: '#E4A92E',
   ink: '#393D32',
   sand: '#F1E3C8',

@@ -106,7 +106,7 @@
           <a
             href={ctaHref}
             data-cta="why-goldfinch-plan"
-            class="inline-flex items-center gap-2 rounded-[13px] bg-goldfinch-gold px-8 py-3.5 text-[15px] font-semibold text-heading transition-colors hover:bg-[#C68A1E]"
+            class="inline-flex items-center gap-2 rounded-[13px] bg-goldfinch-gold px-8 py-3.5 text-[15px] font-semibold text-heading transition-colors hover:bg-gold-hover"
           >
             {ctaLabel}
             <ArrowRight size={16} />

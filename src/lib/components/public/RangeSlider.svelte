@@ -51,7 +51,7 @@
     top: 11px;
     height: 4px;
     border-radius: 999px;
-    background: #2D3027;
+    background: rgb(var(--c-forest));
   }
   .rs-input {
     position: absolute;
@@ -77,7 +77,7 @@
     width: 18px;
     border-radius: 50%;
     background: #fff;
-    border: 2px solid #2D3027;
+    border: 2px solid rgb(var(--c-forest));
     box-shadow: 0 1px 4px rgba(57,61,50, 0.25);
     cursor: pointer;
   }
@@ -85,7 +85,7 @@
     pointer-events: auto;
     height: 18px;
     width: 18px;
-    border: 2px solid #2D3027;
+    border: 2px solid rgb(var(--c-forest));
     border-radius: 50%;
     background: #fff;
     box-shadow: 0 1px 4px rgba(57,61,50, 0.25);

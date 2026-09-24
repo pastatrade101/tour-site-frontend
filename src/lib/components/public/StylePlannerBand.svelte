@@ -315,10 +315,10 @@
     .package-planner { padding-block: 28px; }
     .package-planner .container-shell { width: calc(100% - 32px); }
     .package-planner .planner-panel { padding: 24px 16px; border-radius: 20px; }
-    .package-planner input:not([type='checkbox']), .package-planner select { height: 50px; font-size: 16px; color: #272b22; }
+    .package-planner input:not([type='checkbox']), .package-planner select { height: 50px; font-size: 16px; color: rgb(var(--c-forest)); }
     .package-planner .planner-actions { display: flex; flex-direction: row; }
     .package-planner .planner-actions button { min-height: 50px; height: auto; }
-    .package-planner .planner-actions button[type='submit'] { flex: 1; padding-inline: 12px; color: #272b22; }
+    .package-planner .planner-actions button[type='submit'] { flex: 1; padding-inline: 12px; color: rgb(var(--c-forest)); }
     .package-planner .planner-actions button[type='button'] { padding-inline: 14px; }
   }
 </style>

@@ -96,7 +96,7 @@
   const year = new Date().getFullYear();
 </script>
 
-<footer class="border-t border-white/5 bg-[#272B22] text-white/[0.72]">
+<footer class="border-t border-white/5 bg-forest text-white/[0.72]">
   <div class="container-shell py-14 md:py-16">
     <!--
       Brand on the left, link columns in their own grid on the right.
