@@ -15,11 +15,12 @@
    */
   import { onMount, tick } from 'svelte';
   import { beforeNavigate } from '$app/navigation';
-  import { AlertTriangle, CheckCircle2, ArrowLeft, Eye, ExternalLink, Pencil, FileText, LayoutTemplate, Loader2, Plus, Save, Search } from '@lucide/svelte';
+  import { AlertTriangle, CheckCircle2, ArrowLeft, Eye, ExternalLink, Pencil, FileText, Languages, LayoutTemplate, Loader2, Plus, Save, Search } from '@lucide/svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
+  import AdminTranslationTabs from '$lib/components/admin/AdminTranslationTabs.svelte';
   import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
   import SafariPackagePreview from '$lib/components/admin/SafariPackagePreview.svelte';
   import { orderedPackageBlocks, starterPackageBlocks } from '$lib/packagePresentation';
@@ -64,7 +65,7 @@
     og_image_url: ''
   });
 
-  type TabKey = 'basics' | 'content' | 'seo' | 'preview';
+  type TabKey = 'basics' | 'content' | 'seo' | 'preview' | 'translations';
 
   /**
    * Three tabs rather than one long column. The blocks editor alone can run to
@@ -74,8 +75,13 @@
     ['basics', FileText, 'Page details'],
     ['content', LayoutTemplate, 'Page content'],
     ['seo', Search, 'Search settings'],
-    ['preview', Eye, 'Preview']
+    ['preview', Eye, 'Preview'],
+    // Only once the package exists: a translation belongs to a saved record.
+    ['translations', Languages, 'Translations']
   ] as const;
+
+  /** The last message from the translation panel, shown above it. */
+  let translationNotice: { message: string; type: 'success' | 'error' } | null = null;
 
   let activeTab: TabKey = 'basics';
   let attemptedSave = false;
@@ -379,7 +385,7 @@
     </header>
     <div class="package-workspace-content">
     <div class="workspace-tabs" aria-label="Package editing steps">
-      {#each TABS as [tab, Icon, label], step (tab)}
+      {#each TABS.filter(([tab]) => tab !== 'translations' || editingId) as [tab, Icon, label], step (tab)}
         <button
           class={`flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/20 ${
             activeTab === tab ? 'bg-forest text-white shadow-sm' : 'text-ink/55 hover:bg-sand/50 hover:text-ink'
@@ -450,6 +456,35 @@
 
     {#if activeTab === 'preview'}
       <div class="mt-6"><SafariPackagePreview record={{ ...form, id: editingId ?? '' }} {blocks} availableTours={tours} /></div>
+    {/if}
+
+    <!-- ── Translations ───────────────────────────────────────────────── -->
+    {#if activeTab === 'translations' && editingId}
+      <div class="mt-6 grid gap-4">
+        <p class="text-[13px] leading-6 text-ink/60">
+          Every piece of text on this page, section by section — the English on the left, the translation on the right. Prices,
+          photos, icons and linked tours are shared by every language and are not listed. A section keeps its translation when you
+          move it; delete a section and its translation goes with it.
+        </p>
+        {#if dirty}
+          <!-- The panel reads the saved page. Text typed since is not in it yet. -->
+          <p class="flex items-start gap-2 rounded-[8px] border border-goldfinch-gold/40 bg-goldfinch-gold/10 px-3 py-2.5 text-[13px] text-heading">
+            <AlertTriangle size={15} class="mt-0.5 shrink-0 text-goldfinch-gold" />
+            You have unsaved changes. Translations work from the saved page — save first, then reopen this package to translate the new text.
+          </p>
+        {/if}
+        {#if translationNotice}
+          <p
+            class="rounded-[8px] px-3 py-2.5 text-[13px] font-semibold {translationNotice.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-800'}"
+            role="status"
+          >{translationNotice.message}</p>
+        {/if}
+        <AdminTranslationTabs
+          entityType="safari_packages"
+          entityId={editingId}
+          on:toast={(event) => (translationNotice = { message: event.detail.message, type: event.detail.type ?? 'success' })}
+        />
+      </div>
     {/if}
 
     <!-- ── SEO & indexing ─────────────────────────────────────────────── -->

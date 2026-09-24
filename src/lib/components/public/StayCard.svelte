@@ -20,15 +20,29 @@
   /** A larger, editorial gallery for the package's featured properties. */
   export let featured = false;
 
-  /** Dictionary keys for the property type, by the value the CMS stores. */
+  /**
+   * Dictionary keys for the property type — every value the lodge editor can
+   * store (PROPERTY_TYPES), plus two older free-text ones.
+   *
+   * The lookup is case-insensitive because the CMS stores the enum in capitals
+   * (TENTED_CAMP) while this map was written in lower case, so for as long as
+   * the card has existed the type never matched and never showed.
+   */
   const LODGE_TYPE_KEYS: Record<string, string> = {
+    hotel: 'ui.hotel',
+    safari_lodge: 'ui.safari_lodge',
     tented_camp: 'ui.tented_camp',
     mobile_camp: 'ui.mobile_camp',
+    beach_resort: 'ui.beach_resort',
+    villa: 'ui.villa',
+    guest_house: 'ui.guest_house',
+    eco_lodge: 'ui.eco_lodge',
+    boutique_hotel: 'ui.boutique_hotel',
     lodge: 'ui.lodge',
-    hotel: 'ui.hotel',
     treehouse: 'ui.treehouse'
   };
-  $: lodgeType = LODGE_TYPE_KEYS[String(stay.lodge_type)] ? $t(LODGE_TYPE_KEYS[String(stay.lodge_type)]) : '';
+  $: lodgeTypeKey = LODGE_TYPE_KEYS[String(stay.lodge_type ?? '').trim().toLowerCase()];
+  $: lodgeType = lodgeTypeKey ? $t(lodgeTypeKey) : '';
 
   /** The comfort level in the reader's language; an unknown level keeps its CMS form. */
   const LEVEL_KEYS: Record<string, string> = {

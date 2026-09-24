@@ -83,7 +83,14 @@
     return kind === 'rich' ? toPlainText(raw) || raw : raw;
   };
 
-  const filled = (key: string): boolean => {
+  /**
+   * Reactive, so it is rebuilt whenever `draft` changes. As a plain function
+   * nothing that called it knew to look again while someone typed: the
+   * required-field count and the Publish button stayed on whatever they said
+   * when the panel opened, and a finished translation could not be published
+   * until it had been saved once as a draft.
+   */
+  $: filled = (key: string): boolean => {
     const value = draft[key];
     return Array.isArray(value) ? value.length > 0 : String(value ?? '').trim().length > 0;
   };
@@ -104,6 +111,17 @@
    */
   $: visibleFields = (data?.fields ?? []).filter(
     (field) => field.required || sourceText(field.key, field.kind).trim() || filled(field.key)
+  );
+
+  /**
+   * Where a new section starts. A safari package lists every block's text —
+   * forty or fifty rows — and without a heading at each block it is a column of
+   * look-alike fields with no way to tell the FAQ from the route notes.
+   */
+  $: groupStarts = new Set(
+    visibleFields
+      .filter((field, index) => field.group && field.group !== visibleFields[index - 1]?.group)
+      .map((field) => field.key)
   );
 
   /** Progress against the required fields only — the ones that gate publishing. */
@@ -261,6 +279,9 @@
           {#each visibleFields as field (field.key)}
             {@const src = sourceText(field.key, field.kind)}
             {@const missing = Boolean(field.required) && !filled(field.key)}
+            {#if groupStarts.has(field.key)}
+              <h3 class="mt-2 border-b border-ink/10 pb-1.5 text-[13px] font-bold text-heading first:mt-0">{field.group}</h3>
+            {/if}
             <div class="grid gap-2 lg:grid-cols-2 lg:gap-4">
               <!-- The English, shown and never editable. Its source of truth is
                    the form above; editing it here would fork the record. -->

@@ -640,6 +640,8 @@ export type TranslationFieldDef = {
   label: string;
   kind: 'text' | 'textarea' | 'rich' | 'rich_list';
   required?: boolean;
+  /** The section a field belongs to — set for block-built records like safari packages. */
+  group?: string;
 };
 
 export type TranslationRecord = {

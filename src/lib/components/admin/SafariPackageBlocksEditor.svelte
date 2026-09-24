@@ -17,7 +17,7 @@
   import PackageIconPicker from './PackageIconPicker.svelte';
   import { api } from '$lib/api/client';
   import { PROPERTY_CATEGORIES, enumLabel } from '$lib/accommodationEnums';
-  import { BLOCK_TYPES, blockSpec, emptyBlock, routeDisplayName, routeTourSlugs, type Block, type FieldSpec } from '$lib/safariPackageBlocks';
+  import { BLOCK_TYPES, blockSpec, emptyBlock, newBlockId, routeDisplayName, routeTourSlugs, type Block, type FieldSpec } from '$lib/safariPackageBlocks';
   import { orderedPackageBlocks, sectionGuidance, sectionSummary } from '$lib/packagePresentation';
   import type { Lodge, Tour } from '$lib/types';
 
@@ -104,7 +104,8 @@
   const itemRows = (value: unknown): Record<string, unknown>[] => (Array.isArray(value) ? (value as Record<string, unknown>[]) : []);
 
   const addItem = (index: number, field: FieldSpec) => {
-    const row: Record<string, unknown> = {};
+    // An id from the start, so its translations stay with it however the list is reordered.
+    const row: Record<string, unknown> = { _id: newBlockId('y') };
     for (const sub of field.fields ?? []) row[sub.key] = sub.kind === 'lines' || sub.kind === 'routeComforts' ? [] : '';
     setField(index, field.key, [...itemRows(blocks[index][field.key]), row]);
   };

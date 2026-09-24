@@ -360,9 +360,57 @@ export const routeTourSlugs = (route: Record<string, unknown>): string[] => {
 export const blockSpec = (type: string): BlockSpec | undefined => BLOCK_TYPES.find((spec) => spec.type === type);
 
 /** A new block with every field present and empty, so the editor has rows to fill. */
+// ── Stable ids ────────────────────────────────────────────────────────────────
+//
+// Translations of a package's blocks are keyed by `_id`, not by position, so an
+// editor who moves a section does not move its Italian into another section.
+// The backend reads the same ids (ensurePackageIds in backend
+// src/utils/translations.ts); the two rules below must stay identical to it.
+
+/** A fresh id for a block or row created in the editor. */
+export const newBlockId = (prefix: 'x' | 'y'): string =>
+  `${prefix}${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
+
+const isRow = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+const hasId = (value: Record<string, unknown>) => typeof value._id === 'string' && value._id.trim().length > 0;
+
+/**
+ * Ids for blocks and rows saved before ids existed: block N is `bN`, row N of a
+ * list is `rN` — counted in STORED order, before any re-sorting, because that
+ * is the order the backend counts in when it translates a page nobody has
+ * re-saved yet. Anything that already has an id keeps it.
+ */
+export const withLegacyIds = (blocks: Block[]): Block[] => {
+  blocks.forEach((block, blockIndex) => {
+    if (!hasId(block)) block._id = `b${blockIndex}`;
+    for (const value of Object.values(block)) {
+      if (!Array.isArray(value)) continue;
+      value.forEach((row, rowIndex) => {
+        if (isRow(row) && !hasId(row)) row._id = `r${rowIndex}`;
+      });
+    }
+  });
+  return blocks;
+};
+
+/** A safety net at save time: anything still without an id gets a fresh one. */
+const withFreshIds = (blocks: Block[]): Block[] => {
+  for (const block of blocks) {
+    if (!hasId(block)) block._id = newBlockId('x');
+    for (const value of Object.values(block)) {
+      if (!Array.isArray(value)) continue;
+      for (const row of value) if (isRow(row) && !hasId(row)) row._id = newBlockId('y');
+    }
+  }
+  return blocks;
+};
+
 export const emptyBlock = (type: string): Block => {
   const spec = blockSpec(type);
-  const block: Block = { type };
+  // Given at birth, not at save: an id minted on each save would be a new id
+  // every time, and every translation of the block would be orphaned.
+  const block: Block = { type, _id: newBlockId('x') };
   for (const field of spec?.fields ?? []) {
     if (field.kind === 'items') block[field.key] = [];
     else if (field.kind === 'lines') block[field.key] = [];
@@ -445,7 +493,7 @@ const eachLinesField = (block: Block, run: (key: string) => void) => {
 
 /** Stored → editable: arrays of lines become one string per line. */
 export const blocksForEditing = (source: unknown): Block[] =>
-  arr<Block>(source).map((block) => {
+  withLegacyIds(arr<Block>(source).map((block) => structuredClone(block))).map((block) => {
     const next: Block = { ...structuredClone(block), type: str(block.type) };
     if (next.type === 'priceguide') next.factors = priceFactorsForEditing(next.factors);
     if (next.type === 'routes') {
@@ -467,7 +515,7 @@ export const blocksForEditing = (source: unknown): Block[] =>
 
 /** Editable → stored: those strings become arrays again, blanks dropped. */
 export const blocksForSaving = (source: unknown): Block[] =>
-  arr<Block>(source).map((block) => {
+  withFreshIds(arr<Block>(source).map((block) => structuredClone(block))).map((block) => {
     const next: Block = { ...structuredClone(block), type: str(block.type) };
     eachLinesField(next, (path) => {
       const [key, sub] = path.split('.');
