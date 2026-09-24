@@ -18,7 +18,7 @@
    * cannot drift, and a route whose tour is unpublished drops out rather than
    * rendering a broken tab.
    */
-  import { ArrowRight, Check, Tent, MapPin } from '@lucide/svelte';
+  import { ArrowRight, Check, Tent } from '@lucide/svelte';
   import Img from './Img.svelte';
   import ItineraryDays from './ItineraryDays.svelte';
   import RichText from './RichText.svelte';
@@ -170,8 +170,9 @@
         aria-selected={i === activeRoute}
         on:click={() => (activeRoute = i)}
       >
-        <span class="route-tab-number">{String(i + 1).padStart(2, '0')}</span>
-        <span class="route-tab-copy"><strong>{item.tab || item.comfort[0]?.tour.title}</strong>{#if item.tab && item.tab !== item.comfort[0]?.tour.title}<span>{item.comfort[0]?.tour.title}</span>{/if}</span>
+        <!-- One line, the editor's own words. The counter and the tour title
+             underneath it said the same thing twice at two sizes. -->
+        <span class="route-tab-copy"><strong>{item.tab || item.comfort[0]?.tour.title}</strong></span>
         <ArrowRight size={17} />
       </button>
     {/each}
@@ -190,8 +191,6 @@
           className="route-photo block h-[240px] w-full rounded-t-[12px] object-cover sm:h-[320px] md:h-[360px] lg:h-[430px]"
         />
       {/if}
-
-      <div class="route-visual-caption"><MapPin size={16} /><span>{headTour.title}</span></div>
       </div>
 
       <div class="route-panel rounded-b-[12px] bg-canvas p-6 sm:p-9 md:p-11 lg:p-14">
@@ -357,15 +356,11 @@
   .route-tabs { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)); gap:12px; margin-top:32px; }
   .route-tabs button { display:flex; align-items:center; gap:12px; min-width:0; padding:18px; text-align:left; border-radius:9px; }
   .route-tabs button :global(svg) { flex-shrink:0; }
-  .route-tab-number { align-self:flex-start; font-size:11px; opacity:.65; padding-top:3px; }
   .route-tab-copy { flex:1; min-width:0; }
   .route-tab-copy strong { display:block; font-size:14px; line-height:1.45; }
-  .route-tab-copy > span { display:block; margin-top:5px; font-size:12px; font-weight:400; line-height:1.5; opacity:.75; }
   .route-card { overflow:clip; border:1px solid rgb(var(--c-ink)/.12); background:rgb(var(--c-surface)); border-radius:16px; }
   .route-visual { position:relative; background:rgb(var(--c-deep-green)); }
   .route-visual :global(.route-photo) { height:360px; width:100%; object-fit:cover; border-radius:0; }
-  .route-visual-caption { display:flex; align-items:center; gap:8px; padding:15px 24px; color:rgb(var(--c-surface)); font-size:12px; }
-  .route-visual-caption :global(svg) { flex-shrink:0; color:rgb(var(--c-goldfinch-gold)); }
   .route-panel { padding:36px; background:rgb(var(--c-surface)); }
   .route-introduction { max-width:800px; }
   .route-kicker { margin-bottom:12px; font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:rgb(var(--c-clay)); }
@@ -396,7 +391,6 @@
     .route-tabs { display:flex; overflow-x:auto; margin-inline:-16px; padding:4px 16px 12px; }
     .route-tabs button { flex:0 0 85%; }
     .route-visual { border-radius:12px; overflow:hidden; }
-    .route-visual-caption { padding:14px 16px; }
     .route-pricing { margin-top:0; padding:20px; }
     .route-tabs, .comfort-tabs { scroll-snap-type: x proximity; scrollbar-width: thin; scrollbar-color: rgb(var(--c-clay) / 0.4) transparent; }
     .route-tabs button, .comfort-tabs button { min-height: 48px; scroll-snap-align: start; }

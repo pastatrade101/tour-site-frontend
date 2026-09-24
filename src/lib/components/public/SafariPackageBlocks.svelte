@@ -47,8 +47,16 @@
    */
   export let homeSections: Record<string, AdvisorNoteSection | undefined> = {};
 
-  /** Alternating bands stop a long page reading as one flat slab. */
-  const surface = (index: number) => ['prose', 'expectations', 'advisor'].includes(blocks[index]?.type) ? 'bg-canvas' : 'bg-surface';
+  /**
+   * One page colour, as on the homepage: white throughout.
+   *
+   * The cream band used to alternate in and out behind whole sections, so the
+   * page changed colour under you three times on the way down. Cream is still
+   * the card colour — the overview note, the expectations panel, the advisor's
+   * note — where it separates a card from the page rather than dividing the
+   * page against itself.
+   */
+  const surface = (_index: number) => 'bg-surface';
 
   /** The design's own shell: 1180px, not the site-wide container. */
   const SHELL = 'package-shell mx-auto w-full max-w-[1200px] px-4 md:px-8';

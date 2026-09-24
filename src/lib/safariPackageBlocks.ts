@@ -227,7 +227,7 @@ export const BLOCK_TYPES: BlockSpec[] = [
         kind: 'items',
         hint: 'Give each route a descriptive name, such as Tarangire & Ngorongoro. Three or four routes work best.',
         fields: [
-          { key: 'tab', label: 'Short route name (optional)', kind: 'text', placeholder: 'Uses the selected tour title', hint: 'Leave blank to use the tour title, or write a clear short name such as Tarangire & Ngorongoro. Generic labels like Option 1 automatically use the tour title.' },
+          { key: 'tab', label: 'Tab name', kind: 'text', placeholder: 'Option 1', hint: 'What travellers see on the tab, exactly as you write it — Option 1, Tarangire & Ngorongoro, anything. Leave blank to use the selected tour’s title.' },
           {
             key: 'comforts',
             label: 'Accommodation levels',
@@ -337,12 +337,17 @@ export const parseRouteTour = (line: string): { label: string; slug: string } =>
 };
 
 /** Generic numbering is a placeholder, never a useful traveller-facing name. */
-export const routeDisplayName = (label: unknown, tourTitle: unknown): string => {
-  const custom = str(label).trim();
-  return !custom || /^(?:option|route|choice)\s*[-#:]?\s*\d+$/i.test(custom)
-    ? str(tourTitle).trim()
-    : custom;
-};
+/**
+ * The name on a route tab.
+ *
+ * Whatever the editor typed, verbatim. This used to treat "Option 1" and
+ * friends as placeholder text and quietly swap in the tour title instead —
+ * so an editor who deliberately wanted short, numbered tabs could not have
+ * them, and nothing on the screen explained why. The tour title is the
+ * fallback for a blank field, not an override of a filled one.
+ */
+export const routeDisplayName = (label: unknown, tourTitle: unknown): string =>
+  str(label).trim() || str(tourTitle).trim();
 
 /** Use current selections when present; legacy tour lines are fallback only. */
 export const routeTourSlugs = (route: Record<string, unknown>): string[] => {

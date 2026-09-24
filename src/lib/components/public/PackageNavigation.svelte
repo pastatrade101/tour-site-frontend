@@ -91,7 +91,8 @@
       z-index: 30;
       display: block;
       border-bottom: 1px solid rgb(var(--c-ink) / 0.1);
-      background: rgb(251 250 246 / 0.95);
+      /* The page is white now; a cream bar read as a stripe across it. */
+      background: rgb(var(--c-surface) / 0.95);
       backdrop-filter: blur(8px);
     }
     .package-navigation.empty { display: none; }

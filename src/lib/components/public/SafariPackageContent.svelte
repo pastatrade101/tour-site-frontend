@@ -19,13 +19,18 @@
   export let preview = false;
 
   $: blocks = orderedPackageBlocks(((record?.sections ?? []) as Block[]).filter((block) => block && typeof block.type === 'string'));
+  /** Drawn above the tab bar. Facts carry no anchor, so nothing in the nav moves with them. */
+  $: factsBlocks = blocks.filter((block) => block.type === 'facts');
+  $: bodyBlocks = blocks.filter((block) => block.type !== 'facts');
   $: formHref = blocks.some((block) => block.type === 'enquiry') ? '#lead-form' : '/plan-my-trip';
   $: itineraryDays = [...((record?.tours?.itinerary_days ?? []) as ItineraryDay[])].sort((a, b) => (a.day_number ?? 0) - (b.day_number ?? 0));
   $: heroTitle = record?.hero_title?.trim() || record?.name || '';
 </script>
 
 {#if record}
-  <div class="safari-package-page">
+  <!-- One page colour, as on the homepage: the cream ground shows only where a
+       card chooses it. -->
+  <div class="safari-package-page bg-surface">
     <section class="package-hero relative isolate overflow-hidden bg-deep-green text-white">
       {#if record.hero_image_url}
         <Img
@@ -65,11 +70,16 @@
       </div>
     </section>
 
+    <!-- The trip's facts belong to the hero above them, not under a tab bar:
+         they are what the page has just finished saying. The tab bar follows,
+         and is the thing that sticks as the page scrolls. -->
+    <SafariPackageBlocks blocks={factsBlocks} />
+
     {#if !preview}
       {#key record.slug}<PackageNavigation packageName={record.name} {formHref} />{/key}
     {/if}
     <SafariPackageBlocks
-      {blocks}
+      blocks={bodyBlocks}
       {itineraryDays}
       {moduleFaqs}
       tours={related}
