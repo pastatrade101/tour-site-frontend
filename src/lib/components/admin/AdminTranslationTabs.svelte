@@ -104,13 +104,13 @@
    * translate. Twelve of those above the two fields that matter is a form
    * nobody reads.
    *
-   * A field stays when the source has something to translate, when it is
-   * required (its absence is the point — that is what blocks publishing), or
-   * when this translation already carries text for it, so nothing anyone has
-   * typed can be hidden by a later edit to the English.
+   * A field stays when the source has something to translate, or when this
+   * translation already carries text for it, so nothing anyone has typed can
+   * be hidden by a later edit to the English. A required field with no English
+   * is not shown: there is nothing to translate, so it cannot block publishing.
    */
   $: visibleFields = (data?.fields ?? []).filter(
-    (field) => field.required || sourceText(field.key, field.kind).trim() || filled(field.key)
+    (field) => sourceText(field.key, field.kind).trim() || filled(field.key)
   );
 
   /**
@@ -124,10 +124,17 @@
       .map((field) => field.key)
   );
 
-  /** Progress against the required fields only — the ones that gate publishing. */
-  $: requiredFields = (data?.fields ?? []).filter((f) => f.required);
+  /**
+   * Progress against the required fields that gate publishing — only those the
+   * English actually fills (the server applies the same rule). Twelve safari
+   * styles have no English short description; requiring a translation of it
+   * made them impossible to publish.
+   */
+  $: requiredFields = (data?.fields ?? []).filter((f) => f.required && sourceText(f.key, f.kind).trim());
   $: doneRequired = requiredFields.filter((f) => filled(f.key)).length;
-  $: canPublish = requiredFields.length > 0 && doneRequired === requiredFields.length;
+  $: canPublish =
+    doneRequired === requiredFields.length &&
+    (requiredFields.length > 0 || visibleFields.some((f) => filled(f.key)));
 
   const save = async (status: TranslationStatus) => {
     if (!data || busy) return;
@@ -280,7 +287,7 @@
         <div class="grid gap-4">
           {#each visibleFields as field (field.key)}
             {@const src = sourceText(field.key, field.kind)}
-            {@const missing = Boolean(field.required) && !filled(field.key)}
+            {@const missing = Boolean(field.required) && Boolean(src.trim()) && !filled(field.key)}
             {#if groupStarts.has(field.key)}
               <h3 class="mt-2 border-b border-ink/10 pb-1.5 text-[13px] font-bold text-heading first:mt-0">{field.group}</h3>
             {/if}
