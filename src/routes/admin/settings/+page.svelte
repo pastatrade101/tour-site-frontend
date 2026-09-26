@@ -2,11 +2,15 @@
   import { onMount } from 'svelte';
   import type { Component } from 'svelte';
   import {
+    Archive,
     BarChart3,
     Bot,
+    CalendarX,
     ClipboardList,
     Coins,
+    FileText,
     Info,
+    Languages,
     MapPin,
     Palette,
     Plus,
@@ -14,15 +18,19 @@
     Scale,
     Search,
     Share2,
+    ShieldCheck,
     RotateCcw,
     Trash2,
     Plug,
     MessageCircle
   } from '@lucide/svelte';
   import { api } from '$lib/api/client';
+  import { legalSettingKey, type LegalDefaults, type LegalDocKey, type LegalPart } from '$lib/legal';
+  import AdminTranslationTabs from '$lib/components/admin/AdminTranslationTabs.svelte';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import AdminFormInput from '$lib/components/admin/AdminFormInput.svelte';
   import AdminPageHeader from '$lib/components/admin/AdminPageHeader.svelte';
+  import AdminRichText from '$lib/components/admin/AdminRichText.svelte';
   import AdminSelect from '$lib/components/admin/AdminSelect.svelte';
   import AdminTextArea from '$lib/components/admin/AdminTextArea.svelte';
   import MediaPicker from '$lib/components/admin/MediaPicker.svelte';
@@ -30,11 +38,14 @@
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
 
-  type FieldType = 'boolean' | 'color' | 'currency-list' | 'email' | 'image' | 'json' | 'number' | 'phone' | 'select' | 'text' | 'textarea' | 'url';
+  type FieldType = 'boolean' | 'color' | 'currency-list' | 'email' | 'image' | 'json' | 'number' | 'phone' | 'rich' | 'select' | 'text' | 'textarea' | 'url';
   // `aspect`/`fit` only apply to type 'image' — a logo must not be cropped the
-  // way a social card should be.
-  type Field = { aspect?: string; default?: unknown; fit?: string; helper?: string; key: string; label: string; options?: string[]; public: boolean; type: FieldType };
-  type Group = { fields: Field[]; icon: Component; key: string; label: string; note?: string };
+  // way a social card should be. `legal` marks a part of a legal page: its
+  // default is the wording the website already shows, and an empty saved
+  // value opens as that wording again, because empty is exactly what the
+  // website falls back from.
+  type Field = { aspect?: string; default?: unknown; fit?: string; helper?: string; key: string; label: string; legal?: { doc: LegalDocKey; part: LegalPart }; options?: string[]; public: boolean; type: FieldType };
+  type Group = { fields: Field[]; icon: Component; key: string; label: string; legalDoc?: LegalDocKey; note?: string };
   type Toast = { id: string; message: string; type: 'error' | 'success' };
   type CurrencySetting = { code: string; name: string; symbol: string; locale: string; decimalDigits: number; enabled: boolean };
 
@@ -125,13 +136,49 @@
       { key: 'gsc_verification_code', label: 'Search Console verification', type: 'text', public: true },
       { key: 'enable_cookie_notice', label: 'Show cookie notice', type: 'boolean', public: true, default: true }
     ] },
-    { key: 'legal', label: 'Legal', icon: Scale, fields: [
+    { key: 'legal', label: 'Legal links', icon: Scale, note: 'Only for pages hosted somewhere else. Leave a link empty to use the page you edit below (Privacy policy, Terms, Cancellation policy, Data retention).', fields: [
       { key: 'privacy_policy_url', label: 'Privacy policy URL', type: 'url', public: true },
       { key: 'terms_url', label: 'Terms URL', type: 'url', public: true },
       { key: 'cancellation_policy_url', label: 'Cancellation policy URL', type: 'url', public: true },
-      { key: 'data_retention_notice', label: 'Data retention notice', type: 'textarea', public: true }
-    ] }
+      { key: 'data_retention_url', label: 'Data retention URL', type: 'url', public: true },
+      { key: 'data_retention_notice', label: 'Data retention notice', type: 'textarea', public: true, helper: 'Optional short notice shown at the top of the Data retention page.' }
+    ] },
+    legalGroup('privacy', 'Privacy policy', ShieldCheck),
+    legalGroup('terms', 'Terms', FileText),
+    legalGroup('cancellation', 'Cancellation policy', CalendarX),
+    legalGroup('data_retention', 'Data retention', Archive)
   ];
+
+  /**
+   * One legal page. Private settings — the website reads them one page at a
+   * time from /api/public/legal/:doc, not in the settings every page loads.
+   * Each field's default (the built-in wording) arrives from the server in
+   * load(), where the same text is used for the page and its translations.
+   */
+  function legalGroup(doc: LegalDocKey, label: string, icon: Component): Group {
+    const field = (part: LegalPart, label: string, type: FieldType, helper?: string): Field => ({
+      key: legalSettingKey(doc, part), label, type, public: false, legal: { doc, part }, helper
+    });
+    return {
+      key: `legal_${doc}`,
+      label,
+      icon,
+      legalDoc: doc,
+      note: 'Opens with the text the website shows now. Edit and save to update the page; empty a field to go back to the original wording.',
+      fields: [
+        field('title', 'Page title', 'text'),
+        field('updated', 'Last updated', 'text', 'e.g. September 2026'),
+        field('intro', 'Introduction', 'textarea'),
+        field('meta_description', 'Search description', 'textarea', 'The summary search engines show under the page title.'),
+        field('body', 'Page text', 'rich')
+      ]
+    };
+  }
+
+  // Built-in wording and fixed id of each legal page, from the server.
+  let legalDefaults: LegalDefaults | null = null;
+  // Bumped on every save so the translation panels re-read the saved English.
+  let savedVersion = 0;
 
   const ALL_FIELDS = GROUPS.flatMap((g) => g.fields);
   const groupOfField = new Map(GROUPS.flatMap((g) => g.fields.map((f) => [f.key, g.key] as const)));
@@ -222,11 +269,22 @@
     loading = true;
     error = '';
     try {
-      const res = await api.settings.list();
+      const [res, defaults] = await Promise.all([
+        api.settings.list(),
+        // Fails soft: without it the legal sections open empty, nothing else changes.
+        api.settings.legalDefaults().catch(() => null)
+      ]);
+      legalDefaults = defaults?.data ?? null;
+      for (const field of ALL_FIELDS) {
+        if (field.legal) field.default = legalDefaults?.[field.legal.doc]?.[field.legal.part] ?? '';
+      }
       const map = new Map((res.data as Array<Record<string, unknown>>).map((s) => [String(s.setting_key), s.setting_value]));
       const next: Record<string, unknown> = {};
       for (const field of ALL_FIELDS) {
         let raw = map.has(field.key) ? map.get(field.key) : initialValue(field);
+        // An emptied legal field means "use the original wording" — show that
+        // wording, not a blank box that looks like the page is empty.
+        if (field.legal && !String(raw ?? '').replace(/<[^>]*>/g, '').trim()) raw = initialValue(field);
         if (field.type === 'json') raw = JSON.stringify(raw ?? [], null, 2);
         if (field.type === 'currency-list') raw = normalizeCurrencyRows(raw);
         next[field.key] = raw;
@@ -301,7 +359,9 @@
       if (err) { showToast(err, 'error'); return; }
       payloads.push({
         key,
-        body: { setting_value: value, setting_group: groupOfField.get(key) ?? 'general', setting_type: field.type === 'currency-list' ? 'json' : field.type, is_public: field.public }
+        // Rich page text is stored as a textarea setting (an existing type) and
+        // sanitised by the server on save.
+        body: { setting_value: value, setting_group: groupOfField.get(key) ?? 'general', setting_type: field.type === 'currency-list' ? 'json' : field.type === 'rich' ? 'textarea' : field.type, is_public: field.public }
       });
     }
 
@@ -312,6 +372,7 @@
       }
       for (const { key } of payloads) originalSerialized[key] = JSON.stringify(values[key]);
       originalSerialized = { ...originalSerialized };
+      savedVersion += 1;
       showToast(`Saved ${payloads.length} setting${payloads.length === 1 ? '' : 's'}.`);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Unable to save settings.', 'error');
@@ -370,7 +431,7 @@
 
         <div class="grid gap-4 sm:grid-cols-2">
           {#each group.fields as field (field.key)}
-            <div class={field.type === 'textarea' || field.type === 'json' || field.type === 'currency-list' || field.type === 'image' ? 'sm:col-span-2' : ''}>
+            <div class={field.type === 'textarea' || field.type === 'rich' || field.type === 'json' || field.type === 'currency-list' || field.type === 'image' ? 'sm:col-span-2' : ''}>
               {#if field.type === 'boolean'}
                 <label class="flex h-full cursor-pointer items-center justify-between gap-3 rounded-2xl border border-ink/10 bg-surface p-4 transition hover:bg-sand/30">
                   <span>
@@ -382,6 +443,19 @@
               {:else if field.type === 'textarea'}
                 <AdminTextArea label={field.label} name={field.key} bind:value={values[field.key]} rows={3} />
                 {#if field.helper}<p class="mt-1 text-xs text-ink/50">{field.helper}</p>{/if}
+              {:else if field.type === 'rich'}
+                <!-- Keyed by field: switching between legal pages mounts a fresh
+                     editor instead of carrying one page's history into another. -->
+                {#key field.key}
+                  <AdminRichText
+                    label={field.label}
+                    name={field.key}
+                    bind:value={values[field.key]}
+                    headings="h2h3"
+                    rows={22}
+                    hint="Use Heading 2 for each section and Heading 3 for sub-sections, as the page does now."
+                  />
+                {/key}
               {:else if field.type === 'json'}
                 <label class="grid gap-2 text-sm font-medium text-ink">
                   <span>{field.label}</span>
@@ -479,6 +553,37 @@
             </div>
           {/each}
         </div>
+
+        {#if group.legalDoc}
+          {@const pageId = legalDefaults?.[group.legalDoc]?.id}
+          {@const unsaved = group.fields.some((f) => dirtyKeys.includes(f.key))}
+          <div class="mt-2 grid gap-3 border-t border-ink/10 pt-5">
+            <div>
+              <h3 class="flex items-center gap-2 text-base font-bold text-ink"><Languages size={17} class="text-forest" />Translations</h3>
+              <p class="mt-1 text-xs leading-5 text-ink/55">
+                Visitors reading the site in another language see this page in that language once its translation is published.
+                Anything left untranslated shows in English.
+              </p>
+            </div>
+            {#if unsaved}
+              <p class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800">
+                <Info size={15} class="mt-0.5 shrink-0" />Save your changes first — translations are made from the saved English, not from unsaved edits.
+              </p>
+            {/if}
+            {#if pageId}
+              <!-- Re-mounted after a save, so the English beside each translation is the text just saved. -->
+              {#key `${group.legalDoc}-${savedVersion}`}
+                <AdminTranslationTabs
+                  entityType="legal_pages"
+                  entityId={pageId}
+                  on:toast={(event) => showToast(event.detail.message, event.detail.type ?? 'success')}
+                />
+              {/key}
+            {:else}
+              <p class="text-sm text-ink/60">Couldn't load this page's translations. Reload to try again.</p>
+            {/if}
+          </div>
+        {/if}
       </section>
     </div>
   {/if}

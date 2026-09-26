@@ -3,7 +3,8 @@
   import { ArrowRight } from '@lucide/svelte';
   import { revealHeading } from '$lib/animations';
 
-  export let eyebrow = 'Legal';
+  /** Defaults to the reader's word for "Legal". */
+  export let eyebrow = '';
   export let title: string;
   export let intro = '';
   export let updated = '';
@@ -13,13 +14,13 @@
   <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-goldfinch-gold/20 blur-3xl"></div>
   <div class="pointer-events-none absolute -bottom-28 -left-20 h-72 w-72 rounded-full bg-savanna/15 blur-3xl"></div>
   <div class="container-shell relative py-14 md:py-20">
-    <p class="font-serif text-xl italic text-savanna">{eyebrow}</p>
+    <p class="font-serif text-xl italic text-savanna">{eyebrow || $t('ui.legal')}</p>
     <h1 class="mt-3 max-w-3xl text-3xl font-extrabold leading-[1.1] tracking-tight md:text-5xl" use:revealHeading>{title}</h1>
     {#if intro}
       <p class="mt-4 max-w-2xl text-[15px] leading-7 text-white/75 md:text-lg">{intro}</p>
     {/if}
     {#if updated}
-      <p class="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-savanna/70">Last updated · {updated}</p>
+      <p class="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-savanna/70">{$t('ui.last_updated')} · {updated}</p>
     {/if}
   </div>
 </section>
@@ -66,10 +67,32 @@
     padding-left: 1.1rem;
     list-style: disc;
   }
+  .legal-prose :global(ol) {
+    margin-top: 0.75rem;
+    display: grid;
+    gap: 0.5rem;
+    padding-left: 1.25rem;
+    list-style: decimal;
+  }
   .legal-prose :global(li) {
     font-size: 0.95rem;
     line-height: 1.65;
     color: rgb(var(--c-ink) / 0.72);
+  }
+  /* Text edited in Settings keeps each list item in a paragraph
+     (<li><p>…</p></li>); it must read exactly like the original <li>…</li>. */
+  .legal-prose :global(li > p) {
+    margin-top: 0;
+    font-size: inherit;
+    line-height: inherit;
+  }
+  .legal-prose :global(li > p + p) {
+    margin-top: 0.5rem;
+  }
+  .legal-prose :global(blockquote) {
+    margin-top: 1rem;
+    border-left: 3px solid rgb(var(--c-goldfinch-gold));
+    padding-left: 1rem;
   }
   .legal-prose :global(strong) {
     font-weight: 700;

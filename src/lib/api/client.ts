@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { API_URL } from '$lib/config/env';
 import type { EntityTranslations, Language, TranslationRecord } from '$lib/types';
+import type { LegalDefaults } from '$lib/legal';
 import type { Activity, AdvisorDonePayload, AdvisorMeta, AdvisorPageContext, AdvisorRecommendation, AiChatResponse, ApiResponse, BlogPost, Comparison, CurrencyApiState, Destination, FAQ, Lodge, MigrationEntry, PageSeo, Paginated, Review, ReviewSummary, SafariPackage, SafetyTopic, Specialist, Testimonial, Tour, TourCategory, TravelStyle, TripPoint } from '$lib/types';
 
 type QueryValue = string | number | boolean | undefined | null;
@@ -685,7 +686,9 @@ export const api = {
     create: (body: Record<string, unknown>) => apiRequest('/settings', { method: 'POST', body }),
     update: (key: string, body: Record<string, unknown>) => apiRequest(`/settings/${key}`, { method: 'PUT', body }),
     remove: (key: string) => apiRequest(`/settings/${key}`, { method: 'DELETE' }),
-    public: () => apiRequest<Record<string, unknown>>('/public/settings')
+    public: () => apiRequest<Record<string, unknown>>('/public/settings'),
+    /** Built-in wording and fixed id of each legal page (Settings → legal sections). */
+    legalDefaults: () => apiRequest<LegalDefaults>('/settings/legal-defaults')
   },
   exchangeRates: {
     status: () => apiRequest<CurrencyApiState & Record<string, unknown>>('/internal/exchange-rates'),
