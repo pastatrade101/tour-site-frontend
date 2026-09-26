@@ -268,10 +268,12 @@
             on:click={aiTranslate}
           >
             {#if busy === 'ai'}<Loader2 size={13} class="animate-spin" />{:else}<Sparkles size={13} />{/if}
-            Draft with AI
+            {busy === 'ai' ? 'Drafting…' : 'Draft with AI'}
           </button>
-          <span class="self-center text-[11px] leading-5 text-ink/45">
-            Machine drafts are a starting point. Nothing is live until you publish.
+          <span class="self-center text-[11px] leading-5 text-ink/45" aria-live="polite">
+            {busy === 'ai'
+              ? 'Long pages are translated in parts — this can take up to a minute.'
+              : 'Machine drafts are a starting point. Nothing is live until you publish.'}
           </span>
         </div>
 
