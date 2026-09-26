@@ -226,7 +226,7 @@
       ? 'bg-forest text-white'
       : label.startsWith('Strong')
         ? 'bg-goldfinch-gold text-heading'
-        : 'bg-sand text-clay';
+        : 'bg-canvas text-clay';
 </script>
 
 <svelte:window on:scroll={onScroll} />
@@ -270,7 +270,7 @@
     </header>
 
     <!-- Messages -->
-    <div class="flex-1 space-y-3 overflow-y-auto bg-sand/30 px-4 py-4" bind:this={scroller}>
+    <div class="flex-1 space-y-3 overflow-y-auto bg-canvas px-4 py-4" bind:this={scroller}>
       {#each messages as m, i (i)}
         {#if m.role === 'user'}
           <div class="flex justify-end" in:fade={{ duration: reduce ? 0 : 120 }}>

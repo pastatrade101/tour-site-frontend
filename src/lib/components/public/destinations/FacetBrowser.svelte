@@ -195,7 +195,7 @@
     <div bind:this={railEl} class="no-scrollbar -mx-1 -my-1 flex snap-x snap-mandatory overflow-x-auto px-1 py-1">
       <div
         bind:this={trackEl}
-        class="relative inline-flex shrink-0 items-center gap-0.5 rounded-full bg-sand/60 p-1 ring-1 ring-inset ring-ink/[0.08]"
+        class="relative inline-flex shrink-0 items-center gap-0.5 rounded-full bg-canvas p-1 ring-1 ring-inset ring-ink/[0.08]"
         role="tablist"
         aria-label={$t('ui.browse_destinations_by')}
       >

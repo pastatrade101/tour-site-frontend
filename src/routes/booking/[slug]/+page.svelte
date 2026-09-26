@@ -63,13 +63,13 @@
       <div class="grid gap-3 p-5">
         <div class="flex flex-wrap gap-2 text-sm font-semibold text-ink/70">
           {#if destination}
-            <span class="inline-flex items-center gap-1.5 rounded-full bg-sand/70 px-3 py-1"><MapPin size={14} class="text-forest" />{destination}</span>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-canvas px-3 py-1"><MapPin size={14} class="text-forest" />{destination}</span>
           {/if}
           {#if durationLabel}
-            <span class="inline-flex items-center gap-1.5 rounded-full bg-sand/70 px-3 py-1"><CalendarClock size={14} class="text-forest" />{durationLabel}</span>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-canvas px-3 py-1"><CalendarClock size={14} class="text-forest" />{durationLabel}</span>
           {/if}
           {#if tour.group_size}
-            <span class="inline-flex items-center gap-1.5 rounded-full bg-sand/70 px-3 py-1"><Users size={14} class="text-forest" />{tour.group_size}</span>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-canvas px-3 py-1"><Users size={14} class="text-forest" />{tour.group_size}</span>
           {/if}
         </div>
 

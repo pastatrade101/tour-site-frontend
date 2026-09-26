@@ -15,7 +15,7 @@
   <meta name="description" content={description} />
 </svelte:head>
 
-<section class="bg-sand py-16 md:py-20">
+<section class="bg-canvas py-16 md:py-20">
   <div class="container-shell grid gap-8 md:grid-cols-[1fr_0.8fr] md:items-start">
     <div>
       <SectionHeader eyebrow={brand.tagline} {title} {description} />

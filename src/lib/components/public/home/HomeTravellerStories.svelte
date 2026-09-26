@@ -154,7 +154,7 @@
           {@const quote = quoteOf(review)}
           {@const stars = starsOf(review.rating)}
           {@const platform = (review.platform ?? '').trim()}
-          <article data-review-card class="flex flex-col rounded-[14px] bg-sand/25 p-6">
+          <article data-review-card class="flex flex-col rounded-[14px] bg-canvas p-6">
             <span class="font-serif text-[34px] leading-none text-goldfinch-gold/45" aria-hidden="true">&rdquo;</span>
 
             {#if quote}

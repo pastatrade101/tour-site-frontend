@@ -40,7 +40,7 @@
           class={`h-9 shrink-0 rounded-full px-4 text-sm font-semibold transition ${
             active === cat
               ? 'bg-deep-green text-white'
-              : 'border border-ink/15 text-ink hover:bg-sand'
+              : 'border border-ink/15 text-ink hover:bg-canvas'
           }`}
           on:click={() => (active = cat)}
         >
@@ -58,7 +58,7 @@
 
     <!-- can't find band -->
     <div
-      class="mt-10 flex flex-col items-center justify-between gap-4 rounded-[8px] border border-ink/10 bg-sand/50 p-5 text-center sm:flex-row sm:text-left md:p-6"
+      class="mt-10 flex flex-col items-center justify-between gap-4 rounded-[8px] border border-ink/10 bg-canvas p-5 text-center sm:flex-row sm:text-left md:p-6"
     >
       <div>
         <p class="font-semibold text-heading">{$t('ui.cant_find_your_perfect_trip')}</p>

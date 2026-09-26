@@ -173,7 +173,7 @@
       </div>
       <div class="flex items-center gap-2">
         <span class={`inline-flex h-7 items-center rounded-full px-3 text-xs font-bold ${statusTone(trip.status)}`}>{titleCase(trip.status)}</span>
-        <button type="button" class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-ink/15 px-3 text-xs font-semibold text-ink/70 transition hover:bg-sand" on:click={logout}><LogOut size={14} />{$t('ui.sign_out')}</button>
+        <button type="button" class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-ink/15 px-3 text-xs font-semibold text-ink/70 transition hover:bg-canvas" on:click={logout}><LogOut size={14} />{$t('ui.sign_out')}</button>
       </div>
     </div>
 

@@ -91,7 +91,7 @@
 
 <!-- Latest guides -->
 {#if loading || posts.length}
-<section class="bg-sand/30 py-12 md:py-16">
+<section class="bg-canvas py-12 md:py-16">
   <div class="container-shell">
     <p class="font-serif text-xl italic text-clay">{$t('ui.guides')}</p>
     <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-heading md:text-[34px]" use:revealHeading>{$t('ui.latest_planning_guides')}</h2>
@@ -118,7 +118,7 @@
           <p class="mt-0.5 text-lg font-extrabold text-heading">{$t('ui.compare_destinations_amp_routes_side')}</p>
         </div>
       </div>
-      <a href="/compare" class="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border border-forest/20 bg-surface px-5 font-semibold text-forest transition group-hover:bg-sand/40">{$t('ui.see_comparisons')}<ArrowRight size={16} />
+      <a href="/compare" class="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border border-forest/20 bg-surface px-5 font-semibold text-forest transition group-hover:bg-canvas">{$t('ui.see_comparisons')}<ArrowRight size={16} />
       </a>
     </div>
   </div>

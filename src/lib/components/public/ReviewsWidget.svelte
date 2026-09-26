@@ -71,7 +71,7 @@
     })}
   />
 
-  <section class="relative overflow-hidden bg-sand/40 py-14 md:py-20" use:sectionReveal>
+  <section class="relative overflow-hidden bg-canvas py-14 md:py-20" use:sectionReveal>
     <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-forest/20 to-transparent" aria-hidden="true"></div>
     <div class="container-shell">
       <!-- header -->
@@ -117,7 +117,7 @@
           {#each reviews as review}
             <article class="flex h-full flex-col gap-4 rounded-[8px] border border-ink/10 bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:border-forest/25 hover:shadow-card-hover">
               {#if review.author_photo_url}
-                <div class="aspect-[16/10] overflow-hidden rounded-[8px] bg-sand ring-1 ring-ink/10">
+                <div class="aspect-[16/10] overflow-hidden rounded-[8px] bg-canvas ring-1 ring-ink/10">
                   <Img
                     record={review}
                     fields={['author_photo_url']}

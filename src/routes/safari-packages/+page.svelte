@@ -56,7 +56,7 @@
       </div>
     {:else}
       <!-- Nothing published yet. The page says so rather than showing a shell. -->
-      <p class="mt-10 rounded-[12px] border border-ink/10 bg-sand/35 p-5 text-[14px] leading-6 text-ink/70">{$t('ui.no_safari_packages_are_listed')}</p>
+      <p class="mt-10 rounded-[12px] border border-ink/10 bg-canvas p-5 text-[14px] leading-6 text-ink/70">{$t('ui.no_safari_packages_are_listed')}</p>
     {/if}
   </div>
 </section>

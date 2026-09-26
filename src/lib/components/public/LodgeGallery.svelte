@@ -128,7 +128,7 @@
 
   <button
     type="button"
-    class="mt-3 inline-flex items-center gap-2 rounded-full border border-ink/15 bg-surface px-4 py-2 text-sm font-bold text-heading transition hover:border-goldfinch-gold hover:bg-sand/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
+    class="mt-3 inline-flex items-center gap-2 rounded-full border border-ink/15 bg-surface px-4 py-2 text-sm font-bold text-heading transition hover:border-goldfinch-gold hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
     on:click={() => show(0)}
   >
     <Expand size={15} />

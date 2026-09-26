@@ -720,7 +720,7 @@
     height: 1.35rem;
     place-items: center;
     border-radius: 999px;
-    background: rgb(var(--c-sand) / 0.8);
+    background: rgb(var(--c-canvas));
     font-size: 0.75rem;
   }
   :global(.category-pill:hover),

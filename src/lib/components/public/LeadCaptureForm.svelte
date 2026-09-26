@@ -76,7 +76,7 @@
       {$t('cta.plan_my_trip')} <ArrowRight size={16} />
     </button>
     <a
-      class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] border border-ink/15 px-6 text-sm font-bold text-heading transition hover:border-goldfinch-gold hover:bg-sand/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold sm:w-auto"
+      class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] border border-ink/15 px-6 text-sm font-bold text-heading transition hover:border-goldfinch-gold hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold sm:w-auto"
       href="/contact"
     >
       <MessageCircle size={16} /> {$t('cta.talk_to_advisor')}

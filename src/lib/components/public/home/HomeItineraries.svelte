@@ -101,7 +101,7 @@
     flex: 0 0 auto;
     border: 1px solid rgb(var(--c-ink) / 0.14);
     border-radius: 10px;
-    background: rgb(var(--c-sand) / 0.42);
+    background: rgb(var(--c-canvas));
     padding: 0.625rem 1rem;
     color: rgb(var(--c-heading) / 0.72);
     font-size: 0.8125rem;

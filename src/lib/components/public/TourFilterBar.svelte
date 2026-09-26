@@ -112,7 +112,7 @@
   });
 
   const trigger =
-    'flex h-full min-w-0 flex-1 flex-col justify-center gap-0.5 rounded-[10px] px-4 py-2 text-left transition hover:bg-sand/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40';
+    'flex h-full min-w-0 flex-1 flex-col justify-center gap-0.5 rounded-[10px] px-4 py-2 text-left transition hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold/40';
   const panel =
     'absolute left-0 top-[calc(100%+8px)] z-40 w-[min(320px,calc(100vw-2rem))] rounded-[12px] border border-ink/10 bg-surface p-4 shadow-[0_18px_50px_rgba(57,61,50,0.18)]';
 </script>
@@ -226,11 +226,11 @@
               <input class="min-w-0 flex-1 bg-transparent text-sm outline-none" placeholder={$t('filter.search_destinations')} bind:value={destQuery} />
             </div>
             <div class="mt-2 max-h-64 overflow-y-auto">
-              <button type="button" class="flex w-full items-center justify-between rounded-[8px] px-2 py-2 text-sm hover:bg-sand/60" on:click={() => { dispatch('destination', ''); close(); }}>
+              <button type="button" class="flex w-full items-center justify-between rounded-[8px] px-2 py-2 text-sm hover:bg-canvas" on:click={() => { dispatch('destination', ''); close(); }}>
                 {$t('label.all_destinations')} {#if !destSlug}<Check size={15} class="text-goldfinch-gold" />{/if}
               </button>
               {#each filteredDestinations as d (d.slug)}
-                <button type="button" class="flex w-full items-center justify-between gap-2 rounded-[8px] px-2 py-2 text-left text-sm hover:bg-sand/60" on:click={() => { dispatch('destination', d.slug); close(); }}>
+                <button type="button" class="flex w-full items-center justify-between gap-2 rounded-[8px] px-2 py-2 text-left text-sm hover:bg-canvas" on:click={() => { dispatch('destination', d.slug); close(); }}>
                   <span class="truncate">{d.name}</span>
                   {#if destSlug === d.slug}<Check size={15} class="shrink-0 text-goldfinch-gold" />{/if}
                 </button>
@@ -293,7 +293,7 @@
         {#if open === 'comfort'}
           <div class={panel}>
             {#each tiers as t (t.key)}
-              <label class="flex cursor-pointer items-center justify-between gap-3 rounded-[8px] px-2 py-2 text-sm hover:bg-sand/60">
+              <label class="flex cursor-pointer items-center justify-between gap-3 rounded-[8px] px-2 py-2 text-sm hover:bg-canvas">
                 <span class="flex items-center gap-2.5">
                   <input type="checkbox" class="h-4 w-4 accent-forest" checked={selectedTiers.includes(t.key)} on:change={() => dispatch('tier', t.key)} />
                   {t.label}
@@ -317,7 +317,7 @@
           <div class={panel}>
             <div class="max-h-64 overflow-y-auto">
               {#each categoryOptions as c (c.slug)}
-                <label class="flex cursor-pointer items-center justify-between gap-3 rounded-[8px] px-2 py-2 text-sm hover:bg-sand/60">
+                <label class="flex cursor-pointer items-center justify-between gap-3 rounded-[8px] px-2 py-2 text-sm hover:bg-canvas">
                   <span class="flex min-w-0 items-center gap-2.5">
                     <input type="checkbox" class="h-4 w-4 shrink-0 accent-forest" checked={selectedCategories.includes(c.slug)} on:change={() => dispatch('category', c.slug)} />
                     <span class="truncate">{c.name}</span>

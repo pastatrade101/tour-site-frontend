@@ -183,7 +183,7 @@
         class={`shrink-0 rounded-[10px] border px-5 py-[13px] text-[14.5px] font-semibold tracking-[0.015em] transition md:px-7 md:py-[15px] md:text-[15.5px] ${
           i === activeRoute
             ? 'border-deep-green bg-deep-green text-surface'
-            : 'border-ink/10 bg-canvas text-heading hover:bg-sand/70'
+            : 'border-ink/10 bg-canvas text-heading hover:border-ink/25 hover:bg-surface'
         }`}
         type="button"
         role="tab"
@@ -278,7 +278,7 @@
                     class={`h-11 shrink-0 rounded-[10px] border px-5 text-[14px] font-semibold tracking-[0.02em] transition ${
                       li === (priceLevel[activeRoute] ?? 0)
                         ? 'border-deep-green bg-deep-green text-surface'
-                        : 'border-ink/[0.16] bg-canvas text-heading hover:bg-sand/70'
+                        : 'border-ink/[0.16] bg-canvas text-heading hover:border-ink/25 hover:bg-surface'
                     }`}
                     type="button"
                     aria-pressed={li === (priceLevel[activeRoute] ?? 0)}
@@ -327,7 +327,7 @@
                   class={`h-11 shrink-0 rounded-[10px] border px-5 text-[14px] font-semibold tracking-[0.02em] transition ${
                     i === (priceLevel[activeRoute] ?? 0)
                       ? 'border-deep-green bg-deep-green text-surface'
-                      : 'border-ink/[0.16] bg-surface text-heading hover:bg-sand/70'
+                      : 'border-ink/[0.16] bg-surface text-heading hover:border-ink/35'
                   }`}
                   type="button"
                   aria-pressed={i === (priceLevel[activeRoute] ?? 0)}

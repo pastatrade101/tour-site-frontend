@@ -61,7 +61,7 @@
     {#if hidden > 0}
       <button
         type="button"
-        class="mt-5 inline-flex items-center rounded-full border border-ink/15 bg-surface px-4 py-2 text-sm font-bold text-heading transition hover:border-goldfinch-gold hover:bg-sand/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
+        class="mt-5 inline-flex items-center rounded-full border border-ink/15 bg-surface px-4 py-2 text-sm font-bold text-heading transition hover:border-goldfinch-gold hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
         aria-expanded={expanded}
         on:click={() => (expanded = !expanded)}
       >

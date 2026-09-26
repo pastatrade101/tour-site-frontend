@@ -41,7 +41,7 @@
             <a href={`/tours/${item.slug}`} class="mt-1 text-lg font-extrabold text-heading hover:underline">{item.title}</a>
             <div class="mt-auto flex flex-wrap items-center gap-2.5 pt-4">
               <a class="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-goldfinch-gold px-4 text-sm font-bold text-heading transition hover:brightness-105" href={`/plan-my-trip?tour=${item.slug}`}>{$t('ui.plan_this_trip')}</a>
-              <a class="inline-flex h-10 items-center justify-center rounded-xl border border-ink/15 bg-surface px-4 text-sm font-semibold text-ink/70 transition hover:bg-sand/60" href={`/tours/${item.slug}`}>{$t('filter.view_results')}</a>
+              <a class="inline-flex h-10 items-center justify-center rounded-xl border border-ink/15 bg-surface px-4 text-sm font-semibold text-ink/70 transition hover:bg-canvas" href={`/tours/${item.slug}`}>{$t('filter.view_results')}</a>
               <button class="ml-auto grid h-10 w-10 place-items-center rounded-xl border border-red-200 bg-surface text-red-600 transition hover:bg-red-50" type="button" aria-label={$t('ui.remove_from_shortlist')} on:click={() => removeShortlist(item.slug)}>
                 <Trash2 size={16} />
               </button>

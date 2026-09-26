@@ -140,7 +140,7 @@
             <button
               type="button"
               class={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition ${
-                i === activeIndex ? 'bg-forest/[0.08] text-heading' : 'text-ink/80 hover:bg-sand/60'
+                i === activeIndex ? 'bg-forest/[0.08] text-heading' : 'text-ink/80 hover:bg-canvas'
               }`}
               on:mouseenter={() => (activeIndex = i)}
               on:click={() => commit(c.name)}

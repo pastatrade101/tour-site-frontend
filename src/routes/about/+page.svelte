@@ -162,7 +162,7 @@
     <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4" use:staggeredCardReveal={{ y: 16, stagger: 0.06 }}>
       {#each STORY_STEPS as step, i}
         <div class="relative flex flex-col items-center text-center">
-          <span class="grid h-14 w-14 place-items-center rounded-full border border-forest/20 bg-sand/50 text-forest">
+          <span class="grid h-14 w-14 place-items-center rounded-full border border-forest/20 bg-canvas text-forest">
             <svelte:component this={step.icon} size={22} strokeWidth={1.8} />
           </span>
           <p class="mt-3 max-w-[10rem] text-sm font-semibold text-heading">{step.label}</p>
@@ -267,7 +267,7 @@
                 {/if}
                 {#if specialist.tripadvisor_url}
                   <a
-                    class="inline-flex items-center gap-1.5 rounded-full border border-ink/12 bg-sand/45 px-3 py-1.5 text-xs font-bold text-heading transition hover:border-clay/35 hover:bg-sand"
+                    class="inline-flex items-center gap-1.5 rounded-full border border-ink/12 bg-canvas px-3 py-1.5 text-xs font-bold text-heading transition hover:border-clay/35 hover:brightness-95"
                     href={specialist.tripadvisor_url}
                     target="_blank"
                     rel="noopener noreferrer"

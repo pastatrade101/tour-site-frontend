@@ -129,7 +129,7 @@
       </div>
 
       <!-- ── right: explore destinations ────────────────────────── -->
-      <div class="relative bg-sand/30 px-6 py-14 md:px-10 md:py-20">
+      <div class="relative bg-canvas px-6 py-14 md:px-10 md:py-20">
         <span class="pointer-events-none absolute inset-0 opacity-[0.04]" style="background-image: radial-gradient(circle, #393D32 1px, transparent 1.5px); background-size: 24px 24px;" aria-hidden="true"></span>
         <div class="relative">
           <p class="font-serif text-xl italic text-clay">{$t('ui.top_destinations')}</p>

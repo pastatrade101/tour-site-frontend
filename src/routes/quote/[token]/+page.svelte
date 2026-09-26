@@ -226,7 +226,7 @@
           <!-- Stated on the document, not left to a later message. Someone
                deciding whether to accept is entitled to know what saying yes
                commits them to paying, and when. -->
-          <div class="rounded-[8px] bg-sand/40 p-4">
+          <div class="rounded-[8px] bg-canvas p-4">
             <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">{$t('ui.payment')}</p>
             {#if quote.deposit_amount != null}
               <p class="mt-1.5 text-sm text-ink/75">{$t('ui.deposit_to_confirm')}<span class="font-semibold text-heading">{money(quote.deposit_amount, quote.currency)}</span>

@@ -126,7 +126,7 @@
           {/each}
         </div>
       </div>
-      <div class="rounded-2xl border border-ink/10 bg-sand/30 p-6">
+      <div class="rounded-2xl border border-ink/10 bg-canvas p-6">
         <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">{$t('ui.what_we_plan_around')}</p>
         <div class="mt-3 grid gap-2.5">
           {#each style.concerns as c}

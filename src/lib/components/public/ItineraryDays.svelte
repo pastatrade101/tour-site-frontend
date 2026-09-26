@@ -157,7 +157,7 @@
           {/if}
 
           {#if details.length}
-            <ul class="tour-day-details mb-7 mt-6 rounded-[12px] border border-ink/10 bg-sand/45 p-5 md:p-[22px]">
+            <ul class="tour-day-details mb-7 mt-6 rounded-[12px] border border-ink/10 bg-canvas p-5 md:p-[22px]">
               {#each details as detail, detailIndex}
                 <li class={`flex items-start gap-3 text-[14.5px] leading-[1.55] md:text-[15px] ${detailIndex > 0 ? 'mt-2.5' : ''}`}>
                   <svelte:component this={detail.icon} size={16} class="mt-[2px] shrink-0 text-clay" />

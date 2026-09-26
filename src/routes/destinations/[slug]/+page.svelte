@@ -977,7 +977,7 @@
 
         {#if guideFacts.length}
           <dl class="mt-7 overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-card">
-            <p class="border-b border-ink/10 bg-sand/45 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-ink/55">
+            <p class="border-b border-ink/10 bg-canvas px-4 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-ink/55">
               {(guideFactsBlock && blockTitle(guideFactsBlock)) || 'At a glance'}
             </p>
             {#each guideFacts as fact}
@@ -1039,7 +1039,7 @@
                   {#if tableRows(block).length}
                     <div class="mt-5 overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-card">
                       {#if tableColumns(block).length}
-                        <div class="grid bg-sand/45 text-[11px] font-bold uppercase tracking-[0.14em] text-ink/55" style={`grid-template-columns: repeat(${tableColumns(block).length}, minmax(0, 1fr));`}>
+                        <div class="grid bg-canvas text-[11px] font-bold uppercase tracking-[0.14em] text-ink/55" style={`grid-template-columns: repeat(${tableColumns(block).length}, minmax(0, 1fr));`}>
                           {#each tableColumns(block) as column}
                             <span class="px-4 py-3">{column}</span>
                           {/each}
@@ -1082,7 +1082,7 @@
   </section>
 
   {#if highlightCards.length}
-    <section id="highlights" class="scroll-mt-32 bg-sand/45 py-14 md:py-20">
+    <section id="highlights" class="scroll-mt-32 bg-canvas py-14 md:py-20">
       <div class="container-shell">
         <div class="max-w-3xl" use:fadeUpOnScroll={{ y: 14 }}>
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('label.highlights')}</p>
@@ -1163,7 +1163,7 @@
                         {/if}
                         <tbody>
                           {#each tableRows(block) as row, rowIndex}
-                            <tr class={rowIndex % 2 === 0 ? 'bg-surface' : 'bg-sand/35'}>
+                            <tr class={rowIndex % 2 === 0 ? 'bg-surface' : 'bg-canvas'}>
                               {#each row as cell}
                                 <td class="border-t border-ink/5 px-4 py-3 align-top text-ink/70">{cell}</td>
                               {/each}
@@ -1202,7 +1202,7 @@
           </p>
         </div>
 
-        <div class="mt-10 rounded-[12px] border border-ink/10 bg-sand/45 p-6 shadow-[0_18px_45px_rgba(57,61,50,0.06)] md:mt-12 md:p-10 lg:p-12">
+        <div class="mt-10 rounded-[12px] border border-ink/10 bg-surface p-6 shadow-[0_18px_45px_rgba(57,61,50,0.06)] md:mt-12 md:p-10 lg:p-12">
           <div class="grid items-stretch gap-7 md:gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
             <div class="flex flex-col">
               <div class="flex h-[64px] w-[64px] items-center justify-center rounded-full bg-clay/10 md:h-[72px] md:w-[72px]">
@@ -1301,7 +1301,7 @@
                 <div class="flex min-w-0 flex-1 flex-col p-5">
                   <div class="flex flex-wrap items-center gap-2">
                     {#if dayRangeLabel(category)}
-                      <span class="rounded-[6px] bg-sand/70 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-ink/56">
+                      <span class="rounded-[6px] bg-canvas px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-ink/56">
                         {dayRangeLabel(category)}
                       </span>
                     {/if}
@@ -1337,7 +1337,7 @@
   {/if}
 
   {#if activities.length || lodgeFeatureCards.length}
-    <section class="border-y border-ink/[0.06] bg-sand/35 py-14 md:py-20">
+    <section class="border-y border-ink/[0.06] bg-canvas py-14 md:py-20">
       <div class="container-shell grid gap-12">
         {#if activities.length}
           <div>
@@ -1416,7 +1416,7 @@
           <p class="mt-4 max-w-[820px] text-base leading-relaxed text-ink/65 md:text-lg">{$t('ui.how_to_get_here_and')}</p>
 
           <div class="mt-8 overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-card md:mt-12 md:rounded-[12px]">
-            <div class="flex overflow-x-auto border-b border-ink/10 bg-sand/55 md:grid md:grid-cols-3 md:overflow-visible">
+            <div class="flex overflow-x-auto border-b border-ink/10 bg-canvas md:grid md:grid-cols-3 md:overflow-visible">
               {#each planningTabs as tab, index}
                 {@const isActive = tab.id === activePlanningTab}
                 <button
@@ -1453,7 +1453,7 @@
                 {/each}
               </ul>
 
-              <div class="mt-9 flex items-start gap-3 rounded-[8px] border border-ink/10 bg-sand/70 px-5 py-4 md:px-6">
+              <div class="mt-9 flex items-start gap-3 rounded-[8px] border border-ink/10 bg-canvas px-5 py-4 md:px-6">
                 <Info class="mt-[2px] h-[18px] w-[18px] shrink-0 text-clay" strokeWidth={1.75} />
                 <p class="text-[14.5px] leading-[1.5] text-heading md:text-[15.5px]">{$t('ui.for_broader_preparation_details_read')}</p>
               </div>

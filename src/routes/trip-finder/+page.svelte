@@ -204,7 +204,7 @@
   };
 </script>
 
-<section class="overflow-x-hidden bg-sand/40">
+<section class="overflow-x-hidden bg-canvas">
   <div class="container-shell flex min-h-[70vh] flex-col items-center py-10 sm:py-12 md:py-16">
     <div class="min-w-0 w-full max-w-2xl">
       <div class="text-center">
@@ -304,7 +304,7 @@
                   <div class="mt-4 flex flex-wrap gap-2.5">
                     <a class="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-goldfinch-gold px-4 text-sm font-bold text-heading transition hover:brightness-105" href={planHref(rec.tour.slug)}>
                       <Sparkles size={15} />{$t('ui.plan_this_trip')}</a>
-                    <a class="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-ink/15 bg-surface px-4 text-sm font-semibold text-ink/70 transition hover:bg-sand/60" href={`/tours/${rec.tour.slug}`}>{$t('ui.view_trip')}</a>
+                    <a class="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-ink/15 bg-surface px-4 text-sm font-semibold text-ink/70 transition hover:bg-canvas" href={`/tours/${rec.tour.slug}`}>{$t('ui.view_trip')}</a>
                   </div>
                 </div>
               </article>
@@ -321,7 +321,7 @@
         <div class="mt-6 grid gap-3 sm:grid-cols-2">
           <a class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-deep-green px-5 font-bold text-white shadow-sm transition hover:bg-forest" href={specialistHref}>
             <MessageCircle size={18} />{$t('ui.talk_to_a_specialist')}</a>
-          <a class="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-ink/15 bg-surface px-5 font-semibold text-ink transition hover:bg-sand/60" href={allToursHref}>{$t('ui.see_all_tours')}<ArrowRight size={16} />
+          <a class="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-ink/15 bg-surface px-5 font-semibold text-ink transition hover:bg-canvas" href={allToursHref}>{$t('ui.see_all_tours')}<ArrowRight size={16} />
           </a>
         </div>
         <div class="mt-5 text-center">

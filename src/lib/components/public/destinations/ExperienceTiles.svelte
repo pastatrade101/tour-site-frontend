@@ -41,7 +41,7 @@
           aria-pressed={active}
           on:click={() => dispatch('facet', active ? '' : facet.key)}
         >
-          <span class="grid h-10 w-10 shrink-0 place-items-center rounded-[8px] bg-sand/70 text-lg transition group-hover:bg-sand" aria-hidden="true">
+          <span class="grid h-10 w-10 shrink-0 place-items-center rounded-[8px] bg-canvas text-lg transition group-hover:brightness-95" aria-hidden="true">
             {facet.icon}
           </span>
           <span class="min-w-0">

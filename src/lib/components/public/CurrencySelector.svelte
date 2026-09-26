@@ -216,9 +216,9 @@
           aria-selected={isSelected}
           aria-disabled={unavailable}
           class={`flex cursor-pointer items-center gap-3 rounded-[8px] px-2.5 py-2 transition
-            ${index === activeIndex ? 'bg-sand' : ''}
+            ${index === activeIndex ? 'bg-canvas' : ''}
             ${isSelected ? 'bg-goldfinch-gold/12' : ''}
-            ${unavailable ? 'cursor-not-allowed opacity-40' : 'hover:bg-sand'}`}
+            ${unavailable ? 'cursor-not-allowed opacity-40' : 'hover:bg-canvas'}`}
           on:click={() => !unavailable && choose(item.code)}
           on:mouseenter={() => (activeIndex = index)}
         >

@@ -76,7 +76,7 @@
   class={`tour-card group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-[#E3DCCB] shadow-[0_8px_24px_-16px_rgba(57,61,50,0.35)] ${whiteSurface ? 'bg-white' : 'bg-surface'}`}
   data-tour-card
 >
-  <div class="relative aspect-[4/3] w-full overflow-hidden bg-sand">
+  <div class="relative aspect-[4/3] w-full overflow-hidden bg-canvas">
     <a href={href} aria-label={`View ${tour.title}`} on:click={recordClick} class="block h-full w-full">
       {#if image}
         <Img

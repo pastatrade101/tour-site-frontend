@@ -46,7 +46,7 @@
   };
 </script>
 
-<div class="rounded-2xl border border-ink/10 bg-sand/30 p-5">
+<div class="rounded-2xl border border-ink/10 bg-canvas p-5">
   {#if done}
     <div class="flex items-center gap-3 text-heading">
       <CheckCircle2 size={22} class="shrink-0 text-emerald-600" />

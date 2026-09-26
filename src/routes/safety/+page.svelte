@@ -102,7 +102,7 @@
   {#if loading}
     <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {#each Array(6) as _}
-        <div class="h-48 animate-pulse rounded-2xl bg-sand/60"></div>
+        <div class="h-48 animate-pulse rounded-2xl bg-canvas"></div>
       {/each}
     </div>
   {:else if topics.length}
@@ -124,14 +124,14 @@
       {/each}
     </div>
   {:else}
-    <p class="mt-10 rounded-2xl border border-ink/10 bg-sand/40 p-6 text-center text-ink/70">{$t('ui.safety_guidance_is_being_prepared')}<a class="font-semibold text-forest underline" href="/contact">contact us</a> with any questions in the meantime.
+    <p class="mt-10 rounded-2xl border border-ink/10 bg-canvas p-6 text-center text-ink/70">{$t('ui.safety_guidance_is_being_prepared')}<a class="font-semibold text-forest underline" href="/contact">contact us</a> with any questions in the meantime.
     </p>
   {/if}
 </section>
 
 <!-- Safety by destination -->
 {#if destinations.length}
-  <section class="border-t border-ink/[0.06] bg-sand/30 py-14 md:py-20">
+  <section class="border-t border-ink/[0.06] bg-canvas py-14 md:py-20">
     <div class="container-shell">
       <SectionHeader
         eyebrow="By destination"

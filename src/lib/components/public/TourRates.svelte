@@ -148,8 +148,8 @@
       </thead>
       <tbody>
         {#each seasons as season, index}
-          <tr class={index % 2 === 0 ? 'bg-surface' : 'bg-[#f5f1e9]'}>
-            <th class={`sticky left-0 z-10 border-t border-ink/8 px-5 py-6 text-left ${index % 2 === 0 ? 'bg-surface' : 'bg-[#f5f1e9]'}`}>
+          <tr class={index % 2 === 0 ? 'bg-surface' : 'bg-canvas'}>
+            <th class={`sticky left-0 z-10 border-t border-ink/8 px-5 py-6 text-left ${index % 2 === 0 ? 'bg-surface' : 'bg-canvas'}`}>
               <span class="block max-w-32 text-[16px] font-extrabold leading-6 text-heading">{season.season_name}</span>
             </th>
             {#each groupColumns as group}
@@ -202,7 +202,7 @@
       </thead>
       <tbody>
         {#each rows as row, index}
-          <tr class={index % 2 === 0 ? 'bg-surface' : 'bg-sand/35'}>
+          <tr class={index % 2 === 0 ? 'bg-surface' : 'bg-canvas'}>
             <td class="border-t border-ink/5 px-4 py-3 align-top font-semibold text-heading">{row.label}</td>
             <td class="border-t border-ink/5 px-4 py-3 align-top text-ink/75">{row.value}</td>
             <td class="hidden border-t border-ink/5 px-4 py-3 align-top text-ink/60 md:table-cell">{row.note}</td>

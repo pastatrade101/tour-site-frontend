@@ -559,7 +559,7 @@
           {#if tripFacts.length}
             <div class="tour-facts-grid mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {#each tripFacts as fact}
-                <div class="rounded-[10px] border border-ink/10 bg-sand/30 p-3.5">
+                <div class="rounded-[10px] border border-ink/10 bg-canvas p-3.5">
                   <span class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink/70">
                     <svelte:component this={fact.icon} size={13} />
                     {fact.label}
@@ -595,7 +595,7 @@
                 </thead>
                 <tbody>
                   {#each snapshotRows as row, index}
-                    <tr class={index % 2 === 0 ? 'bg-surface' : 'bg-sand/35'}>
+                    <tr class={index % 2 === 0 ? 'bg-surface' : 'bg-canvas'}>
                       <td class="w-[92px] min-w-[92px] whitespace-nowrap border-t border-ink/5 px-4 py-3 align-top font-semibold text-heading">{row.day}</td>
                       <td class="border-t border-ink/5 px-4 py-3 align-top font-semibold text-clay">{row.place}</td>
                       <td class="border-t border-ink/5 px-4 py-3 align-top text-ink/70">{row.highlights || 'Published details on request'}</td>
@@ -653,7 +653,7 @@
               <ItineraryDays days={itineraryDays} {lodgeMedia} />
             </div>
           {:else}
-            <div class="mt-6 rounded-[12px] border border-ink/10 bg-sand/35 p-5 text-[14px] leading-6 text-ink/70">{$t('ui.the_daybyday_route_for_this')}</div>
+            <div class="mt-6 rounded-[12px] border border-ink/10 bg-canvas p-5 text-[14px] leading-6 text-ink/70">{$t('ui.the_daybyday_route_for_this')}</div>
           {/if}
         </section>
 
@@ -757,7 +757,7 @@
               {/if}
             </div>
 
-            <div class="rounded-[12px] border border-ink/10 bg-sand/45 p-5">
+            <div class="rounded-[12px] border border-ink/10 bg-canvas p-5">
               <h3 class="font-serif text-[18px] font-semibold text-heading">{$t('ui.not_included_2')}</h3>
               {#if exclusions.length}
                 <ul class="mt-3 space-y-2">
@@ -789,7 +789,7 @@
           {#if tourSpecialist}
             <button
               type="button"
-              class="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[8px] border border-forest/20 bg-surface px-4 text-sm font-bold text-forest transition hover:border-forest/40 hover:bg-sand/40"
+              class="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[8px] border border-forest/20 bg-surface px-4 text-sm font-bold text-forest transition hover:border-forest/40 hover:bg-canvas"
               aria-label={`View specialist ${tourSpecialist.name}`}
               on:click={() => (specialistOpen = true)}
             >{$t('ui.view_specialist')}<ArrowRight size={15} strokeWidth={2.5} />
@@ -807,7 +807,7 @@
   />
 
   {#if relatedTours.length}
-    <section class="border-t border-ink/[0.06] bg-sand/30 py-14 md:py-20">
+    <section class="border-t border-ink/[0.06] bg-canvas py-14 md:py-20">
       <div class="container-shell">
         <div class="flex flex-wrap items-end justify-between gap-4">
           <SectionHeader eyebrow="You might also like" title={$t('ui.more_tours')} description="Other published trips travellers book with us." />
@@ -840,7 +840,7 @@
     </section>
   {/if}
 
-  <section id="good-to-know" class="scroll-mt-32 border-t border-ink/10 bg-sand/25 py-14 md:py-20">
+  <section id="good-to-know" class="scroll-mt-32 border-t border-ink/10 bg-canvas py-14 md:py-20">
     <div class="container-shell">
       <div class="mx-auto max-w-4xl">
         <div class="section-label"><span></span><p>{$t('ui.good_to_know_2')}</p></div>

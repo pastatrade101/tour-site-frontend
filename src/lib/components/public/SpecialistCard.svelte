@@ -37,7 +37,7 @@
   {#if specialist.blurb}<p class="mt-3 text-sm leading-6 text-ink/65">{specialist.blurb}</p>{/if}
   {#if specialist.tripadvisor_url}
     <a
-      class="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-ink/12 bg-sand/45 px-4 text-sm font-bold text-heading transition hover:border-clay/30 hover:bg-sand"
+      class="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-ink/12 bg-canvas px-4 text-sm font-bold text-heading transition hover:border-clay/30 hover:brightness-95"
       href={specialist.tripadvisor_url}
       target="_blank"
       rel="noopener noreferrer"

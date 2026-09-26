@@ -39,7 +39,7 @@
       <ul class:traveller-moments__track={canLoop} class:traveller-moments__static={!canLoop}>
         {#each track as image, index (`${image.id ?? image.image_url}-${index}`)}
           <li
-            class="relative h-[250px] w-[190px] shrink-0 overflow-hidden rounded-2xl bg-sand shadow-[0_12px_28px_rgba(57,61,50,0.12)] md:h-[310px] md:w-[240px]"
+            class="relative h-[250px] w-[190px] shrink-0 overflow-hidden rounded-2xl bg-canvas shadow-[0_12px_28px_rgba(57,61,50,0.12)] md:h-[310px] md:w-[240px]"
             aria-hidden={canLoop && index >= moments.length ? 'true' : undefined}
           >
             <a href={galleryHref} class="group block h-full w-full" tabindex={canLoop && index >= moments.length ? -1 : undefined}>

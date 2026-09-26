@@ -174,7 +174,7 @@
   </div>
 </section>
 
-<section class="bg-sand/40 py-12 md:py-16">
+<section class="bg-canvas py-12 md:py-16">
   <div class="container-shell">
     <!-- ── filter bar ──────────────────────────────────────────────────── -->
     <div class="rounded-[8px] border border-ink/10 bg-surface p-4 shadow-[0_14px_44px_rgba(57,61,50,0.06)] sm:p-5">
@@ -192,7 +192,7 @@
         <SelectInput label={$t('ui.status')} name="status" bind:value={status} options={statusOptions} />
         <div class="flex gap-2">
           <button class="inline-flex h-11 items-center rounded-xl bg-forest px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-deep-green" type="button" on:click={load}>{$t('cta.search')}</button>
-          <button class="inline-flex h-11 items-center rounded-xl border border-ink/15 bg-surface px-4 text-sm font-semibold text-ink/70 transition hover:bg-sand/60" type="button" on:click={clearFilters}>{$t('filter.clear')}</button>
+          <button class="inline-flex h-11 items-center rounded-xl border border-ink/15 bg-surface px-4 text-sm font-semibold text-ink/70 transition hover:bg-canvas" type="button" on:click={clearFilters}>{$t('filter.clear')}</button>
         </div>
       </div>
       <div class="mt-3 flex items-center justify-end gap-2 border-t border-ink/10 pt-3">

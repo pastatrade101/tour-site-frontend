@@ -390,7 +390,7 @@
         {/if}
       {:else}
         <article class="mt-8 grid overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-sm md:grid-cols-2">
-          <div class="relative min-h-[260px] bg-sand">{#if category.image_url}<Img record={category} fields={['image_url']} alt={category.name} width={1000} sizes="(max-width: 768px) 100vw, 50vw" className="absolute inset-0 h-full w-full object-cover object-top" />{/if}<span class="absolute left-4 top-4 rounded-md bg-clay px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">{$t('ui.custom_safari')}</span></div>
+          <div class="relative min-h-[260px] bg-canvas">{#if category.image_url}<Img record={category} fields={['image_url']} alt={category.name} width={1000} sizes="(max-width: 768px) 100vw, 50vw" className="absolute inset-0 h-full w-full object-cover object-top" />{/if}<span class="absolute left-4 top-4 rounded-md bg-clay px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">{$t('ui.custom_safari')}</span></div>
           <div class="flex flex-col justify-center p-6 md:p-9"><h3 class="font-serif text-2xl font-semibold text-heading">Custom {category.name}</h3><p class="mt-3 text-[15px] leading-7 text-ink/75">{$t('ui.a_route_designed_around_your')}</p><p class="mt-5 font-semibold text-heading">{$t('label.tailored_quote')}</p><button type="button" on:click={openEnquiry} class="mt-5 inline-flex w-fit items-center gap-2 rounded-md bg-goldfinch-gold px-4 py-2.5 text-sm font-semibold text-heading">{$t('ui.request_a_plan')}<ArrowRight size={15} /></button></div>
         </article>
       {/if}

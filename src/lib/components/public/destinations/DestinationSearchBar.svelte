@@ -151,7 +151,7 @@
     <div class="destination-filter-row -mx-1 flex gap-1 overflow-x-auto px-1 [scrollbar-width:none] md:mx-0 md:flex-[2] md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden">
       {#each shown as { group, current, label } (group.key)}
         <label
-          class="destination-filter-select relative flex h-12 min-w-[150px] shrink-0 cursor-pointer flex-col justify-center gap-0.5 rounded-[10px] pl-3.5 pr-8 transition hover:bg-sand/40 focus-within:bg-sand/40 focus-within:ring-2 focus-within:ring-goldfinch-gold/30 md:h-14 md:min-w-0 md:flex-1 md:border-l md:border-ink/8 md:pl-4"
+          class="destination-filter-select relative flex h-12 min-w-[150px] shrink-0 cursor-pointer flex-col justify-center gap-0.5 rounded-[10px] pl-3.5 pr-8 transition hover:bg-canvas focus-within:bg-canvas focus-within:ring-2 focus-within:ring-goldfinch-gold/30 md:h-14 md:min-w-0 md:flex-1 md:border-l md:border-ink/8 md:pl-4"
         >
           <span class="gf-label">{group.label}</span>
           <span class={`truncate text-sm font-bold ${current ? 'text-heading' : 'text-ink/70'}`}>{label}</span>

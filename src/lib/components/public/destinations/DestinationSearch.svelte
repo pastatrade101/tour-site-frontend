@@ -76,7 +76,7 @@
     {#if value}
       <button
         type="button"
-        class="grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink/45 transition duration-200 hover:bg-sand/70 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
+        class="grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink/45 transition duration-200 hover:bg-canvas hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold"
         aria-label={$t('ui.clear_search')}
         on:click={clear}
       >

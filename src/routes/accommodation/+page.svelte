@@ -247,7 +247,7 @@
 </section>
 
 {#if lodges.length}
-  <section class="border-b border-ink/10 bg-sand/35">
+  <section class="border-b border-ink/10 bg-canvas">
     <div class="container-shell flex flex-wrap items-center justify-center gap-x-8 gap-y-3 py-5 text-xs font-semibold text-ink/65">
       {#each ['Chosen for the route', 'Local specialist guidance', 'Every stay arranged for you', 'Private tailor-made safaris'] as point}
         <span class="inline-flex items-center gap-2"><ShieldCheck size={14} class="text-forest" />{point}</span>

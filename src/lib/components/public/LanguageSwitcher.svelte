@@ -132,7 +132,7 @@
         {#each options as language (language.code)}
           <li>
             <a
-              class={`flex items-center justify-between gap-3 rounded-[8px] px-3 py-2 text-sm transition hover:bg-sand ${language.code === current ? 'bg-goldfinch-gold/12 font-bold text-heading' : 'text-ink/75'}`}
+              class={`flex items-center justify-between gap-3 rounded-[8px] px-3 py-2 text-sm transition hover:bg-canvas ${language.code === current ? 'bg-goldfinch-gold/12 font-bold text-heading' : 'text-ink/75'}`}
               href={localizeHref($page.url.pathname, language.code)}
               hreflang={language.code}
               role="option"

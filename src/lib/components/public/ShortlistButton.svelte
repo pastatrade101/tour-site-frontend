@@ -20,7 +20,7 @@
     type="button"
     aria-pressed={saved}
     class={`inline-flex h-12 items-center justify-center gap-2 rounded-xl border px-5 font-semibold transition ${
-      saved ? 'border-clay/40 bg-clay/10 text-clay' : 'border-ink/15 bg-surface text-ink/70 hover:bg-sand/60'
+      saved ? 'border-clay/40 bg-clay/10 text-clay' : 'border-ink/15 bg-surface text-ink/70 hover:bg-canvas'
     }`}
     on:click={toggle}
   >

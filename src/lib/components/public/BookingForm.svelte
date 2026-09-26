@@ -255,10 +255,10 @@
       .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #c79a3a;padding-bottom:16px}
       .brand{font-size:22px;font-weight:800;color:#1f4d3a} .co{font-size:12px;color:#6b6f63;margin-top:2px}
       .doc{text-align:right} .doc h1{font-size:16px;margin:0;color:#1f4d3a;text-transform:uppercase;letter-spacing:.06em} .doc p{margin:4px 0 0;font-size:12px;color:#6b6f63}
-      .trip{margin:20px 0;padding:12px 16px;background:#f6f1e6;border-radius:10px;font-size:15px} .trip b{color:#1f4d3a}
+      .trip{margin:20px 0;padding:12px 16px;background:#f3efe7;border-radius:10px;font-size:15px} .trip b{color:#1f4d3a}
       table{width:100%;border-collapse:collapse;margin-top:8px} th,td{text-align:left;padding:9px 10px;font-size:13px;border-bottom:1px solid #eee;vertical-align:top}
       th{width:180px;color:#6b6f63;font-weight:600} td{color:#272b22}
-      .price{margin-top:22px;padding:16px 18px;border:1px solid #e3dcc9;border-radius:12px;background:#faf7ef}
+      .price{margin-top:22px;padding:16px 18px;border:1px solid #e3dcc9;border-radius:12px;background:#f3efe7}
       .pl{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#8a7a4a;font-weight:700}
       .pv{margin:4px 0 0;font-size:22px;font-weight:800;color:#1f4d3a} .pv span{font-size:12px;font-weight:600;color:#6b6f63}
       .pn{margin:6px 0 0;font-size:14px;color:#272b22} .pd{margin:8px 0 0;font-size:11px;color:#8a8d82;line-height:1.5}
@@ -406,7 +406,7 @@
         <p class="text-xs font-semibold uppercase tracking-[0.14em] text-ink/70">{$t('ui.your_request_reference')}</p>
         <div class="mt-1 flex items-center gap-3">
           <p class="text-2xl font-extrabold tracking-wide text-heading">{bookingCode}</p>
-          <button class="inline-flex items-center gap-1.5 rounded-lg border border-ink/15 bg-surface px-2.5 py-1 text-xs font-semibold text-ink/70 transition hover:bg-sand" type="button" on:click={copyCode}>
+          <button class="inline-flex items-center gap-1.5 rounded-lg border border-ink/15 bg-surface px-2.5 py-1 text-xs font-semibold text-ink/70 transition hover:bg-canvas" type="button" on:click={copyCode}>
             <Copy size={13} />{copied ? 'Copied' : 'Copy'}
           </button>
         </div>
@@ -419,7 +419,7 @@
     <div class="grid gap-2.5">
       <a href={waHref} target="_blank" rel="noopener noreferrer" on:click={openWhatsApp} class="inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#25D366] px-5 text-sm font-bold text-white shadow-sm transition hover:brightness-105">
         <MessageCircle size={17} />{$t('ui.continue_on_whatsapp')}</a>
-      <button type="button" class="inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border border-ink/15 bg-surface px-5 text-sm font-bold text-heading shadow-sm transition hover:border-goldfinch-gold/50 hover:bg-sand" on:click={downloadQuotation}>
+      <button type="button" class="inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border border-ink/15 bg-surface px-5 text-sm font-bold text-heading shadow-sm transition hover:border-goldfinch-gold/50 hover:bg-canvas" on:click={downloadQuotation}>
         <Download size={17} />{$t('ui.download_quotation_pdf')}</button>
     </div>
 

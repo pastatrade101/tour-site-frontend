@@ -96,7 +96,7 @@
         </div>
       </div>
 
-      <div class="bg-[#F3EFE7] p-9 md:p-11">
+      <div class="bg-canvas p-9 md:p-11">
         {#if visibleColumns.length}
           <div class="grid gap-9 sm:grid-cols-2">
             {#each visibleColumns as column, index (column.title)}

@@ -40,7 +40,7 @@
   <p class="mt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">{$t('ui.what_changes_your_price')}</p>
   <div class="mt-3 grid gap-3 sm:grid-cols-2">
     {#each drivers as d}
-      <div class="flex items-start gap-2.5 rounded-xl border border-ink/10 bg-sand/30 p-3">
+      <div class="flex items-start gap-2.5 rounded-xl border border-ink/10 bg-canvas p-3">
         <span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-forest/10 text-forest"><Check size={12} strokeWidth={3} /></span>
         <span>
           <span class="block text-sm font-semibold text-ink">{d.label}</span>

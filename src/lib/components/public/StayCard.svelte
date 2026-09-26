@@ -80,12 +80,12 @@
       <!-- As many columns as there are photographs. A property with one photo
            used to leave three empty cells in a four-column grid. -->
       <div
-        class="tour-day-accommodation-gallery grid gap-1 overflow-hidden rounded-t-[11px] bg-sand p-1"
+        class="tour-day-accommodation-gallery grid gap-1 overflow-hidden rounded-t-[11px] bg-canvas p-1"
         class:single-photo={shown.length === 1}
         style={featured ? '' : `grid-template-columns: repeat(${shown.length}, minmax(0, 1fr));`}
       >
         {#each shown as image, imageIndex}
-          <div class={`stay-photo relative min-w-0 overflow-hidden bg-sand ${shown.length === 1 ? 'aspect-[16/9]' : 'aspect-[4/3]'} ${imageIndex === 0 ? 'rounded-tl-[8px]' : ''} ${imageIndex === shown.length - 1 ? 'rounded-tr-[8px]' : ''}`}>
+          <div class={`stay-photo relative min-w-0 overflow-hidden bg-canvas ${shown.length === 1 ? 'aspect-[16/9]' : 'aspect-[4/3]'} ${imageIndex === 0 ? 'rounded-tl-[8px]' : ''} ${imageIndex === shown.length - 1 ? 'rounded-tr-[8px]' : ''}`}>
             <Img
               src={image.record ? '' : image.src}
               record={image.record}
@@ -137,7 +137,7 @@
   .featured-stay .tour-day-accommodation-gallery.single-photo .stay-photo { aspect-ratio:16/9; }
   .featured-stay h4 { font-size:23px; overflow-wrap:anywhere; }
   .featured-stay a { min-height:40px; margin-top:8px; }
-  .stay-category { display:inline-block; margin-bottom:10px; padding:4px 8px; border-radius:4px; background:rgb(var(--c-sand)/.7); color:rgb(var(--c-forest)); font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+  .stay-category { display:inline-block; margin-bottom:10px; padding:4px 8px; border-radius:4px; background:rgb(var(--c-canvas)); color:rgb(var(--c-forest)); font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
   .stay-location { display:flex; align-items:center; gap:5px; margin-top:8px; font-size:12px; line-height:1.6; color:rgb(var(--c-ink)/.6); }
   .stay-location :global(svg) { flex-shrink:0; }
   /* Carried over with the markup from ItineraryDays: on a phone the card sits

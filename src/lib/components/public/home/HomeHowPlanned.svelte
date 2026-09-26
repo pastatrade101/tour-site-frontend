@@ -52,7 +52,7 @@
       </div>
 
       <div class="mt-10 grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-center">
-        <div class="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-sand lg:aspect-auto lg:h-full lg:min-h-[440px]">
+        <div class="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-canvas lg:aspect-auto lg:h-full lg:min-h-[440px]">
           {#if displayImage}
             <Img
               src={displayImage}

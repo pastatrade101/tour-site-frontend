@@ -205,7 +205,7 @@
   {/each}
 {/if}
 
-<section id="all-destinations" class="destinations-all-section scroll-mt-28 mt-6 bg-sand/35 py-10 md:mt-8 md:py-14">
+<section id="all-destinations" class="destinations-all-section scroll-mt-28 mt-6 bg-canvas py-10 md:mt-8 md:py-14">
   <div class="destinations-all-shell container-shell">
     <div class="destinations-all-heading flex flex-wrap items-end justify-between gap-3 md:gap-4">
       <div class="min-w-0 flex-1 md:max-w-2xl">

@@ -496,7 +496,7 @@
         <p class="text-xs font-semibold uppercase tracking-[0.14em] text-ink/70">{$t('ui.your_request_reference')}</p>
         <div class="mt-1 flex items-center gap-3">
           <p class="text-2xl font-extrabold tracking-wide text-heading">{bookingCode}</p>
-          <button class="inline-flex items-center gap-1.5 rounded-lg border border-ink/15 bg-surface px-2.5 py-1 text-xs font-semibold text-ink/70 transition hover:bg-sand" type="button" on:click={copyCode}>
+          <button class="inline-flex items-center gap-1.5 rounded-lg border border-ink/15 bg-surface px-2.5 py-1 text-xs font-semibold text-ink/70 transition hover:bg-canvas" type="button" on:click={copyCode}>
             <Copy size={13} />{copied ? 'Copied' : 'Copy'}
           </button>
         </div>

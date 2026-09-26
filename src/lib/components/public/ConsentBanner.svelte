@@ -27,7 +27,7 @@
       <div class="grid w-full min-w-0 gap-2 sm:w-auto sm:shrink-0 sm:grid-cols-2 md:flex">
         <button
           type="button"
-          class="h-10 min-w-0 rounded-[8px] border border-ink/15 px-3 text-sm font-semibold text-ink/70 transition hover:bg-sand sm:px-4"
+          class="h-10 min-w-0 rounded-[8px] border border-ink/15 px-3 text-sm font-semibold text-ink/70 transition hover:bg-canvas sm:px-4"
           on:click={() => setConsent('denied')}
         >{$t('ui.decline')}</button>
         <button

@@ -75,7 +75,7 @@
   data-sveltekit-preload-data="hover"
 >
   <!-- Media band: identical 4/5 ratio with or without a photograph. -->
-  <div class="destination-card-media relative aspect-[1/0.96] w-full overflow-hidden bg-sand">
+  <div class="destination-card-media relative aspect-[1/0.96] w-full overflow-hidden bg-canvas">
     {#if imageUrl}
       <!-- alt="" on purpose: the link itself already reads out the name, region
            and summary, so a repeated caption is noise for a screen reader. -->
@@ -155,7 +155,7 @@
         {/if}
         {#each chips as chip (chip.key)}
           <span
-            class="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-sand/70 px-2.5 py-1 text-[11px] font-semibold text-ink/70"
+            class="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-canvas px-2.5 py-1 text-[11px] font-semibold text-ink/70"
           >
             <span aria-hidden="true" class="text-[11px] leading-none">{chip.icon}</span>
             <span class="truncate">{chip.label}</span>
@@ -163,7 +163,7 @@
         {/each}
         {#if styleFallback}
           <span
-            class="inline-flex min-w-0 items-center rounded-full bg-sand/70 px-2.5 py-1 text-[11px] font-semibold text-ink/70"
+            class="inline-flex min-w-0 items-center rounded-full bg-canvas px-2.5 py-1 text-[11px] font-semibold text-ink/70"
           >
             <span class="truncate">{styleFallback}</span>
           </span>
@@ -175,7 +175,7 @@
     <span
       class="destination-card-link mt-auto flex items-center gap-2.5 pt-5 text-[11px] font-bold uppercase tracking-[0.18em] text-forest"
     >{$t('ui.view_guide')}<span
-        class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-sand/70 text-forest transition duration-300 ease-out group-hover:translate-x-1 group-hover:bg-goldfinch-gold group-hover:text-heading group-focus-visible:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
+        class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-canvas text-forest transition duration-300 ease-out group-hover:translate-x-1 group-hover:bg-goldfinch-gold group-hover:text-heading group-focus-visible:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
       >
         <ArrowRight size={13} strokeWidth={2.5} />
       </span>

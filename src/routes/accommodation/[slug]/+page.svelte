@@ -214,7 +214,7 @@
 
 <!-- ── fact strip: text on hairlines, not badges ─────────────────────────── -->
 {#if facts.length}
-  <section class="border-b border-ink/10 bg-sand/35"><div class="container-shell grid grid-cols-2 gap-5 py-7 md:flex md:flex-wrap md:justify-between md:py-8">{#each facts as fact}<div class="flex min-w-0 items-center gap-3"><span class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-forest/10 text-forest"><svelte:component this={fact.icon} size={18}/></span><div class="min-w-0"><p class="text-[9px] font-bold uppercase tracking-[0.14em] text-ink/40">{fact.label}</p><p class="mt-0.5 truncate text-sm font-semibold text-heading">{fact.value}</p></div></div>{/each}</div></section>
+  <section class="border-b border-ink/10 bg-canvas"><div class="container-shell grid grid-cols-2 gap-5 py-7 md:flex md:flex-wrap md:justify-between md:py-8">{#each facts as fact}<div class="flex min-w-0 items-center gap-3"><span class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-forest/10 text-forest"><svelte:component this={fact.icon} size={18}/></span><div class="min-w-0"><p class="text-[9px] font-bold uppercase tracking-[0.14em] text-ink/40">{fact.label}</p><p class="mt-0.5 truncate text-sm font-semibold text-heading">{fact.value}</p></div></div>{/each}</div></section>
 {/if}
 
 <section class="bg-canvas py-16 md:py-24">
@@ -256,7 +256,7 @@
       {/if}
 
       {#if lodge?.highlights?.length}
-        <div class="mt-12" use:fadeUpOnScroll={{ y: 14 }}><span class="block h-px w-16 bg-goldfinch-gold"></span><p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">{$t('ui.property_highlights')}</p><div class="mt-5 grid gap-3 sm:grid-cols-2">{#each lodge.highlights as item}<div class="border-l-2 border-goldfinch-gold bg-sand/35 px-4 py-3 text-sm font-semibold leading-6 text-heading">{item.title}</div>{/each}</div></div>
+        <div class="mt-12" use:fadeUpOnScroll={{ y: 14 }}><span class="block h-px w-16 bg-goldfinch-gold"></span><p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">{$t('ui.property_highlights')}</p><div class="mt-5 grid gap-3 sm:grid-cols-2">{#each lodge.highlights as item}<div class="border-l-2 border-goldfinch-gold bg-canvas px-4 py-3 text-sm font-semibold leading-6 text-heading">{item.title}</div>{/each}</div></div>
       {/if}
 
       {#if logistics.length || lodge?.best_months?.length}
@@ -272,7 +272,7 @@
             {#each lodge.rooms as room}
               <article class="overflow-hidden rounded-xl border border-ink/10 bg-surface shadow-[0_10px_30px_rgb(57_61_50_/_0.05)]">
                 {#if room.lodge_room_images?.length}
-                  <div class="bg-sand/45 p-2 sm:p-3">
+                  <div class="bg-canvas p-2 sm:p-3">
                     <LodgeGallery images={room.lodge_room_images} propertyName={`${lodge.name} — ${room.name}`} />
                   </div>
                 {/if}
@@ -297,11 +297,11 @@
       {/if}
 
       {#if included.length || excluded.length}
-        <div class="mt-12 grid gap-5 sm:grid-cols-2" use:fadeUpOnScroll={{ y: 14 }}>{#if included.length}<div class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-5"><h3 class="font-serif text-xl font-semibold text-heading">{$t('ui.included')}</h3><ul class="mt-3 space-y-2">{#each included as item}<li class="text-sm leading-6 text-ink/70">✓ {item.title}</li>{/each}</ul></div>{/if}{#if excluded.length}<div class="rounded-xl border border-ink/10 bg-sand/30 p-5"><h3 class="font-serif text-xl font-semibold text-heading">{$t('ui.not_included')}</h3><ul class="mt-3 space-y-2">{#each excluded as item}<li class="text-sm leading-6 text-ink/70">— {item.title}</li>{/each}</ul></div>{/if}</div>
+        <div class="mt-12 grid gap-5 sm:grid-cols-2" use:fadeUpOnScroll={{ y: 14 }}>{#if included.length}<div class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-5"><h3 class="font-serif text-xl font-semibold text-heading">{$t('ui.included')}</h3><ul class="mt-3 space-y-2">{#each included as item}<li class="text-sm leading-6 text-ink/70">✓ {item.title}</li>{/each}</ul></div>{/if}{#if excluded.length}<div class="rounded-xl border border-ink/10 bg-canvas p-5"><h3 class="font-serif text-xl font-semibold text-heading">{$t('ui.not_included')}</h3><ul class="mt-3 space-y-2">{#each excluded as item}<li class="text-sm leading-6 text-ink/70">— {item.title}</li>{/each}</ul></div>{/if}</div>
       {/if}
 
       {#if travelInfo.length || lodge?.arrival_instructions || lodge?.traveler_notes}
-        <div class="mt-12" use:fadeUpOnScroll={{ y: 14 }}><span class="block h-px w-16 bg-goldfinch-gold"></span><p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">{$t('ui.important_travel_information')}</p><dl class="mt-5 grid gap-4 sm:grid-cols-2">{#each travelInfo as row}<div><dt class="text-xs font-bold text-heading">{row[0]}</dt><dd class="mt-1 text-sm leading-6 text-ink/65">{row[1]}</dd></div>{/each}</dl>{#if lodge?.arrival_instructions}<p class="mt-5 rounded-lg bg-sand/35 p-4 text-sm leading-6 text-ink/70"><b>{$t('ui.arrival')}</b> {lodge.arrival_instructions}</p>{/if}{#if lodge?.traveler_notes}<p class="mt-3 text-sm leading-6 text-ink/65">{lodge.traveler_notes}</p>{/if}</div>
+        <div class="mt-12" use:fadeUpOnScroll={{ y: 14 }}><span class="block h-px w-16 bg-goldfinch-gold"></span><p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-clay">{$t('ui.important_travel_information')}</p><dl class="mt-5 grid gap-4 sm:grid-cols-2">{#each travelInfo as row}<div><dt class="text-xs font-bold text-heading">{row[0]}</dt><dd class="mt-1 text-sm leading-6 text-ink/65">{row[1]}</dd></div>{/each}</dl>{#if lodge?.arrival_instructions}<p class="mt-5 rounded-lg bg-canvas p-4 text-sm leading-6 text-ink/70"><b>{$t('ui.arrival')}</b> {lodge.arrival_instructions}</p>{/if}{#if lodge?.traveler_notes}<p class="mt-3 text-sm leading-6 text-ink/65">{lodge.traveler_notes}</p>{/if}</div>
       {/if}
 
     </div>
@@ -378,7 +378,7 @@
 
 <!-- ── other stays: cards here, so the end of the page is a place to browse ─ -->
 {#if suggestions.length}
-  <section class="border-t border-ink/10 bg-sand/25 py-16 md:py-20">
+  <section class="border-t border-ink/10 bg-canvas py-16 md:py-20">
     <div class="container-shell">
       <div class="flex flex-wrap items-end justify-between gap-4">
         <div>

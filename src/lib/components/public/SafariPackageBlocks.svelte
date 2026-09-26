@@ -338,7 +338,7 @@
           <div class="mt-8 hidden overflow-x-auto rounded-[12px] border border-ink/12 md:block">
             <table class="w-full min-w-[560px] border-collapse text-left text-sm">
               <thead>
-                <tr class="bg-sand/50">
+                <tr class="bg-canvas">
                   {#each columns as column, i (i)}
                     <th class="border-b border-ink/10 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-ink/60">{column}</th>
                   {/each}

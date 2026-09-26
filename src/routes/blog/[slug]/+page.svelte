@@ -126,7 +126,7 @@
 
   <!-- Continue reading -->
   {#if morePosts.length}
-    <section class="border-t border-ink/[0.06] bg-sand/30 py-14 md:py-20">
+    <section class="border-t border-ink/[0.06] bg-canvas py-14 md:py-20">
       <div class="container-shell">
         <div class="flex flex-wrap items-end justify-between gap-4">
           <SectionHeader

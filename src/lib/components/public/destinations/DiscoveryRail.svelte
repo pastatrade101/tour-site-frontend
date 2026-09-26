@@ -155,7 +155,7 @@
             <div class="hidden items-center gap-2 lg:flex">
               <button
                 type="button"
-                class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-ink/15 bg-surface text-heading transition duration-200 hover:border-goldfinch-gold/60 hover:bg-sand/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-ink/15 disabled:hover:bg-surface"
+                class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-ink/15 bg-surface text-heading transition duration-200 hover:border-goldfinch-gold/60 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-ink/15 disabled:hover:bg-surface"
                 aria-label={`Scroll ${title || 'this collection'} backwards`}
                 aria-controls={railId}
                 disabled={atStart}
@@ -165,7 +165,7 @@
               </button>
               <button
                 type="button"
-                class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-ink/15 bg-surface text-heading transition duration-200 hover:border-goldfinch-gold/60 hover:bg-sand/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-ink/15 disabled:hover:bg-surface"
+                class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-ink/15 bg-surface text-heading transition duration-200 hover:border-goldfinch-gold/60 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-ink/15 disabled:hover:bg-surface"
                 aria-label={`Scroll ${title || 'this collection'} forwards`}
                 aria-controls={railId}
                 disabled={atEnd}

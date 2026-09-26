@@ -108,13 +108,13 @@
   <section class="container-shell py-12 md:py-16">
     <!-- comparison table -->
     <div class="overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-soft">
-      <div class="hidden grid-cols-[200px_1fr_1fr] border-b border-ink/10 bg-sand/40 sm:grid">
+      <div class="hidden grid-cols-[200px_1fr_1fr] border-b border-ink/10 bg-canvas sm:grid">
         <div class="p-4"></div>
         <div class="p-4 text-center text-lg font-extrabold text-heading">{cmp.a.name}</div>
         <div class="p-4 text-center text-lg font-extrabold text-heading">{cmp.b.name}</div>
       </div>
       {#each cmp.dimensions as dim, i}
-        <div class={`grid sm:grid-cols-[200px_1fr_1fr] ${i % 2 ? 'bg-sand/20' : 'bg-surface'}`}>
+        <div class={`grid sm:grid-cols-[200px_1fr_1fr] ${i % 2 ? 'bg-canvas' : 'bg-surface'}`}>
           <div class="px-4 pt-4 text-[11px] font-bold uppercase tracking-[0.14em] text-clay sm:py-4 sm:text-xs">{dim.label}</div>
           <div class="px-4 pb-2 pt-1 text-sm leading-6 text-ink/75 sm:border-l sm:border-ink/10 sm:py-4">
             <span class="mb-1 block text-xs font-bold text-heading sm:hidden">{cmp.a.name}</span>{dim.a}

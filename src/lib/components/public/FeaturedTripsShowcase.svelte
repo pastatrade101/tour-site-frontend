@@ -130,7 +130,7 @@
 </script>
 
 {#if !loading && tabs.length && active}
-  <section class="bg-sand/40 py-14 md:py-20" use:fadeUpOnScroll={{ y: 18 }}>
+  <section class="bg-canvas py-14 md:py-20" use:fadeUpOnScroll={{ y: 18 }}>
     <div class="container-shell">
       <h2 class="text-center font-serif text-3xl font-bold tracking-tight text-heading md:text-[40px]" use:revealHeading>
         What a trip with {brand.name.split(' ')[0]} can look like
@@ -154,7 +154,7 @@
       {#key active.slug}
         <div class="mt-9 grid items-stretch gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]" in:fade={{ duration: 220 }}>
           <!-- details card -->
-          <div class="flex flex-col rounded-[8px] bg-sand p-7 md:p-8">
+          <div class="flex flex-col rounded-[8px] bg-canvas p-7 md:p-8">
             <h3 class="text-2xl font-extrabold leading-tight text-ink md:text-3xl">{active.tour.title}</h3>
 
             {#if facts.length}

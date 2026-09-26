@@ -532,7 +532,7 @@
                       {#each previewLinks as link (link.href)}
                         {@const alignThumbTop = item.dropdown === 'destinations' || item.dropdown === 'tours'}
                         <a class="group/li flex min-h-[88px] items-start gap-3 rounded-[8px] border border-transparent p-3 transition hover:border-goldfinch-gold/25 hover:bg-canvas" href={link.href} role="menuitem" on:click={() => activateLink(link.href)} on:pointerenter={() => preloadRoute(link.href)} on:focus={() => preloadRoute(link.href)}>
-                          <span class={`${link.image ? 'block bg-deep-green' : 'grid place-items-center bg-sand ring-1 ring-goldfinch-gold/20'} h-14 w-14 shrink-0 overflow-hidden rounded-[6px]`}>
+                          <span class={`${link.image ? 'block bg-deep-green' : 'grid place-items-center bg-canvas ring-1 ring-goldfinch-gold/20'} h-14 w-14 shrink-0 overflow-hidden rounded-[6px]`}>
                             {#if link.image}
                               <Img
                                 record={link.record}
@@ -561,7 +561,7 @@
                       {/each}
                     </div>
 
-                    <a href={item.href} class="mt-4 flex h-11 items-center justify-between gap-4 rounded-[8px] border border-ink/10 bg-sand/55 px-4 text-sm font-bold text-heading transition hover:border-goldfinch-gold/30 hover:bg-sand" role="menuitem" on:click={() => activateLink(item.href)} on:pointerenter={() => preloadRoute(item.href)} on:focus={() => preloadRoute(item.href)}>
+                    <a href={item.href} class="mt-4 flex h-11 items-center justify-between gap-4 rounded-[8px] border border-ink/10 bg-canvas px-4 text-sm font-bold text-heading transition hover:border-goldfinch-gold/30 hover:brightness-95" role="menuitem" on:click={() => activateLink(item.href)} on:pointerenter={() => preloadRoute(item.href)} on:focus={() => preloadRoute(item.href)}>
                       <span class="inline-flex items-center gap-2">
                         <svelte:component this={meta.icon} size={16} strokeWidth={2.4} />
                         {meta.viewAll}
@@ -721,7 +721,7 @@
               <div class="rounded-[8px]">
                 <div class="flex items-center">
                   <a class={`flex-1 rounded-[8px] px-3 py-3 text-[17px] font-semibold transition ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink'}`} href={item.href} on:click={() => activateLink(item.href)} on:focus={() => preloadRoute(item.href)}>{item.label}</a>
-                  <button class="grid h-11 w-11 place-items-center rounded-[8px] text-ink/70 transition hover:bg-sand/50" type="button" aria-expanded={mobileAccordion === item.dropdown} aria-label={`Toggle ${item.label}`} on:click={() => item.dropdown && toggleMobileDropdown(item.dropdown)}>
+                  <button class="grid h-11 w-11 place-items-center rounded-[8px] text-ink/70 transition hover:bg-canvas" type="button" aria-expanded={mobileAccordion === item.dropdown} aria-label={`Toggle ${item.label}`} on:click={() => item.dropdown && toggleMobileDropdown(item.dropdown)}>
                     <ChevronDown size={18} strokeWidth={2.6} class={`transition-transform ${mobileAccordion === item.dropdown ? 'rotate-180' : ''}`} />
                   </button>
                 </div>
@@ -730,8 +730,8 @@
                   <div class="mb-2 grid gap-2 rounded-[8px] border border-ink/10 bg-canvas p-2" transition:fly={{ y: -4, duration: 150 }}>
                     {#each links as link (link.href)}
                       {@const alignThumbTop = item.dropdown === 'destinations' || item.dropdown === 'tours'}
-                      <a class="group/mobile-link flex min-h-[70px] items-center gap-3 rounded-[6px] px-2 py-2 transition hover:bg-sand/60" href={link.href} on:click={() => activateLink(link.href)} on:focus={() => preloadRoute(link.href)}>
-                        <span class={`${link.image ? 'block bg-deep-green' : 'grid place-items-center bg-sand ring-1 ring-goldfinch-gold/20'} h-12 w-12 shrink-0 overflow-hidden rounded-[6px]`}>
+                      <a class="group/mobile-link flex min-h-[70px] items-center gap-3 rounded-[6px] px-2 py-2 transition hover:bg-canvas" href={link.href} on:click={() => activateLink(link.href)} on:focus={() => preloadRoute(link.href)}>
+                        <span class={`${link.image ? 'block bg-deep-green' : 'grid place-items-center bg-canvas ring-1 ring-goldfinch-gold/20'} h-12 w-12 shrink-0 overflow-hidden rounded-[6px]`}>
                           {#if link.image}
                             <Img
                               record={link.record}
@@ -755,7 +755,7 @@
                         <ChevronRight size={16} strokeWidth={2.5} class="shrink-0 text-ink/25" />
                       </a>
                     {/each}
-                    <a href={item.href} class="flex h-10 items-center justify-between rounded-[6px] bg-sand/70 px-3 text-sm font-bold text-heading transition hover:bg-sand" on:click={() => activateLink(item.href)} on:focus={() => preloadRoute(item.href)}>
+                    <a href={item.href} class="flex h-10 items-center justify-between rounded-[6px] bg-canvas px-3 text-sm font-bold text-heading transition hover:brightness-95" on:click={() => activateLink(item.href)} on:focus={() => preloadRoute(item.href)}>
                       <span class="inline-flex items-center gap-2">
                         <svelte:component this={meta.icon} size={15} strokeWidth={2.4} />
                         {meta.viewAll}

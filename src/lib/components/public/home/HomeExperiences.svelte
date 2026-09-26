@@ -202,7 +202,7 @@
                   }`}
                 />
               {:else}
-                <span class="block h-full w-full bg-sand"></span>
+                <span class="block h-full w-full bg-canvas"></span>
               {/if}
               <span class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent"></span>
               <span class="absolute inset-x-2.5 bottom-2.5 text-left text-[13px] font-semibold leading-tight text-white sm:text-sm md:text-base">

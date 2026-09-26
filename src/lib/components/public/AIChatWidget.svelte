@@ -33,7 +33,7 @@
   };
 </script>
 
-<section class="rounded-lg border border-forest/10 bg-sand p-5 shadow-soft" transition:fly={{ y: 10, duration: 160 }}>
+<section class="rounded-lg border border-forest/10 bg-canvas p-5 shadow-soft" transition:fly={{ y: 10, duration: 160 }}>
   <div class="flex items-center gap-3">
     <span class="grid h-10 w-10 place-items-center rounded-full bg-forest text-white">
       <Bot size={20} />
