@@ -161,5 +161,17 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
       ? (((await homepageResult.value.json()) as { data?: Record<string, unknown>[] })?.data ?? [])
       : [];
 
-  return { package: record, related, relatedLodges, moduleFaqs, interests, startPoints, homeSections };
+  return {
+    package: record,
+    // Read by the root layout for hreflang and the canonical, so a package is
+    // only announced in the languages it has a published translation in —
+    // same as tours. Without it every enabled language was claimed.
+    availableLocales: (record as { available_locales?: string[] }).available_locales ?? null,
+    related,
+    relatedLodges,
+    moduleFaqs,
+    interests,
+    startPoints,
+    homeSections
+  };
 };
