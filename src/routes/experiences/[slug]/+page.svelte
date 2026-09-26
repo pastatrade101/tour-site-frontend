@@ -14,6 +14,7 @@
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { breadcrumbLd } from '$lib/seo';
   import { toMetaText } from '$lib/richText';
+  import { cdnUrl } from '$lib/img';
   import type { Tour } from '$lib/types';
 
   $: origin = $page.url.origin;
@@ -149,7 +150,7 @@
     {#if metaDescription}<meta name="description" content={metaDescription} />{/if}
     <meta property="og:title" content={metaTitle} />
     {#if metaDescription}<meta property="og:description" content={metaDescription} />{/if}
-    {#if ogImage}<meta property="og:image" content={ogImage} />{/if}
+    {#if ogImage}<meta property="og:image" content={cdnUrl(ogImage)} />{/if}
   {/if}
 </svelte:head>
 

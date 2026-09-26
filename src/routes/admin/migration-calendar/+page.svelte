@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { cdnUrl } from '$lib/img';
   import { onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
   import { CalendarRange, Edit, Eye, EyeOff, MapPin, Plus, Trash2, X } from '@lucide/svelte';
@@ -194,7 +195,7 @@
         <article class="flex flex-col overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-[0_14px_44px_rgba(57,61,50,0.06)]" transition:fade={{ duration: 120 }}>
           {#if e.image_url}
             <div class="relative aspect-[16/10] overflow-hidden">
-              <img class="h-full w-full object-cover" src={e.image_url} alt={e.month} />
+              <img class="h-full w-full object-cover" src={cdnUrl(e.image_url)} alt={e.month} />
               <span class="absolute left-3 top-3 rounded-full bg-heading/85 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white backdrop-blur">{e.month}</span>
             </div>
           {/if}

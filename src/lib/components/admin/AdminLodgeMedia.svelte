@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { cdnUrl } from '$lib/img';
   /**
    * Gallery and amenities for one property, inside the existing lodge editor.
    *
@@ -146,7 +147,7 @@
       <ul class="mt-2 grid gap-2 xl:grid-cols-2">
         {#each images as image, index (image.image_url)}
           <li class="grid gap-2 rounded-[10px] border border-ink/10 bg-surface p-2 sm:grid-cols-[76px_1fr_auto]">
-            <img class="h-16 w-full rounded-[7px] object-cover sm:w-[76px]" src={image.image_url} alt="" loading="lazy" />
+            <img class="h-16 w-full rounded-[7px] object-cover sm:w-[76px]" src={cdnUrl(image.image_url)} alt="" loading="lazy" />
 
             <div class="grid gap-1.5">
               <input

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { cdnUrl } from '$lib/img';
   import { onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
   import { BadgeCheck, CheckCircle2, Clock, Edit, ExternalLink, MapPin, Plus, Search, Star, Trash2, X } from '@lucide/svelte';
@@ -335,7 +336,7 @@
           {#if r.author_photo_url}
             <img
               class="aspect-[16/10] w-full rounded-[8px] object-cover ring-1 ring-ink/10"
-              src={r.author_photo_url}
+              src={cdnUrl(r.author_photo_url)}
               alt={`Review card image for ${r.author_name}`}
               loading="lazy"
               decoding="async"

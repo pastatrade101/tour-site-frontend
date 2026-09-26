@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { cdnUrl } from '$lib/img';
   import { onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
   import {
@@ -1630,7 +1631,7 @@
           <!-- thumb -->
           <div class="aspect-video overflow-hidden rounded-xl bg-sand/40 ring-1 ring-ink/10">
             {#if section.image_url}
-              <img class="h-full w-full object-cover" src={section.image_url} alt={section.title || section.section_key} />
+              <img class="h-full w-full object-cover" src={cdnUrl(section.image_url)} alt={section.title || section.section_key} />
             {:else}
               <div class="grid h-full w-full place-items-center text-ink/25"><ImageIcon size={22} /></div>
             {/if}
@@ -2035,7 +2036,7 @@
                 <div class="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-6">
                   {#each logos.filter((logo) => logo.image_url.trim()).slice(0, 6) as logo, i (`preview-${logo.image_url}-${i}`)}
                     <div class="grid h-14 place-items-center rounded-[6px] bg-canvas px-3 ring-1 ring-ink/[0.06]">
-                      <img class="max-h-8 max-w-full object-contain grayscale" src={logo.image_url} alt={logo.name || 'Partner logo'} />
+                      <img class="max-h-8 max-w-full object-contain grayscale" src={cdnUrl(logo.image_url)} alt={logo.name || 'Partner logo'} />
                     </div>
                   {/each}
                 </div>
@@ -2202,9 +2203,9 @@
           <div class="relative grid min-h-[180px] place-items-center overflow-hidden bg-gradient-to-br from-deep-green via-forest to-deep-green p-6 text-center text-white">
             {#if bg.video}
               <!-- svelte-ignore a11y-media-has-caption -->
-              <video class="absolute inset-0 h-full w-full object-cover" style={`object-position:${bg.media_position}`} src={bg.video} autoplay muted loop playsinline></video>
+              <video class="absolute inset-0 h-full w-full object-cover" style={`object-position:${bg.media_position}`} src={cdnUrl(bg.video)} autoplay muted loop playsinline></video>
             {:else if form.image_url}
-              <img class="absolute inset-0 h-full w-full object-cover" style={`object-position:${bg.media_position}`} src={form.image_url} alt="" />
+              <img class="absolute inset-0 h-full w-full object-cover" style={`object-position:${bg.media_position}`} src={cdnUrl(form.image_url)} alt="" />
             {/if}
             {#if bgHasMedia}
               <div class="absolute inset-0" style={overlayStyle}></div>

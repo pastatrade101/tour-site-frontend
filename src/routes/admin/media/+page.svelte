@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { cdnUrl } from '$lib/img';
   import { onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
   import { Copy, Edit, Grid2X2, Image as ImageIcon, List, Plus, Search, Trash2, Upload, X } from '@lucide/svelte';
@@ -335,7 +336,7 @@
       <article class="overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-[0_18px_50px_rgba(57,61,50,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(57,61,50,0.1)]">
         <div class="aspect-[4/3] bg-sand/60">
           {#if media.file_type === 'image'}
-            <img class="h-full w-full object-cover" src={media.file_url} alt={media.alt_text || media.file_name} />
+            <img class="h-full w-full object-cover" src={cdnUrl(media.file_url)} alt={media.alt_text || media.file_name} />
           {:else}
             <div class="grid h-full place-items-center text-ink/40">
               <ImageIcon size={34} />
@@ -394,7 +395,7 @@
               <td class="px-4 py-3">
                 <div class="h-12 w-16 overflow-hidden rounded-md bg-sand/60">
                   {#if media.file_type === 'image'}
-                    <img class="h-full w-full object-cover" src={media.file_url} alt={media.alt_text || media.file_name} />
+                    <img class="h-full w-full object-cover" src={cdnUrl(media.file_url)} alt={media.alt_text || media.file_name} />
                   {:else}
                     <div class="grid h-full place-items-center text-ink/35"><ImageIcon size={18} /></div>
                   {/if}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { cdnUrl } from '$lib/img';
   import { onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
   import {
@@ -596,7 +597,7 @@
             <article class="overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-[0_10px_30px_rgba(57,61,50,0.05)]" transition:fade={{ duration: 120 }}>
               <div class="relative aspect-video bg-sand/40">
                 {#if img.image_url}
-                  <img class="h-full w-full object-cover" src={img.image_url} alt={img.alt_text || img.caption || 'Tour image'} />
+                  <img class="h-full w-full object-cover" src={cdnUrl(img.image_url)} alt={img.alt_text || img.caption || 'Tour image'} />
                 {:else}
                   <div class="grid h-full w-full place-items-center text-ink/25">
                     <ImageIcon size={32} />

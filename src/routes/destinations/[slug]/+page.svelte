@@ -35,7 +35,7 @@
   import RichText from '$lib/components/public/RichText.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { currency, formatUsd } from '$lib/currency';
-  import { imgUrl, thumbUrl, sourceFor, srcsetFor, variantSrc, variantsOf } from '$lib/img';
+  import { cdnUrl, imgUrl, thumbUrl, sourceFor, srcsetFor, variantSrc, variantsOf } from '$lib/img';
   import Img from '$lib/components/public/Img.svelte';
   import { hasRichContent, toMetaText } from '$lib/richText';
   import { breadcrumbLd } from '$lib/seo';
@@ -813,7 +813,7 @@
        load's `seo` field; emitting them here as well left the document with a
        duplicate meta description. -->
   {#if destination?.og_image_url || heroImage}
-    <meta property="og:image" content={destination?.og_image_url || heroImage} />
+    <meta property="og:image" content={cdnUrl(destination?.og_image_url || heroImage)} />
   {/if}
   {#if heroImage}
     <link

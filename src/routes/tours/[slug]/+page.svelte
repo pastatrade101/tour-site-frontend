@@ -43,6 +43,7 @@
     type MediaImage,
     type Stay
   } from '$lib/lodgeMedia';
+  import { cdnUrl } from '$lib/img';
   import type { BlogPost, FAQ, ItineraryDay, Tour, TravelStyle } from '$lib/types';
   import type { PageData } from './$types';
 
@@ -273,7 +274,7 @@
         '@type': 'TouristTrip',
         name: tour.title,
         description: shortText(tour.short_description ?? tour.full_description, 300),
-        ...(heroImage ? { image: heroImage } : {}),
+        ...(heroImage ? { image: cdnUrl(heroImage) } : {}),
         ...(tour.price_from
           ? { offers: { '@type': 'Offer', price: tour.price_from, priceCurrency: tour.currency ?? 'USD' } }
           : {}),

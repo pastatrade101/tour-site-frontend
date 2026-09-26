@@ -42,7 +42,7 @@
   import ToastStack from '$lib/components/admin/ToastStack.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
-  import { imgUrl } from '$lib/img';
+  import { cdnUrl, imgUrl } from '$lib/img';
 
   type Relation = { id: string; name?: string; slug: string; title?: string } | null;
 
@@ -669,7 +669,7 @@
               <button class="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-md border border-ink/10 bg-surface px-3 text-xs font-semibold text-ink shadow-sm transition hover:border-goldfinch-gold/45 hover:bg-sand/60" type="button" on:click={() => openEdit(item)}>
                 <Edit size={13} />Edit
               </button>
-              <a class="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-ink/10 bg-surface px-3 text-xs font-semibold text-ink/70 shadow-sm transition hover:border-forest/35 hover:bg-sand/60" href={item.image_url} target="_blank" rel="noreferrer" aria-label="Open image">
+              <a class="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-ink/10 bg-surface px-3 text-xs font-semibold text-ink/70 shadow-sm transition hover:border-forest/35 hover:bg-sand/60" href={cdnUrl(item.image_url)} target="_blank" rel="noreferrer" aria-label="Open image">
                 <Eye size={13} />
               </a>
               <button class="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-red-200 bg-surface px-3 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-50" type="button" on:click={() => openDelete(item)} aria-label="Delete gallery item">

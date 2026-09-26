@@ -26,6 +26,21 @@ export const isManagedMediaUrl = (url: string | null | undefined): boolean => {
   }
 };
 
+// Uploads made since the move to R2 store the bucket's public r2.dev address.
+// Those are served from the CDN origin too, so moving to a custom domain is
+// only a change of PUBLIC_MEDIA_CDN_URL — no stored URL has to be rewritten.
+const R2_DEV_HOST = /^pub-[0-9a-f]{32}\.r2\.dev$/i;
+
+const fromR2Dev = (url: string, cdn: string): string => {
+  try {
+    const parsed = new URL(url);
+    if (!R2_DEV_HOST.test(parsed.hostname) || parsed.origin === cdn) return url;
+    return `${cdn}${parsed.pathname}${parsed.search}`;
+  } catch {
+    return url;
+  }
+};
+
 /**
  * Convert a managed storage URL to its Cloudflare delivery URL.
  * Never persist this result: callers must retain the raw DB URL as the lookup
@@ -34,7 +49,8 @@ export const isManagedMediaUrl = (url: string | null | undefined): boolean => {
 export const cdnUrl = (url: string | null | undefined): string => {
   if (!url) return '';
   const cdn = mediaCdnOrigin();
-  if (!cdn || !isManagedMediaUrl(url)) return url;
+  if (!cdn) return url;
+  if (!isManagedMediaUrl(url)) return fromR2Dev(url, cdn);
   try {
     const pathname = new URL(url).pathname;
     const managed = pathname.split(SUPABASE_PUBLIC)[1] ?? '';

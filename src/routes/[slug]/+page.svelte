@@ -6,6 +6,7 @@
   import { toMetaText } from '$lib/richText';
   import { breadcrumbLd, faqLd } from '$lib/seo';
   import type { AdvisorNoteSection } from '$lib/advisorNote';
+  import { cdnUrl } from '$lib/img';
   import type { Block } from '$lib/safariPackageBlocks';
   import type { FAQ, ItineraryDay, SafariPackage, Tour } from '$lib/types';
   import type { PageData } from './$types';
@@ -63,7 +64,7 @@
           '@type': 'TouristTrip',
           name: record.name,
           description: description || undefined,
-          ...(record.hero_image_url ? { image: record.hero_image_url } : {}),
+          ...(record.hero_image_url ? { image: cdnUrl(record.hero_image_url) } : {}),
           url: canonical,
           ...(linkedTour?.price_from
             ? {
@@ -122,7 +123,7 @@
     <meta name="robots" content="noindex, nofollow" />
   {/if}
   {#if record?.og_image_url || record?.hero_image_url}
-    <meta property="og:image" content={record.og_image_url || record.hero_image_url} />
+    <meta property="og:image" content={cdnUrl(record.og_image_url || record.hero_image_url)} />
   {/if}
   <meta property="og:title" content={title} />
   {#if description}<meta property="og:description" content={description} />{/if}

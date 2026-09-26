@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { cdnUrl } from '$lib/img';
   /**
    * Safari packages — compose a landing page from blocks.
    *
@@ -356,7 +357,7 @@
             {#each filteredRows as row (row.id)}
               <tr>
                 <td><div class="package-row-title">
-                  {#if row.hero_image_url}<img src={row.hero_image_url} alt="" loading="lazy" />{:else}<span class="package-thumbnail"><LayoutTemplate size={22} /></span>{/if}
+                  {#if row.hero_image_url}<img src={cdnUrl(row.hero_image_url)} alt="" loading="lazy" />{:else}<span class="package-thumbnail"><LayoutTemplate size={22} /></span>{/if}
                   <div><strong>{row.name}</strong><span>/{row.slug}</span></div>
                 </div></td>
                 <td><span class="package-status" class:published={row.status === 'published'} class:draft={row.status === 'draft'}>{row.status || 'Draft'}</span><span class="package-seo">{row.indexable === true ? 'Search indexing on' : 'Search indexing off'}</span></td>

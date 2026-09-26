@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ArrowRight, Compass, Heart, HeartHandshake, Link2, MapPinned, ReceiptText } from '@lucide/svelte';
+  import { cdnUrl } from '$lib/img';
 
   type WhyFeature = {
     body?: string;
@@ -84,7 +85,7 @@
             <div class="flex h-16 items-end justify-center">
               {#if feature.icon_url || feature.icon}
                 <img
-                  src={feature.icon_url || feature.icon}
+                  src={cdnUrl(feature.icon_url || feature.icon)}
                   alt=""
                   loading="lazy"
                   class="h-16 w-auto object-contain"

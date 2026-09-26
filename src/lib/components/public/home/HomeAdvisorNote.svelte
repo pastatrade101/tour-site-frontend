@@ -6,6 +6,7 @@
    * note to edit and one promise being made.
    */
   import { Check, Compass, SlidersHorizontal } from '@lucide/svelte';
+  import { cdnUrl } from '$lib/img';
   import Img from '../Img.svelte';
   import RichText from '../RichText.svelte';
   import type { AdvisorColumn } from '$lib/advisorNote';
@@ -103,7 +104,7 @@
               <div>
                 <div class="flex items-center gap-2.5">
                   {#if column.icon_url}
-                    <img src={column.icon_url} alt="" loading="lazy" class="h-11 w-11 object-contain" />
+                    <img src={cdnUrl(column.icon_url)} alt="" loading="lazy" class="h-11 w-11 object-contain" />
                   {:else}
                     <span class="grid h-11 w-11 place-items-center text-clay"><FallbackIcon size={32} strokeWidth={1.4} /></span>
                   {/if}
