@@ -1,21 +1,22 @@
 <script lang="ts">
   import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
-  import { ArrowRight, MessageCircle } from '@lucide/svelte';
+  import { ArrowRight, Mail, MapPin, MessageCircle, Phone } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import { trackEvent } from '$lib/analytics';
   import { brand } from '$lib/brand';
   import { publicSettings, settingText } from '$lib/settings';
+  import SocialIcon from './SocialIcon.svelte';
 
   type Item = { label: string; href: string };
 
   const SOCIAL = [
-    { key: 'facebook_url', label: 'Facebook' },
-    { key: 'instagram_url', label: 'Instagram' },
-    { key: 'youtube_url', label: 'YouTube' },
-    { key: 'tiktok_url', label: 'TikTok' },
-    { key: 'linkedin_url', label: 'LinkedIn' },
-    { key: 'tripadvisor_url', label: 'TripAdvisor' }
+    { key: 'facebook_url', label: 'Facebook', network: 'facebook' },
+    { key: 'instagram_url', label: 'Instagram', network: 'instagram' },
+    { key: 'youtube_url', label: 'YouTube', network: 'youtube' },
+    { key: 'tiktok_url', label: 'TikTok', network: 'tiktok' },
+    { key: 'linkedin_url', label: 'LinkedIn', network: 'linkedin' },
+    { key: 'tripadvisor_url', label: 'TripAdvisor', network: 'tripadvisor' }
   ];
 
   $: s = $publicSettings;
@@ -24,6 +25,8 @@
   $: contactEmail = settingText(s, 'contact_email');
   $: contactPhone = settingText(s, 'contact_phone');
   $: address = settingText(s, 'contact_address') || settingText(s, 'office_address');
+  // The address opens the office on the map when Settings has a Maps link.
+  $: mapsUrl = settingText(s, 'google_maps_url');
   $: socials = SOCIAL.filter((item) => settingText(s, item.key));
 
   $: waNumber = settingText(s, 'whatsapp_number') || contactPhone;
@@ -36,6 +39,7 @@
   $: privacyUrl = settingText(s, 'privacy_policy_url') || '/privacy';
   $: termsUrl = settingText(s, 'terms_url') || '/terms';
   $: cancellationUrl = settingText(s, 'cancellation_policy_url') || '/cancellation-policy';
+  $: dataRetentionUrl = settingText(s, 'data_retention_url') || '/data-retention';
 
   // Destination + experience columns come from REAL published CMS records, so
   // every link resolves to a page that exists. An empty list simply renders a
@@ -128,12 +132,13 @@
           <div class="mt-6 flex flex-wrap gap-2">
             {#each socials as social (social.key)}
               <a
-                class="inline-flex items-center rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white/80 transition hover:bg-goldfinch-gold hover:text-heading"
+                class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white/80 transition hover:bg-goldfinch-gold hover:text-heading"
                 href={settingText(s, social.key)}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={social.label}
               >
+                <SocialIcon network={social.network} size={14} />
                 {social.label}
               </a>
             {/each}
@@ -148,37 +153,55 @@
               <span class="h-px w-6 bg-goldfinch-gold" aria-hidden="true"></span>
               <span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{$t('footer.contact')}</span>
             </div>
-            <ul class="mt-4 space-y-2 text-sm">
-              {#if address}<li>{address}</li>{/if}
+            <!-- One icon per line, in the brand gold, so each line reads as
+                 what it is before the text does. -->
+            <ul class="mt-4 space-y-2.5 text-sm">
+              {#if address}
+                <li>
+                  {#if mapsUrl}
+                    <a class="footer-contact transition hover:text-white" href={mapsUrl} target="_blank" rel="noopener noreferrer">
+                      <MapPin size={16} class="footer-contact-icon" />
+                      <span>{address}</span>
+                    </a>
+                  {:else}
+                    <span class="footer-contact">
+                      <MapPin size={16} class="footer-contact-icon" />
+                      <span>{address}</span>
+                    </span>
+                  {/if}
+                </li>
+              {/if}
               {#if contactEmail}
                 <li>
-                  <a class="transition hover:text-white" href={`mailto:${contactEmail}`} on:click={() => trackEvent('email_click')}>
-                    {contactEmail}
+                  <a class="footer-contact transition hover:text-white" href={`mailto:${contactEmail}`} on:click={() => trackEvent('email_click')}>
+                    <Mail size={16} class="footer-contact-icon" />
+                    <span class="break-all">{contactEmail}</span>
                   </a>
                 </li>
               {/if}
               {#if contactPhone}
                 <li>
                   <a
-                    class="transition hover:text-white"
+                    class="footer-contact transition hover:text-white"
                     href={`tel:${contactPhone.replace(/\s+/g, '')}`}
                     on:click={() => trackEvent('phone_click')}
                   >
-                    {contactPhone}
+                    <Phone size={16} class="footer-contact-icon" />
+                    <span>{contactPhone}</span>
                   </a>
                 </li>
               {/if}
               {#if waDigits}
-                <li class="pt-1">
+                <li>
                   <a
-                    class="inline-flex max-w-full flex-wrap items-center gap-2 break-all transition hover:text-white"
+                    class="footer-contact transition hover:text-white"
                     href={waHref}
                     target="_blank"
                     rel="noopener noreferrer"
                     on:click={() => trackEvent('whatsapp_click')}
                   >
-                    <MessageCircle size={14} class="shrink-0" />
-                    <span>{$t('cta.whatsapp')}<span class="ml-1 text-white/55">{waNumber}</span></span>
+                    <MessageCircle size={16} class="footer-contact-icon" />
+                    <span class="break-all">{$t('cta.whatsapp')}<span class="ml-1 text-white/55">{waNumber}</span></span>
                   </a>
                 </li>
               {/if}
@@ -264,7 +287,7 @@
         <a class="transition hover:text-white" href={privacyUrl}>{$t('footer.privacy')}</a>
         <a class="transition hover:text-white" href={termsUrl}>{$t('footer.terms')}</a>
         <a class="transition hover:text-white" href={cancellationUrl}>{$t('footer.cancellation')}</a>
-        <a class="transition hover:text-white" href="/data-retention">{$t('footer.data_retention')}</a>
+        <a class="transition hover:text-white" href={dataRetentionUrl}>{$t('footer.data_retention')}</a>
         <!-- Where staff sign in. It sat in the top bar as a button, competing
              with the one call to action meant for visitors; down here it is
              still one click from every page for the people who need it. -->
@@ -273,3 +296,19 @@
     </div>
   </div>
 </footer>
+
+<style>
+  .footer-contact {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: flex-start;
+    gap: 0.625rem;
+  }
+
+  /* Lucide renders its own <svg>, so the class reaches it through :global. */
+  .footer-contact :global(.footer-contact-icon) {
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+    color: rgb(var(--c-goldfinch-gold));
+  }
+</style>
