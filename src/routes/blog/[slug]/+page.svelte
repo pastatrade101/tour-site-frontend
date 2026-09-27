@@ -71,7 +71,6 @@
   {#if post}
     <title>{post.title} | Goldfinch Adventures</title>
     {#if description}<meta name="description" content={description} />{/if}
-    <link rel="canonical" href={`${origin}/blog/${post.slug}`} />
   {/if}
 </svelte:head>
 

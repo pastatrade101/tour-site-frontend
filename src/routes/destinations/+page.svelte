@@ -151,7 +151,6 @@
 <svelte:head>
   <title>{title} | Goldfinch Adventures</title>
   <meta name="description" content={description} />
-  <link rel="canonical" href={`${origin}/destinations`} />
 </svelte:head>
 
 <JsonLd data={breadcrumbLd(origin, [{ name: 'Home', path: '/' }, { name: 'Destinations', path: '/destinations' }])} />

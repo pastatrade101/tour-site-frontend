@@ -105,5 +105,5 @@ export const load: PageServerLoad = async ({ fetch, params, url }) => {
   attachResolvedVariantFields(related as Array<Record<string, any>>, imageVariants, ['hero_image_url', 'image_url', 'cover_image_url']);
   attachResolvedVariantFields(safaris as Array<Record<string, any>>, imageVariants, ['main_image_url', 'banner_image_url']);
 
-  return { lodge, related, safaris };
+  return { lodge, related, safaris, availableLocales: (lodge as { available_locales?: string[] }).available_locales ?? ['en'] };
 };

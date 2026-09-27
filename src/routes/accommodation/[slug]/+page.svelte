@@ -132,7 +132,6 @@
 <svelte:head>
   <title>{title} | Goldfinch Adventures</title>
   {#if description}<meta name="description" content={description} />{/if}
-  <link rel="canonical" href={`${origin}/accommodation/${lodge?.slug ?? ''}`} />
   {#if lodge?.indexable === false}<meta name="robots" content="noindex, nofollow" />{/if}
   {#if heroImage}
     <meta property="og:image" content={imgUrl(heroImage, 1200, 72)} />

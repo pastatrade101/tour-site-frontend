@@ -3,6 +3,7 @@
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import SafariPackageContent from '$lib/components/public/SafariPackageContent.svelte';
   import { SITE_URL } from '$lib/config/env';
+  import { DEFAULT_LOCALE, localeFromPath, localizeHref } from '$lib/i18n';
   import { toMetaText } from '$lib/richText';
   import { breadcrumbLd, faqLd } from '$lib/seo';
   import type { AdvisorNoteSection } from '$lib/advisorNote';
@@ -32,7 +33,9 @@
   $: heroTitle = record?.hero_title?.trim() || record?.name || '';
   $: title = record?.meta_title?.trim() || record?.seo_title?.trim() || `${record?.name ?? ''} | Goldfinch Adventures`;
   $: description = toMetaText(record?.meta_description || record?.hero_subtitle || '', 160);
-  $: canonical = `${SITE_URL || $pageStore.url.origin}/${record?.slug ?? ''}`;
+  $: pageLocale = localeFromPath($pageStore.url.pathname);
+  $: canonicalLocale = data.availableLocales?.includes(pageLocale) ? pageLocale : DEFAULT_LOCALE;
+  $: canonical = `${SITE_URL || $pageStore.url.origin}${localizeHref(`/${record?.slug ?? ''}`, canonicalLocale)}`;
 
   /**
    * Strictly `=== true`.
@@ -116,7 +119,6 @@
 <svelte:head>
   <title>{title}</title>
   {#if description}<meta name="description" content={description} />{/if}
-  <link rel="canonical" href={canonical} />
   {#if !indexable}
     <!-- Paired with the sitemap, which drops the same rows. A noindex tag on a
          page the sitemap still advertises is worse than neither. -->

@@ -20,6 +20,8 @@
   import { loadClarity } from '$lib/clarity';
   import { applyBranding, branding } from '$lib/branding';
   import { SITE_URL } from '$lib/config/env';
+  import { defaultPageLocales, disallowsIndexing, isPrivateOrUtilityPath, siteOrigin as resolveSiteOrigin } from '$lib/seoPolicy';
+  import { KNOWN_LOCALES, stripLocale } from '$lib/i18n';
   import { loadPublicSettings } from '$lib/settings';
   import { initCurrency } from '$lib/currency';
   import { cdnUrl } from '$lib/img';
@@ -30,7 +32,7 @@
 
   export let data: LayoutData;
 
-  $: isAdmin = $page.url.pathname.startsWith('/admin');
+  $: isAdmin = stripLocale($page.url.pathname).startsWith('/admin');
 
   // ── Locale ──────────────────────────────────────────────────────────────────
   // One assignment drives every static UI string on the page.
@@ -45,7 +47,7 @@
   // Entity pages publish the locales they actually exist in; everything else
   // (static pages, listings) is available in every enabled language because its
   // chrome is dictionary-translated and its content falls back per field.
-  $: pageLocales = ($page.data as { availableLocales?: string[] })?.availableLocales ?? null;
+  $: pageLocales = ($page.data as { availableLocales?: string[] })?.availableLocales ?? defaultPageLocales($page.url.pathname);
   /**
    * Keep the locale while browsing.
    *
@@ -81,59 +83,24 @@
   };
 
   $: alternateLocales = languages
-    .filter((language) => language.enabled)
+    .filter((language) => language.enabled && (KNOWN_LOCALES as readonly string[]).includes(language.code))
     .filter((language) => !pageLocales || pageLocales.includes(language.code))
     .map((language) => language.code);
 
   // Site origin from PUBLIC_SITE_URL (.env), falling back to the live request origin.
-  $: siteOrigin = SITE_URL || $page.url.origin;
+  $: siteOrigin = resolveSiteOrigin(SITE_URL, $page.url.origin);
   // A locale URL is only canonical when that language actually has published
   // content. /de/… on an untranslated page serves English text at a German
   // address — pointing its canonical at the default-language URL is what stops
   // it competing with the original as duplicate content.
-  $: localeIsPublished = !pageLocales || pageLocales.includes(activeLocale);
+  $: localeIsPublished = (activeLocale === DEFAULT_LOCALE || alternateLocales.includes(activeLocale)) && (!pageLocales || pageLocales.includes(activeLocale));
   $: canonicalUrl = `${siteOrigin}${localizeHref($page.url.pathname, localeIsPublished ? activeLocale : DEFAULT_LOCALE)}`;
   $: orgUrl = `${siteOrigin}/`;
   $: mediaCdnOrigin = (publicEnv.PUBLIC_MEDIA_CDN_URL || '').trim().replace(/\/+$/, '');
 
-  // ── Per-page SEO overrides (Tier 2) ─────────────────────────────────────────
-  // Fetched client-side per path. When there is NO override row, every computed
-  // value below equals the exact site default, so the <head> is unchanged. Admin
-  // pages are skipped. Public pages that don't have a row are byte-for-byte the
-  // same as before this feature existed.
-  type SeoOverride = {
-    title?: string | null;
-    meta_description?: string | null;
-    og_title?: string | null;
-    og_description?: string | null;
-    og_image_url?: string | null;
-    canonical_url?: string | null;
-    robots?: string | null;
-    structured_data?: Record<string, unknown> | unknown[] | null;
-  };
-  let seoOverride: SeoOverride | null = null;
-  let lastSeoPath = '';
-
-  const loadSeoOverride = async (path: string) => {
-    try {
-      const res = await api.pageSeo.resolve(path);
-      if (path !== lastSeoPath) return; // a newer navigation won — ignore stale result
-      seoOverride = res.data.match && res.data.seo ? (res.data.seo as SeoOverride) : null;
-    } catch {
-      if (path === lastSeoPath) seoOverride = null; // resolver unavailable → keep defaults
-    }
-  };
-
-  $: if (browser) {
-    if (isAdmin) {
-      seoOverride = null;
-      lastSeoPath = $page.url.pathname;
-    } else if ($page.url.pathname !== lastSeoPath) {
-      lastSeoPath = $page.url.pathname;
-      seoOverride = null; // fall back to defaults while resolving
-      void loadSeoOverride($page.url.pathname);
-    }
-  }
+  // Resolve SEO before rendering so crawlers receive the same indexing rules
+  // and canonical target used by the sitemap.
+  $: seoOverride = data.seoOverride ?? null;
 
   // Effective head values: override ?? current default (defaults are byte-identical to before).
   // A page can publish its own SEO through load data — that is how entity
@@ -147,7 +114,9 @@
   $: seoOgDescription = seoOverride?.og_description || seoOverride?.meta_description || pageSeo?.description || $branding.positioning;
   $: seoCanonical = seoOverride?.canonical_url || canonicalUrl;
   $: seoOgImage = cdnUrl(seoOverride?.og_image_url || '');
-  $: seoRobots = seoOverride?.robots || '';
+  $: indexingData = $page.data as { package?: { indexable?: boolean }; lodge?: { indexable?: boolean } };
+  $: contentNoindex = (indexingData.package && indexingData.package.indexable !== true) || indexingData.lodge?.indexable === false;
+  $: seoRobots = contentNoindex || isPrivateOrUtilityPath($page.url.pathname) ? 'noindex, nofollow' : seoOverride?.robots || '';
   $: seoStructured = seoOverride?.structured_data && !Array.isArray(seoOverride.structured_data) ? seoOverride.structured_data : null;
 
   let smoothScrollCleanup: (() => void) | undefined;
@@ -276,7 +245,7 @@
        pointing at the unprefixed default-language address. Locales without a
        published translation are excluded, so search engines are never sent to
        a page that would simply fall back to English. -->
-  {#if !isAdmin && alternateLocales.length > 1}
+  {#if !isPrivateOrUtilityPath($page.url.pathname) && !disallowsIndexing(seoRobots) && seoCanonical === canonicalUrl && alternateLocales.length > 1}
     {#each alternateLocales as code (code)}
       <link rel="alternate" hreflang={code} href={`${siteOrigin}${localizeHref($page.url.pathname, code)}`} />
     {/each}
