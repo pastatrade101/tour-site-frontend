@@ -88,6 +88,8 @@
   let attemptedSave = false;
 
   const selectTab = (tab: TabKey) => {
+    // The translation panel only exists on its tab: leaving it drops typed text.
+    if (activeTab === 'translations' && tab !== 'translations' && translationUnsaved && !confirm('Discard your unsaved translation changes?')) return;
     activeTab = tab;
     if (typeof document !== 'undefined') document.querySelector('.package-workspace-content')?.scrollTo({ top: 0 });
   };
@@ -98,7 +100,29 @@
   $: currentDraft = JSON.stringify({ form, blocks });
   $: dirty = open && baseline !== currentDraft;
   const rememberDraft = () => { baseline = JSON.stringify({ form, blocks }); };
-  const canLeave = () => !dirty || confirm('Discard your unsaved changes to this package?');
+  // The translation panel's own edits are tracked there; leaving must not drop them silently either.
+  let translationPanel: AdminTranslationTabs | null = null;
+  let translationUnsaved = false;
+  let savingTranslation = false;
+  const canLeave = () =>
+    (!dirty || confirm('Discard your unsaved changes to this package?')) &&
+    (!translationUnsaved || confirm('Discard your unsaved translation changes?'));
+
+  /**
+   * The footer's Save on the Translations tab saves the translation. It used to
+   * save the English and close the editor, so edits typed into a language were
+   * dropped — the panel's own buttons sat below every field on the page.
+   */
+  const saveTranslation = async () => {
+    if (!translationPanel || savingTranslation) return;
+    savingTranslation = true;
+    try {
+      await translationPanel.saveCurrent();
+    } finally {
+      savingTranslation = false;
+    }
+  };
+  $: onTranslations = activeTab === 'translations' && Boolean(editingId);
   const closeEditor = () => { if (canLeave()) open = false; };
   const beforeUnload = (event: BeforeUnloadEvent) => { if (dirty) { event.preventDefault(); event.returnValue = ''; } };
   beforeNavigate(({ cancel }) => { if (!canLeave()) cancel(); });
@@ -481,6 +505,8 @@
           >{translationNotice.message}</p>
         {/if}
         <AdminTranslationTabs
+          bind:this={translationPanel}
+          bind:unsaved={translationUnsaved}
           entityType="safari_packages"
           entityId={editingId}
           on:toast={(event) => (translationNotice = { message: event.detail.message, type: event.detail.type ?? 'success' })}
@@ -564,16 +590,29 @@
 
     <!-- Save stays reachable however long the page content runs. -->
     <div class="package-workspace-footer">
-      <p class="text-[12px] text-ink/55">{dirty ? 'Unsaved changes' : editingId ? 'All changes saved' : 'New draft'} · {form.status === 'published' ? 'Saving updates the live page.' : 'Visible only after publishing.'}</p>
+      {#if onTranslations}
+        <p class="text-[12px] {translationUnsaved ? 'font-semibold text-clay' : 'text-ink/55'}">
+          {translationUnsaved ? 'Unsaved translation changes' : 'Translation saved'} · Save here saves the language you are editing.
+        </p>
+      {:else}
+        <p class="text-[12px] text-ink/55">{dirty ? 'Unsaved changes' : editingId ? 'All changes saved' : 'New draft'} · {form.status === 'published' ? 'Saving updates the live page.' : 'Visible only after publishing.'}</p>
+      {/if}
       <div class="flex flex-wrap gap-3">
         {#if activeTab !== 'preview'}<button type="button" class="inline-flex h-11 items-center gap-2 rounded border border-forest/30 px-4 text-sm font-semibold text-forest" on:click={() => selectTab('preview')}><Eye size={15} /> Preview page</button>{/if}
         <button type="button" class="inline-flex h-11 items-center rounded border border-ink/20 px-5 text-sm font-semibold text-heading transition hover:bg-sand/50" on:click={closeEditor}>
           Cancel
         </button>
-        <button type="button" class="inline-flex h-11 items-center gap-2 rounded bg-goldfinch-gold px-5 text-sm font-bold text-heading transition hover:brightness-105 disabled:opacity-60" disabled={saving} on:click={save}>
-          {#if saving}<Loader2 size={15} class="animate-spin" />{:else}<Save size={15} />{/if}
-          {editingId ? 'Save changes' : 'Create package'}
-        </button>
+        {#if onTranslations}
+          <button type="button" class="inline-flex h-11 items-center gap-2 rounded bg-goldfinch-gold px-5 text-sm font-bold text-heading transition hover:brightness-105 disabled:opacity-60" disabled={savingTranslation || !translationUnsaved} on:click={saveTranslation}>
+            {#if savingTranslation}<Loader2 size={15} class="animate-spin" />{:else}<Save size={15} />{/if}
+            Save translation
+          </button>
+        {:else}
+          <button type="button" class="inline-flex h-11 items-center gap-2 rounded bg-goldfinch-gold px-5 text-sm font-bold text-heading transition hover:brightness-105 disabled:opacity-60" disabled={saving} on:click={save}>
+            {#if saving}<Loader2 size={15} class="animate-spin" />{:else}<Save size={15} />{/if}
+            {editingId ? 'Save changes' : 'Create package'}
+          </button>
+        {/if}
       </div>
     </div>
   </div>

@@ -177,8 +177,17 @@
 
   // Built-in wording and fixed id of each legal page, from the server.
   let legalDefaults: LegalDefaults | null = null;
-  // Bumped on every save so the translation panels re-read the saved English.
+  // Bumped on every save so the translation panels re-read the saved English —
+  // unless a translation is mid-edit, since re-reading would drop what was typed.
   let savedVersion = 0;
+  let legalTranslationUnsaved = false;
+
+  const selectGroup = (key: string) => {
+    if (key === activeGroup) return;
+    // A legal page's translation panel lives in its section; leaving drops typed text.
+    if (legalTranslationUnsaved && !confirm('Discard your unsaved translation changes?')) return;
+    activeGroup = key;
+  };
 
   const ALL_FIELDS = GROUPS.flatMap((g) => g.fields);
   const groupOfField = new Map(GROUPS.flatMap((g) => g.fields.map((f) => [f.key, g.key] as const)));
@@ -372,7 +381,7 @@
       }
       for (const { key } of payloads) originalSerialized[key] = JSON.stringify(values[key]);
       originalSerialized = { ...originalSerialized };
-      savedVersion += 1;
+      if (!legalTranslationUnsaved) savedVersion += 1;
       showToast(`Saved ${payloads.length} setting${payloads.length === 1 ? '' : 's'}.`);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Unable to save settings.', 'error');
@@ -407,7 +416,7 @@
           <button
             class={`flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition lg:w-full ${activeGroup === g.key ? 'bg-forest text-white shadow-sm' : 'text-ink/65 hover:bg-sand/60'}`}
             type="button"
-            on:click={() => (activeGroup = g.key)}
+            on:click={() => selectGroup(g.key)}
           >
             <span class={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${activeGroup === g.key ? 'bg-surface/15' : 'bg-sand/70'}`}><Icon size={15} /></span>
             <span class="whitespace-nowrap">{g.label}</span>
@@ -574,6 +583,8 @@
               <!-- Re-mounted after a save, so the English beside each translation is the text just saved. -->
               {#key `${group.legalDoc}-${savedVersion}`}
                 <AdminTranslationTabs
+                  bind:unsaved={legalTranslationUnsaved}
+                  stickyOffset="88px"
                   entityType="legal_pages"
                   entityId={pageId}
                   on:toast={(event) => showToast(event.detail.message, event.detail.type ?? 'success')}

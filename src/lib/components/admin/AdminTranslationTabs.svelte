@@ -24,6 +24,13 @@
 
   export let entityType: string;
   export let entityId: string;
+  /**
+   * Where the Save/Publish bar pins while the fields scroll past. Raise it on a
+   * page whose own save bar floats over the bottom of the window.
+   */
+  export let stickyOffset = '0px';
+  /** Read-only for the page: true while the open language has edits not yet saved. */
+  export let unsaved = false;
 
   const dispatch = createEventDispatcher<{ toast: { message: string; type?: 'success' | 'error' } }>();
   const toast = (message: string, type: 'success' | 'error' = 'success') => dispatch('toast', { message, type });
@@ -33,6 +40,8 @@
   let loading = true;
   let busy = '';
   let draft: Record<string, string | string[]> = {};
+  // The open language as last loaded or saved, to tell unsaved edits apart.
+  let savedSnapshot = '';
   let open = true;
 
   const STATUS_LABELS: Record<TranslationStatus, string> = {
@@ -63,9 +72,12 @@
     for (const field of data.fields) {
       if (draft[field.key] === undefined) draft[field.key] = field.kind === 'rich_list' ? [] : '';
     }
+    savedSnapshot = JSON.stringify(draft);
   };
 
   const selectLanguage = (code: string) => {
+    if (code === active) return;
+    if (unsaved && !confirm(`Discard your unsaved ${languageName(active)} changes?`)) return;
     active = code;
     pickUp();
   };
@@ -136,20 +148,43 @@
     doneRequired === requiredFields.length &&
     (requiredFields.length > 0 || visibleFields.some((f) => filled(f.key)));
 
-  const save = async (status: TranslationStatus) => {
-    if (!data || busy) return;
+  const save = async (status: TranslationStatus): Promise<boolean> => {
+    if (!data || busy) return false;
+    const wasLive = live;
     busy = status;
     try {
       const res = await api.translations.save(entityType, entityId, active, { fields: draft, translation_status: status });
       data.translations[active] = res.data;
       data = data;
       pickUp();
-      toast(status === 'published' ? 'Published — this is now live for that language.' : `Saved as ${STATUS_LABELS[status].toLowerCase()}.`);
+      toast(
+        status === 'published'
+          ? wasLive
+            ? 'Saved — the live page shows the new text.'
+            : 'Published — this is now live for that language.'
+          : wasLive
+            ? `Unpublished — the page shows English in ${languageName(active)} until it is published again.`
+            : `Saved as ${STATUS_LABELS[status].toLowerCase()}.`
+      );
+      return true;
     } catch (error) {
       toast(error instanceof Error ? error.message : 'Unable to save the translation.', 'error');
+      return false;
     } finally {
       busy = '';
     }
+  };
+
+  /**
+   * Save the open language the way its status implies, for a page's own save
+   * button: a live translation stays live, anything else is kept as a draft.
+   * A page used to save only its English here and close, dropping the edits.
+   */
+  export const saveCurrent = (): Promise<boolean> => save(live ? 'published' : 'draft');
+
+  /** Taking a live translation offline is never a side effect of saving. */
+  const unpublish = () => {
+    if (confirm(`Take the ${languageName(active)} version offline? Visitors will see English until it is published again.`)) void save('draft');
   };
 
   const copyFromDefault = async () => {
@@ -170,6 +205,8 @@
 
   const aiTranslate = async () => {
     if (busy) return;
+    // A machine draft is always saved for review, which takes a live language offline.
+    if (live && !confirm(`Drafting with AI saves ${languageName(active)} for review, which takes it offline until you publish it again. Continue?`)) return;
     busy = 'ai';
     try {
       const res = await api.translations.aiTranslate(entityType, entityId, active);
@@ -190,6 +227,9 @@
 
   $: if (entityType && entityId) void load();
   $: activeRecord = data?.translations[active];
+  $: live = activeRecord?.translation_status === 'published';
+  // Reads `draft` and `savedSnapshot` directly so it recomputes on every keystroke.
+  $: unsaved = Boolean(data) && !isDefault && JSON.stringify(draft) !== savedSnapshot;
   $: isDefault = data?.default_language === active;
   $: languageName = (code: string) => data?.languages.find((l) => l.code === code)?.name ?? code;
 
@@ -341,35 +381,68 @@
           {/each}
         </div>
 
-        <div class="flex flex-wrap items-center justify-end gap-2 border-t border-ink/10 pt-3">
-          {#if !canPublish}
+        <!-- Pinned to the bottom of the window while the fields scroll past: on a
+             long page these buttons sat below sixty fields, and editors pressed
+             the page's own Save instead, which never saved the translation. -->
+        <div
+          class="translation-actions sticky z-10 -mx-4 -mb-4 flex flex-wrap items-center justify-end gap-2 rounded-b-[8px] border-t border-ink/10 bg-surface px-4 py-3"
+          style:bottom={stickyOffset}
+        >
+          {#if unsaved}
+            <span class="mr-auto flex items-center gap-1.5 text-[12px] font-semibold text-clay" role="status">
+              <AlertTriangle size={13} />
+              Unsaved {languageName(active)} changes{live ? ' — the live page still shows the old text' : ''}
+            </span>
+          {:else if !canPublish}
             <span class="mr-auto flex items-center gap-1.5 text-[11px] text-ink/50">
               <AlertTriangle size={12} class="text-goldfinch-gold" />
               {requiredFields.length - doneRequired}
               {requiredFields.length - doneRequired === 1 ? 'field is' : 'fields are'} still needed before this can go live.
             </span>
+          {:else if live}
+            <span class="mr-auto flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
+              <Check size={12} /> {languageName(active)} is live
+            </span>
           {/if}
-          <button
-            class="inline-flex h-9 items-center rounded-md border border-ink/15 px-3 text-xs font-semibold text-heading transition hover:bg-sand/50 disabled:opacity-50"
-            type="button"
-            disabled={Boolean(busy)}
-            on:click={() => save('draft')}>{busy === 'draft' ? 'Saving…' : 'Save draft'}</button
-          >
-          <button
-            class="inline-flex h-9 items-center rounded-md border border-ink/15 px-3 text-xs font-semibold text-heading transition hover:bg-sand/50 disabled:opacity-50"
-            type="button"
-            disabled={Boolean(busy)}
-            on:click={() => save('needs_review')}>{busy === 'needs_review' ? 'Saving…' : 'Ask for review'}</button
-          >
-          <button
-            class="inline-flex h-9 items-center gap-1.5 rounded-md bg-forest px-4 text-xs font-bold text-white transition hover:brightness-110 disabled:opacity-50"
-            type="button"
-            disabled={Boolean(busy) || !canPublish}
-            on:click={() => save('published')}
-          >
-            {#if busy === 'published'}<Loader2 size={13} class="animate-spin" />{:else}<Check size={13} />{/if}
-            Publish
-          </button>
+          {#if live}
+            <button
+              class="inline-flex h-9 items-center rounded-md border border-ink/15 px-3 text-xs font-semibold text-heading transition hover:bg-canvas disabled:opacity-50"
+              type="button"
+              disabled={Boolean(busy)}
+              on:click={unpublish}>{busy === 'draft' ? 'Unpublishing…' : 'Unpublish'}</button
+            >
+            <button
+              class="inline-flex h-9 items-center gap-1.5 rounded-md bg-forest px-4 text-xs font-bold text-white transition hover:brightness-110 disabled:opacity-50"
+              type="button"
+              disabled={Boolean(busy) || !canPublish || !unsaved}
+              on:click={() => save('published')}
+            >
+              {#if busy === 'published'}<Loader2 size={13} class="animate-spin" />{:else}<Check size={13} />{/if}
+              Save &amp; keep live
+            </button>
+          {:else}
+            <button
+              class="inline-flex h-9 items-center rounded-md border border-ink/15 px-3 text-xs font-semibold text-heading transition hover:bg-canvas disabled:opacity-50"
+              type="button"
+              disabled={Boolean(busy)}
+              on:click={() => save('draft')}>{busy === 'draft' ? 'Saving…' : 'Save draft'}</button
+            >
+            <button
+              class="inline-flex h-9 items-center rounded-md border border-ink/15 px-3 text-xs font-semibold text-heading transition hover:bg-canvas disabled:opacity-50"
+              type="button"
+              disabled={Boolean(busy)}
+              on:click={() => save('needs_review')}>{busy === 'needs_review' ? 'Saving…' : 'Ask for review'}</button
+            >
+            <button
+              class="inline-flex h-9 items-center gap-1.5 rounded-md bg-forest px-4 text-xs font-bold text-white transition hover:brightness-110 disabled:opacity-50"
+              type="button"
+              disabled={Boolean(busy) || !canPublish}
+              on:click={() => save('published')}
+            >
+              {#if busy === 'published'}<Loader2 size={13} class="animate-spin" />{:else}<Check size={13} />{/if}
+              Publish
+            </button>
+          {/if}
         </div>
       {/if}
     {:else if !loading}
