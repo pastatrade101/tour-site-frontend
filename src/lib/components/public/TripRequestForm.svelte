@@ -65,7 +65,7 @@
 
   let travel_date = '';
   let adults = '1';
-  let children_note = '';
+  let children = '0';
   let language = '';
   let full_name = '';
   let email = '';
@@ -84,6 +84,8 @@
   const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
   const ADULTS = Array.from({ length: 20 }, (_, i) => String(i + 1));
+  // A number to pick, like adults — ages can be shared with the specialist later.
+  const CHILDREN = Array.from({ length: 11 }, (_, i) => String(i));
 
   /**
    * The languages the business actually replies in. Kept short and honest —
@@ -146,16 +148,6 @@
     step = 0;
   };
 
-  /**
-   * "2 children, ages 7 and 11" -> 2. A leading number is the only part that
-   * can be read reliably; the rest stays as the traveller wrote it, because
-   * ages and arrangements are exactly what a specialist needs verbatim.
-   */
-  const childCount = (note: string): number => {
-    const match = note.trim().match(/^\s*(\d{1,2})\b/);
-    return match ? Number(match[1]) : 0;
-  };
-
   const submit = async () => {
     if (submitting) return;
     errorMessage = '';
@@ -170,17 +162,15 @@
         phone: phone.trim() ? `${dialCode} ${phone.trim()}` : null,
         travel_date: travel_date || null,
         number_of_adults: Number(adults) || 1,
-        number_of_children: childCount(children_note),
+        number_of_children: Number(children) || 0,
         special_requests: special_requests.trim() || null,
         source,
         lead_context: {
           v: 1,
           ...leadContext,
-          // No column for either of these, and neither is worth one: the
-          // language is a preference and the children note is free text a
-          // person reads, not a number anything computes on.
+          // No column for the language, and it is not worth one: it is a
+          // preference a person reads, not something anything computes on.
           language,
-          children_note: children_note.trim() || undefined,
           tour_title: tour?.title ?? undefined,
           attribution: getAttribution()
         },
@@ -305,13 +295,12 @@
         </label>
 
         <label class="grid gap-1.5">
-          <span class={labelCls}>{inline ? 'Children' : 'Children and ages'} <span class="gf-hint">(optional)</span></span>
+          <span class={labelCls}>{$t('ui.children')} <span class="gf-hint">(optional)</span></span>
           <span class="relative block">
             <Users size={16} class={iconCls} />
-            <!-- Free text on purpose. Ages drive park fees and room
-                 configuration, and "2 children, ages 7 and 11" tells a
-                 specialist far more than a number in a stepper. -->
-            <input class={fieldCls} bind:value={children_note} placeholder={inline ? '2, ages 7 & 11' : 'e.g. 2 children, ages 7 and 11'} />
+            <select class={`${fieldCls} appearance-none`} bind:value={children}>
+              {#each CHILDREN as n}<option value={n}>{n}</option>{/each}
+            </select>
           </span>
         </label>
 
