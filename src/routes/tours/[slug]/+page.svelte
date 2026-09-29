@@ -26,6 +26,7 @@
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import Img from '$lib/components/public/Img.svelte';
   import ItineraryDays from '$lib/components/public/ItineraryDays.svelte';
+  import RouteMap from '$lib/components/public/RouteMap.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import ReviewsWidget from '$lib/components/public/ReviewsWidget.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
@@ -61,6 +62,7 @@
 
   const TABS = [
     { id: 'overview', label: 'Overview' },
+    { id: 'route', label: 'Route' },
     { id: 'day-by-day', label: 'Day by Day' },
     { id: 'accommodation', label: 'Accommodation' },
     { id: 'prices', label: 'Prices' },
@@ -268,7 +270,17 @@
     }
     return blocks;
   })();
-  $: visibleTabs = TABS.filter((tab) => tab.id !== 'accommodation' || accommodationBlocks.length);
+  // The same rule RouteMap uses to decide whether to draw anything: a day counts
+  // only when its place has real coordinates. Without this the tab would scroll
+  // to a section that renders nothing.
+  $: hasRoute = itineraryDays.some((day) => {
+    const lat = Number(day.destination?.latitude);
+    const lng = Number(day.destination?.longitude);
+    return day.destination?.latitude != null && day.destination?.latitude !== '' && Number.isFinite(lat) && Number.isFinite(lng);
+  });
+  $: visibleTabs = TABS.filter(
+    (tab) => (tab.id !== 'accommodation' || accommodationBlocks.length) && (tab.id !== 'route' || hasRoute)
+  );
   $: touristTripLd = tour
     ? {
         '@type': 'TouristTrip',
@@ -641,6 +653,11 @@
           </button>
           </section>
         {/if}
+
+        <!-- Where the days are, before what happens on them. Renders nothing for
+             a tour whose days have no mapped place yet, and removes itself if
+             the basemap cannot load. -->
+        <RouteMap days={itineraryDays} title={tour?.title ?? ''} />
 
         <section id="day-by-day" class="tour-section scroll-mt-32">
           <h2 class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">{$t('ui.day_by_day')}</h2>

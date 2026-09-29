@@ -2,7 +2,7 @@
   import { cdnUrl } from '$lib/img';
   import { onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
-  import { BedDouble, CalendarDays, Edit, Image as ImageIcon, ListChecks, Plus, Route, Save, Search, Sparkles, Trash2, Utensils, X } from '@lucide/svelte';
+  import { BedDouble, CalendarDays, Edit, MapPin, Image as ImageIcon, ListChecks, Plus, Route, Save, Search, Sparkles, Trash2, Utensils, X } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
@@ -19,12 +19,14 @@
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import { toMetaText } from '$lib/richText';
-  import type { Lodge } from '$lib/types';
+  import type { Destination, Lodge } from '$lib/types';
 
   type ItineraryDay = {
     accommodation?: string | null;
     accommodation_id?: string | null;
     activities?: string | null;
+    destination_id?: string | null;
+    travel_mode?: string | null;
     created_at?: string;
     day_number: number;
     description?: string | null;
@@ -77,6 +79,18 @@
   let tours: TourSummary[] = [];
   let tourOptions: Option[] = [{ label: 'Select a tour', value: '' }];
   let accommodationOptions: Option[] = [{ label: 'No linked accommodation', value: '' }];
+  let destinationOptions: Option[] = [{ label: 'No mapped place', value: '' }];
+  /** Destination id -> whether it can be drawn. A place without coordinates is
+   *  linkable but invisible on the route, and the editor should say so. */
+  let destinationPinned: Record<string, boolean> = {};
+  /** Lodge id -> its destination, so choosing a stay can suggest the place. */
+  let lodgeDestination: Record<string, string> = {};
+  const TRAVEL_MODES: Option[] = [
+    { label: 'Not stated', value: '' },
+    { label: 'By road', value: 'DRIVE' },
+    { label: 'By air', value: 'FLY' },
+    { label: 'By boat', value: 'BOAT' }
+  ];
   let days: ItineraryDay[] = [];
   let mediaItems: MediaItem[] = [];
   let modalOpen = false;
@@ -88,6 +102,8 @@
     accommodation: '',
     accommodation_id: '',
     activities: [''] as string[],
+    destination_id: '',
+    travel_mode: '',
     day_number: '1',
     description: '',
     image_url: '',
@@ -149,6 +165,8 @@
     accommodation: String(value.accommodation ?? ''),
     accommodation_id: String(value.accommodation_id ?? ''),
     activities: String(value.activities ?? ''),
+    destination_id: String(value.destination_id ?? ''),
+    travel_mode: String(value.travel_mode ?? ''),
     created_at: String(value.created_at ?? ''),
     day_number: Number(value.day_number ?? 0),
     description: String(value.description ?? ''),
@@ -191,6 +209,7 @@
         ...response.data.items
           .filter((lodge) => lodge.id && lodge.status !== 'archived')
           .map((lodge) => {
+            if (lodge.destination_id) lodgeDestination[lodge.id] = lodge.destination_id;
             const destination = lodge.destinations?.name?.trim();
             const level = String(lodge.accommodation_level ?? '').replace(/_/g, ' ');
             const detail = [destination, level].filter(Boolean).join(' - ');
@@ -201,6 +220,47 @@
       showToast(requestError instanceof Error ? requestError.message : 'Unable to load accommodations.', 'error');
     }
   };
+
+  const loadDestinations = async () => {
+    try {
+      // Paged, not one call: the API caps limit at 100, so a single request for
+      // 200 quietly returns 100 and every place after the hundredth would be
+      // missing from this list with no sign that it was.
+      const items: Destination[] = [];
+      for (let page = 1; page <= 20; page++) {
+        const response = await api.destinations.list({ limit: 100, page, status: 'all' });
+        const batch = (response.data.items ?? []) as Destination[];
+        items.push(...batch);
+        if (batch.length < 100) break;
+      }
+      destinationPinned = Object.fromEntries(
+        items.map((place) => [place.id, Number.isFinite(Number(place.latitude)) && Number.isFinite(Number(place.longitude)) && place.latitude != null && place.longitude != null])
+      );
+      destinationOptions = [
+        { label: 'No mapped place', value: '' },
+        ...items
+          .filter((place) => place.id && place.status !== 'archived')
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((place) => ({
+            // Marked in the list itself, so an editor sees BEFORE choosing that a
+            // place will not appear on the map.
+            label: destinationPinned[place.id] ? place.name : `${place.name} — not on the map yet`,
+            value: place.id
+          }))
+      ];
+    } catch (requestError) {
+      showToast(requestError instanceof Error ? requestError.message : 'Unable to load destinations.', 'error');
+    }
+  };
+
+  /*
+   * Choosing a stay suggests the place — the same rule the migration used to
+   * backfill existing days, applied live so new days stay consistent with old
+   * ones. It only fills an EMPTY place: an editor's own choice is never replaced.
+   */
+  $: if (form.accommodation_id && !form.destination_id && lodgeDestination[form.accommodation_id]) {
+    form.destination_id = lodgeDestination[form.accommodation_id];
+  }
 
   $: if (form.accommodation_id) {
     const selectedAccommodation = accommodationOptions.find((option) => option.value === form.accommodation_id);
@@ -262,6 +322,8 @@
       accommodation: '',
       accommodation_id: '',
       activities: [''],
+      destination_id: '',
+      travel_mode: '',
       day_number: nextDayNumber(),
       description: '',
       image_url: '',
@@ -289,6 +351,8 @@
       accommodation: day.accommodation ?? '',
       accommodation_id: day.accommodation_id ?? day.lodge?.id ?? '',
       activities: activityList(day.activities),
+      destination_id: day.destination_id ?? '',
+      travel_mode: day.travel_mode ?? '',
       day_number: String(day.day_number),
       description: day.description ?? '',
       image_url: day.image_url ?? '',
@@ -314,6 +378,9 @@
   const payload = () => ({
     accommodation: form.accommodation.trim() || null,
     accommodation_id: form.accommodation_id || null,
+    destination_id: form.destination_id || null,
+    // Day 1 has no previous stop to travel from, so its mode is never sent.
+    travel_mode: Number(form.day_number) > 1 ? form.travel_mode || null : null,
     activities: form.activities.map((activity) => activity.trim()).filter(Boolean).join('\n') || null,
     day_number: Number(form.day_number),
     description: form.description.trim() || null,
@@ -433,7 +500,7 @@
   };
 
   onMount(async () => {
-    await Promise.all([loadTours(), loadAccommodations()]);
+    await Promise.all([loadTours(), loadAccommodations(), loadDestinations()]);
   });
 </script>
 
@@ -669,6 +736,32 @@
 
           <div class="min-w-0 space-y-7">
             <section class="min-w-0">
+              <div class="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">
+                <MapPin size={15} /> Route map
+              </div>
+              <div class="grid min-w-0 gap-4">
+                <AdminSelect label="Where this day is spent" name="destination_id" bind:value={form.destination_id} options={destinationOptions} />
+                <!-- Says what the choice DOES to the public page, because the
+                     consequence is invisible from inside this form. -->
+                {#if !form.destination_id}
+                  <p class="text-[12.5px] leading-5 text-ink/55">Pick a place and this day appears as a numbered pin on the tour's route map.</p>
+                {:else if destinationPinned[form.destination_id] === false}
+                  <p class="rounded-md border border-clay/25 bg-clay/5 px-3 py-2 text-[12.5px] leading-5 text-clay">
+                    This place has no map position yet, so the day will not appear on the route.
+                    <a class="font-semibold underline" href="/admin/destinations" target="_blank" rel="noopener">Add its latitude and longitude</a>
+                    once and every tour that visits it is mapped.
+                  </p>
+                {:else}
+                  <p class="text-[12.5px] leading-5 text-ink/55">Pinned on the route map.</p>
+                {/if}
+                {#if Number(form.day_number) > 1}
+                  <AdminSelect label="How travellers get here" name="travel_mode" bind:value={form.travel_mode} options={TRAVEL_MODES} />
+                  <p class="-mt-2 text-[12.5px] leading-5 text-ink/55">Draws the leg into this day's place. Leave it as not stated rather than guess.</p>
+                {/if}
+              </div>
+            </section>
+
+            <section class="min-w-0 border-t border-ink/10 pt-6">
               <div class="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70">
                 <BedDouble size={15} /> Stay
               </div>

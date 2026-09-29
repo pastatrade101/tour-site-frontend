@@ -203,6 +203,18 @@ export type ItineraryDay = {
   meals?: string | null;
   activities?: string | null;
   image_url?: string | null;
+  /** The place this day is spent. Its coordinates pin the day on the route map. */
+  destination_id?: string | null;
+  /** How the traveller reaches this day's place. Null is "not stated", never a default. */
+  travel_mode?: 'DRIVE' | 'FLY' | 'BOAT' | null;
+  /** The linked place, joined by the public tour endpoint for the route map. */
+  destination?: {
+    id: string;
+    name: string;
+    slug: string;
+    latitude?: number | string | null;
+    longitude?: number | string | null;
+  } | null;
 };
 
 export type Destination = {
