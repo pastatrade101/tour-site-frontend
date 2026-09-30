@@ -650,7 +650,7 @@ export type TranslationStatus = 'not_started' | 'draft' | 'translated' | 'needs_
 export type TranslationFieldDef = {
   key: string;
   label: string;
-  kind: 'text' | 'textarea' | 'rich' | 'rich_list';
+  kind: 'text' | 'textarea' | 'rich' | 'rich_list' | 'text_list';
   required?: boolean;
   /** The section a field belongs to — set for block-built records like safari packages. */
   group?: string;

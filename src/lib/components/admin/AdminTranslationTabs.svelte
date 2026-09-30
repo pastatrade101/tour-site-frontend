@@ -70,7 +70,7 @@
     if (!data) return;
     draft = structuredClone(data.translations[active]?.fields ?? {});
     for (const field of data.fields) {
-      if (draft[field.key] === undefined) draft[field.key] = field.kind === 'rich_list' ? [] : '';
+      if (draft[field.key] === undefined) draft[field.key] = field.kind === 'rich_list' || field.kind === 'text_list' ? [] : '';
     }
     savedSnapshot = JSON.stringify(draft);
   };
@@ -365,7 +365,7 @@
                   <AdminRichText label="" name={`tr_${field.key}`} rows={5} headings="none" bind:value={draft[field.key] as string} />
                 {:else if field.kind === 'textarea'}
                   <textarea class={areaClass} rows="3" bind:value={draft[field.key] as string}></textarea>
-                {:else if field.kind === 'rich_list'}
+                {:else if field.kind === 'rich_list' || field.kind === 'text_list'}
                   <textarea
                     class={areaClass}
                     rows="4"
