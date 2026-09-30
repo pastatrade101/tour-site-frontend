@@ -221,7 +221,7 @@
       </span>
       <h3 class={`font-serif text-2xl font-semibold ${dark ? 'text-white' : 'text-heading'}`}>{$t('form.thank_you')}</h3>
       {#if bookingCode}
-        <p class={hintCls}>{$t('form.your_reference_is')}<b class={dark ? 'text-goldfinch-gold' : 'text-clay'}>{bookingCode}</b>.</p>
+        <p class={hintCls}>{$t('form.your_reference_is')} <b class={dark ? 'text-goldfinch-gold' : 'text-clay'}>{bookingCode}</b>.</p>
       {/if}
       <p class={hintCls}>{$t('form.specialist_replies')}</p>
     </div>
