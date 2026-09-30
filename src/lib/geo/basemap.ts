@@ -190,6 +190,37 @@ export function fitProjection(bounds: BBox, width: number, padding = 8): Project
 	return project;
 }
 
+/**
+ * A fitted view magnified `scale` times, with `center` in the middle of it.
+ *
+ * Pure magnification of the same frame: width and height stay those of `base`,
+ * so the map box never changes size while a reader zooms. Returned as the
+ * affine step on top of `base` so geography projected once through `base` can
+ * follow with a single SVG transform instead of being re-projected per frame.
+ */
+export type Zoom = { scale: number; center: LngLat };
+
+export function zoomTransform(base: Projection, zoom: Zoom) {
+	const [cx, cy] = base(zoom.center);
+	return {
+		k: zoom.scale,
+		tx: base.width / 2 - cx * zoom.scale,
+		ty: base.height / 2 - cy * zoom.scale
+	};
+}
+
+export function zoomProjection(base: Projection, zoom: Zoom): Projection {
+	const { k, tx, ty } = zoomTransform(base, zoom);
+	const project = ((p: LngLat) => {
+		const [x, y] = base(p);
+		return [x * k + tx, y * k + ty];
+	}) as Projection;
+	project.width = base.width;
+	project.height = base.height;
+	project.invert = ([x, y]: [number, number]): LngLat => base.invert([(x - tx) / k, (y - ty) / k]);
+	return project;
+}
+
 /** Grow a bbox by a ratio of its own size, so pins never sit on the edge. */
 /**
  * Grow a bbox so pins never sit on the edge.

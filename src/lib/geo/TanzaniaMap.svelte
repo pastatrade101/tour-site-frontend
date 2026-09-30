@@ -8,6 +8,7 @@
 	 * fighting a library's stylesheet. It also renders correctly on the server,
 	 * so a destination page ships its map in the HTML.
 	 */
+	import { untrack } from 'svelte';
 	import {
 		decodeBasemap,
 		fitProjection,
@@ -18,10 +19,13 @@
 		LEG_BOW,
 		padBBox,
 		boundsOf,
+		zoomProjection,
+		zoomTransform,
 		type BasemapDoc,
 		type BBox,
 		type LngLat,
-		type MapMarker
+		type MapMarker,
+		type Zoom
 	} from './basemap';
 
 	interface Props {
@@ -33,6 +37,11 @@
 		route?: boolean;
 		/** 'country', 'markers', 'highlight', or an explicit bbox. */
 		focus?: BBox | 'country' | 'markers' | 'highlight';
+		/**
+		 * Magnify the focused view. The frame keeps its size; pins, labels and
+		 * route lines keep theirs, only the distances between them grow.
+		 */
+		zoom?: Zoom;
 		width?: number;
 		showRegionLabels?: boolean;
 		interactive?: boolean;
@@ -55,6 +64,7 @@
 		markers = [],
 		route = false,
 		focus = 'country',
+		zoom,
 		width = 640,
 		showRegionLabels = false,
 		interactive = false,
@@ -138,22 +148,40 @@
 		return () => mq.removeEventListener('change', onChange);
 	});
 
+	// The journey itself, not where it sits on screen: a zoom re-projects every
+	// leg on every frame, and the route must not draw itself in again each time.
+	const journey = $derived(
+		route ? markers.map((m) => `${m.lat},${m.lng},${m.mode ?? ''}`).join('|') : ''
+	);
+
 	$effect(() => {
-		if (!route || !legs.length || reducedMotion) return;
+		if (!journey || reducedMotion) return;
+		const count = untrack(() => legs.length);
+		if (!count) return;
 		drawing = true;
 		// Each leg starts exactly as the one before it lands, so the line is drawn
 		// by a pen that never lifts. An overlap made two legs grow at once; a gap
 		// made it stop and start.
-		const done = setTimeout(() => (drawing = false), LEG_DRAW * legs.length + 80);
+		const done = setTimeout(() => (drawing = false), LEG_DRAW * count + 80);
 		return () => clearTimeout(done);
 	});
 
 	const LEG_DRAW = 620;
 
-	const project = $derived(fitProjection(bounds, width));
-	const regions = $derived(regionShapes(map, project));
-	const outline = $derived(outlinePath(map, project));
-	const lakes = $derived(lakePaths(map, project));
+	// The geography is projected once, for the focused view, and a zoom moves it
+	// with one transform — re-projecting every coastline per animation frame is
+	// what would make a zoom stutter. Pins and legs are few, so they take the
+	// zoomed projection directly and keep their size.
+	const base = $derived(fitProjection(bounds, width));
+	const project = $derived(zoom ? zoomProjection(base, zoom) : base);
+	const view = $derived(zoom ? zoomTransform(base, zoom) : null);
+	const geoTransform = $derived(view ? `translate(${view.tx} ${view.ty}) scale(${view.k})` : undefined);
+	const regions = $derived(regionShapes(map, base));
+	const outline = $derived(outlinePath(map, base));
+	const lakes = $derived(lakePaths(map, base));
+	/** A region's label point, carried through the zoom without scaling the text. */
+	const labelAt = ([x, y]: [number, number]): [number, number] =>
+		view ? [x * view.k + view.tx, y * view.k + view.ty] : [x, y];
 	// A marker with a missing or unparseable coordinate is DROPPED rather than
 	// projected to NaN, which SVG renders as a dot in the top-left corner.
 	const pins = $derived(
@@ -225,7 +253,9 @@
 </script>
 
 <div class="mk-map {className}" class:is-interactive={interactive}>
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<!-- The click only exists in picker mode (onmapclick), where pointing at a spot
+	     IS the action; a keyboard user types the coordinates in the form instead. -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
 	<svg
 		bind:this={svgEl}
 		viewBox="0 0 {project.width} {project.height}"
@@ -259,46 +289,48 @@
 
 		<rect width="100%" height="100%" fill="var(--map-sea, #eef4f7)" />
 
-		<g class="mk-map__land">
-			{#each regions as r (r.slug)}
-				{#if interactive}
-					<path
-						d={r.d}
-						class="mk-map__region"
-						class:is-active={active.has(r.slug)}
-						class:is-hovered={hovered === r.slug}
-						style={regionColors?.[r.slug] ? `fill:${regionColors[r.slug]}` : undefined}
-						role="button"
-						tabindex="0"
-						aria-label={r.name}
-						onmouseenter={() => (hovered = r.slug)}
-						onmouseleave={() => (hovered = null)}
-						onfocus={() => (hovered = r.slug)}
-						onblur={() => (hovered = null)}
-						onclick={() => onselect?.(r.slug)}
-						onkeydown={(e) => {
-							if (e.key === 'Enter' || e.key === ' ') {
-								e.preventDefault();
-								onselect?.(r.slug);
-							}
-						}}
-					/>
-				{:else}
-					<path
-						d={r.d}
-						class="mk-map__region"
-						class:is-active={active.has(r.slug)}
-						style={regionColors?.[r.slug] ? `fill:${regionColors[r.slug]}` : undefined}
-					/>
-				{/if}
+		<g class="mk-map__geo" transform={geoTransform}>
+			<g class="mk-map__land">
+				{#each regions as r (r.slug)}
+					{#if interactive}
+						<path
+							d={r.d}
+							class="mk-map__region"
+							class:is-active={active.has(r.slug)}
+							class:is-hovered={hovered === r.slug}
+							style={regionColors?.[r.slug] ? `fill:${regionColors[r.slug]}` : undefined}
+							role="button"
+							tabindex="0"
+							aria-label={r.name}
+							onmouseenter={() => (hovered = r.slug)}
+							onmouseleave={() => (hovered = null)}
+							onfocus={() => (hovered = r.slug)}
+							onblur={() => (hovered = null)}
+							onclick={() => onselect?.(r.slug)}
+							onkeydown={(e) => {
+								if (e.key === 'Enter' || e.key === ' ') {
+									e.preventDefault();
+									onselect?.(r.slug);
+								}
+							}}
+						/>
+					{:else}
+						<path
+							d={r.d}
+							class="mk-map__region"
+							class:is-active={active.has(r.slug)}
+							style={regionColors?.[r.slug] ? `fill:${regionColors[r.slug]}` : undefined}
+						/>
+					{/if}
+				{/each}
+			</g>
+
+			{#each lakes as l (l.name)}
+				<path d={l.d} class="mk-map__lake" />
 			{/each}
+
+			<path d={outline} class="mk-map__outline" />
 		</g>
-
-		{#each lakes as l (l.name)}
-			<path d={l.d} class="mk-map__lake" />
-		{/each}
-
-		<path d={outline} class="mk-map__outline" />
 
 		{#if legs.length}
 			<g class="mk-map__route" class:is-drawing={drawing}>
@@ -360,7 +392,8 @@
 			<g class="mk-map__labels">
 				{#each regions as r (r.slug)}
 					{#if !highlight.length || active.has(r.slug)}
-						<text x={r.label[0]} y={r.label[1]} class:is-active={active.has(r.slug)}>{r.name}</text>
+						{@const [lx, ly] = labelAt(r.label)}
+						<text x={lx} y={ly} class:is-active={active.has(r.slug)}>{r.name}</text>
 					{/if}
 				{/each}
 			</g>
@@ -383,7 +416,8 @@
 		{#if interactive && hovered}
 			{@const r = regions.find((x) => x.slug === hovered)}
 			{#if r}
-				<text x={r.label[0]} y={r.label[1]} class="mk-map__tip">{r.name}</text>
+				{@const [lx, ly] = labelAt(r.label)}
+				<text x={lx} y={ly} class="mk-map__tip">{r.name}</text>
 			{/if}
 		{/if}
 	</svg>
@@ -402,6 +436,13 @@
 	}
 	.mk-map svg.is-picking {
 		cursor: crosshair;
+	}
+
+	/* A zoom scales the geography group; its borders stay hairlines. */
+	.mk-map__region,
+	.mk-map__lake,
+	.mk-map__outline {
+		vector-effect: non-scaling-stroke;
 	}
 
 	.mk-map__region {
