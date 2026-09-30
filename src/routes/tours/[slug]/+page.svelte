@@ -60,23 +60,24 @@
     gallery: MediaImage[];
   };
 
-  const TABS = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'route', label: 'Route' },
-    { id: 'day-by-day', label: 'Day by Day' },
-    { id: 'accommodation', label: 'Accommodation' },
-    { id: 'prices', label: 'Prices' },
-    { id: 'inclusions', label: 'Inclusions' },
-    { id: 'good-to-know', label: 'Good to Know' }
+  // Reactive so the tabs follow the page language.
+  $: TABS = [
+    { id: 'overview', label: $t('ui.overview') },
+    { id: 'route', label: $t('ui.route_heading') },
+    { id: 'day-by-day', label: $t('ui.day_by_day') },
+    { id: 'accommodation', label: $t('nav.accommodation') },
+    { id: 'prices', label: $t('ui.prices') },
+    { id: 'inclusions', label: $t('ui.inclusions') },
+    { id: 'good-to-know', label: $t('ui.good_to_know') }
   ];
 
-  const LODGE_TYPES: Record<string, string> = {
-    tented_camp: 'Tented camp',
-    mobile_camp: 'Mobile camp',
-    lodge: 'Lodge',
-    hotel: 'Hotel',
-    treehouse: 'Treehouse'
-  };
+  $: LODGE_TYPES = {
+    tented_camp: $t('ui.tented_camp'),
+    mobile_camp: $t('ui.mobile_camp'),
+    lodge: $t('ui.lodge'),
+    hotel: $t('ui.hotel'),
+    treehouse: $t('ui.treehouse')
+  } as Record<string, string>;
 
   export let data: PageData;
 
@@ -90,7 +91,9 @@
   let hydratedOnce = false;
   let sheetOpen = false;
   let specialistOpen = false;
-  let activeTab = TABS[0].id;
+  // The first tab's id, not TABS[0]: the tabs are reactive (translated labels)
+  // and are not built yet when this line runs.
+  let activeTab = 'overview';
   let activeFaqIndex = -1;
   let tabsAnchor: HTMLDivElement;
   let tabsPinned = false;
@@ -128,17 +131,17 @@
 
   const shortText = (value: string | null | undefined, length = 140): string => toMetaText(value ?? '', length).trim();
 
-  const durationOf = (item: Tour | null): string => {
+  $: durationOf = (item: Tour | null): string => {
     if (!item?.duration_days) return '';
-    const days = `${item.duration_days} day${item.duration_days === 1 ? '' : 's'}`;
+    const days = `${item.duration_days} ${$t(item.duration_days === 1 ? 'label.day' : 'label.days')}`;
     if (!item.duration_nights) return days;
-    return `${days} / ${item.duration_nights} night${item.duration_nights === 1 ? '' : 's'}`;
+    return `${days} / ${item.duration_nights} ${$t(item.duration_nights === 1 ? 'label.night' : 'label.nights')}`;
   };
 
-  const groupSizeOf = (item: Tour | null): string => {
+  $: groupSizeOf = (item: Tour | null): string => {
     if (!item) return '';
-    if (item.group_size_min && item.group_size_max) return `${item.group_size_min}-${item.group_size_max} people`;
-    if (item.group_size_max) return `Up to ${item.group_size_max} people`;
+    if (item.group_size_min && item.group_size_max) return `${item.group_size_min}-${item.group_size_max} ${$t('ui.people')}`;
+    if (item.group_size_max) return `${$t('ui.up_to')} ${item.group_size_max} ${$t('ui.people')}`;
     return item.group_size ?? '';
   };
 
@@ -214,26 +217,26 @@
   $: groupSize = groupSizeOf(tour);
   $: routeLabel = routeOf(tour);
   $: priceLabel = tour?.price_from ? formatUsd(tour.price_from, $currency) : '';
-  $: priceFromLabel = priceLabel ? `From ${priceLabel} per person` : 'On request';
+  $: priceFromLabel = priceLabel ? `${$t('label.from')} ${priceLabel} ${$t('label.per_person').toLowerCase()}` : $t('ui.on_request');
   $: tourSpecialist = tour?.specialist?.name ? tour.specialist : null;
   $: heroStats = ([
-    durationLabel ? { icon: CalendarDays, label: 'Duration', value: durationLabel } : null,
-    destinationLabel ? { icon: MapPin, label: 'Destination', value: destinationLabel } : null,
-    { icon: Wallet, label: priceLabel ? 'Starting from' : 'Price', value: priceFromLabel }
+    durationLabel ? { icon: CalendarDays, label: $t('label.duration'), value: durationLabel } : null,
+    destinationLabel ? { icon: MapPin, label: $t('filter.destination'), value: destinationLabel } : null,
+    { icon: Wallet, label: priceLabel ? $t('ui.starting_from') : $t('filter.price'), value: priceFromLabel }
   ].filter(Boolean) as FactCard[]);
   $: tourDescription = tour?.full_description || tour?.short_description || '';
   $: metaDescription = tour ? shortText(tour.meta_description || tour.short_description || tour.full_description, 170) : '';
   $: categoryLabel = tour?.tour_categories?.name || normaliseLabel(tour?.experience_type);
   $: tripFacts = tour
     ? ([
-        routeLabel ? { icon: Route, label: 'Start / End', value: routeLabel } : null,
-        groupSize ? { icon: Users, label: 'Group size', value: groupSize } : null,
-        tour.difficulty_level ? { icon: Compass, label: 'Difficulty', value: normaliseLabel(tour.difficulty_level) } : null,
-        tour.minimum_age ? { icon: Check, label: 'Minimum age', value: `${tour.minimum_age}+` } : null
+        routeLabel ? { icon: Route, label: $t('ui.start_end'), value: routeLabel } : null,
+        groupSize ? { icon: Users, label: $t('ui.group_size'), value: groupSize } : null,
+        tour.difficulty_level ? { icon: Compass, label: $t('ui.difficulty'), value: normaliseLabel(tour.difficulty_level) } : null,
+        tour.minimum_age ? { icon: Check, label: $t('ui.minimum_age'), value: `${tour.minimum_age}+` } : null
       ].filter(Boolean) as FactCard[])
     : [];
   $: snapshotRows = itineraryDays.map((day) => ({
-    day: `Day ${day.day_number}`,
+    day: `${$t('ui.day')} ${day.day_number}`,
     place: day.title,
     highlights: shortText(day.activities || day.description, 120),
     hotel: day.lodge?.name || day.accommodation || ''
@@ -818,6 +821,7 @@
   </div>
 
   <ReviewsWidget
+    variant="stories"
     eyebrow="Traveller stories"
     title={$t('ui.travellers_who_planned_tanzania_with')}
     subtitle={$t('ui.real_approved_reviews_from_goldfinch')}

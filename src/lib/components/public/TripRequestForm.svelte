@@ -55,12 +55,13 @@
   export let layout: 'stacked' | 'inline' = 'stacked';
   /** Off where the surrounding section already states the heading. */
   export let showHeader = true;
-  export let heading = 'Plan This Trip';
-  export let intro = "Share a few details about your trip and we'll check availability for you.";
+  /** Empty means the translated default ("Plan This Trip" and its intro). */
+  export let heading = '';
+  export let intro = '';
 
   const dispatch = createEventDispatcher<{ submitted: { bookingCode: string } }>();
 
-  const STEPS = ['Trip basics', 'Your details'];
+  $: STEPS = [$t('form.trip_basics'), $t('form.your_details')];
   let step = 0;
 
   let travel_date = '';
@@ -125,14 +126,14 @@
   const validateStep = (index: number): boolean => {
     const e: Record<string, string> = {};
     if (index === 0) {
-      if (!travel_date) e.travel_date = 'Please choose a start date.';
-      else if (travel_date < todayStr) e.travel_date = "That date has already passed.";
-      if (!adults) e.adults = 'How many adults are travelling?';
-      if (!language) e.language = 'Which language should we reply in?';
+      if (!travel_date) e.travel_date = $t('form.err_start_date');
+      else if (travel_date < todayStr) e.travel_date = $t('form.err_date_past');
+      if (!adults) e.adults = $t('form.err_adults');
+      if (!language) e.language = $t('form.err_language');
     } else {
-      if (full_name.trim().length < 2) e.full_name = 'Please enter your full name.';
-      if (!email.trim()) e.email = 'We need an email to send your plan to.';
-      else if (!isEmail(email.trim())) e.email = 'That email address does not look right.';
+      if (full_name.trim().length < 2) e.full_name = $t('form.err_name');
+      if (!email.trim()) e.email = $t('form.err_email_required');
+      else if (!isEmail(email.trim())) e.email = $t('form.err_email_invalid');
     }
     errors = e;
     return Object.keys(e).length === 0;
@@ -181,7 +182,7 @@
       trackEvent('request_trip_submitted', { tour_id: tour?.id, metadata: { form: 'trip_request', language } });
       dispatch('submitted', { bookingCode });
     } catch (error) {
-      errorMessage = error instanceof Error && error.message ? error.message : 'Something went wrong. Please try again.';
+      errorMessage = error instanceof Error && error.message ? error.message : $t('form.err_generic');
     } finally {
       submitting = false;
     }
@@ -228,8 +229,8 @@
   {:else}
     {#if showHeader}
       <div class="grid gap-1">
-        <h3 class={`font-serif text-2xl font-semibold leading-tight ${dark ? 'text-white' : 'text-heading'}`}>{heading}</h3>
-        <p class={`${hintCls} leading-6`}>{intro}</p>
+        <h3 class={`font-serif text-2xl font-semibold leading-tight ${dark ? 'text-white' : 'text-heading'}`}>{heading || $t('ui.plan_this_trip')}</h3>
+        <p class={`${hintCls} leading-6`}>{intro || $t('form.trip_request_intro')}</p>
       </div>
     {/if}
 
@@ -275,7 +276,7 @@
       >
       {#if step === 0}
         <label class="grid gap-1.5">
-          <span class={labelCls}>{inline ? 'Start date' : 'Preferred start date'} <span class="gf-req">*</span></span>
+          <span class={labelCls}>{inline ? $t('form.start_date') : $t('form.preferred_start_date')} <span class="gf-req">*</span></span>
           <span class="relative block">
             <CalendarDays size={16} class={iconCls} />
             <input class={fieldCls} type="date" min={todayStr} bind:value={travel_date} on:input={() => clearErr('travel_date')} />
@@ -295,7 +296,7 @@
         </label>
 
         <label class="grid gap-1.5">
-          <span class={labelCls}>{$t('ui.children')} <span class="gf-hint">(optional)</span></span>
+          <span class={labelCls}>{$t('ui.children')} <span class="gf-hint">({$t('ui.optional').toLowerCase()})</span></span>
           <span class="relative block">
             <Users size={16} class={iconCls} />
             <select class={`${fieldCls} appearance-none`} bind:value={children}>
@@ -305,11 +306,11 @@
         </label>
 
         <label class="grid gap-1.5">
-          <span class={labelCls}>{inline ? 'Language' : 'Preferred language'} <span class="gf-req">*</span></span>
+          <span class={labelCls}>{inline ? $t('label.language') : $t('form.preferred_language')} <span class="gf-req">*</span></span>
           <span class="relative block">
             <Globe size={16} class={iconCls} />
             <select class={`${fieldCls} appearance-none`} bind:value={language} on:change={() => clearErr('language')}>
-              <option value="" disabled>{inline ? 'Select' : 'Select language'}</option>
+              <option value="" disabled>{inline ? $t('ui.select') : $t('form.select_language')}</option>
               {#each LANGUAGES as l}<option value={l.code}>{l.label}</option>{/each}
             </select>
           </span>
@@ -338,7 +339,7 @@
         </label>
 
         <div class="grid gap-1.5">
-          <span class={labelCls}>{$t('cta.whatsapp')}<span class="gf-hint">(optional)</span></span>
+          <span class={labelCls}>{$t('cta.whatsapp')}<span class="gf-hint">({$t('ui.optional').toLowerCase()})</span></span>
           <div class="grid grid-cols-[7.5rem_1fr] gap-2.5">
             <span class="relative block">
               <select class="gf-input appearance-none pr-2 text-xs" bind:value={dialCode}>
@@ -356,7 +357,7 @@
         </div>
 
         <label class="grid gap-1.5">
-          <span class={labelCls}>{$t('form.special_requests')}<span class="gf-hint">(optional)</span></span>
+          <span class={labelCls}>{$t('form.special_requests')}<span class="gf-hint">({$t('ui.optional').toLowerCase()})</span></span>
           <span class="relative block">
             <PencilLine size={16} class="trip-icon pointer-events-none absolute left-3 top-3" />
             <textarea
@@ -376,9 +377,9 @@
             class="gf-btn-primary w-full whitespace-nowrap px-6 sm:col-span-2 lg:col-span-1 lg:w-auto"
           >
             {#if submitting}
-              <Loader2 size={16} class="animate-spin" /> Sending…
+              <Loader2 size={16} class="animate-spin" /> {$t('form.sending')}
             {:else}
-              {step === 0 ? 'Next' : 'Send'} <ArrowRight size={16} strokeWidth={2.6} />
+              {step === 0 ? $t('ui.next') : $t('ui.send')} <ArrowRight size={16} strokeWidth={2.6} />
             {/if}
           </button>
         {/if}
@@ -391,9 +392,9 @@
       {#if !inline}
         <button type="submit" disabled={submitting} class="gf-btn-primary w-full">
           {#if submitting}
-            <Loader2 size={17} class="animate-spin" /> Sending…
+            <Loader2 size={17} class="animate-spin" /> {$t('form.sending')}
           {:else}
-            {step === 0 ? 'Next Step' : 'Send Request'} <ArrowRight size={17} strokeWidth={2.6} />
+            {step === 0 ? $t('form.next_step') : $t('ui.send_request')} <ArrowRight size={17} strokeWidth={2.6} />
           {/if}
         </button>
       {/if}

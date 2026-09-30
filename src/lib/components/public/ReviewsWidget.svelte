@@ -7,6 +7,7 @@
   import { aggregateRatingLd } from '$lib/seo';
   import Img from './Img.svelte';
   import JsonLd from './JsonLd.svelte';
+  import HomeTravellerStories from './home/HomeTravellerStories.svelte';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
   import type { Review, ReviewSummary } from '$lib/types';
 
@@ -20,6 +21,12 @@
   export let businessName = 'Goldfinch Adventures';
   export let summary: ReviewSummary | null = null;
   export let reviews: Review[] = [];
+  /**
+   * 'stories' draws the homepage's traveller-story cards (short, clamped
+   * quotes) instead of this widget's full-text cards, which ran whole review
+   * paragraphs down the tour page. Loading and the rating JSON-LD are shared.
+   */
+  export let variant: 'widget' | 'stories' = 'widget';
 
   let loaded = Boolean(summary);
 
@@ -71,6 +78,9 @@
     })}
   />
 
+  {#if variant === 'stories'}
+  <HomeTravellerStories {reviews} {summary} {eyebrow} {title} {subtitle} />
+  {:else}
   <section class="relative overflow-hidden bg-canvas py-14 md:py-20" use:sectionReveal>
     <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-forest/20 to-transparent" aria-hidden="true"></div>
     <div class="container-shell">
@@ -166,4 +176,5 @@
       {/if}
     </div>
   </section>
+  {/if}
 {/if}
