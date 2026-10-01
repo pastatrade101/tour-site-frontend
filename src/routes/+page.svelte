@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n/ui';
+  import enStrings from '$lib/locales/en.json';
   import { page } from '$app/stores';
   import { localeParam } from '$lib/faqEntities';
   import { onMount } from 'svelte';
@@ -118,15 +119,28 @@
   );
 
   // CMS lookup with a safe fallback so the existing design never breaks.
+  /*
+   * A CMS field that still holds the site's own stock English ("More
+   * experiences", "Best for") is shown in the page's language: several of
+   * these labels live in extra_data fields the Translations tab does not
+   * cover, so they stayed English on every language. Wording an admin has
+   * actually written is shown exactly as written.
+   */
+  const stockKey = new Map(Object.entries(enStrings as Record<string, string>).map(([key, text]) => [text, key]));
+  const localized = (value: string) => {
+    const key = stockKey.get(value.trim());
+    return key ? $t(key) : value;
+  };
+
   const cms = (key: string, field: keyof HomeSection, fallback: string) => {
     const value = sections[key]?.[field];
-    return typeof value === 'string' && value.trim() ? value : fallback;
+    return typeof value === 'string' && value.trim() ? localized(value) : fallback;
   };
 
   // Same, for a string field inside a section's extra_data (e.g. eyebrows).
   const cmsExtra = (key: string, field: string, fallback: string) => {
     const value = (sections[key]?.extra_data as Record<string, unknown> | undefined)?.[field];
-    return typeof value === 'string' && value.trim() ? value : fallback;
+    return typeof value === 'string' && value.trim() ? localized(value) : fallback;
   };
   const isSectionActive = (key: string) => sections[key]?.is_active !== false;
 
@@ -262,9 +276,9 @@
   $: planDreamPoints = arr<string>(planDreamExtra.points).length
     ? arr<string>(planDreamExtra.points)
     : ['Fully tailored to your dates & budget', 'A reply within one business day', 'Honest advice, never a hard sell'];
-  $: blogCtaText = cms('blog_preview', 'button_text', 'View all');
+  $: blogCtaText = cms('blog_preview', 'button_text', $t('home.blog_preview_button_text'));
   $: blogCtaUrl = cms('blog_preview', 'button_url', '/blog');
-  $: galleryCtaText = cms('gallery_preview', 'button_text', 'View gallery');
+  $: galleryCtaText = cms('gallery_preview', 'button_text', $t('home.gallery_preview_button_text'));
   $: galleryCtaUrl = cms('gallery_preview', 'button_url', '/gallery');
   // Real published gallery images only. Keeping this empty until the deferred
   // CMS request returns avoids loading bundled sample imagery during first paint.
@@ -391,14 +405,14 @@
 {#if isSectionActive('hero')}
   <HomeHero
     eyebrow={typeof heroExtra.eyebrow === 'string' ? heroExtra.eyebrow : 'Tanzania & East Africa specialists'}
-    title={cms('hero', 'title', 'Plan your African safari,')}
+    title={cms('hero', 'title', $t('home.hero_title'))}
     highlight={typeof heroExtra.title_highlight === 'string' ? heroExtra.title_highlight : 'your way.'}
-    description={cms('hero', 'subtitle', 'Great Migration river crossings, honest safari, Kilimanjaro and Zanzibar advice — planned around you by Tanzanian local experts.')}
+    description={cms('hero', 'subtitle', $t('home.hero_subtitle'))}
     imageUrl={heroImageResolved}
     slides={heroSlides}
     imageFit={heroImageFit}
     imagePosition={heroImagePosition}
-    primaryCta={{ label: cms('hero', 'button_text', 'Plan My Trip'), href: cms('hero', 'button_url', '/plan-my-trip') }}
+    primaryCta={{ label: cms('hero', 'button_text', $t('cta.plan_my_trip')), href: cms('hero', 'button_url', '/plan-my-trip') }}
     secondaryCta={{
       label: typeof heroExtra.secondary_cta_text === 'string' ? heroExtra.secondary_cta_text : $t('cta.talk_to_advisor'),
       href: typeof heroExtra.secondary_cta_url === 'string' ? heroExtra.secondary_cta_url : '/contact'
@@ -413,12 +427,12 @@
 {#if isSectionActive('experiences') && experienceItems.length}
   <HomeExperiences
     items={experienceItems}
-    eyebrow={cmsExtra('experiences', 'eyebrow', 'Ways to Travel')}
-    title={cms('experiences', 'title', 'What Kind of Tanzania Trip Are You Imagining?')}
-    subtitle={cms('experiences', 'subtitle', "You do not need to know the perfect route yet. Start with the experience that feels closest to your trip, and we'll help connect the right places, timing, lodges, transfers and pace.")}
-    moreLabel={cmsExtra('experiences', 'more_label', 'More experiences')}
-    bestForLabel={cmsExtra('experiences', 'best_for_label', 'Best for')}
-    primaryCtaPrefix={cmsExtra('experiences', 'primary_cta_prefix', 'Explore')}
+    eyebrow={cmsExtra('experiences', 'eyebrow', $t('home.experiences_eyebrow'))}
+    title={cms('experiences', 'title', $t('home.experiences_title'))}
+    subtitle={cms('experiences', 'subtitle', $t('home.experiences_subtitle'))}
+    moreLabel={cmsExtra('experiences', 'more_label', $t('home.experiences_more_label'))}
+    bestForLabel={cmsExtra('experiences', 'best_for_label', $t('home.experiences_best_for_label'))}
+    primaryCtaPrefix={cmsExtra('experiences', 'primary_cta_prefix', $t('home.experiences_primary_cta_prefix'))}
     primaryCount={Number(experiencesExtra.primary_count) || 6}
     {imageVariants}
   />
@@ -427,9 +441,9 @@
 {#if isSectionActive('featured_destinations') && destinations.length}
   <HomeDestinationsCarousel
     {destinations}
-    eyebrow={cmsExtra('featured_destinations', 'eyebrow', 'Top Destinations')}
-    title={cms('featured_destinations', 'title', 'The Places That Shape the Journey')}
-    subtitle={cms('featured_destinations', 'subtitle', 'Some places are best for wildlife. Others are better for beaches, scenery or culture. We help you combine them in the right order.')}
+    eyebrow={cmsExtra('featured_destinations', 'eyebrow', $t('home.featured_destinations_eyebrow'))}
+    title={cms('featured_destinations', 'title', $t('home.featured_destinations_title'))}
+    subtitle={cms('featured_destinations', 'subtitle', $t('home.featured_destinations_subtitle'))}
   />
 {:else if isSectionActive('featured_destinations') && deferredLoading}
   <ContentShimmer cards={3} label={$t('ui.loading_featured_destinations')} />
@@ -439,11 +453,11 @@
 {#if isSectionActive('featured_tours') && tours.length}
   <HomeItineraries
     {tours}
-    eyebrow={cmsExtra('featured_tours', 'eyebrow', 'Featured Itineraries')}
-    title={cms('featured_tours', 'title', 'Trip Ideas You Can Shape Around You')}
-    subtitle={cms('featured_tours', 'subtitle', 'These are not rigid packages. They are starting points — useful examples of how safari, beach, Kilimanjaro, culture and seasonal wildlife routes can be built around your travel dates.')}
+    eyebrow={cmsExtra('featured_tours', 'eyebrow', $t('home.featured_tours_eyebrow'))}
+    title={cms('featured_tours', 'title', $t('home.featured_tours_title'))}
+    subtitle={cms('featured_tours', 'subtitle', $t('home.featured_tours_subtitle'))}
     ctaHref={cms('featured_tours', 'button_url', '/tours')}
-    ctaLabel={cms('featured_tours', 'button_text', 'Browse all itineraries')}
+    ctaLabel={cms('featured_tours', 'button_text', $t('home.featured_tours_button_text'))}
   />
 {:else if isSectionActive('featured_tours') && deferredLoading}
   <ContentShimmer cards={3} label={$t('ui.loading_featured_itineraries')} />
@@ -452,11 +466,11 @@
 <!-- 5 · Why Goldfinch -->
 {#if isSectionActive('why_us')}
   <HomeWhyChoose
-    eyebrow={cmsExtra('why_us', 'eyebrow', 'Why Goldfinch')}
-    title={cms('why_us', 'title', 'A Local Team to Help You Make Sense of Tanzania')}
-    subtitle={cms('why_us', 'subtitle', 'Tanzania has many possible routes. That is the good part — and also the confusing part. We help you understand what fits your dates, budget, pace and travel style before you commit to anything.')}
-    titleHighlight={cmsExtra('why_us', 'title_highlight', 'Tanzania')}
-    ctaLabel={cms('why_us', 'button_text', 'Plan Your Trip')}
+    eyebrow={cmsExtra('why_us', 'eyebrow', $t('home.why_us_eyebrow'))}
+    title={cms('why_us', 'title', $t('home.why_us_title'))}
+    subtitle={cms('why_us', 'subtitle', $t('home.why_us_subtitle'))}
+    titleHighlight={cmsExtra('why_us', 'title_highlight', $t('home.why_us_title_highlight'))}
+    ctaLabel={cms('why_us', 'button_text', $t('home.why_us_button_text'))}
     ctaHref={cms('why_us', 'button_url', '#lead-form')}
     {...clean({ features: arr(whyExtra.features) })}
   />
@@ -473,13 +487,13 @@
 <!-- 7 · How your trip is planned -->
 {#if isSectionActive('how_it_works')}
   <HomeHowPlanned
-    eyebrow={cmsExtra('how_it_works', 'eyebrow', 'How Your Trip Is Planned')}
-    title={cms('how_it_works', 'title', 'Simple Planning. Clear Routes. Local Support.')}
-    subtitle={cms('how_it_works', 'subtitle', "You do not need to arrive with a finished itinerary. Share the basics, and we'll help turn the idea into a route that makes sense.")}
+    eyebrow={cmsExtra('how_it_works', 'eyebrow', $t('home.how_it_works_eyebrow'))}
+    title={cms('how_it_works', 'title', $t('home.how_it_works_title'))}
+    subtitle={cms('how_it_works', 'subtitle', $t('home.how_it_works_subtitle'))}
     imageUrl={cms('how_it_works', 'image_url', '')}
     fallbackImageUrl={heroImageResolved}
-    captionEyebrow={cmsExtra('how_it_works', 'caption_eyebrow', 'Planned With You')}
-    caption={cmsExtra('how_it_works', 'caption', 'From first message to arrival, we shape it together.')}
+    captionEyebrow={cmsExtra('how_it_works', 'caption_eyebrow', $t('home.how_it_works_caption_eyebrow'))}
+    caption={cmsExtra('how_it_works', 'caption', $t('home.how_it_works_caption'))}
     {...clean({ steps: arr(howExtra.steps) })}
   />
 {/if}
@@ -489,9 +503,9 @@
   <HomeTravellerStories
     {reviews}
     summary={reviewSummary}
-    eyebrow={cmsExtra('reviews_section', 'eyebrow', 'Traveller Stories')}
-    title={cms('reviews_section', 'title', 'Travellers Who Planned Tanzania With Us')}
-    subtitle={cms('reviews_section', 'subtitle', 'Real guests, real routes and the planning details that made their trips work.')}
+    eyebrow={cmsExtra('reviews_section', 'eyebrow', $t('home.reviews_section_eyebrow'))}
+    title={cms('reviews_section', 'title', $t('home.reviews_section_title'))}
+    subtitle={cms('reviews_section', 'subtitle', $t('home.reviews_section_subtitle'))}
   />
 {:else if isSectionActive('reviews_section') && deferredLoading}
   <ContentShimmer cards={3} label={$t('ui.loading_traveller_stories')} />
@@ -510,9 +524,9 @@
   <MigrationCalendar
     entries={migrationEntries}
     active={sections.migration_section?.is_active !== false}
-    eyebrow={cmsExtra('migration_section', 'eyebrow', 'Great Migration')}
-    title={cms('migration_section', 'title', 'Where the herds are, month by month')}
-    subtitle={cms('migration_section', 'subtitle', 'Plan around the river crossings and calving season with our month-by-month guide.')}
+    eyebrow={cmsExtra('migration_section', 'eyebrow', $t('home.migration_section_eyebrow'))}
+    title={cms('migration_section', 'title', $t('home.migration_section_title'))}
+    subtitle={cms('migration_section', 'subtitle', $t('home.migration_section_subtitle'))}
     {imageVariants}
   />
 {:else if sections.migration_section?.is_active !== false && deferredLoading}
@@ -525,12 +539,12 @@
   <div class="container-shell">
     <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between md:gap-10">
       <div class="max-w-2xl" use:fadeUpOnScroll={{ y: 14 }}>
-        <p class="text-xs font-bold uppercase tracking-[0.16em] text-clay">{cmsExtra('gallery_preview', 'eyebrow', 'Field notes in frames')}</p>
+        <p class="text-xs font-bold uppercase tracking-[0.16em] text-clay">{cmsExtra('gallery_preview', 'eyebrow', $t('home.gallery_preview_eyebrow'))}</p>
         <h2 class="mt-3 max-w-xl font-serif text-[2rem] font-semibold leading-[1.08] text-heading sm:text-4xl md:text-[42px]">
-          {cms('gallery_preview', 'title', 'See the journeys before you choose')}
+          {cms('gallery_preview', 'title', $t('home.gallery_preview_title'))}
         </h2>
         <p class="mt-4 max-w-xl text-[15px] leading-7 text-ink/65 md:text-base">
-          {cms('gallery_preview', 'subtitle', 'Real published gallery moments from safaris, climbs, coast stays and the places our team knows well.')}
+          {cms('gallery_preview', 'subtitle', $t('home.gallery_preview_subtitle'))}
         </p>
       </div>
       <div class="shrink-0" use:fadeUpOnScroll={{ y: 14, delay: 0.08 }}>
@@ -555,7 +569,7 @@
   <div class="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-surface/70 to-transparent" aria-hidden="true"></div>
   <div class="container-shell">
     <div class="flex flex-wrap items-end justify-between gap-4">
-      <SectionHeader eyebrow={cmsExtra('blog_preview', 'eyebrow', 'Stories')} title={cms('blog_preview', 'title', 'Latest Stories & Guides')} description={cms('blog_preview', 'subtitle', 'Tips, guides and inspiration from our East Africa specialists.')} />
+      <SectionHeader eyebrow={cmsExtra('blog_preview', 'eyebrow', $t('home.blog_preview_eyebrow'))} title={cms('blog_preview', 'title', $t('home.blog_preview_title'))} description={cms('blog_preview', 'subtitle', $t('home.blog_preview_subtitle'))} />
       <a class="inline-flex h-10 items-center gap-1.5 rounded-[8px] border border-ink/10 bg-surface px-4 text-sm font-semibold text-forest shadow-sm transition hover:border-forest/25 hover:text-heading" href={blogCtaUrl}>{blogCtaText} <ArrowRight size={16} /></a>
     </div>
     <div class="mt-8 grid gap-5 md:grid-cols-3" use:staggeredCardReveal>
@@ -576,8 +590,8 @@
   <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-forest/20 to-transparent" aria-hidden="true"></div>
   <div class="container-shell grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
     <div>
-      <SectionHeader eyebrow={cmsExtra('faq', 'eyebrow', 'Good to know')} title={cms('faq', 'title', 'Tanzania Safari FAQs')} description={cms('faq', 'subtitle', 'Honest answers to the questions travellers ask most.')} />
-      <a class="mt-6 inline-flex h-12 items-center gap-2 rounded-[8px] bg-[#25D366] px-6 font-bold text-white shadow-sm transition hover:brightness-105" href={cms('faq', 'button_url', '/contact')}><MessageCircle size={18} /> {cms('faq', 'button_text', 'Ask us on WhatsApp')}</a>
+      <SectionHeader eyebrow={cmsExtra('faq', 'eyebrow', $t('ui.good_to_know'))} title={cms('faq', 'title', $t('home.faq_title'))} description={cms('faq', 'subtitle', $t('home.faq_subtitle'))} />
+      <a class="mt-6 inline-flex h-12 items-center gap-2 rounded-[8px] bg-[#25D366] px-6 font-bold text-white shadow-sm transition hover:brightness-105" href={cms('faq', 'button_url', '/contact')}><MessageCircle size={18} /> {cms('faq', 'button_text', $t('home.faq_button_text'))}</a>
     </div>
     <FAQAccordion faqs={homepageFaqs} />
   </div>
@@ -588,9 +602,9 @@
 <!-- 9 · Planning form band (closing section, as in the reference layout) -->
 {#if isSectionActive('plan_dream')}
   <HomePlanningBand
-    eyebrow={cmsExtra('plan_dream', 'eyebrow', 'Start Planning')}
-    title={cms('plan_dream', 'title', 'Tell Us the Tanzania Trip You Have in Mind')}
-    subtitle={cms('plan_dream', 'subtitle', "Share your travel dates, group size and the experiences you are considering. We'll help you understand the best route, timing, pace and logistics.")}
+    eyebrow={cmsExtra('plan_dream', 'eyebrow', $t('home.plan_dream_eyebrow'))}
+    title={cms('plan_dream', 'title', $t('home.plan_dream_title'))}
+    subtitle={cms('plan_dream', 'subtitle', $t('home.plan_dream_subtitle'))}
     {...clean({ points: planDreamPoints })}
   >
     <LeadCaptureForm

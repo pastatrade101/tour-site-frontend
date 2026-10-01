@@ -14,11 +14,11 @@
   type FilterChip = { key: string; label: string; match: RegExp; icon: typeof PawPrint };
 
   const filters: FilterChip[] = [
-    { key: 'safari-from-zanzibar', label: 'Safari from Zanzibar', match: /safari from zanzibar|zanzibar.*safari|safari.*zanzibar/i, icon: Palmtree },
-    { key: 'private-safari', label: 'Private Safari', match: /private safari|private/i, icon: ShieldCheck },
-    { key: 'family-safaris', label: 'Family Safaris', match: /family|families/i, icon: Users },
-    { key: 'honeymoon-safaris', label: 'Honeymoon Safaris', match: /honeymoon|romantic|couples?/i, icon: Heart },
-    { key: 'great-migration', label: 'Great Migration', match: /great migration|migration/i, icon: PawPrint }
+    { key: 'safari-from-zanzibar', label: 'home_itin.safari_from_zanzibar', match: /safari from zanzibar|zanzibar.*safari|safari.*zanzibar/i, icon: Palmtree },
+    { key: 'private-safari', label: 'home_itin.private_safari', match: /private safari|private/i, icon: ShieldCheck },
+    { key: 'family-safaris', label: 'home_itin.family_safaris', match: /family|families/i, icon: Users },
+    { key: 'honeymoon-safaris', label: 'home_itin.honeymoon_safaris', match: /honeymoon|romantic|couples?/i, icon: Heart },
+    { key: 'great-migration', label: 'home_itin.great_migration', match: /great migration|migration/i, icon: PawPrint }
   ];
 
   let activeFilter = filters[0].key;
@@ -63,7 +63,7 @@
         <div class="filter-rail mt-8 lg:mt-11" aria-label={$t('ui.filter_featured_itineraries')}>
           {#each filters as filter}
             <button type="button" aria-pressed={activeFilter === filter.key} class:active={activeFilter === filter.key} class="package-tab" on:click={() => (activeFilter = filter.key)}>
-              <svelte:component this={filter.icon} size={15} strokeWidth={2.2} class="chip-icon" aria-hidden="true" />{filter.label}
+              <svelte:component this={filter.icon} size={15} strokeWidth={2.2} class="chip-icon" aria-hidden="true" />{$t(filter.label)}
             </button>
           {/each}
         </div>
