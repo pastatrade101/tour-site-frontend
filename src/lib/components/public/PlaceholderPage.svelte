@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { brand } from '$lib/brand';
+  import { t } from '$lib/i18n/ui';
+  import { brand, brandKeys } from '$lib/brand';
   import AIChatWidget from './AIChatWidget.svelte';
   import LeadCaptureForm from './LeadCaptureForm.svelte';
   import SectionHeader from './SectionHeader.svelte';
@@ -18,9 +19,9 @@
 <section class="bg-canvas py-16 md:py-20">
   <div class="container-shell grid gap-8 md:grid-cols-[1fr_0.8fr] md:items-start">
     <div>
-      <SectionHeader eyebrow={brand.tagline} {title} {description} />
+      <SectionHeader eyebrow={$t(brandKeys.tagline)} {title} {description} />
       <div class="mt-8 grid gap-4 rounded-lg border border-ink/10 bg-surface p-5 text-sm leading-6 text-ink/70 shadow-soft">
-        <p>{brand.positioning}</p>
+        <p>{$t(brandKeys.positioning)}</p>
         <p>CMS and API hooks are ready for tours, destinations, lead capture, AI conversations, SEO content, and HubSpot handoff.</p>
       </div>
     </div>

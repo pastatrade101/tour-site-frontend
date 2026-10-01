@@ -15,8 +15,14 @@
  * the component's own defaults apply, rather than being restated here where the
  * two copies would drift.
  */
+import en from '$lib/locales/en.json';
+
 /** One of the two lists beside the note. The component renders at most two. */
 export type AdvisorColumn = { icon_url?: string; title: string; items: string[] };
+
+/** `$t` from '$lib/i18n/ui'; without one, the English dictionary is used. */
+export type Translate = (key: string) => string;
+const english: Translate = (key) => (en as Record<string, string>)[key] ?? key;
 
 /** The shape of a homepage section record, as every page already holds it. */
 export type AdvisorNoteSection = {
@@ -122,10 +128,13 @@ export const advisorNoteProps = (
  *
  * The trade is that a block cannot blank a field the shared note fills. Erasing
  * is what the shared note is for; a block is for saying something else.
+ *
+ * Pass `$t` as `tr` so the legacy column headings follow the visitor's language.
  */
 export const advisorNoteFromBlock = (
   block: Record<string, unknown> | null | undefined,
-  sections: Record<string, AdvisorNoteSection | undefined> | null | undefined
+  sections: Record<string, AdvisorNoteSection | undefined> | null | undefined,
+  tr: Translate = english
 ): AdvisorNoteProps => {
   const base = advisorNoteProps(sections);
   const own = (block ?? {}) as Record<string, unknown>;
@@ -139,8 +148,8 @@ export const advisorNoteFromBlock = (
    */
   const legacyColumns = (): AdvisorColumn[] | undefined => {
     const columns = [
-      { title: 'The big decisions', items: own.big },
-      { title: 'The quiet details', items: own.quiet }
+      { title: tr('advisor_note.big_decisions'), items: own.big },
+      { title: tr('advisor_note.quiet_details'), items: own.quiet }
     ]
       .map((column) => ({
         title: column.title,

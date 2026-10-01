@@ -23,20 +23,22 @@
 
   $: lodges = (data.lodges ?? []) as Lodge[];
 
+  // Translation keys, not labels: the label is looked up with $t where it is
+  // shown, so the filters and group headings follow the visitor's language.
   const LEVEL: Record<string, string> = {
-    BUDGET:'Budget', MID_RANGE:'Mid-range', LUXURY:'Luxury', PREMIUM_LUXURY:'Premium luxury',
-    budget: 'Budget',
-    mid_range: 'Mid-range',
-    luxury: 'Luxury',
-    ultra_luxury: 'Ultra luxury'
+    BUDGET: 'tier.budget', MID_RANGE: 'tier.mid_range', LUXURY: 'tier.luxury', PREMIUM_LUXURY: 'tier.premium_luxury',
+    budget: 'tier.budget',
+    mid_range: 'tier.mid_range',
+    luxury: 'tier.luxury',
+    ultra_luxury: 'pg_accommodation.ultra_luxury'
   };
   const TYPE: Record<string, string> = {
-    HOTEL:'Hotel', SAFARI_LODGE:'Safari lodge', TENTED_CAMP:'Tented camp', MOBILE_CAMP:'Mobile camp', BEACH_RESORT:'Beach resort', VILLA:'Villa', GUEST_HOUSE:'Guest house', ECO_LODGE:'Eco lodge', BOUTIQUE_HOTEL:'Boutique hotel',
-    tented_camp: 'Tented camp',
-    mobile_camp: 'Mobile camp',
-    lodge: 'Lodge',
-    hotel: 'Hotel',
-    treehouse: 'Treehouse'
+    HOTEL: 'ui.hotel', SAFARI_LODGE: 'ui.safari_lodge', TENTED_CAMP: 'ui.tented_camp', MOBILE_CAMP: 'ui.mobile_camp', BEACH_RESORT: 'ui.beach_resort', VILLA: 'ui.villa', GUEST_HOUSE: 'ui.guest_house', ECO_LODGE: 'ui.eco_lodge', BOUTIQUE_HOTEL: 'ui.boutique_hotel',
+    tented_camp: 'ui.tented_camp',
+    mobile_camp: 'ui.mobile_camp',
+    lodge: 'ui.lodge',
+    hotel: 'ui.hotel',
+    treehouse: 'ui.treehouse'
   };
 
   // One icon per property type, matched to the enum rather than to the label,
@@ -54,8 +56,14 @@
   };
   const iconForType = (type: string) => TYPE_ICON[type] ?? BedDouble;
 
-  const levelLabel = (l: Lodge) => LEVEL[String(l.accommodation_level)] ?? '';
-  const typeLabel = (l: Lodge) => TYPE[String(l.lodge_type)] ?? '';
+  $: levelLabel = (l: Lodge) => {
+    const key = LEVEL[String(l.accommodation_level)];
+    return key ? $t(key) : '';
+  };
+  $: typeLabel = (l: Lodge) => {
+    const key = TYPE[String(l.lodge_type)];
+    return key ? $t(key) : '';
+  };
   const placeOf = (l: Lodge) => l.destinations?.name ?? '';
   const blurbOf = (l: Lodge) => toMetaText(l.why_we_recommend || l.description || '', 190);
   const settingOf = (l: Lodge) => l.settings?.slice(0, 2).map(enumLabel).join(' · ') ?? '';
@@ -65,15 +73,15 @@
   type Filter = { key: string; label: string; test: (l: Lodge) => boolean };
 
   $: filters = [
-    { key: 'all', label: 'All stays', test: () => true },
+    { key: 'all', label: $t('ui.all_stays'), test: () => true },
     ...[...new Set(lodges.map((l) => String(l.lodge_type)).filter(Boolean))].sort().map((type) => ({
       key: `type:${type}`,
-      label: TYPE[type] ?? type,
+      label: TYPE[type] ? $t(TYPE[type]) : type,
       test: (l: Lodge) => String(l.lodge_type) === type
     })),
     ...[...new Set(lodges.map((l) => String(l.accommodation_level)).filter(Boolean))].sort().map((level) => ({
       key: `level:${level}`,
-      label: LEVEL[level] ?? level,
+      label: LEVEL[level] ? $t(LEVEL[level]) : level,
       test: (l: Lodge) => String(l.accommodation_level) === level
     }))
   ] as Filter[];
@@ -117,7 +125,7 @@
             const items = gridLodges.filter((l) => String(l.lodge_type) === type);
             // A row of one has nothing to swipe to, so it drops the carousel
             // treatment and sits full width under its own heading.
-            return { key: type, label: TYPE[type] ?? enumLabel(type), items, single: items.length === 1 };
+            return { key: type, label: TYPE[type] ? $t(TYPE[type]) : enumLabel(type), items, single: items.length === 1 };
           })
           // Richest rows first, so the phone opens on something worth swiping.
           .sort((a, b) => b.items.length - a.items.length)
@@ -163,10 +171,10 @@
   $: luxuryCount = lodges.filter((l) => l.accommodation_level === 'LUXURY' || l.accommodation_level === 'PREMIUM_LUXURY').length;
   $: campCount = lodges.filter((l) => l.lodge_type === 'TENTED_CAMP' || l.lodge_type === 'MOBILE_CAMP').length;
   $: heroStats = [
-    { icon: BedDouble, value: lodges.length, label: lodges.length === 1 ? 'place to stay' : 'places to stay' },
-    { icon: MapPin, value: destinationCount, label: destinationCount === 1 ? 'destination' : 'destinations' },
-    { icon: Gem, value: luxuryCount, label: 'luxury stays' },
-    { icon: Tent, value: campCount, label: campCount === 1 ? 'tented camp' : 'tented camps' }
+    { icon: BedDouble, value: lodges.length, label: $t(lodges.length === 1 ? 'pg_accommodation.stat_place_to_stay' : 'pg_accommodation.stat_places_to_stay') },
+    { icon: MapPin, value: destinationCount, label: $t(destinationCount === 1 ? 'pg_accommodation.stat_destination' : 'pg_accommodation.stat_destinations') },
+    { icon: Gem, value: luxuryCount, label: $t('pg_accommodation.stat_luxury_stays') },
+    { icon: Tent, value: campCount, label: $t(campCount === 1 ? 'pg_accommodation.stat_tented_camp' : 'pg_accommodation.stat_tented_camps') }
   ].filter((stat) => stat.value > 0);
 
   // A different photograph from the hero so the page does not repeat itself.
@@ -178,9 +186,8 @@
     'image_url'
   );
 
-  const title = 'Where to stay — camps, lodges and hotels';
-  const description =
-    'The camps, lodges and hotels we book across Tanzania — chosen for where they sit, how they are run and who they suit.';
+  $: title = $t('pg_accommodation.meta_title');
+  $: description = $t('pg_accommodation.description');
 </script>
 
 <svelte:head>
@@ -249,7 +256,7 @@
 {#if lodges.length}
   <section class="border-b border-ink/10 bg-canvas">
     <div class="container-shell flex flex-wrap items-center justify-center gap-x-8 gap-y-3 py-5 text-xs font-semibold text-ink/65">
-      {#each ['Chosen for the route', 'Local specialist guidance', 'Every stay arranged for you', 'Private tailor-made safaris'] as point}
+      {#each [$t('pg_accommodation.trust_chosen_for_route'), $t('pg_accommodation.trust_local_guidance'), $t('pg_accommodation.trust_every_stay_arranged'), $t('pg_accommodation.trust_private_tailor_made')] as point}
         <span class="inline-flex items-center gap-2"><ShieldCheck size={14} class="text-forest" />{point}</span>
       {/each}
     </div>
@@ -300,7 +307,7 @@
       {/if}
 
       {#if gridLodges.length}
-        <p class="mb-5 mt-9 text-sm text-ink/50">{shown.length} {shown.length === 1 ? 'property' : 'properties'} selected</p>
+        <p class="mb-5 mt-9 text-sm text-ink/50">{$t(shown.length === 1 ? 'pg_accommodation.n_property_selected' : 'pg_accommodation.n_properties_selected').replace('{n}', String(shown.length))}</p>
 
         {#if useGroups}
           <!--
@@ -391,11 +398,10 @@
     <div class="container-shell relative z-10 py-20 md:py-28">
       <div class="max-w-3xl" use:fadeUpOnScroll={{ y: 16 }}>
         <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-goldfinch-gold">{$t('ui.planning_together')}</p>
-        <h2 class="mt-5 font-serif text-3xl font-semibold leading-[1.12] md:text-[46px]">{$t('ui.we_match_the_stay_to')}<br class="hidden sm:block" /> not the other way round.
+        <h2 class="mt-5 font-serif text-3xl font-semibold leading-[1.12] md:text-[46px]">{$t('ui.we_match_the_stay_to')}<br class="hidden sm:block" /> {$t('pg_accommodation.not_the_other_way_round')}
         </h2>
         <p class="mt-5 max-w-xl text-base leading-8 text-white/70">
-          Tell us how you want to travel and we will put the right camps and lodges in the right order — with the
-          driving, flying and pacing already worked out.
+          {$t('pg_accommodation.cta_body')}
         </p>
 
         <div class="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">

@@ -4,7 +4,7 @@
   import { ArrowRight, Mail, MapPin, MessageCircle, Phone } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import { trackEvent } from '$lib/analytics';
-  import { brand } from '$lib/brand';
+  import { brand, brandKeys } from '$lib/brand';
   import { publicSettings, settingText } from '$lib/settings';
   import SocialIcon from './SocialIcon.svelte';
 
@@ -21,7 +21,7 @@
 
   $: s = $publicSettings;
   $: siteName = settingText(s, 'site_name') || brand.name;
-  $: statement = settingText(s, 'brand_statement') || brand.positioning;
+  $: statement = settingText(s, 'brand_statement') || $t(brandKeys.positioning);
   $: contactEmail = settingText(s, 'contact_email');
   $: contactPhone = settingText(s, 'contact_phone');
   $: address = settingText(s, 'contact_address') || settingText(s, 'office_address');

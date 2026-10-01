@@ -4,7 +4,7 @@
   import { ArrowRight } from '@lucide/svelte';
   import { revealHeading, staggeredCardReveal, tilt } from '$lib/animations';
   import { api } from '$lib/api/client';
-  import { TRAVEL_STYLES } from '$lib/data/travel-styles';
+  import { localizeTravelStyle, TRAVEL_STYLES } from '$lib/data/travel-styles';
   import { toMetaText } from '$lib/richText';
   import type { TravelStyle } from '$lib/types';
 
@@ -12,19 +12,24 @@
   const promises = (value: string | null | undefined) => String(value ?? '').split('\n').map((item) => item.trim()).filter(Boolean);
 
   // Static config as the immediate fallback; replaced by CMS data when available.
-  let styles: Card[] = TRAVEL_STYLES.map((s) => ({
-    slug: s.slug,
-    name: s.name,
-    emotionalPromises: [s.emotionalPromise],
-    description: s.description
-  }));
+  // Reactive so the fallback copy follows the active locale.
+  let cmsStyles: Card[] | null = null;
+  let styles: Card[] = [];
+  $: styles =
+    cmsStyles ??
+    TRAVEL_STYLES.map((config) => localizeTravelStyle(config, $t)).map((s) => ({
+      slug: s.slug,
+      name: s.name,
+      emotionalPromises: [s.emotionalPromise],
+      description: s.description
+    }));
 
   onMount(async () => {
     try {
       const res = await api.travelStyles.list({ status: 'published', limit: 100 });
       const items = res.data.items as TravelStyle[];
       if (items.length) {
-        styles = items.map((s) => ({
+        cmsStyles = items.map((s) => ({
           slug: s.slug,
           name: s.name,
           emotionalPromises: promises(s.emotional_promise),

@@ -1,7 +1,23 @@
 // Travel styles (SRS v2.0 type 6) — persona-led landing pages, shipped as static
 // config (no schema/backend change). `persona` links results to the tailored
 // /tours?persona= view where it maps; otherwise the CTA goes to Plan My Trip.
+//
+// The copy lives in the locale files under `travel_styles.*`, so this module
+// stores translation KEYS only and never reads the locale store itself. Render
+// it through `localizeTravelStyle(style, $t)` inside a reactive statement or
+// markup, so the text follows the active language.
 export type TravelStyle = {
+  slug: string;
+  nameKey: string;
+  emotionalPromiseKey: string;
+  descriptionKey: string;
+  desireKeys: string[];
+  concernKeys: string[];
+  persona?: string;
+};
+
+/** A travel style with its keys resolved into the active language. */
+export type LocalizedTravelStyle = {
   slug: string;
   name: string;
   emotionalPromise: string;
@@ -14,56 +30,124 @@ export type TravelStyle = {
 export const TRAVEL_STYLES: TravelStyle[] = [
   {
     slug: 'honeymoon',
-    name: 'Honeymoon',
-    emotionalPromise: 'The most romantic start to forever',
-    description: 'Private moments, sundowners and barefoot beach time — a safari by day and romance by night, planned so you never think about logistics.',
-    desires: ['Private, intimate camps', 'Safari + Zanzibar combinations', 'Special-occasion touches', 'Effortless, handled planning'],
-    concerns: ['Will it feel romantic, not rushed?', 'Best beach to pair with safari', 'Privacy at lodges'],
+    nameKey: 'travel_styles.honeymoon_name',
+    emotionalPromiseKey: 'travel_styles.honeymoon_promise',
+    descriptionKey: 'travel_styles.honeymoon_description',
+    desireKeys: [
+      'travel_styles.honeymoon_desire_private_camps',
+      'travel_styles.honeymoon_desire_safari_zanzibar',
+      'travel_styles.honeymoon_desire_special_touches',
+      'travel_styles.honeymoon_desire_effortless_planning'
+    ],
+    concernKeys: [
+      'travel_styles.honeymoon_concern_romantic_not_rushed',
+      'travel_styles.honeymoon_concern_best_beach',
+      'travel_styles.honeymoon_concern_lodge_privacy'
+    ],
     persona: 'couple'
   },
   {
     slug: 'family-travel',
-    name: 'Family Travel',
-    emotionalPromise: 'The trip your kids will never forget',
-    description: 'Safaris paced for children — shorter drives, safe family lodges, and guides who turn young travellers into wide-eyed explorers.',
-    desires: ['Kid-friendly pace & rooms', 'Big Five without long drives', 'Flexible meals & downtime', 'Educational, hands-on moments'],
-    concerns: ['Is it safe for children?', 'Malaria and health', 'Will younger kids cope?'],
+    nameKey: 'travel_styles.family_name',
+    emotionalPromiseKey: 'travel_styles.family_promise',
+    descriptionKey: 'travel_styles.family_description',
+    desireKeys: [
+      'travel_styles.family_desire_kid_friendly_pace',
+      'travel_styles.family_desire_big_five_short_drives',
+      'travel_styles.family_desire_flexible_meals',
+      'travel_styles.family_desire_hands_on_moments'
+    ],
+    concernKeys: [
+      'travel_styles.family_concern_safe_for_children',
+      'travel_styles.family_concern_malaria_health',
+      'travel_styles.family_concern_younger_kids'
+    ],
     persona: 'family'
   },
   {
     slug: 'luxury-travel',
-    name: 'Luxury Travel',
-    emotionalPromise: 'Africa at its most effortless and exclusive',
-    description: 'The finest camps, private guiding and seamless transfers — every detail anticipated so all you do is experience it.',
-    desires: ['Ultra-luxury lodges & camps', 'Private vehicles & guides', 'Light-aircraft transfers', 'Total discretion'],
-    concerns: ['Is the lodge genuinely top-tier?', 'Privacy & exclusivity', 'Seamless connections']
+    nameKey: 'travel_styles.luxury_name',
+    emotionalPromiseKey: 'travel_styles.luxury_promise',
+    descriptionKey: 'travel_styles.luxury_description',
+    desireKeys: [
+      'travel_styles.luxury_desire_ultra_luxury_lodges',
+      'travel_styles.luxury_desire_private_vehicles',
+      'travel_styles.luxury_desire_light_aircraft',
+      'travel_styles.luxury_desire_total_discretion'
+    ],
+    concernKeys: [
+      'travel_styles.luxury_concern_top_tier_lodge',
+      'travel_styles.luxury_concern_privacy_exclusivity',
+      'travel_styles.luxury_concern_seamless_connections'
+    ]
   },
   {
     slug: 'photography',
-    name: 'Photography',
-    emotionalPromise: 'Be in the right place at the right light',
-    description: 'Itineraries built around golden hours, wildlife density and vehicle access — with guides who understand a photographer’s patience.',
-    desires: ['Prime light & positioning', 'Time at sightings, not rushing', 'Bean bags & vehicle space', 'Migration & predator timing'],
-    concerns: ['Will the guide wait for the shot?', 'Best season for my subjects', 'Gear handling on safari']
+    nameKey: 'travel_styles.photography_name',
+    emotionalPromiseKey: 'travel_styles.photography_promise',
+    descriptionKey: 'travel_styles.photography_description',
+    desireKeys: [
+      'travel_styles.photography_desire_prime_light',
+      'travel_styles.photography_desire_time_at_sightings',
+      'travel_styles.photography_desire_bean_bags',
+      'travel_styles.photography_desire_migration_timing'
+    ],
+    concernKeys: [
+      'travel_styles.photography_concern_guide_waits',
+      'travel_styles.photography_concern_best_season',
+      'travel_styles.photography_concern_gear_handling'
+    ]
   },
   {
     slug: 'group-travel',
-    name: 'Group Travel',
-    emotionalPromise: 'One shared adventure, every detail handled',
-    description: 'Friends, celebrations or reunions — a single coordinated plan with fair group pricing and everyone looked after.',
-    desires: ['Fair group pricing & rooming', 'One coordinated itinerary', 'Range of fitness levels', 'Celebration-ready moments'],
-    concerns: ['Keeping everyone together', 'Mixed budgets & interests', 'Rooming logistics'],
+    nameKey: 'travel_styles.group_name',
+    emotionalPromiseKey: 'travel_styles.group_promise',
+    descriptionKey: 'travel_styles.group_description',
+    desireKeys: [
+      'travel_styles.group_desire_fair_pricing',
+      'travel_styles.group_desire_one_itinerary',
+      'travel_styles.group_desire_fitness_levels',
+      'travel_styles.group_desire_celebration_moments'
+    ],
+    concernKeys: [
+      'travel_styles.group_concern_keeping_together',
+      'travel_styles.group_concern_mixed_budgets',
+      'travel_styles.group_concern_rooming_logistics'
+    ],
     persona: 'group'
   },
   {
     slug: 'solo-travel',
-    name: 'Solo Travel',
-    emotionalPromise: 'Go it alone, with confidence',
-    description: 'Trusted guides, sociable scheduled departures and honest safety advice — independence without the worry.',
-    desires: ['Safety & trusted guides', 'Optional group departures', 'No single-supplement surprises', 'Flexible, independent pace'],
-    concerns: ['Is it safe to travel solo?', 'Will I feel isolated?', 'Single-supplement cost'],
+    nameKey: 'travel_styles.solo_name',
+    emotionalPromiseKey: 'travel_styles.solo_promise',
+    descriptionKey: 'travel_styles.solo_description',
+    desireKeys: [
+      'travel_styles.solo_desire_trusted_guides',
+      'travel_styles.solo_desire_group_departures',
+      'travel_styles.solo_desire_no_supplement_surprises',
+      'travel_styles.solo_desire_independent_pace'
+    ],
+    concernKeys: [
+      'travel_styles.solo_concern_safe_solo',
+      'travel_styles.solo_concern_feel_isolated',
+      'travel_styles.solo_concern_single_supplement'
+    ],
     persona: 'solo'
   }
 ];
 
 export const getTravelStyle = (slug: string) => TRAVEL_STYLES.find((s) => s.slug === slug);
+
+/**
+ * Resolve a style's keys with the caller's translator — pass `$t` from a
+ * component (inside `$:` or markup) so the result re-renders on a locale change.
+ */
+export const localizeTravelStyle = (style: TravelStyle, translate: (key: string) => string): LocalizedTravelStyle => ({
+  slug: style.slug,
+  name: translate(style.nameKey),
+  emotionalPromise: translate(style.emotionalPromiseKey),
+  description: translate(style.descriptionKey),
+  desires: style.desireKeys.map((key) => translate(key)),
+  concerns: style.concernKeys.map((key) => translate(key)),
+  persona: style.persona
+});

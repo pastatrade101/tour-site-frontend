@@ -16,7 +16,8 @@
   import { configFor } from '$lib/enquiry/configs';
   import type { Option } from '$lib/enquiry/types';
 
-  export let title = 'Plan your East Africa trip';
+  /** Empty means the translated default heading. */
+  export let title = '';
   export let compact = false;
   /**
    * Show the form itself instead of a card that opens it.
@@ -34,10 +35,11 @@
   let open = false;
   $: config = configFor('homepage_trip_planner', {}, [], { tripTypes, styleImages });
 
+  // i18n keys, translated where they are rendered.
   const POINTS = [
-    'A route and pace built around your dates',
-    'Honest advice on timing, parks and lodges',
-    'One local specialist, start to finish'
+    'lead_capture_form.point_route_and_pace',
+    'lead_capture_form.point_honest_advice',
+    'lead_capture_form.point_one_specialist'
   ];
 </script>
 
@@ -51,10 +53,9 @@
 
   <div>
     <p class="text-sm font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">{$t('lead.tell_us')}</p>
-    <h3 class="mt-2 text-2xl font-bold tracking-normal text-heading">{title}</h3>
+    <h3 class="mt-2 text-2xl font-bold tracking-normal text-heading">{title || $t('lead_capture_form.title')}</h3>
     <p class="mt-2 text-sm leading-6 text-ink/70">
-      Answer a few questions and a local specialist will come back with a trip that fits your dates, interests and
-      budget.
+      {$t('lead_capture_form.intro')}
     </p>
   </div>
 
@@ -62,7 +63,7 @@
     {#each POINTS as point}
       <li class="flex items-start gap-2.5 text-sm leading-6 text-ink/75">
         <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-goldfinch-gold" aria-hidden="true"></span>
-        {point}
+        {$t(point)}
       </li>
     {/each}
   </ul>

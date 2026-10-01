@@ -27,11 +27,12 @@
     // file is used here rather than pulling a multi-megabyte original.
     sourceFor(destination, 600, 'main_image_url', 'image_url', 'banner_image_url');
 
-  const chipsOf = (destination: Destination) => {
+  // `tr` is `$t`, passed from the template so the chips re-render on a language change.
+  const chipsOf = (destination: Destination, tr: (key: string) => string) => {
     const chips: { icon: string; label: string }[] = [];
     const stay = recommendedStay(destination);
     if (stay) chips.push({ icon: '', label: stay });
-    const tag = wildlifeOf(destination)[0] ?? experiencesOf(destination)[0];
+    const tag = wildlifeOf(destination, tr)[0] ?? experiencesOf(destination, tr)[0];
     if (tag) chips.push({ icon: tag.icon, label: tag.label });
     return chips;
   };
@@ -128,7 +129,7 @@
               <span class="mt-0.5 block text-xs font-semibold text-white/70">{regionOf(destination)}</span>
             {/if}
             <span class="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] font-bold text-white/85">
-              {#each chipsOf(destination) as chip}
+              {#each chipsOf(destination, $t) as chip}
                 <span class="inline-flex items-center gap-1">
                   {#if chip.icon}
                     <span aria-hidden="true">{chip.icon}</span>

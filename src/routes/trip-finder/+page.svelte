@@ -9,75 +9,91 @@
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import type { Tour } from '$lib/types';
 
-  type Opt = { value: string; label: string; hint?: string };
-  type Question = { key: string; title: string; subtitle?: string; options: Opt[] };
+  /*
+   * Questions hold translation keys rather than copy, and are translated with
+   * $t where they render, so the finder follows the visitor's language. `label`
+   * is only for text that is never translated (a proper noun) or is always
+   * replaced by optionLabel (the priced budget bands). `hintRange` is the day
+   * range shown under a length option.
+   */
+  type Opt = { value: string; labelKey?: string; label?: string; hintRange?: string };
+  type Question = { key: string; titleKey: string; subtitleKey?: string; options: Opt[] };
 
   const questions: Question[] = [
     {
       key: 'persona',
-      title: "Who's travelling?",
-      subtitle: 'So we can shape the pace and style.',
+      titleKey: 'pg_trip_finder.q_persona',
+      subtitleKey: 'pg_trip_finder.q_persona_sub',
       options: [
-        { value: 'family', label: 'Family' },
-        { value: 'couple', label: 'Couple' },
-        { value: 'group', label: 'Group of friends' },
-        { value: 'solo', label: 'Solo' }
+        { value: 'family', labelKey: 'pg_trip_finder.opt_family' },
+        { value: 'couple', labelKey: 'pg_trip_finder.opt_couple' },
+        { value: 'group', labelKey: 'pg_trip_finder.opt_group' },
+        { value: 'solo', labelKey: 'ui.solo' }
       ]
     },
     {
       key: 'experience',
-      title: 'What kind of trip excites you?',
+      titleKey: 'pg_trip_finder.q_experience',
       options: [
-        { value: 'safari', label: 'Safari' },
+        { value: 'safari', labelKey: 'pg_trip_finder.opt_safari' },
         { value: 'kilimanjaro', label: 'Kilimanjaro' },
-        { value: 'beach', label: 'Beach / Zanzibar' },
-        { value: 'gorilla', label: 'Gorilla trekking' },
-        { value: 'cultural', label: 'Cultural' },
-        { value: '', label: 'Not sure yet' }
+        { value: 'beach', labelKey: 'pg_trip_finder.opt_beach' },
+        { value: 'gorilla', labelKey: 'pg_trip_finder.opt_gorilla' },
+        { value: 'cultural', labelKey: 'pg_trip_finder.opt_cultural' },
+        { value: '', labelKey: 'ui.not_sure_yet' }
       ]
     },
     {
       key: 'when',
-      title: 'Roughly when?',
+      titleKey: 'pg_trip_finder.q_when',
       options: [
-        { value: 'Flexible', label: "I'm flexible" },
-        { value: 'January', label: 'Jan' },
-        { value: 'February', label: 'Feb' },
-        { value: 'March', label: 'Mar' },
-        { value: 'April', label: 'Apr' },
-        { value: 'May', label: 'May' },
-        { value: 'June', label: 'Jun' },
-        { value: 'July', label: 'Jul' },
-        { value: 'August', label: 'Aug' },
-        { value: 'September', label: 'Sep' },
-        { value: 'October', label: 'Oct' },
-        { value: 'November', label: 'Nov' },
-        { value: 'December', label: 'Dec' }
+        { value: 'Flexible', labelKey: 'pg_trip_finder.opt_flexible' },
+        { value: 'January', labelKey: 'pg_trip_finder.month_jan' },
+        { value: 'February', labelKey: 'pg_trip_finder.month_feb' },
+        { value: 'March', labelKey: 'pg_trip_finder.month_mar' },
+        { value: 'April', labelKey: 'pg_trip_finder.month_apr' },
+        { value: 'May', labelKey: 'pg_trip_finder.month_may' },
+        { value: 'June', labelKey: 'pg_trip_finder.month_jun' },
+        { value: 'July', labelKey: 'pg_trip_finder.month_jul' },
+        { value: 'August', labelKey: 'pg_trip_finder.month_aug' },
+        { value: 'September', labelKey: 'pg_trip_finder.month_sep' },
+        { value: 'October', labelKey: 'pg_trip_finder.month_oct' },
+        { value: 'November', labelKey: 'pg_trip_finder.month_nov' },
+        { value: 'December', labelKey: 'pg_trip_finder.month_dec' }
       ]
     },
     {
       key: 'length',
-      title: 'How long do you have?',
+      titleKey: 'pg_trip_finder.q_length',
       options: [
-        { value: 'short', label: 'Short', hint: '1–4 days' },
-        { value: 'medium', label: 'About a week', hint: '5–8 days' },
-        { value: 'long', label: 'Longer', hint: '9+ days' },
-        { value: '', label: 'Any length' }
+        { value: 'short', labelKey: 'pg_trip_finder.opt_short', hintRange: '1–4' },
+        { value: 'medium', labelKey: 'pg_trip_finder.opt_about_a_week', hintRange: '5–8' },
+        { value: 'long', labelKey: 'pg_trip_finder.opt_longer', hintRange: '9+' },
+        { value: '', labelKey: 'label.any_length' }
       ]
     },
     {
       key: 'budget',
-      title: 'Budget per person?',
-      subtitle: 'Roughly — we can refine it together.',
+      titleKey: 'pg_trip_finder.q_budget',
+      subtitleKey: 'pg_trip_finder.q_budget_sub',
       options: [
         { value: '1500', label: 'Under $1,500' },
         { value: '3000', label: '$1,500 – $3,000' },
         { value: '5000', label: '$3,000 – $5,000' },
         { value: '99999', label: '$5,000+' },
-        { value: '', label: "I'm not sure" }
+        { value: '', labelKey: 'pg_trip_finder.opt_not_sure' }
       ]
     }
   ];
+
+  // What the result card says when a trip matched the chosen experience.
+  const EXPERIENCE_REASON_KEYS: Record<string, string> = {
+    safari: 'pg_trip_finder.reason_safari',
+    kilimanjaro: 'pg_trip_finder.reason_kilimanjaro',
+    beach: 'pg_trip_finder.reason_beach',
+    gorilla: 'pg_trip_finder.reason_gorilla',
+    cultural: 'pg_trip_finder.reason_cultural'
+  };
 
   let step = 0;
   let answers: Record<string, string> = {};
@@ -87,7 +103,7 @@
 
   $: isResults = step >= questions.length;
   $: current = questions[step];
-  $: headingText = isResults ? 'Your best-fit trips' : 'Find the right trip in a minute';
+  $: headingText = isResults ? $t('pg_trip_finder.heading_results') : $t('pg_trip_finder.heading');
 
   const scrollQuestionIntoView = async () => {
     await tick();
@@ -151,16 +167,20 @@
     return s;
   };
 
-  const why = (t: Tour) => {
+  $: why = (tour: Tour) => {
     const r: string[] = [];
-    if (expMatches(catName(t), answers.experience)) {
-      const label = questions[1].options.find((o) => o.value === answers.experience)?.label.toLowerCase();
-      if (label) r.push(`a ${label} trip`);
+    if (expMatches(catName(tour), answers.experience)) {
+      const reasonKey = EXPERIENCE_REASON_KEYS[answers.experience];
+      if (reasonKey) r.push($t(reasonKey));
     }
-    if (lengthMatches(t.duration_days ?? 0, answers.length)) r.push(`${t.duration_days} days`);
+    if (lengthMatches(tour.duration_days ?? 0, answers.length)) {
+      r.push($t('pg_trip_finder.n_days').replace('{n}', String(tour.duration_days)));
+    }
     const cap = Number(answers.budget || 0);
-    if (cap && t.price_from && t.price_from <= cap) r.push('within your budget');
-    return r.length ? `Matches ${r.join(' · ')}.` : 'A trusted East Africa starting point.';
+    if (cap && tour.price_from && tour.price_from <= cap) r.push($t('pg_trip_finder.within_your_budget'));
+    return r.length
+      ? $t('pg_trip_finder.matches_reasons').replace('{reasons}', r.join(' · '))
+      : $t('pg_trip_finder.trusted_starting_point');
   };
 
   $: recommendations = (() => {
@@ -192,15 +212,16 @@
 
   const planHref = (slug: string) =>
     `/plan-my-trip?tour=${slug}${answers.persona ? `&persona=${answers.persona}` : ''}`;
-  const fmtPrice = (t: Tour) =>
-    t.price_from ? formatUsd(t.price_from, $currency) : 'On request';
-  const optionLabel = (key: string, opt: Opt) => {
-    if (key !== 'budget') return opt.label;
-    if (opt.value === '1500') return `Under ${formatUsd(1500, $currency)}`;
-    if (opt.value === '3000') return `${formatUsd(1500, $currency)} - ${formatUsd(3000, $currency)}`;
-    if (opt.value === '5000') return `${formatUsd(3000, $currency)} - ${formatUsd(5000, $currency)}`;
-    if (opt.value === '99999') return `${formatUsd(5000, $currency)}+`;
-    return opt.label;
+  $: fmtPrice = (tour: Tour) =>
+    tour.price_from ? formatUsd(tour.price_from, $currency) : $t('ui.on_request');
+  $: optionLabel = (key: string, opt: Opt) => {
+    if (key === 'budget') {
+      if (opt.value === '1500') return `${$t('label.under')} ${formatUsd(1500, $currency)}`;
+      if (opt.value === '3000') return `${formatUsd(1500, $currency)} - ${formatUsd(3000, $currency)}`;
+      if (opt.value === '5000') return `${formatUsd(3000, $currency)} - ${formatUsd(5000, $currency)}`;
+      if (opt.value === '99999') return `${formatUsd(5000, $currency)}+`;
+    }
+    return opt.labelKey ? $t(opt.labelKey) : opt.label ?? '';
   };
 </script>
 
@@ -240,8 +261,8 @@
 
         <!-- question -->
         <div class="gf-trip-question-card gf-panel-dark relative mt-6 min-w-0 overflow-hidden rounded-[14px] border border-white/10 p-4 shadow-[0_24px_60px_rgba(31,77,58,0.22)] sm:mt-8 sm:p-6 md:p-8" bind:this={questionEl}>
-          <h2 class="relative text-xl font-bold text-white md:text-2xl">{current.title}</h2>
-          {#if current.subtitle}<p class="relative mt-1 text-sm text-white/65">{current.subtitle}</p>{/if}
+          <h2 class="relative text-xl font-bold text-white md:text-2xl">{$t(current.titleKey)}</h2>
+          {#if current.subtitleKey}<p class="relative mt-1 text-sm text-white/65">{$t(current.subtitleKey)}</p>{/if}
 
           <div class={`mt-5 grid gap-3 sm:mt-6 ${current.key === 'when' ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2'}`}>
             {#each current.options as opt (opt.value)}
@@ -257,7 +278,7 @@
               >
                 <span class="min-w-0">
                   <span class={`block break-words font-semibold leading-snug ${selected ? 'text-heading' : 'text-white'}`}>{optionLabel(current.key, opt)}</span>
-                  {#if opt.hint}<span class={`block text-xs ${selected ? 'text-heading/70' : 'text-white/55'}`}>{opt.hint}</span>{/if}
+                  {#if opt.hintRange}<span class={`block text-xs ${selected ? 'text-heading/70' : 'text-white/55'}`}>{$t('pg_trip_finder.range_days').replace('{range}', opt.hintRange)}</span>{/if}
                 </span>
                 <ArrowRight size={16} class={`hidden shrink-0 transition sm:block ${selected ? 'text-heading/50' : 'text-white/30 group-hover:text-goldfinch-gold'}`} />
               </button>
@@ -272,7 +293,7 @@
           <a class="font-semibold text-forest hover:text-heading" href="/tours">{$t('ui.see_all_tours')}</a>
         </p>
       {:else if loading}
-        <div class="mt-10"><LoadingState message="Finding your best-fit trips…" /></div>
+        <div class="mt-10"><LoadingState message={$t('pg_trip_finder.finding_trips')} /></div>
       {:else}
         <!-- results -->
         <div class="mt-8 grid gap-4">
@@ -294,8 +315,8 @@
                 <div class="flex flex-1 flex-col p-5">
                   <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold">
                     {#if destName(rec.tour)}<span class="text-clay">{destName(rec.tour)}</span>{/if}
-                    {#if rec.tour.duration_days}<span class="text-ink/70">{rec.tour.duration_days} days</span>{/if}
-                    <span class="text-ink/70">from <span class="text-heading">{fmtPrice(rec.tour)}</span></span>
+                    {#if rec.tour.duration_days}<span class="text-ink/70">{$t('pg_trip_finder.n_days').replace('{n}', String(rec.tour.duration_days))}</span>{/if}
+                    <span class="text-ink/70">{$t('pg_trip_finder.from')} <span class="text-heading">{fmtPrice(rec.tour)}</span></span>
                   </div>
                   <h3 class="mt-1 text-lg font-extrabold leading-snug text-heading">{rec.tour.title}</h3>
                   <p class="mt-1.5 inline-flex items-start gap-1.5 text-sm font-medium text-forest">

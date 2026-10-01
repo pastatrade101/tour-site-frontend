@@ -514,7 +514,7 @@
          switch still governs it, so "off" means off here too. -->
     {#if advisorNoteEnabled(homeSections)}
       <div class="package-advisor">
-        <HomeAdvisorNote {...advisorNoteFromBlock(block, homeSections)} />
+        <HomeAdvisorNote {...advisorNoteFromBlock(block, homeSections, $t)} />
       </div>
     {/if}
 

@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { API_URL } from '$lib/config/env';
+import { DEFAULT_LOCALE, localeFromPath } from '$lib/i18n';
 import type { EntityTranslations, Language, TranslationRecord } from '$lib/types';
 import type { LegalDefaults } from '$lib/legal';
 import type { Activity, AdvisorDonePayload, AdvisorMeta, AdvisorPageContext, AdvisorRecommendation, AiChatResponse, ApiResponse, BlogPost, Comparison, CurrencyApiState, Destination, FAQ, Lodge, MigrationEntry, PageSeo, Paginated, Review, ReviewSummary, SafariPackage, SafetyTopic, Specialist, Testimonial, Tour, TourCategory, TravelStyle, TripPoint } from '$lib/types';
@@ -45,9 +46,25 @@ type CacheEntry = { at: number; result: unknown };
 const getCache = new Map<string, CacheEntry>();
 const GET_TTL = 5 * 60 * 1000; // 5 minutes
 
-export const apiRequest = async <T>(path: string, options: RequestOptions = {}) => {
+/**
+ * The language of the page making the request, for content reads.
+ *
+ * Server loads pass ?locale= themselves; calls made in the browser did not, so
+ * anything a page fetched after load — the homepage's tour cards, related
+ * tours, lists below the fold — came back in English on /fr/ and /de/ pages.
+ * Every GET from a language-prefixed page now carries it. Admin pages have no
+ * prefix, so the CMS keeps reading and editing the source language.
+ */
+const withPageLocale = (path: string): string => {
+  if (!browser || /[?&]locale=/.test(path)) return path;
+  const pageLocale = localeFromPath(window.location.pathname);
+  return pageLocale === DEFAULT_LOCALE ? path : `${path}${path.includes('?') ? '&' : '?'}locale=${pageLocale}`;
+};
+
+export const apiRequest = async <T>(requestPath: string, options: RequestOptions = {}) => {
   const token = authToken();
   const method = (options.method ?? 'GET').toUpperCase();
+  const path = method === 'GET' ? withPageLocale(requestPath) : requestPath;
   const cacheable = browser && !token && method === 'GET' && path !== '/currencies';
 
   if (cacheable) {

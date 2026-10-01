@@ -40,15 +40,20 @@
   });
 
   // "All experience" reads wrong, and naive pluralisation gives "All wildlifes".
-  // Group labels are a known, small set, so they are spelled out.
+  // Group labels are a known, small set, so they are spelled out. Values are
+  // translation keys, resolved with $t in allLabel below.
   const ALL_LABELS: Record<string, string> = {
-    experience: $t('ui.all_experiences'),
-    region: 'All regions',
-    wildlife: 'All wildlife',
-    'length of stay': 'Any length'
+    experience: 'ui.all_experiences',
+    region: 'destination_search_bar.all_regions',
+    wildlife: 'destination_search_bar.all_wildlife',
+    duration: 'filter.any_length'
   };
-  const allLabel = (group: FacetGroup) =>
-    ALL_LABELS[group.label.toLowerCase()] ?? `All ${group.label.toLowerCase()}`;
+  // Looked up by group.key: group labels arrive translated, so they cannot be keys.
+  // Reactive ($:) so the template and `shown` re-run when the language changes.
+  $: allLabel = (group: FacetGroup) =>
+    ALL_LABELS[group.key]
+      ? $t(ALL_LABELS[group.key])
+      : $t('destination_search_bar.all_group').replace('{group}', group.label.toLowerCase());
 
   const onSelect = (group: FacetGroup, event: Event) =>
     dispatch('facet', { group: group.key, facet: (event.currentTarget as HTMLSelectElement).value });
@@ -72,7 +77,7 @@
 </script>
 
 <button type="button" class="inline-flex h-9 items-center gap-1.5 rounded-[8px] border border-ink/12 bg-surface px-3 text-xs font-bold text-heading shadow-sm md:hidden" on:click={openMobile}>
-  <SlidersHorizontal size={15} /> Filter
+  <SlidersHorizontal size={15} /> {$t('filter.apply')}
   {#if hasFilter}<span class="h-1.5 w-1.5 rounded-full bg-clay" aria-hidden="true"></span>{/if}
 </button>
 
@@ -177,7 +182,7 @@
       <button type="button" class="h-12 shrink-0 px-3 text-sm font-bold text-forest md:h-14" on:click={() => dispatch('clear')}>{$t('filter.clear')}</button>
     {/if}
     <button type="button" class="destination-filter-submit inline-flex h-12 shrink-0 items-center justify-center rounded-[10px] bg-deep-green px-5 text-sm font-extrabold text-white transition hover:bg-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold md:h-14" on:click={jumpToResults}>
-      View {resultCount}
+      {$t('filter.view_results')} {resultCount}
     </button>
   </div>
 </div>

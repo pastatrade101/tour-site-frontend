@@ -40,6 +40,34 @@
   const durationOptions = ['1–3 days', '4–6 days', '7–10 days', '11–14 days', '15+ days', 'Not sure yet'];
   const accommodationOptions = ['Budget lodge', 'Mid-range lodge/hotel', 'Luxury lodge/resort', 'Tented camp', 'Beach resort', 'Not sure yet'];
 
+  // The option values above are what the lead brief/CRM receives, so they stay
+  // in English; only what the visitor reads in each dropdown is translated.
+  const OPTION_KEYS: Record<string, string> = {
+    Yes: 'plan_my_trip_form.opt_yes',
+    No: 'plan_my_trip_form.opt_no',
+    'Not sure': 'plan_my_trip_form.opt_not_sure',
+    'Not sure yet': 'ui.not_sure_yet',
+    'Solo traveller': 'plan_my_trip_form.opt_solo_traveller',
+    Couple: 'plan_my_trip_form.opt_couple',
+    Family: 'plan_my_trip_form.opt_family',
+    'Friends / group': 'plan_my_trip_form.opt_friends_group',
+    'Corporate / team': 'plan_my_trip_form.opt_corporate_team',
+    Honeymoon: 'plan_my_trip_form.opt_honeymoon',
+    'Budget lodge': 'plan_my_trip_form.opt_budget_lodge',
+    'Mid-range lodge/hotel': 'plan_my_trip_form.opt_midrange_lodge_hotel',
+    'Luxury lodge/resort': 'plan_my_trip_form.opt_luxury_lodge_resort',
+    'Tented camp': 'ui.tented_camp',
+    'Beach resort': 'ui.beach_resort'
+  };
+  $: optionLabel = (option: string) => {
+    const key = OPTION_KEYS[option];
+    if (key) return $t(key);
+    if (option === 'Under $1,000') return `${$t('label.under')} $1,000`;
+    const days = /^(.+) days$/.exec(option);
+    if (days) return $t('plan_my_trip_form.range_days').replace('{range}', days[1]);
+    return option;
+  };
+
   // ── Form state ───────────────────────────────────────────────────────────────
   let full_name = '';
   let email = '';
@@ -103,7 +131,7 @@
     const attachedName = selectedStay.name;
     selectedStay = { id: '', slug: '', name: '', type: '', destination: '' };
     if (tripContext === attachedName) tripContext = '';
-    if (message === `Please include ${attachedName} in my itinerary.`) message = '';
+    if (message === $t('plan_my_trip_form.include_stay_message').replace('{name}', attachedName)) message = '';
   };
 
   // ── Context carry: a visitor arriving from a tour/persona/experience link
@@ -130,7 +158,7 @@
         destination: p.get('place') ?? ''
       };
       if (!tripContext) tripContext = stayName;
-      if (!message.trim()) message = `Please include ${stayName} in my itinerary.`;
+      if (!message.trim()) message = $t('plan_my_trip_form.include_stay_message').replace('{name}', stayName);
       const typePreference: Record<string, string> = {
         HOTEL: 'Mid-range lodge/hotel', BOUTIQUE_HOTEL: 'Mid-range lodge/hotel', SAFARI_LODGE: 'Luxury lodge/resort',
         ECO_LODGE: 'Luxury lodge/resort', TENTED_CAMP: 'Tented camp', MOBILE_CAMP: 'Tented camp', BEACH_RESORT: 'Beach resort'
@@ -177,7 +205,7 @@
       tripContext = place;
       const asOption = matchOption(destinationOptions, place);
       if (asOption) destination_interest = asOption;
-      if (!message.trim()) message = `I'm interested in: ${place}.`;
+      if (!message.trim()) message = $t('plan_my_trip_form.interested_in_message').replace('{items}', place);
     }
     if (monthParam) {
       if (/^\d{4}-\d{2}-\d{2}$/.test(monthParam)) {
@@ -195,12 +223,12 @@
     if (tourSlug) {
       try {
         const res = await api.tours.get(tourSlug);
-        const t = res.data as Record<string, unknown>;
-        tripContext = String(t.title ?? '');
-        const assignedSpecialist = t.specialist as Specialist | null | undefined;
+        const tourData = res.data as Record<string, unknown>;
+        tripContext = String(tourData.title ?? '');
+        const assignedSpecialist = tourData.specialist as Specialist | null | undefined;
         selectedSpecialist = assignedSpecialist?.name && assignedSpecialist.status === 'published' ? assignedSpecialist : null;
-        const dName = (t.destinations as Record<string, unknown> | undefined)?.name;
-        const cName = (t.tour_categories as Record<string, unknown> | undefined)?.name;
+        const dName = (tourData.destinations as Record<string, unknown> | undefined)?.name;
+        const cName = (tourData.tour_categories as Record<string, unknown> | undefined)?.name;
         if (dName) {
           const d = matchOption(destinationOptions, dName);
           if (d) destination_interest = d;
@@ -212,14 +240,17 @@
       } catch {
         tripContext = tourSlug.replace(/-/g, ' ');
       }
-      if (tripContext && !message.trim()) message = `I'm interested in: ${tripContext}.`;
+      if (tripContext && !message.trim()) message = $t('plan_my_trip_form.interested_in_message').replace('{items}', tripContext);
     } else if (!tripContext) {
       // Only fall back to the saved shortlist when nothing more specific (e.g. a
       // `place` from a destination tile) has already set the trip context.
       const saved = get(shortlist);
       if (saved.length) {
-        tripContext = saved.length === 1 ? saved[0].title : `${saved.length} saved trips`;
-        if (!message.trim()) message = `I'm interested in: ${saved.map((sv) => sv.title).join(', ')}.`;
+        tripContext =
+          saved.length === 1 ? saved[0].title : $t('plan_my_trip_form.n_saved_trips').replace('{n}', String(saved.length));
+        if (!message.trim()) {
+          message = $t('plan_my_trip_form.interested_in_message').replace('{items}', saved.map((sv) => sv.title).join(', '));
+        }
       }
     }
 
@@ -227,7 +258,7 @@
     const topic = p.get('topic');
     if (topic) {
       referrerTopic = topic;
-      if (!message.trim()) message = `I'd like help deciding: ${topic}.`;
+      if (!message.trim()) message = $t('plan_my_trip_form.help_deciding_message').replace('{topic}', topic);
     }
   });
 
@@ -254,10 +285,10 @@
   // "Preferences" were a split that only made sense to whoever built the form —
   // a traveller filling it in reads both as the same question.
   const STEPS = [
-    { key: 'trip', label: 'Trip basics' },
-    { key: 'details', label: 'Your details' }
+    { key: 'trip', labelKey: 'form.trip_basics' },
+    { key: 'details', labelKey: 'form.your_details' }
   ];
-  const steps = STEPS;
+  $: steps = STEPS.map((s) => ({ key: s.key, label: $t(s.labelKey) }));
   const LAST = STEPS.length - 1;
   let step = 0;
 
@@ -304,7 +335,7 @@
     // Keep only this step's errors visible so later steps don't light up early.
     errors = Object.fromEntries(Object.entries(errors).filter(([k]) => STEP_FIELDS[index].includes(k)));
     if (own.length) {
-      errorMessage = 'Please check the highlighted fields and try again.';
+      errorMessage = $t('plan_my_trip_form.err_check_fields');
       await tick();
       (bodyEl?.querySelector('[data-error]') as HTMLElement | null)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
       return false;
@@ -347,17 +378,17 @@
 
   const validate = (): boolean => {
     const e: Record<string, string> = {};
-    if (full_name.trim().length < 2) e.full_name = 'Please enter your full name.';
-    if (!email.trim()) e.email = 'Email is required.';
-    else if (!isEmail(email.trim())) e.email = 'Please enter a valid email address.';
-    if (phone.trim().length < 6) e.phone = 'A phone or WhatsApp number is required.';
-    if (experience_interests.length === 0) e.experience_interests = 'Pick at least one experience.';
-    if (!exact_start_date) e.exact_start_date = 'Please pick your travel date.';
-    else if (exact_start_date < todayStr) e.exact_start_date = "Travel date can't be in the past.";
-    if (!budget_per_person) e.budget_per_person = 'Choose a budget range.';
-    if (!traveller_type) e.traveller_type = 'Who is travelling?';
-    if (Number(number_of_adults) < 1) e.number_of_adults = 'At least one adult is required.';
-    if (number_of_children === '' || Number(number_of_children) < 0) e.number_of_children = "Can't be negative.";
+    if (full_name.trim().length < 2) e.full_name = $t('form.err_name');
+    if (!email.trim()) e.email = $t('plan_my_trip_form.err_email_required');
+    else if (!isEmail(email.trim())) e.email = $t('plan_my_trip_form.err_email_invalid');
+    if (phone.trim().length < 6) e.phone = $t('plan_my_trip_form.err_phone_required');
+    if (experience_interests.length === 0) e.experience_interests = $t('plan_my_trip_form.err_pick_experience');
+    if (!exact_start_date) e.exact_start_date = $t('plan_my_trip_form.err_pick_travel_date');
+    else if (exact_start_date < todayStr) e.exact_start_date = $t('plan_my_trip_form.err_travel_date_past');
+    if (!budget_per_person) e.budget_per_person = $t('plan_my_trip_form.err_choose_budget');
+    if (!traveller_type) e.traveller_type = $t('hero.who_travelling');
+    if (Number(number_of_adults) < 1) e.number_of_adults = $t('plan_my_trip_form.err_adult_required');
+    if (number_of_children === '' || Number(number_of_children) < 0) e.number_of_children = $t('plan_my_trip_form.err_not_negative');
     errors = e;
     return Object.keys(e).length === 0;
   };
@@ -395,7 +426,7 @@
     // before anything could observe that it had happened.
 
     if (!validate()) {
-      errorMessage = 'Please check the highlighted fields and try again.';
+      errorMessage = $t('plan_my_trip_form.err_check_fields');
       // Jump back to the first step that still has a problem.
       const bad = STEP_FIELDS.findIndex((fields) => fields.some((f) => errors[f]));
       if (bad >= 0) step = bad;
@@ -456,7 +487,7 @@
       errorMessage =
         error instanceof Error && error.message
           ? error.message
-          : 'Something went wrong. Please try again or contact us directly on WhatsApp.';
+          : $t('plan_my_trip_form.err_submit_failed');
     } finally {
       submitting = false;
     }
@@ -497,7 +528,7 @@
         <div class="mt-1 flex items-center gap-3">
           <p class="text-2xl font-extrabold tracking-wide text-heading">{bookingCode}</p>
           <button class="inline-flex items-center gap-1.5 rounded-lg border border-ink/15 bg-surface px-2.5 py-1 text-xs font-semibold text-ink/70 transition hover:bg-canvas" type="button" on:click={copyCode}>
-            <Copy size={13} />{copied ? 'Copied' : 'Copy'}
+            <Copy size={13} />{copied ? $t('plan_my_trip_form.copied') : $t('plan_my_trip_form.copy')}
           </button>
         </div>
       </div>
@@ -507,7 +538,7 @@
     <div class="rounded-xl border border-emerald-200 bg-surface p-4">
       <p class="text-xs font-semibold uppercase tracking-[0.14em] text-ink/70">{$t('ui.what_happens_next')}</p>
       <ol class="mt-3 grid gap-3">
-        {#each [{ t: 'We review your request', s: 'A specialist reads your details — usually within one business day.' }, { t: 'We craft a tailored itinerary', s: 'Shaped around your dates, budget and travel style.' }, { t: 'You refine it with us', s: 'Adjust pace, lodges and activities until it feels right.' }, { t: 'Confirm when you are ready', s: 'No pressure — you decide if and when to book.' }] as step, i}
+        {#each [{ t: $t('plan_my_trip_form.next_review_title'), s: $t('plan_my_trip_form.next_review_body') }, { t: $t('plan_my_trip_form.next_craft_title'), s: $t('plan_my_trip_form.next_craft_body') }, { t: $t('plan_my_trip_form.next_refine_title'), s: $t('plan_my_trip_form.next_refine_body') }, { t: $t('plan_my_trip_form.next_confirm_title'), s: $t('plan_my_trip_form.next_confirm_body') }] as step, i}
           <li class="flex gap-3">
             <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-forest text-[11px] font-bold text-white">{i + 1}</span>
             <span>
@@ -520,7 +551,7 @@
     </div>
 
     {#if selectedSpecialist}
-      <SpecialistCard specialist={selectedSpecialist} heading="Who will be in touch" />
+      <SpecialistCard specialist={selectedSpecialist} heading={$t('plan_my_trip_form.who_will_be_in_touch')} />
     {/if}
 
     <div class="flex flex-col gap-3 sm:flex-row">
@@ -554,14 +585,14 @@
       <div class="mt-2 flex items-center gap-2 rounded-[8px] border border-goldfinch-gold/30 bg-goldfinch-gold/[0.08] px-3 py-2.5 text-white">
         <BedDouble size={16} class="shrink-0 text-goldfinch-gold" />
         <div class="min-w-0"><span class="block text-[9px] font-bold uppercase tracking-[0.14em] text-white/50">{$t('ui.your_chosen_stay')}</span><span class="block truncate text-sm font-bold">{selectedStay.name}</span></div>
-        <button type="button" class="ml-auto grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/15 text-white/65 transition hover:border-white/35 hover:text-white" aria-label={`Remove ${selectedStay.name} from this request`} title={$t('ui.remove_stay')} on:click={removeSelectedStay}><X size={14}/></button>
+        <button type="button" class="ml-auto grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/15 text-white/65 transition hover:border-white/35 hover:text-white" aria-label={$t('plan_my_trip_form.remove_stay_aria').replace('{name}', selectedStay.name)} title={$t('ui.remove_stay')} on:click={removeSelectedStay}><X size={14}/></button>
       </div>
     {/if}
 
     {#if referrerTopic}
       <div class="mt-2 flex items-center gap-2 rounded-[8px] border border-goldfinch-gold/25 bg-goldfinch-gold/[0.06] px-2.5 py-2 text-xs font-semibold text-white/80">
         <Scale size={14} class="shrink-0 text-goldfinch-gold" />
-        You're planning around: {referrerTopic}
+        {$t('plan_my_trip_form.planning_around').replace('{topic}', referrerTopic)}
       </div>
     {/if}
 
@@ -608,7 +639,7 @@
       <fieldset class="grid gap-3" class:hidden={step !== 0}>
         <legend class="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{$t('ui.trip_idea')}</legend>
         <div class="grid gap-2">
-          <span class="gf-label">{$t('ui.what_would_you_love_to')}<span class="gf-hint">(select any)</span></span>
+          <span class="gf-label">{$t('ui.what_would_you_love_to')}<span class="gf-hint">{$t('plan_my_trip_form.select_any')}</span></span>
           <CategoryPicker
             selected={experience_interests}
             fallbackOptions={experienceOptions}
@@ -639,7 +670,7 @@
             <span class="gf-label">{$t('ui.trip_duration')}</span>
             <select class={cls('trip_duration')} bind:value={trip_duration}>
               <option value="">{$t('ui.not_sure_yet')}</option>
-              {#each durationOptions.filter((d) => d !== 'Not sure yet') as opt}<option value={opt}>{opt}</option>{/each}
+              {#each durationOptions.filter((d) => d !== 'Not sure yet') as opt}<option value={opt}>{optionLabel(opt)}</option>{/each}
             </select>
           </label>
         </div>
@@ -654,14 +685,14 @@
             <span class="gf-label">{$t('ui.are_your_dates_flexible')}</span>
             <select class={cls('date_flexibility')} bind:value={date_flexibility}>
               <option value="">{$t('ui.select_2')}</option>
-              {#each flexibilityOptions as opt}<option value={opt}>{opt}</option>{/each}
+              {#each flexibilityOptions as opt}<option value={opt}>{optionLabel(opt)}</option>{/each}
             </select>
           </label>
           <label class="grid gap-1.5">
             <span class="gf-label">{$t('filter.budget_pp')}</span>
             <select class={cls('budget_per_person')} bind:value={budget_per_person} on:change={() => clearErr('budget_per_person')} aria-invalid={Boolean(errors.budget_per_person)}>
               <option value="" disabled>{$t('ui.select_budget')}</option>
-              {#each budgetOptions as opt}<option value={opt}>{opt}</option>{/each}
+              {#each budgetOptions as opt}<option value={opt}>{optionLabel(opt)}</option>{/each}
             </select>
             {#if errors.budget_per_person}<span data-error class="text-xs text-red-600">{errors.budget_per_person}</span>{/if}
           </label>
@@ -671,7 +702,7 @@
             <span class="gf-label">{$t('hero.who_travelling')}</span>
             <select class={cls('traveller_type')} bind:value={traveller_type} on:change={() => clearErr('traveller_type')} aria-invalid={Boolean(errors.traveller_type)}>
               <option value="" disabled>{$t('ui.select_traveller_type')}</option>
-              {#each travellerOptions as opt}<option value={opt}>{opt}</option>{/each}
+              {#each travellerOptions as opt}<option value={opt}>{optionLabel(opt)}</option>{/each}
             </select>
             {#if errors.traveller_type}<span data-error class="text-xs text-red-600">{errors.traveller_type}</span>{/if}
           </label>
@@ -679,7 +710,7 @@
             <span class="gf-label">{$t('ui.accommodation_preference')}</span>
             <select class={cls('accommodation_preference')} bind:value={accommodation_preference}>
               <option value="">{$t('ui.no_preference')}</option>
-              {#each accommodationOptions.filter((a) => a !== 'Not sure yet') as opt}<option value={opt}>{opt}</option>{/each}
+              {#each accommodationOptions.filter((a) => a !== 'Not sure yet') as opt}<option value={opt}>{optionLabel(opt)}</option>{/each}
             </select>
           </label>
         </div>
@@ -741,7 +772,7 @@
           </button>
         {:else}
           <button type="submit" class="gf-btn-primary planning-nav-primary" disabled={submitting}>
-            {submitting ? 'Sending…' : 'Send My Trip Request'}
+            {submitting ? $t('form.sending') : $t('plan_my_trip_form.send_trip_request')}
           </button>
         {/if}
       </div>

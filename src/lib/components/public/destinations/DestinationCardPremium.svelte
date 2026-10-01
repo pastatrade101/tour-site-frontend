@@ -57,7 +57,7 @@
   // all a card this size can carry before it turns into a spec sheet.
   $: chips = [
     ...new Map(
-      [...wildlifeOf(destination), ...experiencesOf(destination)].map((facet) => [facet.key, facet] as const)
+      [...wildlifeOf(destination, $t), ...experiencesOf(destination, $t)].map((facet) => [facet.key, facet] as const)
     ).values()
   ].slice(0, 2);
   // A destination whose quick facts match no facet still has a travel style —

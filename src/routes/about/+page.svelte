@@ -28,38 +28,39 @@
   // ── Editable content — replace with your real details in the CMS or here ────
   // Honest brand-true tiles (no unverified numbers). Add real figures if you have
   // them, e.g. { value: '10+', label: 'Years operating' }.
-  const STATS = [
-    { icon: Compass, value: '100%', label: 'Tailor-made safaris' },
-    { icon: MapPin, value: 'Local', label: 'Arusha-based experts' },
-    { icon: Users, value: 'Private', label: 'Just your group' },
-    { icon: Clock, value: '24/7', label: 'On-trip support' }
+  // Reactive, so the copy follows the reader's language ($t) on every switch.
+  $: STATS = [
+    { icon: Compass, value: '100%', label: $t('pg_about.stat_tailor_made_safaris') },
+    { icon: MapPin, value: $t('pg_about.stat_local'), label: $t('pg_about.stat_arusha_based_experts') },
+    { icon: Users, value: $t('pg_about.stat_private'), label: $t('pg_about.stat_just_your_group') },
+    { icon: Clock, value: '24/7', label: $t('pg_about.stat_on_trip_support') }
   ];
 
-  const STORY_STEPS = [
-    { icon: Flag, label: 'Founded in Arusha' },
-    { icon: Users, label: 'Welcoming guests from abroad' },
-    { icon: MapPin, label: 'Expanded across Tanzania' },
-    { icon: Camera, label: 'Memories created together' }
+  $: STORY_STEPS = [
+    { icon: Flag, label: $t('pg_about.step_founded_in_arusha') },
+    { icon: Users, label: $t('pg_about.step_welcoming_guests') },
+    { icon: MapPin, label: $t('pg_about.step_expanded_across_tanzania') },
+    { icon: Camera, label: $t('pg_about.step_memories_created') }
   ];
 
-  const WHY = [
-    { icon: Compass, title: '100% Tailor-made', body: 'We design your Tanzania safari entirely around your wishes — unique and personal.' },
-    { icon: CreditCard, title: 'No Hidden Fees', body: 'Transparent prices: on your safari there are no extra or surprise costs.' },
-    { icon: MapPin, title: 'Local Expertise', body: 'Rooted in Arusha, we know Tanzania — for authentic safari moments that last.' },
-    { icon: BadgeCheck, title: 'Flexible Payment', body: 'We accept many payment methods and offer fair cancellation policies.' },
-    { icon: Clock, title: '24/7 Support', body: 'Throughout your safari, experienced guides are always there for you.' },
-    { icon: Leaf, title: 'Fair & Sustainable', body: 'We act responsibly — with respect for people, wildlife & nature.' }
+  $: WHY = [
+    { icon: Compass, title: $t('pg_about.why_tailor_made_title'), body: $t('pg_about.why_tailor_made_body') },
+    { icon: CreditCard, title: $t('pg_about.why_no_hidden_fees_title'), body: $t('pg_about.why_no_hidden_fees_body') },
+    { icon: MapPin, title: $t('pg_about.why_local_expertise_title'), body: $t('pg_about.why_local_expertise_body') },
+    { icon: BadgeCheck, title: $t('pg_about.why_flexible_payment_title'), body: $t('pg_about.why_flexible_payment_body') },
+    { icon: Clock, title: $t('pg_about.why_support_title'), body: $t('pg_about.why_support_body') },
+    { icon: Leaf, title: $t('pg_about.why_sustainable_title'), body: $t('pg_about.why_sustainable_body') }
   ];
 
-  const SERVICES = [
-    { icon: Car, title: 'Transfers', body: 'Reliable transfers from all major airports and cities in Tanzania & Zanzibar — straight to your safari.' },
-    { icon: Plane, title: 'Domestic Flights', body: 'We book domestic flights in Tanzania for easy access to even the most remote safari regions.' },
-    { icon: Car, title: 'Car Rentals', body: 'A reliable fleet in Arusha & Zanzibar — from sturdy jeeps to spacious vans for your safari.' },
-    { icon: CalendarCheck, title: 'Guaranteed Departures', body: 'A wide range of safaris and tours throughout Tanzania — with all departures guaranteed to run.' },
-    { icon: Headphones, title: 'Expert Assistance', body: 'We help you plan your Tanzania safari — with personal advice and local insights.' },
-    { icon: Mountain, title: 'Guided Hikes', body: 'Kilimanjaro & Mount Meru — from day hikes to multi-day climbs with experienced guides.' },
-    { icon: ShieldCheck, title: 'Hotel Price Guarantee', body: 'The best deals for safari lodges, camps & beach hotels on Zanzibar and along the coast.' },
-    { icon: Tent, title: 'Equipment Rentals', body: 'Well-maintained camping and outdoor gear for your safari adventure.' }
+  $: SERVICES = [
+    { icon: Car, title: $t('pg_about.service_transfers_title'), body: $t('pg_about.service_transfers_body') },
+    { icon: Plane, title: $t('pg_about.service_domestic_flights_title'), body: $t('pg_about.service_domestic_flights_body') },
+    { icon: Car, title: $t('pg_about.service_car_rentals_title'), body: $t('pg_about.service_car_rentals_body') },
+    { icon: CalendarCheck, title: $t('pg_about.service_guaranteed_departures_title'), body: $t('pg_about.service_guaranteed_departures_body') },
+    { icon: Headphones, title: $t('pg_about.service_expert_assistance_title'), body: $t('pg_about.service_expert_assistance_body') },
+    { icon: Mountain, title: $t('pg_about.service_guided_hikes_title'), body: $t('pg_about.service_guided_hikes_body') },
+    { icon: ShieldCheck, title: $t('pg_about.service_hotel_price_guarantee_title'), body: $t('pg_about.service_hotel_price_guarantee_body') },
+    { icon: Tent, title: $t('pg_about.service_equipment_rentals_title'), body: $t('pg_about.service_equipment_rentals_body') }
   ];
 
   const initials = (name: string) => name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
@@ -68,13 +69,14 @@
   // Only list genuine affiliations/certifications your company actually holds.
   const PARTNERS = ['TATO', 'Tanzania National Parks', 'TripAdvisor', 'Safe Travels', 'Travelife', 'IUCN'];
 
-  const DEFAULT_FAQS = [
-    { question: 'Why should I choose Goldfinch Adventures?', answer: 'We are a locally based Arusha team that designs private, tailor-made safaris around your interests, pace and budget — with honest advice and on-trip support the whole way.' },
-    { question: 'Can I customise my safari?', answer: 'Yes — every itinerary is built around you. Tell us your dates, group and must-see places and we shape a plan to match.' },
-    { question: 'When is the best time to visit Tanzania?', answer: 'Tanzania is a year-round destination. The dry season (late June–October) is easiest for game viewing; the green season brings lush scenery and fewer vehicles. We time your trip to what matters most to you.' },
-    { question: 'How do payments work?', answer: 'A deposit secures your booking, with the balance due before travel. We accept several payment methods and share clear terms up front — no hidden fees.' },
-    { question: 'Are children allowed on safari?', answer: 'Absolutely. We plan family-friendly pacing, suitable lodges and shorter game drives so younger travellers enjoy every day.' },
-    { question: 'Can dietary needs be accommodated?', answer: 'Yes — tell us about any dietary requirements or allergies and we arrange meals accordingly throughout your trip.' }
+  // Shown only when the CMS has no FAQs — so it is translated like the rest.
+  $: DEFAULT_FAQS = [
+    { question: $t('pg_about.faq_why_choose_q'), answer: $t('pg_about.faq_why_choose_a') },
+    { question: $t('pg_about.faq_customise_q'), answer: $t('pg_about.faq_customise_a') },
+    { question: $t('pg_about.faq_best_time_q'), answer: $t('pg_about.faq_best_time_a') },
+    { question: $t('pg_about.faq_payments_q'), answer: $t('pg_about.faq_payments_a') },
+    { question: $t('pg_about.faq_children_q'), answer: $t('pg_about.faq_children_a') },
+    { question: $t('pg_about.faq_dietary_q'), answer: $t('pg_about.faq_dietary_a') }
   ];
   $: faqs = (data.faqs ?? []).length ? data.faqs : DEFAULT_FAQS;
   $: specialists = data.specialists ?? [];
@@ -86,8 +88,8 @@
 </script>
 
 <svelte:head>
-  <title>About Us | {brand.name}</title>
-  <meta name="description" content="Goldfinch Adventures is a locally based safari company in Arusha, crafting tailor-made private journeys across Tanzania with expert guides and genuine hospitality." />
+  <title>{$t('nav.about')} | {brand.name}</title>
+  <meta name="description" content={$t('pg_about.meta_description')} />
 </svelte:head>
 
 <!-- ── Hero ─────────────────────────────────────────────────────────────── -->
@@ -105,7 +107,7 @@
       </h1>
       <p class="mt-5 max-w-xl font-serif text-xl font-light italic text-white/90 md:text-2xl">{$t('ui.creating_extraordinary_african_journeys_design')}</p>
       <p class="mt-5 max-w-xl text-[15px] leading-7 text-white/80">
-        We are a locally based safari company in Arusha, crafting unforgettable private journeys across Tanzania with authentic experiences, expert guides and genuine hospitality.
+        {$t('pg_about.hero_intro')}
       </p>
       <div class="mt-8 flex flex-wrap gap-3">
         <a class="inline-flex h-12 items-center gap-2 rounded-[10px] bg-goldfinch-gold px-6 text-sm font-extrabold text-heading shadow-lg transition hover:brightness-105" href="/plan-my-trip">{$t('ui.plan_your_safari')}<ArrowRight size={17} strokeWidth={2.6} /></a>
@@ -149,9 +151,9 @@
       <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{$t('ui.our_story')}</p>
       <h2 class="mt-3 font-serif text-3xl font-semibold text-heading md:text-[40px]">{$t('ui.more_than_a_safari_company')}</h2>
       <div class="mt-5 grid gap-4 text-[15px] leading-7 text-ink/75">
-        <p>{$t('ui.goldfinch_adventures_was_founded_on')}<span class="font-semibold text-heading">every traveller deserves a safari that feels personal.</span></p>
+        <p>{$t('ui.goldfinch_adventures_was_founded_on')} <span class="font-semibold text-heading">{$t('pg_about.story_belief')}</span></p>
         <p>{$t('ui.we_are_not_a_masstour')}</p>
-        <p>From witnessing the Great Migration in the Serengeti, to climbing Kilimanjaro, to relaxing on Zanzibar's beaches — every itinerary is handcrafted by local experts who know Tanzania intimately.</p>
+        <p>{$t('pg_about.story_handcrafted')}</p>
         <p>{$t('ui.our_mission_is_to_create')}</p>
       </div>
     </div>
@@ -202,7 +204,7 @@
   <div class="container-shell relative">
     <div class="mx-auto max-w-2xl text-center">
       <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{$t('ui.our_services_for_you')}</p>
-      <p class="mt-4 font-serif text-xl font-light italic text-white/85 md:text-2xl">“As we lose ourselves in the service of others we discover our own lives and our own happiness.”</p>
+      <p class="mt-4 font-serif text-xl font-light italic text-white/85 md:text-2xl">{$t('pg_about.service_quote')}</p>
       <p class="mt-2 text-sm font-semibold text-white/60">Dieter F. Uchtdorf</p>
     </div>
     <div class="mt-12 grid gap-x-8 gap-y-9 sm:grid-cols-2 lg:grid-cols-4" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>

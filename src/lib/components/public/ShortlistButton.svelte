@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Heart } from '@lucide/svelte';
+  import { t } from '$lib/i18n/ui';
   import { shortlist, toggleShortlist, type ShortlistItem } from '$lib/shortlist';
 
   export let item: ShortlistItem;
@@ -25,12 +26,12 @@
     on:click={toggle}
   >
     <Heart size={18} fill={saved ? 'currentColor' : 'none'} />
-    {saved ? 'Saved' : 'Save trip'}
+    {saved ? $t('ui.saved') : $t('shortlist_button.save_trip')}
   </button>
 {:else}
   <button
     type="button"
-    aria-label={saved ? 'Remove from saved trips' : 'Save this trip'}
+    aria-label={saved ? $t('shortlist_button.remove_from_saved_trips') : $t('shortlist_button.save_this_trip')}
     aria-pressed={saved}
     class={`grid h-9 w-9 place-items-center rounded-full shadow-sm backdrop-blur transition ${
       saved ? 'bg-clay text-white' : 'bg-surface/85 text-ink/70 hover:bg-surface hover:text-clay'

@@ -50,7 +50,8 @@
   type DisplayImage = { id: string; title: string; caption: string; alt: string; url: string; record?: Record<string, unknown>; fields: string[] };
   type SafetyItem = { icon: 'shield' | 'health' | 'file' | 'phone' | 'security'; title: string; body: string };
   type Icon = typeof MapPin;
-  type DestinationTab = { id: string; label: string };
+  type Translate = (key: string) => string;
+  type DestinationTab = { id: string; labelKey: string };
   type PlanningTab = {
     id: string;
     label: string;
@@ -93,31 +94,34 @@
     maxDays: number | null;
   };
 
-  const DESTINATION_TABS = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'why-visit', label: 'Why Visit' },
-    { id: 'highlights', label: 'Highlights' },
-    { id: 'best-time', label: 'Best Time' },
-    { id: 'route-planning', label: 'Routes' },
-    { id: 'recommended-trips', label: 'Trips' },
-    { id: 'where-to-stay', label: 'Where to Stay' },
-    { id: 'travel-tips', label: 'Travel Tips' },
-    { id: 'good-to-know', label: 'Good to Know' }
+  // Labels are translation keys, resolved with $t where the tab bar renders, so
+  // the list itself stays a plain constant that init-time code can read.
+  const DESTINATION_TABS: DestinationTab[] = [
+    { id: 'overview', labelKey: 'ui.overview' },
+    { id: 'why-visit', labelKey: 'pg_destinations_slug.tab_why_visit' },
+    { id: 'highlights', labelKey: 'label.highlights' },
+    { id: 'best-time', labelKey: 'pg_destinations_slug.tab_best_time' },
+    { id: 'route-planning', labelKey: 'ui.routes' },
+    { id: 'recommended-trips', labelKey: 'pg_destinations_slug.tab_trips' },
+    { id: 'where-to-stay', labelKey: 'pg_destinations_slug.tab_where_to_stay' },
+    { id: 'travel-tips', labelKey: 'ui.travel_tips' },
+    { id: 'good-to-know', labelKey: 'ui.good_to_know_2' }
   ];
 
+  // Values are translation keys.
   const LODGE_TYPES: Record<string, string> = {
-    tented_camp: 'Tented camp',
-    mobile_camp: 'Mobile camp',
-    lodge: 'Lodge',
-    hotel: 'Hotel',
-    treehouse: 'Treehouse'
+    tented_camp: 'ui.tented_camp',
+    mobile_camp: 'ui.mobile_camp',
+    lodge: 'ui.lodge',
+    hotel: 'ui.hotel',
+    treehouse: 'ui.treehouse'
   };
 
   const LODGE_LEVELS: Record<string, string> = {
-    budget: 'Budget',
-    mid_range: 'Mid-range',
-    luxury: 'Luxury',
-    ultra_luxury: 'Ultra-luxury'
+    budget: 'tier.budget',
+    mid_range: 'tier.mid_range',
+    luxury: 'tier.luxury',
+    ultra_luxury: 'pg_destinations_slug.lodge_ultra_luxury'
   };
 
   let activeTab = DESTINATION_TABS[0].id;
@@ -236,14 +240,14 @@
     return images;
   };
 
-  const safetyItemsFor = (destination: Destination | null) => {
+  const safetyItemsFor = (destination: Destination | null, tr: Translate) => {
     if (!destination) return [] as SafetyItem[];
     const items: SafetyItem[] = [
-      { icon: 'shield', title: 'Safety overview', body: text(destination.safety_overview) },
-      { icon: 'health', title: 'Health & vaccinations', body: text(destination.health_vaccinations) },
-      { icon: 'security', title: 'Security advice', body: text(destination.security_advice) },
-      { icon: 'file', title: 'Travel insurance', body: text(destination.travel_insurance_note) },
-      { icon: 'phone', title: 'Emergency contacts', body: text(destination.emergency_contacts) }
+      { icon: 'shield', title: tr('pg_destinations_slug.safety_overview'), body: text(destination.safety_overview) },
+      { icon: 'health', title: tr('pg_destinations_slug.health_vaccinations'), body: text(destination.health_vaccinations) },
+      { icon: 'security', title: tr('pg_destinations_slug.security_advice'), body: text(destination.security_advice) },
+      { icon: 'file', title: tr('pg_destinations_slug.travel_insurance'), body: text(destination.travel_insurance_note) },
+      { icon: 'phone', title: tr('pg_destinations_slug.emergency_contacts'), body: text(destination.emergency_contacts) }
     ];
     return items.filter((item) => toMetaText(item.body));
   };
@@ -279,13 +283,15 @@
     return destinationNamesForTour(tour) || tour.start_location || tour.end_location || '';
   };
 
-  const durationRangeFromTours = (tours: Tour[]) => {
+  const dayCountLabel = (min: number, max: number, tr: Translate) => {
+    if (min === max) return tr(min === 1 ? 'pg_destinations_slug.n_day' : 'pg_destinations_slug.n_days').replace('{n}', String(min));
+    return tr('pg_destinations_slug.n_to_m_days').replace('{min}', String(min)).replace('{max}', String(max));
+  };
+
+  const durationRangeFromTours = (tours: Tour[], tr: Translate) => {
     const days = tours.map((tour) => positiveNumber(tour.duration_days)).filter((day): day is number => day !== null);
     if (!days.length) return '';
-    const min = Math.min(...days);
-    const max = Math.max(...days);
-    if (min === max) return `${min} ${min === 1 ? 'day' : 'days'}`;
-    return `${min}-${max} days`;
+    return dayCountLabel(Math.min(...days), Math.max(...days), tr);
   };
 
   const priceFloorFromTours = (tours: Tour[], currencyState: typeof $currency) => {
@@ -310,7 +316,8 @@
     destination: Destination | null,
     activities: Activity[],
     visualImages: DisplayImage[],
-    guideSections: GuideBlock[]
+    guideSections: GuideBlock[],
+    tr: Translate
   ) => {
     if (!destination) return [] as HighlightCard[];
     const cards: HighlightCard[] = [];
@@ -337,7 +344,7 @@
         key: `image-${image.id}`,
         title: image.title || destination.name,
         caption: toMetaText(image.caption, 150),
-        eyebrow: 'Photo',
+        eyebrow: tr('pg_destinations_slug.eyebrow_photo'),
         image: image.url,
         record: image.record,
         fields: image.fields
@@ -350,7 +357,7 @@
           key: `guide-${cards.length}-${item.title}`,
           title: item.title,
           caption: toMetaText(item.body || blockBody(block), 150),
-          eyebrow: blockTitle(block) || 'Guide note',
+          eyebrow: blockTitle(block) || tr('pg_destinations_slug.eyebrow_guide_note'),
           image: imageFromBlock(block) || sourceFor(destination, 900, 'main_image_url', 'image_url', 'banner_image_url'),
           fields: []
         });
@@ -360,12 +367,14 @@
     return cards.filter((card) => card.caption || card.image).slice(0, 6);
   };
 
-  const lodgeFeatureCardsFor = (lodges: Lodge[]) =>
+  const lodgeFeatureCardsFor = (lodges: Lodge[], tr: Translate) =>
     lodges.slice(0, 6).map((lodge) => {
       const image = sourceFor(lodge, 900, 'image_url', 'hero_image_url', 'cover_image_url');
+      const levelKey = LODGE_LEVELS[lodge.accommodation_level];
+      const typeKey = LODGE_TYPES[lodge.lodge_type];
       const meta = unique([
-        LODGE_LEVELS[lodge.accommodation_level] ?? normaliseLabel(lodge.accommodation_level),
-        LODGE_TYPES[lodge.lodge_type] ?? normaliseLabel(lodge.lodge_type),
+        levelKey ? tr(levelKey) : normaliseLabel(lodge.accommodation_level),
+        typeKey ? tr(typeKey) : normaliseLabel(lodge.lodge_type),
         lodge.destinations?.name
       ]).join(' / ');
 
@@ -381,20 +390,20 @@
       } satisfies LodgeFeatureCard;
     });
 
-  const planningTabsFor = (destination: Destination | null, tripPoints: TripPoint[], safetyItems: SafetyItem[]) => {
+  const planningTabsFor = (destination: Destination | null, tripPoints: TripPoint[], safetyItems: SafetyItem[], tr: Translate) => {
     if (!destination) return [] as PlanningTab[];
     const tabs: PlanningTab[] = [];
 
     if (tripPoints.length) {
       tabs.push({
         id: 'getting-there',
-        label: 'Getting There',
+        label: tr('pg_destinations_slug.getting_there'),
         icon: Plane,
-        title: `Getting to ${destination.name}`,
-        support: 'Published gateway and transfer notes connected to this destination.',
+        title: tr('pg_destinations_slug.getting_to_name').replace('{name}', destination.name),
+        support: tr('pg_destinations_slug.getting_there_support'),
         items: tripPoints.map((point) => ({
           title: [point.name, point.airport_code].filter(Boolean).join(' / '),
-          body: text(point.transfer_info) || text(point.description) || roleLabel(point.role)
+          body: text(point.transfer_info) || text(point.description) || roleLabel(point.role, tr)
         }))
       });
     }
@@ -407,7 +416,7 @@
         label: item.title.replace(/\s*&\s*/g, ' & '),
         icon,
         title: item.title,
-        support: 'This guidance is rendered from the published destination record.',
+        support: tr('pg_destinations_slug.guidance_support'),
         items: [{ title: item.title, body: item.body }]
       });
     }
@@ -517,16 +526,16 @@
     return `/tours?${params.toString()}`;
   };
 
-  const dayRangeLabel = (category: DestinationTourCategory) => {
+  const dayRangeLabel = (category: DestinationTourCategory, tr: Translate) => {
     if (!category.minDays) return '';
-    if (!category.maxDays || category.minDays === category.maxDays) {
-      return `${category.minDays} ${category.minDays === 1 ? 'day' : 'days'}`;
-    }
-    return `${category.minDays}-${category.maxDays} days`;
+    return dayCountLabel(category.minDays, category.maxDays || category.minDays, tr);
   };
 
-  const categoryTourLabel = (category: DestinationTourCategory) =>
-    `${category.tourCount} available ${category.tourCount === 1 ? 'tour' : 'tours'}`;
+  const categoryTourLabel = (category: DestinationTourCategory, tr: Translate) =>
+    tr(category.tourCount === 1 ? 'pg_destinations_slug.n_available_tour' : 'pg_destinations_slug.n_available_tours').replace(
+      '{n}',
+      String(category.tourCount)
+    );
 
   const absoluteUrl = (origin: string, path: string) => {
     if (!origin) return path;
@@ -567,8 +576,14 @@
     };
   };
 
-  const roleLabel = (role: TripPoint['role']) =>
-    role === 'start' ? 'Trips start here' : role === 'end' ? 'Trips end here' : 'Start & end point';
+  const roleLabel = (role: TripPoint['role'], tr: Translate) =>
+    tr(
+      role === 'start'
+        ? 'pg_destinations_slug.role_start'
+        : role === 'end'
+          ? 'pg_destinations_slug.role_end'
+          : 'pg_destinations_slug.role_start_end'
+    );
 
   const deferredItems = <T,>(result: PromiseSettledResult<{ data?: { items?: T[] } }>) =>
     result.status === 'fulfilled' ? result.value?.data?.items ?? [] : [];
@@ -670,7 +685,7 @@
     try {
       const response = await api.destinations.get(nextSlug, activeLocale === DEFAULT_LOCALE ? undefined : { locale: activeLocale });
       const nextDestination = response.data;
-      if (!nextDestination?.id) throw new Error('Destination not found.');
+      if (!nextDestination?.id) throw new Error($t('pg_destinations_slug.not_found'));
       destination = nextDestination;
       currentDestinationId = nextDestination.id;
       origin = data.origin ?? origin;
@@ -678,7 +693,7 @@
       requestAnimationFrame(() => updateActiveDestinationTab(visibleTabs));
       trackEvent('destination_page_view', { destination: nextDestination.name });
     } catch (requestError) {
-      error = requestError instanceof Error ? requestError.message : 'Unable to load destination.';
+      error = requestError instanceof Error ? requestError.message : $t('pg_destinations_slug.unable_to_load');
     } finally {
       loading = false;
     }
@@ -732,44 +747,60 @@
   $: narrativeGuideBlocks = guideSections.filter((block) => !isSeasonGuideBlock(block));
   $: guideFacts = guideFactsBlock ? blockItems(guideFactsBlock) : [];
   $: visualImages = destinationImageItems(destination, galleryImages, locationLabel);
-  $: safetyItems = safetyItemsFor(destination);
+  $: safetyItems = safetyItemsFor(destination, $t);
   $: availableTours = relatedTours.filter(availableOnly);
   $: relevantTourCategories = matchingDestinationCategories(availableTours, tourCategories);
-  $: recommendedStay = durationRangeFromTours(availableTours);
+  $: recommendedStay = durationRangeFromTours(availableTours, $t);
   $: tourPriceFloor = priceFloorFromTours(availableTours, $currency);
   $: heroStats = ([
-    locationLabel ? { icon: MapPin, label: 'Destination', value: locationLabel } : null,
-    recommendedStay ? { icon: CalendarDays, label: 'Trip length', value: recommendedStay } : null,
-    availableTours.length ? { icon: Route, label: 'Available trips', value: `${availableTours.length} published ${availableTours.length === 1 ? 'trip' : 'trips'}` } : null,
+    locationLabel ? { icon: MapPin, label: $t('filter.destination'), value: locationLabel } : null,
+    recommendedStay ? { icon: CalendarDays, label: $t('pg_destinations_slug.trip_length'), value: recommendedStay } : null,
+    availableTours.length
+      ? {
+          icon: Route,
+          label: $t('pg_destinations_slug.available_trips'),
+          value: $t(availableTours.length === 1 ? 'pg_destinations_slug.n_published_trip' : 'pg_destinations_slug.n_published_trips').replace('{n}', String(availableTours.length))
+        }
+      : null,
     destination?.score_budget_from || tourPriceFloor
-      ? { icon: Info, label: destination?.score_budget_from ? 'Starting budget' : 'Trips from', value: destination?.score_budget_from ? formatUsd(destination.score_budget_from, $currency) : tourPriceFloor }
+      ? { icon: Info, label: destination?.score_budget_from ? $t('ui.starting_budget') : $t('pg_destinations_slug.trips_from'), value: destination?.score_budget_from ? formatUsd(destination.score_budget_from, $currency) : tourPriceFloor }
       : null
   ].filter(Boolean) as Array<{ icon: Icon; label: string; value: string }>);
   $: heroTags = destination
     ? unique([
         destination.country,
         destination.region,
-        destination.is_featured ? 'Featured destination' : '',
+        destination.is_featured ? $t('pg_destinations_slug.featured_destination') : '',
         relevantTourCategories[0]?.name,
         recommendedStay
       ]).slice(0, 5)
     : [];
   $: quickFacts = ([
-    locationLabel ? { icon: MapPin, label: 'Area', value: locationLabel } : null,
-    recommendedStay ? { icon: CalendarDays, label: 'Recommended stay', value: recommendedStay } : null,
-    availableTours.length ? { icon: Route, label: 'Works with', value: `${availableTours.length} matching ${availableTours.length === 1 ? 'tour' : 'tours'}` } : null,
-    relevantTourCategories.length ? { icon: Compass, label: 'Travel style', value: relevantTourCategories.slice(0, 2).map((item) => item.name).join(' / ') } : null
+    locationLabel ? { icon: MapPin, label: $t('pg_destinations_slug.area'), value: locationLabel } : null,
+    recommendedStay ? { icon: CalendarDays, label: $t('ui.recommended_stay'), value: recommendedStay } : null,
+    availableTours.length
+      ? {
+          icon: Route,
+          label: $t('pg_destinations_slug.works_with'),
+          value: $t(availableTours.length === 1 ? 'pg_destinations_slug.n_matching_tour' : 'pg_destinations_slug.n_matching_tours').replace('{n}', String(availableTours.length))
+        }
+      : null,
+    relevantTourCategories.length ? { icon: Compass, label: $t('filter.travel_style'), value: relevantTourCategories.slice(0, 2).map((item) => item.name).join(' / ') } : null
   ].filter(Boolean) as Array<{ icon: Icon; label: string; value: string }>);
-  $: highlightCards = highlightCardsFor(destination, activities, visualImages, narrativeGuideBlocks);
-  $: lodgeFeatureCards = lodgeFeatureCardsFor(lodges);
-  $: planningTabs = planningTabsFor(destination, tripPoints, safetyItems);
+  $: highlightCards = highlightCardsFor(destination, activities, visualImages, narrativeGuideBlocks, $t);
+  $: lodgeFeatureCards = lodgeFeatureCardsFor(lodges, $t);
+  $: planningTabs = planningTabsFor(destination, tripPoints, safetyItems, $t);
   $: if (planningTabs.length && !planningTabs.some((tab) => tab.id === activePlanningTab)) activePlanningTab = planningTabs[0].id;
   $: activePlanning = planningTabs.find((tab) => tab.id === activePlanningTab) ?? planningTabs[0];
   $: routeRows = availableTours.slice(0, 5).map((tour) => ({
     id: tour.id,
     title: tour.title,
     route: routeSummaryForTour(tour),
-    best: unique([tour.tour_categories?.name, tour.experience_type ? normaliseLabel(tour.experience_type) : '', tour.budget_tier ? `${normaliseLabel(tour.budget_tier)} level` : '']).join(' / '),
+    best: unique([
+      tour.tour_categories?.name,
+      tour.experience_type ? normaliseLabel(tour.experience_type) : '',
+      tour.budget_tier ? $t('pg_destinations_slug.tier_level').replace('{tier}', normaliseLabel(tour.budget_tier)) : ''
+    ]).join(' / '),
     href: `/tours/${tour.slug}`
   }));
   $: visibleTabs = DESTINATION_TABS.filter((tab) => {
@@ -830,11 +861,11 @@
 
 {#if loading}
   <section class="container-shell py-20">
-    <LoadingState message="Loading destination..." />
+    <LoadingState message={$t('pg_destinations_slug.loading')} />
   </section>
 {:else if !destination}
   <section class="container-shell py-20">
-    <ErrorState message={error || 'Destination not found.'} />
+    <ErrorState message={error || $t('pg_destinations_slug.not_found')} />
   </section>
 {:else}
   <div class="destination-page overflow-x-clip">
@@ -945,7 +976,7 @@
               class={`relative whitespace-nowrap pb-1 transition ${active ? 'text-heading' : 'hover:text-heading'}`}
               on:click={() => scrollToSection(tab.id)}
             >
-              {tab.label}
+              {$t(tab.labelKey)}
               <span class={`absolute -bottom-0.5 left-0 right-0 h-[2px] transition-opacity ${active ? 'bg-clay opacity-100' : 'opacity-0'}`}></span>
             </button>
           {/each}
@@ -958,7 +989,7 @@
     <div class="container-shell grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
       <aside class="lg:sticky lg:top-24" use:fadeUpOnScroll={{ y: 14 }}>
         <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.overview')}</p>
-        <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[42px]">About {destination.name}</h2>
+        <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[42px]">{$t('pg_destinations_slug.about_name').replace('{name}', destination.name)}</h2>
         {#if summary}
           <p class="mt-4 text-base leading-8 text-ink/70">{summary}</p>
         {/if}
@@ -978,7 +1009,7 @@
         {#if guideFacts.length}
           <dl class="mt-7 overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-card">
             <p class="border-b border-ink/10 bg-canvas px-4 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-ink/55">
-              {(guideFactsBlock && blockTitle(guideFactsBlock)) || 'At a glance'}
+              {(guideFactsBlock && blockTitle(guideFactsBlock)) || $t('pg_destinations_slug.at_a_glance')}
             </p>
             {#each guideFacts as fact}
               <div class="flex items-baseline justify-between gap-4 border-b border-ink/10 px-4 py-3 last:border-b-0">
@@ -1086,7 +1117,7 @@
       <div class="container-shell">
         <div class="max-w-3xl" use:fadeUpOnScroll={{ y: 14 }}>
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('label.highlights')}</p>
-          <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">Highlights of {destination.name}</h2>
+          <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">{$t('pg_destinations_slug.highlights_of_name').replace('{name}', destination.name)}</h2>
           <p class="mt-3 text-base leading-7 text-ink/65">{$t('ui.things_to_do_here_with')}</p>
         </div>
 
@@ -1130,7 +1161,7 @@
       <div class="container-shell">
         <div class="max-w-[820px]">
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.best_time_to_visit')}</p>
-          <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">When to visit {destination.name}</h2>
+          <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">{$t('pg_destinations_slug.when_to_visit_name').replace('{name}', destination.name)}</h2>
           <p class="mt-4 max-w-[820px] text-base leading-relaxed text-ink/65 md:text-lg">{$t('ui.when_to_come_month_by')}</p>
         </div>
 
@@ -1142,7 +1173,7 @@
                   {#if blockSubtitle(block)}
                     <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">{blockSubtitle(block)}</p>
                   {/if}
-                  <h3 class="mt-2 font-serif text-[22px] font-semibold leading-tight text-heading md:text-[28px]">{blockTitle(block) || 'Seasonal note'}</h3>
+                  <h3 class="mt-2 font-serif text-[22px] font-semibold leading-tight text-heading md:text-[28px]">{blockTitle(block) || $t('pg_destinations_slug.seasonal_note')}</h3>
                   {#if blockBody(block)}
                     <RichText value={blockBody(block)} className="mt-4 text-[15px] leading-7 text-ink/70" />
                   {/if}
@@ -1196,9 +1227,9 @@
       <div class="container-shell">
         <div class="max-w-[1180px]">
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.route_planning')}</p>
-          <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">How {destination.name} fits into a route</h2>
+          <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">{$t('pg_destinations_slug.how_name_fits_route').replace('{name}', destination.name)}</h2>
           <p class="mt-4 max-w-[820px] text-base leading-relaxed text-ink/65 md:text-lg">
-            This section uses published trips and gateway records linked to {destination.name}.
+            {$t('pg_destinations_slug.route_section_intro').replace('{name}', destination.name)}
           </p>
         </div>
 
@@ -1219,7 +1250,7 @@
                           <span class="rounded-[6px] bg-forest/10 px-2 py-0.5 font-mono text-[11px] font-bold text-forest">{point.airport_code}</span>
                         {/if}
                       </div>
-                      <p class="mt-1 text-[11px] font-bold uppercase tracking-[0.14em] text-clay">{roleLabel(point.role)}</p>
+                      <p class="mt-1 text-[11px] font-bold uppercase tracking-[0.14em] text-clay">{roleLabel(point.role, $t)}</p>
                       {#if point.transfer_info || point.description}
                         <p class="mt-2 text-sm leading-6 text-ink/68">{point.transfer_info || point.description}</p>
                       {/if}
@@ -1261,9 +1292,9 @@
         <div class="flex flex-wrap items-end justify-between gap-4">
           <div class="max-w-3xl">
             <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.available_tours')}</p>
-            <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">Available {destination.name} tour packages</h2>
+            <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">{$t('pg_destinations_slug.available_name_packages').replace('{name}', destination.name)}</h2>
             <p class="mt-3 text-base leading-7 text-ink/65">
-              Published tour packages currently linked to {destination.name}, grouped by the matching CMS tour styles below.
+              {$t('pg_destinations_slug.available_packages_intro').replace('{name}', destination.name)}
             </p>
           </div>
           <a class="inline-flex h-11 items-center gap-2 rounded-[8px] border border-ink/10 bg-surface px-5 text-sm font-bold text-forest shadow-sm transition hover:border-forest/25 hover:text-heading" href={destinationToursHref(destination)}>{$t('ui.view_all_available_tours')}<ArrowRight size={15} />
@@ -1276,7 +1307,7 @@
               <a
                 class="group flex h-full flex-col overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-card transition duration-300 hover:-translate-y-1 hover:border-forest/25 hover:shadow-soft focus:outline-none focus:ring-2 focus:ring-forest/30"
                 href={destinationToursHref(destination, category)}
-                aria-label={`View ${category.name} tours in ${destination.name}`}
+                aria-label={$t('pg_destinations_slug.view_category_tours_in').replace('{category}', category.name).replace('{name}', destination.name)}
               >
                 <div class="relative aspect-[16/10] overflow-hidden bg-skywash">
                   {#if category.imageUrl}
@@ -1295,14 +1326,14 @@
                     </div>
                   {/if}
                   <span class="absolute left-3 top-3 rounded-[6px] bg-white/92 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-forest shadow-sm backdrop-blur">
-                    {categoryTourLabel(category)}
+                    {categoryTourLabel(category, $t)}
                   </span>
                 </div>
                 <div class="flex min-w-0 flex-1 flex-col p-5">
                   <div class="flex flex-wrap items-center gap-2">
-                    {#if dayRangeLabel(category)}
+                    {#if dayRangeLabel(category, $t)}
                       <span class="rounded-[6px] bg-canvas px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-ink/56">
-                        {dayRangeLabel(category)}
+                        {dayRangeLabel(category, $t)}
                       </span>
                     {/if}
                   </div>
@@ -1313,9 +1344,9 @@
                   <div class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5 text-sm">
                     <span class="font-semibold text-forest">
                       {#if category.minPrice}
-                        From {formatUsd(category.minPrice, $currency)}
+                        {$t('label.from')} {formatUsd(category.minPrice, $currency)}
                       {:else}
-                        Price on request
+                        {$t('pg_destinations_slug.price_on_request')}
                       {/if}
                     </span>
                     <span class="inline-flex items-center gap-1 font-bold text-heading">{$t('ui.view_style')}<ArrowRight size={14} class="transition group-hover:translate-x-0.5" />
@@ -1343,7 +1374,7 @@
           <div>
             <div class="max-w-3xl">
               <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.things_to_do')}</p>
-              <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[38px]">Experiences in {destination.name}</h2>
+              <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[38px]">{$t('pg_destinations_slug.experiences_in_name').replace('{name}', destination.name)}</h2>
               <p class="mt-3 text-base leading-7 text-ink/65">{$t('ui.things_to_do_in_this')}</p>
             </div>
             <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
@@ -1358,7 +1389,7 @@
           <div id="where-to-stay" class="scroll-mt-32">
             <div class="max-w-3xl">
               <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.where_to_stay')}</p>
-              <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[38px]">Lodges & camps in {destination.name}</h2>
+              <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[38px]">{$t('pg_destinations_slug.lodges_camps_in_name').replace('{name}', destination.name)}</h2>
               <p class="mt-3 text-base leading-7 text-ink/65">{$t('ui.places_to_stay_in_this')}</p>
             </div>
             <div class="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.04 }}>
@@ -1396,7 +1427,7 @@
                       <span class="inline-flex items-center gap-1 text-[13px] font-bold text-goldfinch-gold">{$t('ui.view_accommodation')}<ArrowRight size={14} />
                       </span>
                     </div>
-                    <a class="absolute inset-0 z-10 rounded-[12px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-goldfinch-gold" href={lodge.href} aria-label={`View accommodation ${lodge.name}`} data-sveltekit-preload-data="hover"></a>
+                    <a class="absolute inset-0 z-10 rounded-[12px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-goldfinch-gold" href={lodge.href} aria-label={$t('pg_destinations_slug.view_accommodation_name').replace('{name}', lodge.name)} data-sveltekit-preload-data="hover"></a>
                   </div>
                 </article>
               {/each}
@@ -1412,7 +1443,7 @@
       <div class="container-shell">
         <div>
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.travel_tips')}</p>
-          <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">Helpful details for {destination.name}</h2>
+          <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">{$t('pg_destinations_slug.helpful_details_for_name').replace('{name}', destination.name)}</h2>
           <p class="mt-4 max-w-[820px] text-base leading-relaxed text-ink/65 md:text-lg">{$t('ui.how_to_get_here_and')}</p>
 
           <div class="mt-8 overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-card md:mt-12 md:rounded-[12px]">
@@ -1465,7 +1496,7 @@
   {/if}
 
   <ReviewsWidget
-    eyebrow="Traveller stories"
+    eyebrow={$t('ui.traveller_stories')}
     title={$t('ui.travellers_who_planned_tanzania_with')}
     subtitle={$t('ui.real_approved_reviews_from_goldfinch')}
   />
@@ -1496,7 +1527,7 @@
       <div class="container-shell">
         <div class="max-w-3xl">
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.faq')}</p>
-          <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">Questions about {destination.name}</h2>
+          <h2 class="mt-3 text-3xl font-bold leading-tight text-heading md:text-[40px]">{$t('pg_destinations_slug.questions_about_name').replace('{name}', destination.name)}</h2>
           <!-- The list now leads with this destination's own questions and only
                then falls back to the general ones, so it can no longer claim
                every answer is destination-specific. -->
@@ -1524,9 +1555,9 @@
   <section class="bg-deep-green py-14 text-white md:py-20">
     <div class="container-shell text-center">
       <p class="text-xs font-bold uppercase tracking-[0.18em] text-goldfinch-gold">{$t('ui.plan_with_a_local_specialist')}</p>
-      <h2 class="mx-auto mt-3 max-w-3xl text-3xl font-bold leading-tight md:text-[42px]">Plan your {destination.name} safari with local support</h2>
+      <h2 class="mx-auto mt-3 max-w-3xl text-3xl font-bold leading-tight md:text-[42px]">{$t('pg_destinations_slug.plan_name_safari').replace('{name}', destination.name)}</h2>
       <p class="mx-auto mt-4 max-w-2xl break-words text-base leading-8 text-white/72">
-        Share your dates, interests, and comfort level so the team can shape the right route around {destination.name}.
+        {$t('pg_destinations_slug.plan_cta_intro').replace('{name}', destination.name)}
       </p>
       <div class="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
         <a class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-6 text-sm font-bold text-heading shadow-lg shadow-black/10 transition hover:brightness-105 sm:w-auto" href={`/plan-my-trip?destination=${destination.slug}`}>{$t('ui.start_planning')}<ArrowRight size={17} />

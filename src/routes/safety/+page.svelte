@@ -83,9 +83,7 @@
         <ShieldCheck size={14} />{$t('ui.health_amp_safety')}</span>
       <h1 class="mt-5 text-4xl font-extrabold leading-tight md:text-5xl">{$t('ui.travel_with_confidence')}</h1>
       <p class="mt-4 text-lg leading-8 text-white/80">
-        Africa is an extraordinary, welcoming place to travel — and with the right planning, a safari is
-        wonderfully safe. Here's our honest guidance on health, wildlife, security and the support you can
-        count on before and during your trip.
+        {$t('pg_safety.hero_intro')}
       </p>
     </div>
   </div>
@@ -94,9 +92,9 @@
 <!-- Safety topics -->
 <section class="container-shell py-14 md:py-20">
   <SectionHeader
-    eyebrow="The essentials"
+    eyebrow={$t('ui.the_essentials')}
     title={$t('ui.what_you_should_know')}
-    description="Straightforward answers to the questions travellers ask us most."
+    description={$t('pg_safety.essentials_description')}
   />
 
   {#if loading}
@@ -124,7 +122,7 @@
       {/each}
     </div>
   {:else}
-    <p class="mt-10 rounded-2xl border border-ink/10 bg-canvas p-6 text-center text-ink/70">{$t('ui.safety_guidance_is_being_prepared')}<a class="font-semibold text-forest underline" href="/contact">contact us</a> with any questions in the meantime.
+    <p class="mt-10 rounded-2xl border border-ink/10 bg-canvas p-6 text-center text-ink/70">{$t('ui.safety_guidance_is_being_prepared')} <a class="font-semibold text-forest underline" href="/contact">{$t('pg_safety.contact_us_link')}</a> {$t('pg_safety.with_questions_in_the_meantime')}
     </p>
   {/if}
 </section>
@@ -134,9 +132,9 @@
   <section class="border-t border-ink/[0.06] bg-canvas py-14 md:py-20">
     <div class="container-shell">
       <SectionHeader
-        eyebrow="By destination"
+        eyebrow={$t('ui.by_destination')}
         title={$t('ui.safety_where_youre_going')}
-        description="A quick overview for each region — full health & safety notes are on every destination page."
+        description={$t('pg_safety.by_destination_description')}
       />
       <div class="mt-9 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {#each destinations as dest (dest.id)}
@@ -162,8 +160,7 @@
     <div class="relative mx-auto max-w-2xl">
       <h2 class="text-2xl font-extrabold md:text-3xl">{$t('ui.still_have_a_safety_question')}</h2>
       <p class="mt-3 text-white/75">
-        Our team plans these trips every day and is happy to talk through anything — health, insurance,
-        wildlife or logistics — before you commit.
+        {$t('pg_safety.cta_body')}
       </p>
       <div class="mt-7 flex flex-wrap justify-center gap-3">
         <a class="inline-flex h-12 items-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-heading shadow-lg transition hover:brightness-105" href="/plan-my-trip">{$t('cta.plan_my_trip')}<ArrowRight size={18} />

@@ -24,8 +24,8 @@
 </script>
 
 <svelte:head>
-  <title>Safari Gallery — Real Moments from Tanzania | {brand.name}</title>
-  <meta name="description" content="A gallery of real moments from Goldfinch Adventures safaris — Serengeti, Ngorongoro, the Great Migration and Zanzibar, captured in the field." />
+  <title>{$t('pg_gallery.meta_title')} | {brand.name}</title>
+  <meta name="description" content={$t('pg_gallery.meta_description')} />
 </svelte:head>
 
 <!-- header -->
@@ -50,16 +50,16 @@
     <p class="text-sm font-extrabold uppercase tracking-[0.18em] text-goldfinch-gold">{$t('ui.travel_journal')}</p>
     <h1 class="mt-3 max-w-2xl font-serif text-[30px] font-light leading-[1.08] md:text-[46px]">{$t('ui.safari_moments')}<br />{$t('ui.unedited')}</h1>
     <p class="mt-4 max-w-xl text-[15px] font-medium leading-7 text-white/80 md:text-base">
-      Every image tells the story of a real journey across Tanzania — from sunrise game drives in the Serengeti to quiet evenings overlooking the Ngorongoro Crater.
+      {$t('pg_gallery.intro')}
     </p>
     <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2.5">
       <span class="inline-flex items-center gap-2 text-sm font-bold text-white/90">
-        <Camera size={16} strokeWidth={2.2} class="text-goldfinch-gold" /> {images.length} Image{images.length === 1 ? '' : 's'}
+        <Camera size={16} strokeWidth={2.2} class="text-goldfinch-gold" /> {$t(images.length === 1 ? 'pg_gallery.n_image' : 'pg_gallery.n_images').replace('{n}', String(images.length))}
       </span>
       {#if destinations.length}
         <span class="h-3.5 w-px bg-white/25" aria-hidden="true"></span>
         <span class="inline-flex items-center gap-2 text-sm font-bold text-white/90">
-          <MapPin size={16} strokeWidth={2.2} class="text-goldfinch-gold" /> {destinations.length} Destination{destinations.length === 1 ? '' : 's'}
+          <MapPin size={16} strokeWidth={2.2} class="text-goldfinch-gold" /> {$t(destinations.length === 1 ? 'pg_gallery.n_destination' : 'pg_gallery.n_destinations').replace('{n}', String(destinations.length))}
         </span>
         <span class="h-3.5 w-px bg-white/25" aria-hidden="true"></span>
         <span class="inline-flex min-w-0 items-center gap-2 text-[13px] font-semibold text-white/70">
@@ -74,7 +74,7 @@
 <section class="container-shell py-12 md:py-16">
   {#if isSample}
     <p class="mb-6 rounded-[8px] border border-goldfinch-gold/30 bg-goldfinch-gold/10 px-4 py-2.5 text-sm font-medium text-clay">
-      Showing sample images. Publish your own in <span class="font-bold">Admin → Gallery</span> and they’ll replace these automatically.
+      {$t('pg_gallery.sample_notice_before')} <span class="font-bold">Admin → Gallery</span> {$t('pg_gallery.sample_notice_after')}
     </p>
   {/if}
   <GalleryViewer {images} showFilters {imageVariants} />

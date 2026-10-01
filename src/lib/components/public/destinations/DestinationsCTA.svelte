@@ -41,12 +41,15 @@
     destinationCount
       ? {
           icon: MapPin,
-          text: `${destinationCount} ${destinationCount === 1 ? 'destination' : 'destinations'} to choose from`
+          text: $t(destinationCount === 1 ? 'destinations_cta.count_one' : 'destinations_cta.count_other').replace(
+            '{count}',
+            String(destinationCount)
+          )
         }
       : null,
-    { icon: Users, text: 'Planned by our team in Tanzania' },
-    { icon: PenLine, text: 'Tailor-made itineraries' },
-    { icon: ShieldCheck, text: 'No obligation to book' }
+    { icon: Users, text: $t('destinations_cta.planned_by_our_team') },
+    { icon: PenLine, text: $t('destinations_cta.tailor_made_itineraries') },
+    { icon: ShieldCheck, text: $t('destinations_cta.no_obligation_to_book') }
   ].filter((point): point is TrustPoint => point !== null);
 </script>
 
@@ -94,8 +97,7 @@
       >{$t('ui.not_sure_where_to_begin')}</h2>
 
       <p class="destinations-cta-body mx-auto mt-6 max-w-2xl text-base leading-8 text-white/80 md:text-lg md:leading-9">
-        Tell us roughly when you would like to travel and what you would like to see, and our planners
-        in Tanzania will shape a route around it.
+        {$t('destinations_cta.body')}
       </p>
 
       <div class="destinations-cta-actions mt-10 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">

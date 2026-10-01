@@ -20,13 +20,14 @@
   let loading = true;
 
   // The questions confident travellers ask — tapping one asks our AI advisor.
-  const topics = [
-    'How much does a safari cost?',
-    'When is the best time to visit?',
-    'Is East Africa safe?',
-    'What should I pack for a safari?',
-    'Kilimanjaro routes compared',
-    'How does gorilla trekking work?'
+  // Reactive so the chips (and the question sent) follow the reader's language.
+  $: topics = [
+    $t('pg_expert_advice.topic_safari_cost'),
+    $t('pg_expert_advice.topic_best_time'),
+    $t('pg_expert_advice.topic_east_africa_safe'),
+    $t('pg_expert_advice.topic_what_to_pack'),
+    $t('pg_expert_advice.topic_kilimanjaro_routes'),
+    $t('pg_expert_advice.topic_gorilla_trekking')
   ];
 
   onMount(async () => {
@@ -42,8 +43,8 @@
 </script>
 
 <svelte:head>
-  <title>Expert Advice | Goldfinch Adventures</title>
-  <meta name="description" content="Honest East Africa travel advice — costs, timing, safety, Kilimanjaro routes and gorilla trekking, plus an AI advisor that answers instantly." />
+  <title>{$t('footer.expert_advice')} | Goldfinch Adventures</title>
+  <meta name="description" content={$t('pg_expert_advice.meta_description')} />
 </svelte:head>
 
 <!-- Hero -->
@@ -54,7 +55,7 @@
     <p class="font-serif text-xl italic text-savanna">{$t('footer.expert_advice')}</p>
     <h1 class="mx-auto mt-5 max-w-3xl text-3xl font-extrabold leading-[1.1] tracking-tight md:text-[44px]" use:revealHeading>{$t('ui.honest_guides_to_plan_east')}</h1>
     <p class="mx-auto mt-4 max-w-2xl text-[15px] leading-7 text-white/75 md:text-lg">
-      Real answers from local experts — costs, timing, safety, and what each trip is actually like. Or ask our AI advisor and get an instant, honest answer.
+      {$t('pg_expert_advice.hero_intro')}
     </p>
     <div class="mt-7 flex flex-wrap justify-center gap-3">
       {#if aiOn}
@@ -99,7 +100,7 @@
 
     <div class="mt-8">
       {#if loading}
-        <LoadingState message="Loading guides..." />
+        <LoadingState message={$t('pg_expert_advice.loading_guides')} />
       {:else}
         <div class="grid gap-6 md:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.06 }}>
           {#each posts as post (post.slug)}

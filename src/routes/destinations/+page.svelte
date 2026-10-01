@@ -94,7 +94,7 @@
   $: search, routerReady && syncUrl();
 
   // ── derived data — all of it from real CMS fields ─────────────────────────
-  $: groups = buildFacetGroups(destinations);
+  $: groups = buildFacetGroups(destinations, $t);
   $: if (groups.length && !activeGroup) activeGroup = groups[0].key;
 
   $: counts = Object.fromEntries(
@@ -109,7 +109,7 @@
 
   $: isFiltering = Boolean(search.trim() || activeFacet);
   $: featured = destinations.filter((destination) => destination.is_featured);
-  $: collections = collectionsOf(destinations);
+  $: collections = collectionsOf(destinations, $t);
   $: regions = [...new Set(destinations.map(regionOf).filter(Boolean))].sort();
   // full-bleed hero: never the 600px thumbnail, which would be upscaled
   $: heroDestination = destinations.find((destination) => thumbUrl(destination, 'banner_image_url', 'main_image_url', 'image_url'));
@@ -210,11 +210,11 @@
       <div class="min-w-0 flex-1 md:max-w-2xl">
         <p class="text-xs font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.every_destination')}</p>
         <h2 class="mt-2 font-serif text-[26px] font-bold leading-[1.08] text-heading sm:text-3xl md:mt-3 md:text-[42px]">
-          {isFiltering ? 'Matching destinations' : 'Choose where your trip begins'}
+          {isFiltering ? $t('pg_destinations.matching_destinations') : $t('pg_destinations.choose_where_your_trip_begins')}
         </h2>
       </div>
       <p class="destinations-result-count w-full text-sm font-semibold text-ink/50 md:w-auto" aria-live="polite">
-        {filtered.length} of {destinations.length}
+        {$t('pg_destinations.result_count').replace('{shown}', String(filtered.length)).replace('{total}', String(destinations.length))}
       </p>
     </div>
 
@@ -229,8 +229,7 @@
       <div class="mt-10 rounded-[10px] bg-surface px-6 py-14 text-center shadow-card">
         <p class="font-serif text-2xl font-bold text-heading">{$t('ui.nothing_matches_that_yet')}</p>
         <p class="mx-auto mt-3 max-w-md text-sm leading-7 text-ink/60">
-          Try a different filter or search for a park, island or region — or start from the places our specialists
-          recommend most.
+          {$t('pg_destinations.try_a_different_filter')}
         </p>
         <button
           type="button"

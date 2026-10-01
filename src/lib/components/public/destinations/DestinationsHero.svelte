@@ -38,13 +38,15 @@
   $: heroPreloadHref = variantSrc(heroVariants, 2200, heroVariants?.avif ? 'avif' : 'webp') || imgUrl(image, 2200, 74);
   $: regionList = [...new Set((regions || []).map((region) => (region || '').trim()).filter(Boolean))];
   $: countLine =
-    total > 0 ? `${total} ${total === 1 ? 'destination' : 'destinations'} to explore` : 'Every destination we plan, in one place';
+    total > 0
+      ? $t(total === 1 ? 'destinations_hero.count_one' : 'destinations_hero.count_other').replace('{count}', String(total))
+      : $t('destinations_hero.count_none');
 
   // Three restrained, honest lines. The count is the only figure on this page.
   $: trustPoints = [
     { icon: 'pin' as const, label: countLine },
-    { icon: 'team' as const, label: 'Planned by a local Tanzania team' },
-    { icon: 'compass' as const, label: 'Tailor-made, never off-the-shelf' }
+    { icon: 'team' as const, label: $t('destinations_hero.planned_by_local_team') },
+    { icon: 'compass' as const, label: $t('destinations_hero.tailor_made_never_off_the_shelf') }
   ];
 
   const onCta = (name: string, type: 'primary' | 'secondary') =>
@@ -101,12 +103,11 @@
         <p class="hero-label flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] text-goldfinch-gold">
           <span class="h-px w-8 bg-goldfinch-gold/70" aria-hidden="true"></span>{$t('ui.goldfinch_destinations')}</p>
 
-        <h1 class="mt-6 max-w-[18ch] break-words font-serif text-[clamp(2.35rem,6.2vw,4.5rem)] font-semibold leading-[1.04] tracking-[-0.02em] text-white">{$t('ui.where_would_you_like_to')}<span class="whitespace-nowrap font-normal italic text-goldfinch-gold">wake up</span>?
+        <h1 class="mt-6 max-w-[18ch] break-words font-serif text-[clamp(2.35rem,6.2vw,4.5rem)] font-semibold leading-[1.04] tracking-[-0.02em] text-white">{$t('destinations_hero.heading_lead')} <span class="whitespace-nowrap font-normal italic text-goldfinch-gold">{$t('destinations_hero.heading_highlight')}</span>{$t('destinations_hero.heading_end')}
         </h1>
 
         <p class="hero-description mt-5 max-w-[52ch] text-[15px] leading-7 text-white/80 md:mt-6 md:text-lg md:leading-9">
-          Crater rims, migration plains, woodland and reef — the places our planners know first-hand, with honest notes
-          on how long to stay and what pairs well with what.
+          {$t('destinations_hero.description')}
         </p>
 
         <div class="hero-actions mt-8 gap-3 md:mt-9 md:flex md:flex-wrap md:items-center">

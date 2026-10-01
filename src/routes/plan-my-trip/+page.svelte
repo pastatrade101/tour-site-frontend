@@ -45,7 +45,15 @@
 
   export let data: { tours: PlannerTour[]; categorySlugs: string[] };
 
-  const STEPS = ['Trip type', 'Travellers', 'When', 'How long', 'Preferences', 'Summary'];
+  // Translation keys, resolved with $t where the progress bar renders.
+  const STEPS = [
+    'pg_plan_my_trip.step_trip_type',
+    'ui.travellers',
+    'pg_plan_my_trip.step_when',
+    'pg_plan_my_trip.step_how_long',
+    'ui.preferences',
+    'pg_plan_my_trip.step_summary'
+  ];
   const LAST = STEPS.length - 1;
 
   const now = new Date();
@@ -84,6 +92,12 @@
   ];
   const DIAL_CODES = ['+255', '+254', '+256', '+250', '+44', '+1', '+49', '+33', '+34', '+39', '+31', '+41', '+61', '+27', '+971'];
   const CONTACTS = ['WhatsApp', 'Email', 'Phone call'] as const;
+  // The values above go to staff as they are; only the button text is translated.
+  const CONTACT_LABELS: Record<(typeof CONTACTS)[number], string> = {
+    WhatsApp: 'cta.whatsapp',
+    Email: 'form.email',
+    'Phone call': 'pg_plan_my_trip.phone_call'
+  };
 
   let full_name = '';
   let email = '';
@@ -112,10 +126,14 @@
     if (!band) return '';
     // Round bands read better without the formatter's cents.
     const whole = (usd: number) => price(usd).replace(/[.,]00(?!\d)/, '');
-    if (!band.min) return `Under ${whole(band.max)}`;
+    if (!band.min) return `${$t('label.under')} ${whole(band.max)}`;
     if (!Number.isFinite(band.max)) return `${whole(band.min)}+`;
     return `${whole(band.min)}–${whole(band.max)}`;
   };
+  // Shown on the summary step; lengthSummary() below stays in English for the staff enquiry.
+  $: lengthDisplay =
+    d.types.map((type) => `${typeOf(type).label}: ${d.lengths[type]}`).join(' · ') +
+    (days ? ` (${$t('pg_plan_my_trip.about_n_days').replace('{n}', String(days))})` : '');
   $: interest = (() => {
     const slug = incoming.context.destinationSlug;
     if (slug) {
@@ -137,16 +155,16 @@
 
   const validate = (index: number): boolean => {
     const e: Record<string, string> = {};
-    if (index === 0 && !d.types.length) e.types = 'Choose at least one trip type.';
-    if (index === 1 && !d.party) e.party = 'Choose who is travelling.';
-    if (index === 3) for (const type of d.types) if (!d.lengths[type]) e[`len_${type}`] = 'Choose a length.';
-    if (index === 4 && !d.comfort) e.comfort = 'Choose a comfort level.';
+    if (index === 0 && !d.types.length) e.types = $t('pg_plan_my_trip.err_types');
+    if (index === 1 && !d.party) e.party = $t('pg_plan_my_trip.err_party');
+    if (index === 3) for (const type of d.types) if (!d.lengths[type]) e[`len_${type}`] = $t('pg_plan_my_trip.err_length');
+    if (index === 4 && !d.comfort) e.comfort = $t('ui.choose_a_comfort_level');
     if (index === LAST) {
-      if (full_name.trim().length < 2) e.full_name = 'Enter your name.';
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) e.email = 'Enter a valid email.';
+      if (full_name.trim().length < 2) e.full_name = $t('pg_plan_my_trip.err_name');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) e.email = $t('pg_plan_my_trip.err_email');
       const digits = phone.replace(/[\s-]/g, '');
       // A number is only required when that is how they asked to be reached.
-      if ((contact !== 'Email' || digits) && !/^\d{6,14}$/.test(digits)) e.phone = 'Enter a valid phone number.';
+      if ((contact !== 'Email' || digits) && !/^\d{6,14}$/.test(digits)) e.phone = $t('pg_plan_my_trip.err_phone');
     }
     errors = e;
     return !Object.keys(e).length;
@@ -216,7 +234,7 @@
       await tick();
       card?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (error) {
-      errorMessage = error instanceof Error && error.message ? error.message : 'Something went wrong. Please try again.';
+      errorMessage = error instanceof Error && error.message ? error.message : $t('form.err_generic');
     } finally {
       submitting = false;
     }
@@ -241,17 +259,17 @@
 </script>
 
 <svelte:head>
-  <title>Plan My Trip — Build Your Custom Tanzania Journey | {brand.name}</title>
-  <meta name="description" content="Answer six quick questions and get a tailored Tanzania safari, Zanzibar and culture trip idea from our local Arusha team." />
-  <meta property="og:title" content="Plan My Trip — {brand.name}" />
-  <meta property="og:description" content="A guided six-step planner that shapes your custom Tanzania safari and Zanzibar trip." />
+  <title>{$t('cta.plan_my_trip')} — {$t('pg_plan_my_trip.meta_title')} | {brand.name}</title>
+  <meta name="description" content={$t('pg_plan_my_trip.meta_description')} />
+  <meta property="og:title" content="{$t('cta.plan_my_trip')} — {brand.name}" />
+  <meta property="og:description" content={$t('pg_plan_my_trip.og_description')} />
 </svelte:head>
 
 <section class="bg-deep-green px-4 pb-10 pt-28 text-center md:pb-14 md:pt-32">
-  <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">Plan My Trip</p>
-  <h1 class="mx-auto mt-2 max-w-2xl font-serif text-3xl font-semibold text-white md:text-4xl">Build your custom Tanzania journey</h1>
+  <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{$t('cta.plan_my_trip')}</p>
+  <h1 class="mx-auto mt-2 max-w-2xl font-serif text-3xl font-semibold text-white md:text-4xl">{$t('pg_plan_my_trip.title')}</h1>
   <p class="mx-auto mt-3 max-w-xl text-sm text-white/75 md:text-base">
-    Six quick questions. Our planner suggests ideas as you go, and a local Arusha expert turns them into a real itinerary.
+    {$t('pg_plan_my_trip.intro')}
   </p>
 </section>
 
@@ -267,7 +285,7 @@
           {#if bookingCode}<p class="gf-hint">{$t('form.your_reference_is')} <b class="text-clay">{bookingCode}</b>.</p>{/if}
           <p class="gf-hint">{$t('form.specialist_replies')}</p>
           {#if recs.length}
-            <p class="gf-hint">We'll start from {recs[0].tour.title}{recs.length > 1 ? ' and the other ideas you saw' : ''} — or design something new around your answers.</p>
+            <p class="gf-hint">{$t(recs.length > 1 ? 'pg_plan_my_trip.thanks_start_from_many' : 'pg_plan_my_trip.thanks_start_from_one').replace('{trip}', recs[0].tour.title)}</p>
           {/if}
         </div>
       {:else}
@@ -276,15 +294,15 @@
           {#each STEPS as label, i}
             <li class="flex-1" aria-current={i === step ? 'step' : undefined}>
               <div class={`h-1.5 rounded-full ${i <= step ? 'bg-goldfinch-gold' : 'bg-ink/10'}`}></div>
-              <div class={`mt-1.5 hidden text-[11px] sm:block ${i === step ? 'font-semibold text-heading' : 'text-ink/55'}`}>{label}</div>
+              <div class={`mt-1.5 hidden text-[11px] sm:block ${i === step ? 'font-semibold text-heading' : 'text-ink/55'}`}>{$t(label)}</div>
             </li>
           {/each}
         </ol>
-        <p class="text-xs text-ink/55">Step {step + 1} of {STEPS.length}</p>
+        <p class="text-xs text-ink/55">{$t('ui.step_x_of_y').replace('{step}', String(step + 1)).replace('{total}', String(STEPS.length))}</p>
 
         {#if step === 0}
-          <h2 class="mt-2 font-serif text-xl font-semibold text-heading md:text-2xl">What kind of trip are you dreaming of?</h2>
-          <p class="gf-hint mt-1.5">Pick one or more — you can combine them.</p>
+          <h2 class="mt-2 font-serif text-xl font-semibold text-heading md:text-2xl">{$t('pg_plan_my_trip.trip_type_heading')}</h2>
+          <p class="gf-hint mt-1.5">{$t('pg_plan_my_trip.trip_type_hint')}</p>
           {#if errors.types}<p class="mt-2 text-sm font-medium text-clay" role="alert">{errors.types}</p>{/if}
           <div class="mt-5 grid gap-3 sm:grid-cols-2">
             {#each offered as option (option.id)}
@@ -297,7 +315,7 @@
             {/each}
           </div>
         {:else if step === 1}
-          <h2 class="mt-2 font-serif text-xl font-semibold text-heading md:text-2xl">Who's travelling?</h2>
+          <h2 class="mt-2 font-serif text-xl font-semibold text-heading md:text-2xl">{$t('pg_plan_my_trip.whos_travelling')}</h2>
           {#if errors.party}<p class="mt-2 text-sm font-medium text-clay" role="alert">{errors.party}</p>{/if}
           <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {#each PARTIES as option (option.id)}
@@ -308,21 +326,21 @@
           </div>
           {#if d.party === 'family' || d.party === 'group'}
             <div class="mt-5 grid gap-4 rounded-[10px] bg-canvas p-4">
-              {#each [{ key: 'adults', label: $t('form.adults'), min: 1 }, { key: 'children', label: `${$t('ui.children')} (under 18)`, min: 0 }] as counter (counter.key)}
+              {#each [{ key: 'adults', label: $t('form.adults'), min: 1 }, { key: 'children', label: $t('pg_plan_my_trip.children_under_18'), min: 0 }] as counter (counter.key)}
                 {@const value = counter.key === 'adults' ? d.adults : d.children}
                 <div class="flex items-center justify-between">
                   <span class="text-sm font-medium text-heading">{counter.label}</span>
                   <div class="flex items-center gap-3">
-                    <button type="button" class="grid h-9 w-9 place-items-center rounded-full border border-ink/20 bg-surface disabled:opacity-40" aria-label={`Fewer: ${counter.label}`} disabled={value <= counter.min} on:click={() => (d = { ...d, [counter.key]: value - 1 })}><Minus size={16} /></button>
+                    <button type="button" class="grid h-9 w-9 place-items-center rounded-full border border-ink/20 bg-surface disabled:opacity-40" aria-label={$t('pg_plan_my_trip.fewer_label').replace('{label}', counter.label)} disabled={value <= counter.min} on:click={() => (d = { ...d, [counter.key]: value - 1 })}><Minus size={16} /></button>
                     <span class="w-6 text-center font-semibold text-heading">{value}</span>
-                    <button type="button" class="grid h-9 w-9 place-items-center rounded-full border border-ink/20 bg-surface disabled:opacity-40" aria-label={`More: ${counter.label}`} disabled={value >= 20} on:click={() => (d = { ...d, [counter.key]: value + 1 })}><Plus size={16} /></button>
+                    <button type="button" class="grid h-9 w-9 place-items-center rounded-full border border-ink/20 bg-surface disabled:opacity-40" aria-label={$t('pg_plan_my_trip.more_label').replace('{label}', counter.label)} disabled={value >= 20} on:click={() => (d = { ...d, [counter.key]: value + 1 })}><Plus size={16} /></button>
                   </div>
                 </div>
               {/each}
             </div>
           {/if}
         {:else if step === 2}
-          <h2 class="mt-2 font-serif text-xl font-semibold text-heading md:text-2xl">When would you like to travel?</h2>
+          <h2 class="mt-2 font-serif text-xl font-semibold text-heading md:text-2xl">{$t('pg_plan_my_trip.when_heading')}</h2>
           <p class="gf-hint mt-1.5">{MONTH_TIP[d.month]}</p>
           <div class="mt-5 flex gap-2">
             {#each years as year}
@@ -343,7 +361,7 @@
             {/each}
           </div>
         {:else if step === 3}
-          <h2 class="mt-2 font-serif text-xl font-semibold text-heading md:text-2xl">How long for each part of your trip?</h2>
+          <h2 class="mt-2 font-serif text-xl font-semibold text-heading md:text-2xl">{$t('pg_plan_my_trip.how_long_heading')}</h2>
           <div class="mt-5 grid gap-5">
             {#each d.types as type (type)}
               {@const popular = popularBand(type, data.tours)}
@@ -354,17 +372,17 @@
                     <button type="button" class={pill(d.lengths[type] === band)} aria-pressed={d.lengths[type] === band}
                       on:click={() => { d = { ...d, lengths: { ...d.lengths, [type]: band } }; errors = {}; }}>
                       {band}
-                      {#if popular === band}<span class="ml-2 rounded bg-clay px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">Popular</span>{/if}
+                      {#if popular === band}<span class="ml-2 rounded bg-clay px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">{$t('pg_plan_my_trip.popular')}</span>{/if}
                     </button>
                   {/each}
                 </div>
                 {#if errors[`len_${type}`]}<p class="mt-1 text-xs text-clay" role="alert">{errors[`len_${type}`]}</p>{/if}
               </div>
             {/each}
-            {#if days > 0}<p class="text-sm text-ink/65">Estimated total: <b class="text-heading">about {days} days</b></p>{/if}
+            {#if days > 0}<p class="text-sm text-ink/65">{$t('pg_plan_my_trip.estimated_total')} <b class="text-heading">{$t('pg_plan_my_trip.about_n_days').replace('{n}', String(days))}</b></p>{/if}
           </div>
         {:else if step === 4}
-          <h2 class="mt-2 font-serif text-xl font-semibold text-heading md:text-2xl">Your travel style</h2>
+          <h2 class="mt-2 font-serif text-xl font-semibold text-heading md:text-2xl">{$t('pg_plan_my_trip.style_heading')}</h2>
           {#if errors.comfort}<p class="mt-2 text-sm font-medium text-clay" role="alert">{errors.comfort}</p>{/if}
           <div class="mt-5 grid gap-3 sm:grid-cols-3">
             {#each COMFORT as option (option.id)}
@@ -374,32 +392,32 @@
               </button>
             {/each}
           </div>
-          <p class="mt-5 text-sm font-semibold text-heading">Budget per person <span class="font-normal text-ink/55">(optional)</span></p>
+          <p class="mt-5 text-sm font-semibold text-heading">{$t('filter.budget_pp')} <span class="font-normal text-ink/55">{$t('pg_plan_my_trip.optional_paren')}</span></p>
           <div class="mt-2 flex flex-wrap gap-2">
             {#each BUDGETS as band (band.id)}
               <button type="button" class={pill(d.budget === band.id)} aria-pressed={d.budget === band.id} on:click={() => (d = { ...d, budget: d.budget === band.id ? '' : band.id })}>{budgetLabel(band.id)}</button>
             {/each}
           </div>
           <label class="mt-5 grid gap-1.5">
-            <span class="gf-label">Anything special? <span class="gf-hint">(optional)</span></span>
-            <textarea class="gf-textarea" rows="3" bind:value={d.notes} placeholder="Celebrations, dietary needs, must-see animals…"></textarea>
+            <span class="gf-label">{$t('pg_plan_my_trip.anything_special')} <span class="gf-hint">{$t('pg_plan_my_trip.optional_paren')}</span></span>
+            <textarea class="gf-textarea" rows="3" bind:value={d.notes} placeholder={$t('pg_plan_my_trip.notes_placeholder')}></textarea>
           </label>
         {:else}
-          <h2 class="mt-2 font-serif text-xl font-semibold text-heading md:text-2xl">Review your trip & tell us how to reach you</h2>
+          <h2 class="mt-2 font-serif text-xl font-semibold text-heading md:text-2xl">{$t('pg_plan_my_trip.review_heading')}</h2>
           <dl class="mt-5 divide-y divide-ink/10 rounded-[10px] border border-ink/12">
             {#each [
-              { label: 'Trip types', value: d.types.map((type) => typeOf(type).label).join(', '), at: 0 },
-              { label: 'Travellers', value: `${PARTIES.find((p) => p.id === d.party)?.label ?? ''} · ${people.adults} adult${people.adults > 1 ? 's' : ''}${people.children ? ` · ${people.children} child${people.children > 1 ? 'ren' : ''}` : ''}`, at: 1 },
-              { label: 'When', value: `${MONTH_NAMES[d.month]} ${d.year} · ${SEASON[d.month]} season`, at: 2 },
-              { label: 'Length', value: lengthSummary(), at: 3 },
-              { label: 'Style', value: [d.comfort, d.budget && budgetLabel(d.budget), d.notes && `“${d.notes}”`].filter(Boolean).join(' · '), at: 4 }
-            ] as row (row.label)}
+              { label: $t('pg_plan_my_trip.row_trip_types'), value: d.types.map((type) => typeOf(type).label).join(', '), at: 0 },
+              { label: $t('ui.travellers'), value: `${PARTIES.find((p) => p.id === d.party)?.label ?? ''} · ${$t(people.adults > 1 ? 'pg_plan_my_trip.n_adults' : 'pg_plan_my_trip.n_adult').replace('{n}', String(people.adults))}${people.children ? ` · ${$t(people.children > 1 ? 'pg_plan_my_trip.n_children' : 'pg_plan_my_trip.n_child').replace('{n}', String(people.children))}` : ''}`, at: 1 },
+              { label: $t('pg_plan_my_trip.step_when'), value: `${MONTH_NAMES[d.month]} ${d.year} · ${$t('pg_plan_my_trip.season_value').replace('{season}', SEASON[d.month])}`, at: 2 },
+              { label: $t('pg_plan_my_trip.row_length'), value: lengthDisplay, at: 3 },
+              { label: $t('pg_plan_my_trip.row_style'), value: [d.comfort, d.budget && budgetLabel(d.budget), d.notes && `“${d.notes}”`].filter(Boolean).join(' · '), at: 4 }
+            ] as row (row.at)}
               <div class="flex items-start justify-between gap-3 px-4 py-3">
                 <div class="min-w-0">
                   <dt class="text-[11px] font-semibold uppercase tracking-wide text-ink/55">{row.label}</dt>
                   <dd class="mt-0.5 break-words text-sm text-heading">{row.value || '—'}</dd>
                 </div>
-                <button type="button" class="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-clay hover:underline" on:click={() => edit(row.at)}><Pencil size={12} />Edit</button>
+                <button type="button" class="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-clay hover:underline" on:click={() => edit(row.at)}><Pencil size={12} />{$t('pg_plan_my_trip.edit')}</button>
               </div>
             {/each}
           </dl>
@@ -420,9 +438,9 @@
               {#if errors.email}<span class="text-xs font-medium text-clay">{errors.email}</span>{/if}
             </label>
             <div class="grid gap-1.5">
-              <span class="gf-label">{$t('form.phone')}{#if contact !== 'Email'}<span class="gf-req">*</span>{:else}<span class="gf-hint">(optional)</span>{/if}</span>
+              <span class="gf-label">{$t('form.phone')}{#if contact !== 'Email'}<span class="gf-req">*</span>{:else}<span class="gf-hint">{$t('pg_plan_my_trip.optional_paren')}</span>{/if}</span>
               <div class="grid grid-cols-[6.5rem_1fr] gap-2">
-                <select class="gf-input" bind:value={dialCode} aria-label="Country code">
+                <select class="gf-input" bind:value={dialCode} aria-label={$t('pg_plan_my_trip.country_code')}>
                   {#each DIAL_CODES as code}<option value={code}>{code}</option>{/each}
                 </select>
                 <input class="gf-input" type="tel" inputmode="tel" autocomplete="tel-national" bind:value={phone} aria-label={$t('form.phone')} />
@@ -430,24 +448,24 @@
               {#if errors.phone}<span class="text-xs font-medium text-clay">{errors.phone}</span>{/if}
             </div>
             <div class="grid gap-1.5">
-              <span class="gf-label">Preferred contact</span>
+              <span class="gf-label">{$t('pg_plan_my_trip.preferred_contact')}</span>
               <div class="flex gap-2">
                 {#each CONTACTS as option}
                   <button type="button" aria-pressed={contact === option}
                     class={`flex-1 rounded-[8px] border px-2 py-2.5 text-xs font-semibold text-heading ${contact === option ? 'border-goldfinch-gold bg-goldfinch-gold/10' : 'border-ink/20'}`}
-                    on:click={() => (contact = option)}>{option}</button>
+                    on:click={() => (contact = option)}>{$t(CONTACT_LABELS[option])}</button>
                 {/each}
               </div>
             </div>
             <label class="grid gap-1.5 sm:col-span-2">
-              <span class="gf-label">Reply in</span>
+              <span class="gf-label">{$t('pg_plan_my_trip.reply_in')}</span>
               <select class="gf-input" bind:value={language}>
                 {#each LANGUAGES as option}<option value={option.code}>{option.label}</option>{/each}
               </select>
             </label>
             <label class="flex items-start gap-2 text-xs text-ink/65 sm:col-span-2">
               <input type="checkbox" class="mt-0.5" bind:checked={whatsappConsent} />
-              I agree that {brand.name} may contact me on WhatsApp about this trip.
+              {$t('pg_plan_my_trip.whatsapp_consent').replace('{brand}', brand.name)}
             </label>
             {#if errorMessage}
               <p class="rounded-[8px] bg-clay/10 px-3 py-2.5 text-sm text-clay sm:col-span-2" role="alert">{errorMessage}</p>
@@ -461,10 +479,10 @@
             <button type="button" class="gf-btn-ghost" on:click={back}><ArrowLeft size={16} />{$t('form.back')}</button>
           {:else}<span></span>{/if}
           {#if step < LAST}
-            <button type="button" class="gf-btn-primary px-6" on:click={next}>Next <ArrowRight size={16} strokeWidth={2.6} /></button>
+            <button type="button" class="gf-btn-primary px-6" on:click={next}>{$t('ui.next')} <ArrowRight size={16} strokeWidth={2.6} /></button>
           {:else}
             <button type="button" class="gf-btn-primary px-6" disabled={submitting} on:click={submit}>
-              {#if submitting}<Loader2 size={16} class="animate-spin" /> Sending…{:else}Send My Trip Plan <ArrowRight size={16} strokeWidth={2.6} />{/if}
+              {#if submitting}<Loader2 size={16} class="animate-spin" /> {$t('form.sending')}{:else}{$t('pg_plan_my_trip.send_plan')} <ArrowRight size={16} strokeWidth={2.6} />{/if}
             </button>
           {/if}
         </div>
@@ -477,20 +495,20 @@
     <!-- The planner's running commentary: what they have chosen, what we'd advise, and trips that fit. -->
     <aside class="grid content-start gap-4 lg:sticky lg:top-28 lg:self-start">
       <div class="rounded-[12px] bg-deep-green p-5 text-white">
-        <p class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold"><Sparkles size={14} />Your trip so far</p>
+        <p class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold"><Sparkles size={14} />{$t('pg_plan_my_trip.your_trip_so_far')}</p>
         <ul class="mt-3 grid gap-1.5 text-sm text-white/80">
-          <li>{d.types.length ? d.types.map((type) => typeOf(type).label).join(' + ') : 'Choose a trip type to begin'}</li>
-          {#if interest}<li>Interested in {interest}</li>{/if}
-          {#if d.party}<li>{people.adults + people.children} traveller{people.adults + people.children > 1 ? 's' : ''}</li>{/if}
+          <li>{d.types.length ? d.types.map((type) => typeOf(type).label).join(' + ') : $t('pg_plan_my_trip.choose_type_to_begin')}</li>
+          {#if interest}<li>{$t('pg_plan_my_trip.interested_in').replace('{place}', interest)}</li>{/if}
+          {#if d.party}<li>{$t(people.adults + people.children > 1 ? 'pg_plan_my_trip.n_travellers' : 'pg_plan_my_trip.n_traveller').replace('{n}', String(people.adults + people.children))}</li>{/if}
           {#if step >= 2}<li>{MONTH_NAMES[d.month]} {d.year}</li>{/if}
-          {#if days > 0}<li>About {days} days</li>{/if}
+          {#if days > 0}<li>{$t('pg_plan_my_trip.about_n_days_cap').replace('{n}', String(days))}</li>{/if}
           {#if d.comfort}<li>{d.comfort}</li>{/if}
         </ul>
       </div>
 
       {#if tips.length && step >= 1}
         <div class="rounded-[12px] border border-ink/10 bg-surface p-5">
-          <p class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-clay"><Lightbulb size={14} />Expert tips</p>
+          <p class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-clay"><Lightbulb size={14} />{$t('pg_plan_my_trip.expert_tips')}</p>
           <ul class="mt-3 grid gap-2.5">
             {#each tips as tip (tip)}<li class="text-sm leading-snug text-heading">{tip}</li>{/each}
           </ul>
@@ -499,7 +517,7 @@
 
       {#if recs.length}
         <div class="rounded-[12px] border border-ink/10 bg-surface p-5">
-          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">Trips that match</p>
+          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">{$t('pg_plan_my_trip.trips_that_match')}</p>
           <!-- Compact on purpose: a sidebar that outgrows the form it sits
                beside reads as the main thing on the page. One reason each —
                the strongest — and titles held to two lines. -->
@@ -513,7 +531,11 @@
                   <span class="min-w-0">
                     <span class="line-clamp-2 text-[13px] font-semibold leading-tight text-heading group-hover:text-clay">{rec.tour.title}</span>
                     <span class="mt-0.5 block text-[11px] text-ink/60">
-                      {[rec.tour.duration_days ? `${rec.tour.duration_days} days` : '', rec.tour.price_from ? `from ${price(Number(rec.tour.price_from))}` : '', people.children && rec.tour.minimum_age ? `kids ${rec.tour.minimum_age}+` : ''].filter(Boolean).join(' · ')}
+                      {[
+                        rec.tour.duration_days ? $t('pg_plan_my_trip.n_days').replace('{n}', String(rec.tour.duration_days)) : '',
+                        rec.tour.price_from ? $t('pg_plan_my_trip.from_price').replace('{price}', () => price(Number(rec.tour.price_from))) : '',
+                        people.children && rec.tour.minimum_age ? $t('pg_plan_my_trip.kids_age_plus').replace('{age}', String(rec.tour.minimum_age)) : ''
+                      ].filter(Boolean).join(' · ')}
                     </span>
                     {#if rec.reasons[0]}
                       <span class="mt-0.5 flex items-start gap-1 text-[11px] leading-snug text-forest"><Check size={11} class="mt-0.5 shrink-0" /><span class="line-clamp-1">{rec.reasons[0]}</span></span>
@@ -523,16 +545,16 @@
               </li>
             {/each}
           </ul>
-          <p class="mt-3 text-xs text-ink/60">We'll tailor one of these — or design something new — around your answers.</p>
+          <p class="mt-3 text-xs text-ink/60">{$t('pg_plan_my_trip.tailor_one_of_these')}</p>
         </div>
       {:else if d.types.length}
         <div class="rounded-[12px] border border-ink/10 bg-surface p-5">
-          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">Made for you</p>
-          <p class="mt-2 text-sm text-heading">We don't have a ready-made trip for this combination yet — our specialists will design one around your answers.</p>
+          <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">{$t('pg_plan_my_trip.made_for_you')}</p>
+          <p class="mt-2 text-sm text-heading">{$t('pg_plan_my_trip.no_ready_made_trip')}</p>
         </div>
       {/if}
 
-      <p class="px-1 text-xs text-ink/60">Prefer to talk? <a href="/contact" class="font-semibold text-heading underline">Contact our team</a></p>
+      <p class="px-1 text-xs text-ink/60">{$t('pg_plan_my_trip.prefer_to_talk')} <a href="/contact" class="font-semibold text-heading underline">{$t('pg_plan_my_trip.contact_our_team')}</a></p>
     </aside>
   </div>
 </div>

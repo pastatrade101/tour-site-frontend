@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Camera } from '@lucide/svelte';
+  import { t } from '$lib/i18n/ui';
   import Img from './Img.svelte';
 
   type GalleryMoment = {
@@ -13,13 +14,18 @@
   };
 
   export let images: GalleryMoment[] = [];
-  export let title = 'Moments from our travellers';
+  /** Left undefined to use the translated default heading. */
+  export let title: string | undefined = undefined;
   export let galleryHref = '/gallery';
 
   const text = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
-  const captionOf = (image: GalleryMoment) =>
-    text(image.caption) || text(image.title) || text(image.destinations?.name) || 'A Goldfinch traveller moment';
-  const altOf = (image: GalleryMoment) => text(image.alt_text) || captionOf(image);
+  $: heading = title ?? $t('traveller_moments_marquee.title');
+  $: captionOf = (image: GalleryMoment) =>
+    text(image.caption) ||
+    text(image.title) ||
+    text(image.destinations?.name) ||
+    $t('traveller_moments_marquee.default_caption');
+  $: altOf = (image: GalleryMoment) => text(image.alt_text) || captionOf(image);
 
   $: moments = images.filter((image) => text(image.image_url)).slice(0, 10);
   $: canLoop = moments.length >= 5;
@@ -31,7 +37,7 @@
     <div class="container-shell">
       <div class="inline-flex items-center gap-2 text-clay">
         <Camera size={15} strokeWidth={2} aria-hidden="true" />
-        <h2 class="text-xs font-semibold uppercase tracking-[0.16em]">{title}</h2>
+        <h2 class="text-xs font-semibold uppercase tracking-[0.16em]">{heading}</h2>
       </div>
     </div>
 

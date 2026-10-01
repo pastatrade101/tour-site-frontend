@@ -5,7 +5,7 @@
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
-  import { getTravelStyle, TRAVEL_STYLES } from '$lib/data/travel-styles';
+  import { getTravelStyle, localizeTravelStyle, TRAVEL_STYLES, type TravelStyle as TravelStyleConfig } from '$lib/data/travel-styles';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
@@ -25,7 +25,13 @@
   $: origin = $page.url.origin;
 
   let style: NormStyle | null = null;
-  let others: { slug: string; name: string }[] = [];
+  // API style when the CMS answers; otherwise the static config, resolved
+  // through $t reactively so the fallback copy follows the active locale.
+  let apiStyle: NormStyle | null = null;
+  let fallbackConfig: TravelStyleConfig | null = null;
+  // `nameKey` marks a static-config entry whose name is translated at render.
+  type OtherStyle = { slug: string; name: string; nameKey?: string };
+  let others: OtherStyle[] = [];
   let featured: Tour[] = [];
   let loaded = false;
 
@@ -41,6 +47,13 @@
     persona: s.persona ?? undefined
   });
 
+  const fromConfig = (cfg: TravelStyleConfig, translate: (key: string) => string): NormStyle => {
+    const s = localizeTravelStyle(cfg, translate);
+    return { slug: s.slug, name: s.name, emotionalPromises: [s.emotionalPromise], description: s.description, desires: s.desires, concerns: s.concerns, persona: s.persona };
+  };
+
+  $: style = apiStyle ?? (fallbackConfig ? fromConfig(fallbackConfig, $t) : null);
+
   $: toursHref = style?.persona ? `/tours?persona=${style.persona}` : '/tours';
   $: planHref = `/plan-my-trip${style?.persona ? `?persona=${style.persona}` : ''}`;
 
@@ -48,22 +61,21 @@
     loaded = false;
     try {
       const res = await api.travelStyles.get(slug);
-      style = fromApi(res.data);
+      apiStyle = fromApi(res.data);
+      fallbackConfig = null;
     } catch {
       // fall back to static config
-      const cfg = getTravelStyle(slug);
-      style = cfg
-        ? { slug: cfg.slug, name: cfg.name, emotionalPromises: [cfg.emotionalPromise], description: cfg.description, desires: cfg.desires, concerns: cfg.concerns, persona: cfg.persona }
-        : null;
+      apiStyle = null;
+      fallbackConfig = getTravelStyle(slug) ?? null;
     }
     try {
       const list = await api.travelStyles.list({ status: 'published', limit: 100 });
       const items = list.data.items as TravelStyle[];
-      others = (items.length ? items.map((s) => ({ slug: s.slug, name: s.name })) : TRAVEL_STYLES.map((s) => ({ slug: s.slug, name: s.name })))
+      others = (items.length ? items.map((s): OtherStyle => ({ slug: s.slug, name: s.name })) : TRAVEL_STYLES.map((s): OtherStyle => ({ slug: s.slug, name: '', nameKey: s.nameKey })))
         .filter((s) => s.slug !== slug)
         .slice(0, 3);
     } catch {
-      others = TRAVEL_STYLES.filter((s) => s.slug !== slug).slice(0, 3).map((s) => ({ slug: s.slug, name: s.name }));
+      others = TRAVEL_STYLES.filter((s) => s.slug !== slug).slice(0, 3).map((s): OtherStyle => ({ slug: s.slug, name: '', nameKey: s.nameKey }));
     }
     loaded = true;
   };
@@ -155,7 +167,7 @@
       <div class="mt-4 grid gap-4 sm:grid-cols-3">
         {#each others as o (o.slug)}
           <a class="group flex items-center justify-between gap-3 rounded-2xl border border-ink/10 bg-surface p-5 transition hover:border-goldfinch-gold/40" href={`/travel-styles/${o.slug}`}>
-            <span class="font-extrabold text-heading">{o.name}</span>
+            <span class="font-extrabold text-heading">{o.nameKey ? $t(o.nameKey) : o.name}</span>
             <ArrowRight size={18} class="shrink-0 text-ink/30 transition group-hover:text-forest" />
           </a>
         {/each}

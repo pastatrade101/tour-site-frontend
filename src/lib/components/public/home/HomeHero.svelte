@@ -40,12 +40,15 @@
     'scale-down': 'object-scale-down'
   };
 
+  // Copy props default to undefined and fall back to translated text below, so
+  // an omitted prop follows the visitor's language while an explicit '' from the
+  // parent still hides that line, exactly as before.
   export let eyebrow = '';
-  export let title = 'Plan your African safari,';
-  export let highlight = 'your way.';
+  export let title: string | undefined = undefined;
+  export let highlight: string | undefined = undefined;
   export let description = '';
-  export let primaryCta: Cta = { label: 'Find my best options →', href: '#lead-form' };
-  export let secondaryCta: Cta = { label: 'Explore Tanzania →', href: '#experiences' };
+  export let primaryCta: Cta | undefined = undefined;
+  export let secondaryCta: Cta | undefined = undefined;
   export let imageUrl = '';
   export let imageVariants: ImageVariantMap = {};
   export let slides: HeroSlide[] = [];
@@ -65,13 +68,7 @@
   // Quick planner. `experiences` are REAL published tour categories, so the
   // Experience select filters the tours page by an actual category slug.
   export let experiences: { label: string; slug: string }[] = [];
-  export let travellerOptions: { label: string; value: string }[] = [
-    { label: 'Solo traveller', value: 'solo' },
-    { label: 'Couple', value: 'couple' },
-    { label: 'Family', value: 'family' },
-    { label: 'Friends / group', value: 'group' },
-    { label: 'Honeymoon', value: 'honeymoon' }
-  ];
+  export let travellerOptions: { label: string; value: string }[] | undefined = undefined;
 
   let traveller = '';
   let focus = '';
@@ -79,26 +76,37 @@
   let activeSlide = 0;
   let slideTimer: ReturnType<typeof setInterval> | undefined;
   let mounted = false;
-  let visiblePrimaryCta: Cta = primaryCta;
-  let visibleSecondaryCta: Cta = secondaryCta;
+  let visiblePrimaryCta: Cta = { label: '', href: '' };
+  let visibleSecondaryCta: Cta = { label: '', href: '' };
   const today = new Date().toISOString().slice(0, 10);
 
+  $: resolvedTitle = title ?? $t('home_hero.title');
+  $: resolvedHighlight = highlight ?? $t('home_hero.your_way');
+  $: resolvedPrimaryCta = primaryCta ?? { label: $t('home_hero.find_my_best_options'), href: '#lead-form' };
+  $: resolvedSecondaryCta = secondaryCta ?? { label: $t('home_hero.explore_tanzania'), href: '#experiences' };
+  $: resolvedTravellerOptions = travellerOptions ?? [
+    { label: $t('home_hero.solo_traveller'), value: 'solo' },
+    { label: $t('home_hero.couple'), value: 'couple' },
+    { label: $t('home_hero.family'), value: 'family' },
+    { label: $t('home_hero.friends_group'), value: 'group' },
+    { label: $t('home_hero.honeymoon'), value: 'honeymoon' }
+  ];
   $: displaySlides = (slides.length ? slides : [{ imageUrl }]).filter((slide) => slide.imageUrl).slice(0, 5);
   $: slideKey = displaySlides.map((slide) => slide.imageUrl).join('|');
   $: if (displaySlides.length && activeSlide >= displaySlides.length) activeSlide = 0;
   $: if (mounted && slideKey) restartSlider();
   $: activeSlideContent = displaySlides[activeSlide];
   $: visibleEyebrow = activeSlideContent?.eyebrow || eyebrow;
-  $: visibleTitle = activeSlideContent?.title || title;
-  $: visibleHighlight = activeSlideContent?.highlight || highlight;
+  $: visibleTitle = activeSlideContent?.title || resolvedTitle;
+  $: visibleHighlight = activeSlideContent?.highlight || resolvedHighlight;
   $: visibleDescription = activeSlideContent?.description || description;
   $: visiblePrimaryCta = {
-    label: activeSlideContent?.primaryLabel || primaryCta.label,
-    href: activeSlideContent?.primaryHref || primaryCta.href
+    label: activeSlideContent?.primaryLabel || resolvedPrimaryCta.label,
+    href: activeSlideContent?.primaryHref || resolvedPrimaryCta.href
   };
   $: visibleSecondaryCta = {
-    label: activeSlideContent?.secondaryLabel || secondaryCta.label,
-    href: activeSlideContent?.secondaryHref || secondaryCta.href
+    label: activeSlideContent?.secondaryLabel || resolvedSecondaryCta.label,
+    href: activeSlideContent?.secondaryHref || resolvedSecondaryCta.href
   };
 
   const selectSlide = (index: number) => {
@@ -165,8 +173,9 @@
     if (travelDate) params.set('date', travelDate);
     void goto(params.toString() ? `/plan-my-trip?${params}` : '/plan-my-trip');
   };
-  export let note = "No commitment. We'll simply help you understand what fits best.";
+  export let note: string | undefined = undefined;
 
+  $: resolvedNote = note ?? $t('home_hero.note');
   $: hasPrimary = Boolean(visiblePrimaryCta?.label && visiblePrimaryCta?.href);
   $: hasSecondary = Boolean(visibleSecondaryCta?.label && visibleSecondaryCta?.href);
   $: showPanel = quickLinks.length > 0 || hasPrimary || experiences.length > 0;
@@ -257,7 +266,7 @@
     {/if}
   </div>
 
-  {#if showPanel || note || hasSecondary}
+  {#if showPanel || resolvedNote || hasSecondary}
     <div class="hero-planner-shell relative container-shell pb-10 md:pb-14">
       {#if showPanel}
         <div
@@ -272,7 +281,7 @@
                 class="hero-planner-select h-11 w-full rounded-[8px] border border-white/20 bg-surface/95 px-3 text-[14px] text-heading focus:outline-none focus:ring-2 focus:ring-goldfinch-gold"
               >
                 <option value="">{$t('hero.select_travellers')}</option>
-                {#each travellerOptions as option}<option value={option.value}>{option.label}</option>{/each}
+                {#each resolvedTravellerOptions as option}<option value={option.value}>{option.label}</option>{/each}
               </select>
             </label>
 
@@ -308,9 +317,9 @@
           </div>
         </div>
       {/if}
-      {#if note || hasSecondary}
+      {#if resolvedNote || hasSecondary}
         <p class="hero-note mt-3 text-[13px] text-white/75">
-          {note}{' '}
+          {resolvedNote}{' '}
           {#if hasSecondary}
             <a href={visibleSecondaryCta.href} class="font-semibold text-goldfinch-gold hover:underline">
               {visibleSecondaryCta.label}
@@ -329,7 +338,7 @@
             type="button"
             class:active={index === activeSlide}
             class="hero-slide-dot"
-            aria-label={`Show ${slide.label || `slide ${index + 1}`}`}
+            aria-label={$t('home_hero.show_slide').replace('{label}', slide.label || $t('home_hero.slide_n').replace('{n}', String(index + 1)))}
             aria-current={index === activeSlide ? 'true' : undefined}
             on:click={() => selectSlide(index)}
           ></button>

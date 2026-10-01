@@ -76,7 +76,7 @@
 
 <article class="container-shell py-14">
   {#if loading}
-    <LoadingState message="Loading article..." />
+    <LoadingState message={$t('pg_blog_slug.loading_article')} />
   {:else if !post}
     <div class="mx-auto max-w-xl py-20 text-center">
       <h1 class="text-3xl font-bold text-heading">{$t('ui.story_not_found')}</h1>
@@ -93,7 +93,7 @@
     </nav>
 
     <div class="max-w-3xl">
-      <p class="font-serif text-lg italic text-clay">{post.author_name ?? 'Tour Team'}</p>
+      <p class="font-serif text-lg italic text-clay">{post.author_name ?? $t('pg_blog_slug.tour_team')}</p>
       <h1 class="mt-3 text-4xl font-bold tracking-normal text-ink">{post.title}</h1>
       <p class="mt-4 text-lg leading-8 text-ink/70">{post.excerpt}</p>
     </div>
@@ -129,9 +129,9 @@
       <div class="container-shell">
         <div class="flex flex-wrap items-end justify-between gap-4">
           <SectionHeader
-            eyebrow="Keep reading"
+            eyebrow={$t('ui.keep_reading')}
             title={$t('ui.more_from_the_journal')}
-            description="Travel inspiration, tips and stories from the field."
+            description={$t('pg_blog_slug.more_posts_description')}
           />
           <a
             class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading"
@@ -154,9 +154,9 @@
       <div class="container-shell">
         <div class="flex flex-wrap items-end justify-between gap-4">
           <SectionHeader
-            eyebrow="Plan your trip"
+            eyebrow={$t('ui.plan_your_trip')}
             title={$t('ui.explore_destinations')}
-            description="Turn inspiration into a real itinerary across East Africa."
+            description={$t('pg_blog_slug.explore_destinations_description')}
           />
           <a
             class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading"

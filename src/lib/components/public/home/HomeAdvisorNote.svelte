@@ -7,41 +7,89 @@
    */
   import { Check, Compass, SlidersHorizontal } from '@lucide/svelte';
   import { cdnUrl } from '$lib/img';
+  import { t } from '$lib/i18n/ui';
+  import en from '$lib/locales/en.json';
   import Img from '../Img.svelte';
   import RichText from '../RichText.svelte';
   import type { AdvisorColumn } from '$lib/advisorNote';
 
-  export let eyebrow = "Advisor's Note";
-  export let title = 'The Trip Is Won or Lost in the Planning Details';
-  export let body =
-    'Most travel mistakes happen before arrival. The wrong route, too many one-night stops, poor lodge locations or badly timed transfers can make even a beautiful trip feel tiring.';
+  /*
+   * Every text prop defaults to `undefined`, meaning "nothing supplied", and
+   * falls back to the note's own copy in the visitor's language. An empty
+   * string is an editor's deliberate blank (see advisorNoteProps) and stays
+   * blank.
+   */
+  export let eyebrow: string | undefined = undefined;
+  export let title: string | undefined = undefined;
+  export let body: string | undefined = undefined;
   export let imageUrl = '';
   export let authorName = 'Deo Robert';
-  export let authorRole = 'Founder & Advisor, Goldfinch Adventures';
-  export let footnote =
-    'That is why we start with your dates, travel style and priorities — not with a fixed package.';
-  export let columns: AdvisorColumn[] = [
+  export let authorRole: string | undefined = undefined;
+  export let footnote: string | undefined = undefined;
+  export let columns: AdvisorColumn[] | undefined = undefined;
+
+  const DEFAULT_COLUMNS = [
     {
       icon_url: '/images/icons-home/icon-big-choices.png',
-      title: 'The big choices',
-      items: [
-        'When to travel — migration timing, dry season, shoulder-season value, beach conditions and Kilimanjaro weather.',
-        'Which places to include — and which to leave out so the trip has enough space.',
-        'How to combine safari, Zanzibar, Kilimanjaro or culture without wasting days in transit.',
-        'Accommodation style — mobile camp, tented camp, lodge, boutique hotel, beach resort or mountain hotel.'
+      titleKey: 'home_advisor_note.big_choices',
+      itemKeys: [
+        'home_advisor_note.big_choice_when',
+        'home_advisor_note.big_choice_places',
+        'home_advisor_note.big_choice_combine',
+        'home_advisor_note.big_choice_accommodation'
       ]
     },
     {
       icon_url: '/images/icons-home/icon-quiet-details.png',
-      title: 'The quiet details',
-      items: [
-        'Vehicle style, road time and where open-side game-drive vehicles make sense.',
-        'Which Zanzibar coast fits your month, swimming preference and travel style.',
-        'Family logistics, gentler safari days, connecting rooms and realistic drive times.',
-        'Photography, birding, walking, culture or trekking interests matched to the right guide and pace.'
+      titleKey: 'home_advisor_note.quiet_details',
+      itemKeys: [
+        'home_advisor_note.quiet_detail_vehicle',
+        'home_advisor_note.quiet_detail_coast',
+        'home_advisor_note.quiet_detail_family',
+        'home_advisor_note.quiet_detail_interests'
       ]
     }
   ];
+
+  /*
+   * The CMS keeps this note's lists in extra_data, which content translations
+   * do not reach yet, and the live record still holds the default copy word for
+   * word. A line that is exactly one of these defaults is still our own copy,
+   * so it is shown in the visitor's language; anything an editor has rewritten
+   * is shown as written.
+   */
+  const COPY_KEYS = [
+    'home_advisor_note.eyebrow',
+    'home_advisor_note.title',
+    'home_advisor_note.body',
+    'home_advisor_note.author_role',
+    'home_advisor_note.footnote',
+    ...DEFAULT_COLUMNS.flatMap((column) => [column.titleKey, ...column.itemKeys])
+  ];
+  const ENGLISH = en as Record<string, string>;
+  const KEY_FOR_ENGLISH = new Map(
+    COPY_KEYS.filter((key) => ENGLISH[key]).map((key) => [ENGLISH[key], key] as const)
+  );
+
+  $: localize = (value: string): string => {
+    const key = value ? KEY_FOR_ENGLISH.get(value.trim()) : undefined;
+    return key ? $t(key) : value;
+  };
+
+  $: eyebrowText = eyebrow === undefined ? $t('home_advisor_note.eyebrow') : localize(eyebrow);
+  $: titleText = title === undefined ? $t('home_advisor_note.title') : localize(title);
+  $: bodyText = body === undefined ? $t('home_advisor_note.body') : localize(body);
+  $: authorRoleText = authorRole === undefined ? $t('home_advisor_note.author_role') : localize(authorRole);
+  $: footnoteText = footnote === undefined ? $t('home_advisor_note.footnote') : localize(footnote);
+  let sourceColumns: AdvisorColumn[] = [];
+  $: sourceColumns =
+    columns === undefined
+      ? DEFAULT_COLUMNS.map((column) => ({
+          icon_url: column.icon_url,
+          title: $t(column.titleKey),
+          items: column.itemKeys.map((key) => $t(key))
+        }))
+      : columns;
 
   const FALLBACK_ICONS = [Compass, SlidersHorizontal];
   const initials = (name: string) =>
@@ -52,9 +100,13 @@
       .map((part) => part[0]?.toUpperCase() ?? '')
       .join('') || 'G';
 
-  $: visibleColumns = (columns ?? [])
+  $: visibleColumns = (sourceColumns ?? [])
     .filter((column) => column?.title?.trim())
-    .map((column) => ({ ...column, items: (column.items ?? []).filter((item) => item?.trim()) }))
+    .map((column) => ({
+      ...column,
+      title: localize(column.title),
+      items: (column.items ?? []).filter((item) => item?.trim()).map((item) => localize(item))
+    }))
     .filter((column) => column.items.length)
     .slice(0, 2);
 </script>
@@ -64,14 +116,14 @@
     <div class="grid overflow-hidden rounded-2xl shadow-[0_10px_32px_-12px_rgba(57,61,50,0.28)] lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
       <div class="relative flex flex-col bg-[#393D32] p-9 md:p-11">
         <span class="font-serif text-7xl leading-[0.7] text-goldfinch-gold opacity-90" aria-hidden="true">“</span>
-        {#if eyebrow}
-          <span class="mt-4 text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{eyebrow}</span>
+        {#if eyebrowText}
+          <span class="mt-4 text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{eyebrowText}</span>
         {/if}
-        {#if title}
-          <h2 class="mt-3 font-serif text-[28px] font-semibold leading-[1.15] text-white md:text-[30px]">{title}</h2>
+        {#if titleText}
+          <h2 class="mt-3 font-serif text-[28px] font-semibold leading-[1.15] text-white md:text-[30px]">{titleText}</h2>
         {/if}
-        {#if body}
-          <RichText value={body} className="mt-3.5 text-sm leading-relaxed text-white/70" />
+        {#if bodyText}
+          <RichText value={bodyText} className="mt-3.5 text-sm leading-relaxed text-white/70" />
         {/if}
 
         <div class="mt-8 flex items-center gap-3 border-t border-white/[0.14] pt-6 sm:mt-auto">
@@ -91,7 +143,7 @@
           {/if}
           <div>
             <div class="text-[13.5px] font-semibold text-white">{authorName}</div>
-            <div class="mt-0.5 text-xs text-white/60">{authorRole}</div>
+            <div class="mt-0.5 text-xs text-white/60">{authorRoleText}</div>
           </div>
         </div>
       </div>
@@ -126,10 +178,10 @@
           </div>
         {/if}
 
-        {#if footnote}
+        {#if footnoteText}
           <div class="mt-7 flex gap-1 border-t border-dashed border-[#E3DCCB] pt-5 font-serif text-[15px] italic text-heading">
             <span aria-hidden="true">“</span>
-            <RichText value={footnote} />
+            <RichText value={footnoteText} />
             <span aria-hidden="true">”</span>
           </div>
         {/if}
