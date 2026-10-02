@@ -182,8 +182,26 @@
     loadClarity(id);
   };
 
-  // Load analytics (GA4 + Clarity) only once the visitor has explicitly granted consent.
-  $: if (browser && $consent === 'granted') { loadGa4(); loadClarityIfReady(); }
+  // Google Tag Manager — the official container snippet, behind the same gates as
+  // GA4 and Clarity: consent granted, production host, public site, and a configured
+  // PUBLIC_GTM_ID. It shares the `dataLayer` gtag already uses. If the container also
+  // fires a GA4 page-view tag, page views will count twice alongside loadGa4 — pick one.
+  const loadGtm = () => {
+    const id = publicEnv.PUBLIC_GTM_ID;
+    if (!browser || !id || isAdmin || !isProdHost() || document.getElementById('gtm-src')) return;
+    const w = window as unknown as { dataLayer: unknown[] };
+    w.dataLayer = w.dataLayer || [];
+    w.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+    const script = document.createElement('script');
+    script.id = 'gtm-src';
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(id)}`;
+    const first = document.getElementsByTagName('script')[0];
+    (first?.parentNode ?? document.head).insertBefore(script, first ?? null);
+  };
+
+  // Load analytics (GA4 + Clarity + GTM) only once the visitor has explicitly granted consent.
+  $: if (browser && $consent === 'granted') { loadGa4(); loadClarityIfReady(); loadGtm(); }
 
   // One page_view per navigation (initial + every client-side route change). Deduped
   // + query-stripped inside trackPageView. Public site only.
