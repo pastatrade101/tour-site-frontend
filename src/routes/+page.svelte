@@ -16,13 +16,14 @@
   import HomeDestinationsCarousel from '$lib/components/public/home/HomeDestinationsCarousel.svelte';
   import HomeItineraries from '$lib/components/public/home/HomeItineraries.svelte';
   import HomeWhyChoose from '$lib/components/public/home/HomeWhyChoose.svelte';
+  import { resolvePlanHref } from '$lib/planHref';
+  import { TRIP_TYPES } from '$lib/tripPlanner';
   import HomeAdvisorNote from '$lib/components/public/home/HomeAdvisorNote.svelte';
   import HomeHowPlanned from '$lib/components/public/home/HomeHowPlanned.svelte';
   import HomeTravellerStories from '$lib/components/public/home/HomeTravellerStories.svelte';
   import PartnerStrip from '$lib/components/public/PartnerStrip.svelte';
   import HomePlanningBand from '$lib/components/public/home/HomePlanningBand.svelte';
   import MigrationCalendar from '$lib/components/public/MigrationCalendar.svelte';
-  import LeadCaptureForm from '$lib/components/public/LeadCaptureForm.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
   import ContentShimmer from '$lib/components/public/ContentShimmer.svelte';
   import { fadeUpOnScroll, homepageMotion, sectionReveal, staggeredCardReveal } from '$lib/animations';
@@ -99,19 +100,6 @@
   let migrationEntries: MigrationEntry[] = data.migrationEntries ?? [];
   let galleryItems: GalleryCardItem[] = (data.galleryItems ?? []) as GalleryCardItem[];
   let categories: Record<string, unknown>[] = (data.categories ?? []) as Record<string, unknown>[];
-  /**
-   * Travel-style card → the accommodation level that stands for it in the
-   * lodge inventory. The card labels are the site's own words for the tier; the
-   * levels are the enum the records actually store.
-   */
-  const STYLE_LEVELS = [
-    ['Value', 'BUDGET'],
-    ['Mid-range', 'MID_RANGE'],
-    ['Luxury', 'LUXURY']
-  ] as const;
-  /** Filled after paint. Cards render as text until then, and if a level has no
-      published property with a photograph they stay that way. */
-  let styleImages: Record<string, string> = {};
   let imageVariants: ImageVariantMap = (data.imageVariants ?? {}) as ImageVariantMap;
   let deferredLoading = true;
   let sections: Record<string, HomeSection> = Object.fromEntries(
@@ -303,8 +291,7 @@
       featuredReviewResult,
       allReviewResult,
       migrationResult,
-      galleryResult,
-      ...styleLodgeResults
+      galleryResult
     ] = await Promise.allSettled([
       api.tours.list({ status: 'published', limit: 6 }),
       api.destinations.list({ status: 'published', limit: 8 }),
@@ -316,21 +303,8 @@
       api.reviews.list({ status: 'approved', is_featured: true, limit: 6 }),
       api.reviews.list({ status: 'approved', limit: 6 }),
       api.migrationCalendar.list({ is_published: true, limit: 24 }),
-      api.gallery.list({ status: 'published', media_type: 'image', limit: 7 }),
-      // One real property per comfort level, for the travel-style cards in the
-      // closing form. A photograph of an actual lodge at that level says more
-      // than the word does — and there is nothing else honest to show, since
-      // every published tour is mid-range.
-      ...STYLE_LEVELS.map(([, level]) => api.lodges.list({ status: 'published', accommodation_level: level, limit: 1 }))
+      api.gallery.list({ status: 'published', media_type: 'image', limit: 7 })
     ]);
-
-    styleImages = Object.fromEntries(
-      STYLE_LEVELS.map(([style], index) => {
-        const lodge = deferredItems<Record<string, unknown>>(styleLodgeResults[index])[0];
-        const image = String(lodge?.image_url ?? lodge?.hero_image_url ?? '');
-        return [style, image];
-      }).filter(([, image]) => image)
-    );
 
     const nextTours = deferredItems<Tour>(tourResult);
     const nextDestinations = deferredItems<Destination>(destinationResult);
@@ -471,7 +445,7 @@
     subtitle={cms('why_us', 'subtitle', $t('home.why_us_subtitle'))}
     titleHighlight={cmsExtra('why_us', 'title_highlight', $t('home.why_us_title_highlight'))}
     ctaLabel={cms('why_us', 'button_text', $t('home.why_us_button_text'))}
-    ctaHref={cms('why_us', 'button_url', '#lead-form')}
+    ctaHref={resolvePlanHref(cms('why_us', 'button_url', '/plan-my-trip'))}
     {...clean({ features: arr(whyExtra.features) })}
   />
 {/if}
@@ -607,11 +581,40 @@
     subtitle={cms('plan_dream', 'subtitle', $t('home.plan_dream_subtitle'))}
     {...clean({ points: planDreamPoints })}
   >
-    <LeadCaptureForm
-      inline
-      tripTypes={experienceItems.map((item) => ({ label: item.name, value: item.name }))}
-      {styleImages}
-    />
+    <!-- Planning starts on the six-step planner page. The band offers its first
+         question here, so a click carries the answer straight into it. -->
+    <div class="rounded-[14px] border border-white/15 bg-white/[0.06] p-5 text-white md:p-7">
+      <p class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{$t('cta.plan_my_trip')}</p>
+      <p class="mt-2 font-serif text-2xl leading-snug text-white md:text-[28px]">What kind of trip are you dreaming of?</p>
+      <div class="mt-5 grid gap-3 sm:grid-cols-2">
+        {#each TRIP_TYPES as type (type.id)}
+          <a
+            href={`/plan-my-trip?experience=${type.id}&from=homepage-band`}
+            data-cta="home-band-trip-type"
+            class="group rounded-[10px] border border-white/15 bg-white/[0.04] p-4 transition hover:border-goldfinch-gold hover:bg-white/[0.08]"
+          >
+            <span class="flex items-center justify-between gap-3 text-[15px] font-semibold text-white">
+              {type.label}
+              <ArrowRight size={16} class="shrink-0 text-goldfinch-gold transition group-hover:translate-x-0.5" />
+            </span>
+            <span class="mt-1 block text-[13px] leading-5 text-white/65">{type.desc}</span>
+          </a>
+        {/each}
+      </div>
+      <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <a
+          href="/plan-my-trip?from=homepage-band"
+          data-cta="home-band-plan"
+          class="inline-flex h-12 items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-6 text-sm font-bold text-deep-green transition hover:brightness-105"
+        >
+          {$t('cta.plan_my_trip')} <ArrowRight size={16} />
+        </a>
+        <a href="/contact" class="inline-flex h-12 items-center justify-center gap-2 rounded-[8px] border border-white/25 px-6 text-sm font-semibold text-white transition hover:bg-white/10">
+          <MessageCircle size={16} /> {$t('cta.talk_to_advisor')}
+        </a>
+      </div>
+      <p class="mt-4 text-xs text-white/55">{$t('lead.no_payment')}</p>
+    </div>
   </HomePlanningBand>
 {/if}
 </main>

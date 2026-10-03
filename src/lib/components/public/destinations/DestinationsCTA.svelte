@@ -114,7 +114,7 @@
             href={waHref}
             target="_blank"
             rel="noopener noreferrer"
-            on:click={() => trackEvent('whatsapp_click', { cta_location: 'destinations_cta' })}
+            data-track-location="destinations_cta"
           >
             <MessageCircle size={17} strokeWidth={2.4} aria-hidden="true" />{$t('ui.talk_on_whatsapp')}</a>
         {/if}

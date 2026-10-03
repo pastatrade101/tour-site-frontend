@@ -12,9 +12,7 @@
   import { page } from '$app/stores';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import StylePlannerBand from '$lib/components/public/StylePlannerBand.svelte';
-  import EnquiryForm from '$lib/components/public/enquiry/EnquiryForm.svelte';
-  import { configFor } from '$lib/enquiry/configs';
-  import { loadStyleImages } from '$lib/enquiry/styleImages';
+  import { planTripHref, resolvePlanHref } from '$lib/planHref';
   import HomeAdvisorNote from '$lib/components/public/home/HomeAdvisorNote.svelte';
   import HomeTravellerStories from '$lib/components/public/home/HomeTravellerStories.svelte';
   import { advisorNoteEnabled, advisorNoteFromBlock } from '$lib/advisorNote';
@@ -187,7 +185,6 @@
   let appliedComfort = 'all';
   let appliedPrice = 'all';
   let visibleCount = 6;
-  let enquiryOpen = false;
 
   $: filteredTours = tours.filter((tour) => {
     const days = Number(tour.duration_days ?? 0);
@@ -211,33 +208,8 @@
     visibleCount = 6;
   };
 
-  // The shared modal locks and restores the page scroll itself, and traps
-  // focus — which the hand-rolled <dialog> this replaced did not.
-  //
-  // The travel-style photographs are fetched when the planner is first opened
-  // rather than on page load: most visitors never open it, and the cards read
-  // perfectly well as text until the pictures arrive.
-  let styleImages: Record<string, string> = {};
-  const openEnquiry = async () => {
-    enquiryOpen = true;
-    if (!Object.keys(styleImages).length) styleImages = await loadStyleImages();
-  };
-  const closeEnquiry = () => (enquiryOpen = false);
-
-  /**
-   * The same trip planner the homepage closing band shows, opened as a popup.
-   *
-   * Trip types are the real published categories — this one first, since the
-   * visitor is standing on its page — and the category travels with the
-   * enquiry as context, so an admin still sees which style it came from even
-   * though the questions are the shared ones.
-   */
-  $: planTripTypes = [category, ...otherStyles]
-    .filter((style): style is TourCategory => Boolean(style?.name))
-    .map((style) => ({ label: style.name, value: style.name }));
-  $: planConfig = configFor('homepage_trip_planner', {}, [], { tripTypes: planTripTypes, styleImages });
-  $: planContext = { category: { id: category?.id, name: category?.name, slug: category?.slug } };
-  $: planInitialValues = category?.name ? { trip_type: category.name } : {};
+  // Planning starts on the six-step planner page, already knowing this style.
+  $: planHref = planTripHref({ name: category?.name, slug: category?.slug, from: `safari style: ${category?.slug ?? ''}` });
 
   $: waDigits = (settingText($publicSettings, 'whatsapp_number') || settingText($publicSettings, 'contact_phone') || '255754600905').replace(/[^0-9]/g, '');
   $: whatsappHref = `https://wa.me/${waDigits}?text=${encodeURIComponent(`Hello Goldfinch Adventures, I would like help planning ${category?.name ?? 'my safari'}.`)}`;
@@ -280,7 +252,7 @@
         <div class="mt-7 flex flex-col gap-3 sm:flex-row">
           <!-- Opens the trip planner rather than scrolling to it: the ask is
                "plan my trip", and a jump down the page is not an answer. -->
-          <button type="button" on:click={openEnquiry} class="inline-flex items-center justify-center rounded-md bg-goldfinch-gold px-5 py-3 text-sm font-semibold text-heading transition hover:brightness-95">{landing.hero.primaryCtaLabel}</button>
+          <a href={planHref} class="inline-flex items-center justify-center rounded-md bg-goldfinch-gold px-5 py-3 text-sm font-semibold text-heading transition hover:brightness-95">{landing.hero.primaryCtaLabel}</a>
           <a href="#trip-ideas" class="inline-flex items-center justify-center rounded-md border border-white/35 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20">{landing.hero.secondaryCtaLabel}</a>
         </div>
         {#if trustItems.length}
@@ -383,7 +355,7 @@
           <div class="mt-10 flex flex-col items-center gap-4 text-center">
             <p class="text-[13px] text-ink/65">Showing {visibleTours.length} of {filteredTours.length} {landing.tourCollection.resultsNoun}</p>
             {#if visibleCount < filteredTours.length}<button type="button" on:click={() => (visibleCount += 6)} class="inline-flex h-12 items-center justify-center rounded-md bg-deep-green px-7 text-xs font-semibold uppercase tracking-[0.14em] text-white hover:bg-forest">{landing.tourCollection.loadMoreLabel}</button>{/if}
-            <a href="#lead-form" class="text-[13px] font-semibold text-clay hover:text-goldfinch-gold">{$t('ui.not_sure_which_one_fits')}</a>
+            <a href={planHref} class="text-[13px] font-semibold text-clay hover:text-goldfinch-gold">{$t('ui.not_sure_which_one_fits')}</a>
           </div>
         {:else}
           <div class="mt-8 rounded-[12px] border border-ink/10 bg-canvas p-8 text-center text-sm text-heading">{$t('ui.no_safari_options_match_these')}<button type="button" on:click={resetFilters} class="font-semibold text-clay underline underline-offset-4">{$t('ui.reset_the_filters')}</button>.</div>
@@ -391,7 +363,7 @@
       {:else}
         <article class="mt-8 grid overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-sm md:grid-cols-2">
           <div class="relative min-h-[260px] bg-canvas">{#if category.image_url}<Img record={category} fields={['image_url']} alt={category.name} width={1000} sizes="(max-width: 768px) 100vw, 50vw" className="absolute inset-0 h-full w-full object-cover object-top" />{/if}<span class="absolute left-4 top-4 rounded-md bg-clay px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">{$t('ui.custom_safari')}</span></div>
-          <div class="flex flex-col justify-center p-6 md:p-9"><h3 class="font-serif text-2xl font-semibold text-heading">Custom {category.name}</h3><p class="mt-3 text-[15px] leading-7 text-ink/75">{$t('ui.a_route_designed_around_your')}</p><p class="mt-5 font-semibold text-heading">{$t('label.tailored_quote')}</p><button type="button" on:click={openEnquiry} class="mt-5 inline-flex w-fit items-center gap-2 rounded-md bg-goldfinch-gold px-4 py-2.5 text-sm font-semibold text-heading">{$t('ui.request_a_plan')}<ArrowRight size={15} /></button></div>
+          <div class="flex flex-col justify-center p-6 md:p-9"><h3 class="font-serif text-2xl font-semibold text-heading">Custom {category.name}</h3><p class="mt-3 text-[15px] leading-7 text-ink/75">{$t('ui.a_route_designed_around_your')}</p><p class="mt-5 font-semibold text-heading">{$t('label.tailored_quote')}</p><a href={planHref} class="mt-5 inline-flex w-fit items-center gap-2 rounded-md bg-goldfinch-gold px-4 py-2.5 text-sm font-semibold text-heading">{$t('ui.request_a_plan')}<ArrowRight size={15} /></a></div>
         </article>
       {/if}
     </div>
@@ -419,7 +391,7 @@
             <div class="flex items-center gap-4"><span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-ink/10 bg-surface text-clay"><svelte:component this={GUIDE_ICONS[index]} size={20} /></span><h3 class="font-sans text-xl font-semibold leading-snug text-heading md:text-2xl">{block.title}</h3></div>
             <RichText value={block.body} className="mt-3 max-w-[900px] text-[15px] leading-relaxed text-ink/85 md:text-base" />
             {#if 'links' in block && Array.isArray(block.links) && block.links.length}
-              <p class="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-clay"><span aria-hidden="true">➔</span>{#each block.links as link, linkIndex}<span class="inline-flex items-center gap-2"><a href={link.href || '#lead-form'} class="underline decoration-transparent underline-offset-4 hover:text-goldfinch-gold hover:decoration-goldfinch-gold">{link.label}</a>{#if linkIndex < block.links.length - 1}<span class="text-ink/55">|</span>{/if}</span>{/each}</p>
+              <p class="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-clay"><span aria-hidden="true">➔</span>{#each block.links as link, linkIndex}<span class="inline-flex items-center gap-2"><a href={resolvePlanHref(link.href, planHref)} class="underline decoration-transparent underline-offset-4 hover:text-goldfinch-gold hover:decoration-goldfinch-gold">{link.label}</a>{#if linkIndex < block.links.length - 1}<span class="text-ink/55">|</span>{/if}</span>{/each}</p>
             {/if}
           </article>
         {/each}
@@ -473,17 +445,10 @@
       <h2 class="mt-3 font-serif text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl md:text-5xl">{landing.finalCta.headline}</h2>
       <p class="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-white/70">{landing.finalCta.subheadline}</p>
       <ul class="mx-auto mt-7 grid max-w-2xl gap-3 sm:grid-cols-2">{#each landing.finalCta.proofs as proof}<li class="flex items-start gap-3 text-left text-sm text-white/90"><span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-goldfinch-gold text-heading"><Check size={12} /></span>{proof}</li>{/each}</ul>
-      <div class="mt-8 flex flex-col items-center gap-4"><button type="button" on:click={openEnquiry} class="inline-flex items-center justify-center rounded-md bg-goldfinch-gold px-6 py-3 text-sm font-semibold text-heading hover:brightness-95">{landing.finalCta.buttonLabel}</button><a href={whatsappHref} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-sm text-white/70 underline decoration-white/25 underline-offset-4 hover:text-white"><ShieldCheck size={14} />{landing.finalCta.whatsappLabel}</a></div>
+      <div class="mt-8 flex flex-col items-center gap-4"><a href={planHref} class="inline-flex items-center justify-center rounded-md bg-goldfinch-gold px-6 py-3 text-sm font-semibold text-heading hover:brightness-95">{landing.finalCta.buttonLabel}</a><a href={whatsappHref} target="_blank" rel="noopener noreferrer" data-track-location="safari_style_page" class="inline-flex items-center gap-2 text-sm text-white/70 underline decoration-white/25 underline-offset-4 hover:text-white"><ShieldCheck size={14} />{landing.finalCta.whatsappLabel}</a></div>
     </div>
   </section>
 
-  <EnquiryForm
-    bind:open={enquiryOpen}
-    config={planConfig}
-    context={planContext}
-    initialValues={planInitialValues}
-    on:close={closeEnquiry}
-  />
 {:else}
   <section class="container-shell py-20 text-center"><h1 class="text-2xl font-bold text-heading">{$t('ui.safari_style_not_found')}</h1><a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-forest" href="/safari-styles">{$t('ui.all_safari_styles')}<ArrowRight size={16} /></a></section>
 {/if}

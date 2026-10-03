@@ -4,11 +4,10 @@
    *
    * This used to render input fields with no submit handler and no endpoint —
    * anything a visitor typed into it was silently discarded. It is now a
-   * genuine call to action that opens the three-step trip planner, which does
-   * submit. Props and file name are unchanged so its three mount points
+   * genuine call to action. The card links to the six-step planner page; the
+   * inline variant (the homepage closing band) shows the planner form itself. Props and file name are unchanged so its three mount points
    * (homepage, tours listing, placeholder pages) needed no edits.
    *
-   * The popup is only ever opened by this button. It never appears on load.
    */
   import { ArrowRight, MessageCircle } from '@lucide/svelte';
   import { t } from '$lib/i18n/ui';
@@ -32,7 +31,6 @@
   /** Comfort level → a real property photograph at that level. */
   export let styleImages: Record<string, string> = {};
 
-  let open = false;
   $: config = configFor('homepage_trip_planner', {}, [], { tripTypes, styleImages });
 
   // i18n keys, translated where they are rendered.
@@ -69,13 +67,13 @@
   </ul>
 
   <div class="grid gap-3 sm:flex sm:flex-wrap">
-    <button
-      type="button"
+    <!-- Planning starts on the six-step planner page, not in a popup. -->
+    <a
       class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-forest px-6 text-sm font-bold text-white transition hover:bg-deep-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 sm:w-auto"
-      on:click={() => (open = true)}
+      href="/plan-my-trip"
     >
       {$t('cta.plan_my_trip')} <ArrowRight size={16} />
-    </button>
+    </a>
     <a
       class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] border border-ink/15 px-6 text-sm font-bold text-heading transition hover:border-goldfinch-gold hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold sm:w-auto"
       href="/contact"
@@ -86,6 +84,4 @@
 
   <p class="text-xs text-ink/50">{$t('lead.no_payment')}</p>
 </div>
-
-<EnquiryForm bind:open {config} on:close={() => (open = false)} />
 {/if}

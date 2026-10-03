@@ -496,7 +496,7 @@
                 <button class="inline-flex h-8 w-fit items-center gap-1.5 rounded-md border border-ink/15 px-2.5 text-[11px] font-semibold text-heading transition hover:bg-surface disabled:opacity-40" type="button" disabled={block.links.length >= MAX_GUIDE_LINKS} on:click={() => addTo(block.links, { label: '', href: '' }, MAX_GUIDE_LINKS)}>
                   <Plus size={12} /> Add a link
                 </button>
-                <span class={hint}>Each card needs at least one link. Use a path on this site like <code>/expert-advice</code>, or an anchor like <code>#lead-form</code>.</span>
+                <span class={hint}>Each card needs at least one link. Use a path on this site like <code>/expert-advice</code>, or <code>/plan-my-trip</code> to start planning (it opens the planner already set for this style).</span>
               </div>
             </div>
           {/each}

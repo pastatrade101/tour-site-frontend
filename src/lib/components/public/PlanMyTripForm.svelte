@@ -327,7 +327,6 @@
   $: waDigits = (settingText($publicSettings, 'whatsapp_number') || '+255 700 000 000').replace(/[^0-9]/g, '');
   $: waText = [`Hello ${brand.name}, I'd like to plan a trip:`, ...summaryRows.map((r) => `• ${r.label}: ${r.value}`)].join('\n');
   $: waHref = `https://wa.me/${waDigits}?text=${encodeURIComponent(waText)}`;
-  const onWhatsApp = () => trackEvent('whatsapp_click', { cta_location: 'plan_my_trip_review' });
 
   const validateStep = async (index: number): Promise<boolean> => {
     validate(); // fills `errors` for the whole form
@@ -551,7 +550,7 @@
     </div>
 
     {#if selectedSpecialist}
-      <SpecialistCard specialist={selectedSpecialist} heading={$t('plan_my_trip_form.who_will_be_in_touch')} />
+      <SpecialistCard specialist={selectedSpecialist} heading={$t('plan_my_trip_form.who_will_be_in_touch')} trackLocation="plan_my_trip_form_success" />
     {/if}
 
     <div class="flex flex-col gap-3 sm:flex-row">

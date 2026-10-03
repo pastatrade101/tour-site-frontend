@@ -91,9 +91,10 @@
     </p>
   </aside>
 
-  <!-- booking form -->
+  <!-- booking form — its own name in the analytics funnel and on the lead,
+       apart from the same form on the tour page -->
   <div>
-    <TripRequestForm {tour} />
+    <TripRequestForm {tour} formName="tour_booking_page" />
   </div>
 </section>
 {:else if !loading}

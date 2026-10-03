@@ -198,7 +198,7 @@
                     href={waHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    on:click={() => trackEvent('whatsapp_click')}
+                    data-track-location="footer"
                   >
                     <MessageCircle size={16} class="footer-contact-icon" />
                     <span class="break-all">{$t('cta.whatsapp')}<span class="ml-1 text-white/55">{waNumber}</span></span>

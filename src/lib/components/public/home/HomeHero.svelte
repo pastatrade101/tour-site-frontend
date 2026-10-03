@@ -4,6 +4,7 @@
   import { goto } from '$app/navigation';
   import { ChevronDown } from '@lucide/svelte';
   import { trackEvent } from '$lib/analytics';
+  import { resolvePlanHref } from '$lib/planHref';
   import Img from '../Img.svelte';
   import type { ImageVariantMap } from '$lib/img';
 
@@ -82,7 +83,10 @@
 
   $: resolvedTitle = title ?? $t('home_hero.title');
   $: resolvedHighlight = highlight ?? $t('home_hero.your_way');
-  $: resolvedPrimaryCta = primaryCta ?? { label: $t('home_hero.find_my_best_options'), href: '#lead-form' };
+  // The planner page is where planning starts; an old '#lead-form' target from the CMS is sent there too.
+  $: resolvedPrimaryCta = primaryCta
+    ? { ...primaryCta, href: resolvePlanHref(primaryCta.href) }
+    : { label: $t('home_hero.find_my_best_options'), href: '/plan-my-trip' };
   $: resolvedSecondaryCta = secondaryCta ?? { label: $t('home_hero.explore_tanzania'), href: '#experiences' };
   $: resolvedTravellerOptions = travellerOptions ?? [
     { label: $t('home_hero.solo_traveller'), value: 'solo' },
@@ -147,9 +151,26 @@
     requestAnimationFrame(frame);
   };
 
+  // The hero fills exactly the screen below the top bar and header, on every
+  // device. Their combined height varies (the nav wraps between breakpoints,
+  // the top bar can hide), so it is measured rather than guessed. Only while
+  // the page is at the top: the header collapses on scroll, and measuring then
+  // would make the hero jump.
+  let heroEl: HTMLElement;
+  let heroOffset = '';
+  const measureOffset = () => {
+    if (!heroEl || window.scrollY > 2) return;
+    heroOffset = `${Math.max(0, Math.round(heroEl.getBoundingClientRect().top + window.scrollY))}px`;
+  };
+
   onMount(() => {
     mounted = true;
     restartSlider();
+    measureOffset();
+    requestAnimationFrame(measureOffset);
+    void document.fonts?.ready.then(measureOffset);
+    window.addEventListener('resize', measureOffset, { passive: true });
+    return () => window.removeEventListener('resize', measureOffset);
   });
   onDestroy(() => slideTimer && clearInterval(slideTimer));
 
@@ -181,7 +202,7 @@
   $: showPanel = quickLinks.length > 0 || hasPrimary || experiences.length > 0;
 </script>
 
-<section data-hero class="home-hero relative isolate overflow-hidden">
+<section data-hero bind:this={heroEl} class="home-hero relative isolate overflow-hidden" style={heroOffset ? `--hero-offset: ${heroOffset}` : undefined}>
   <div class="absolute inset-0 bg-deep-green" aria-hidden="true">
     {#each displaySlides as slide, index (slide.imageUrl)}
       {@const fit = (slide.fit || imageFit) as HeroImageFit}
@@ -361,7 +382,8 @@
 
   .home-hero {
     display: flex;
-    min-height: calc(100svh - 134px);
+    /* Fallback until measured (and without JS): the usual desktop header. */
+    min-height: calc(100svh - var(--hero-offset, 134px));
     flex-direction: column;
     justify-content: flex-end;
     background: rgb(var(--c-deep-green));
@@ -449,7 +471,7 @@
 
   @media (max-width: 767px) {
     .home-hero {
-      min-height: calc(100svh - 70px);
+      min-height: calc(100svh - var(--hero-offset, 70px));
       max-width: 100vw;
       overflow-x: clip;
       background: rgb(var(--c-deep-green));
@@ -613,7 +635,7 @@
 
   @media (min-width: 480px) and (max-width: 767px) {
     .home-hero {
-      min-height: calc(100svh - 70px);
+      min-height: calc(100svh - var(--hero-offset, 70px));
     }
 
     .home-hero :global(.container-shell) {
@@ -704,6 +726,59 @@
 
     .hero-scroll-cue :global(svg) {
       animation: none;
+    }
+  }
+
+  /* Fit one screen on short displays too. The content already sits at the
+     bottom of the hero, so the space above it can shrink with the screen's
+     height instead of pushing the planner and the scroll cue below the fold. */
+  @media (min-width: 768px) {
+    .hero-copy {
+      padding-top: clamp(2rem, 6svh, 8rem);
+    }
+  }
+
+  @media (min-width: 768px) and (max-height: 780px) {
+    .hero-copy {
+      padding-bottom: 1.75rem;
+    }
+
+    .home-hero h1 {
+      font-size: clamp(2.5rem, 7.2svh, 3.5rem);
+    }
+
+    .hero-copy p {
+      margin-top: 0.9rem;
+    }
+
+    .hero-planner-shell {
+      padding-bottom: 3rem;
+    }
+  }
+
+  @media (max-width: 767px) and (max-height: 720px) {
+    .hero-copy {
+      padding-top: 1.25rem;
+    }
+
+    .home-hero h1 {
+      font-size: clamp(2rem, 8.6vw, 2.6rem);
+    }
+
+    .hero-copy p {
+      margin-top: 0.7rem;
+      font-size: 0.94rem;
+      line-height: 1.55;
+    }
+
+    .hero-planner-shell {
+      padding-bottom: 3.5rem;
+    }
+  }
+
+  @media (max-width: 767px) and (max-height: 660px) {
+    .hero-planner-shell {
+      padding-bottom: 3rem;
     }
   }
 </style>

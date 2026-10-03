@@ -16,7 +16,7 @@
   export let subtitle =
     'Tanzania has many possible routes. That is the good part — and also the confusing part. We help you understand what fits your dates, budget, pace and travel style before you commit to anything.';
   export let ctaLabel = 'Plan Your Trip';
-  export let ctaHref = '#lead-form';
+  export let ctaHref = '/plan-my-trip';
   export let features: WhyFeature[] = [
     {
       icon_url: '/images/icons-home/icon-planned.png',

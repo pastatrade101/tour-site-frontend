@@ -234,7 +234,7 @@
         title: 'A Local Team to Help You Make Sense of Tanzania',
         subtitle: 'Tanzania has many possible routes. That is the good part — and also the confusing part. We help you understand what fits your dates, budget, pace and travel style before you commit to anything.',
         button_text: 'Plan Your Trip',
-        button_url: '#lead-form',
+        button_url: '/plan-my-trip',
         extra_data: {
           eyebrow: 'Why Goldfinch',
           title_highlight: 'Tanzania',

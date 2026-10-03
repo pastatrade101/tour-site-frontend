@@ -16,7 +16,7 @@
   import { setupPwaInstall } from '$lib/pwa';
   import { initSmoothScrolling, setupGsap } from '$lib/animations';
   import { api } from '$lib/api/client';
-  import { trackSession, trackPageView } from '$lib/analytics';
+  import { installWhatsAppTracking, isProdHost, trackSession, trackPageView } from '$lib/analytics';
   import { loadClarity } from '$lib/clarity';
   import { applyBranding, branding } from '$lib/branding';
   import { SITE_URL } from '$lib/config/env';
@@ -149,9 +149,8 @@
     }
   };
 
-  // Local dev / preview hosts must never pollute the production GA4 / Clarity data.
-  const isProdHost = () =>
-    browser && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname) && !window.location.hostname.endsWith('.local');
+  // Local dev / preview hosts must never pollute the production GA4 / Clarity
+  // data — isProdHost (lib/analytics) also keeps them out of the in-house record.
 
   // Load GA4 (gtag) on the public site — gated by consent ('granted') above and a
   // configured PUBLIC_GA4_MEASUREMENT_ID. send_page_view is off so the SPA page-view
@@ -242,8 +241,11 @@
     setupPwaInstall();
     applyRememberedLocale();
     if (!isAdmin) trackSession(); // fire-and-forget attribution beacon (public only)
+    // Every WhatsApp link on the public site is a lead — one listener counts them all.
+    const stopWhatsApp = isAdmin ? undefined : installWhatsAppTracking();
     return () => {
       smoothScrollCleanup?.();
+      stopWhatsApp?.();
     };
   });
 </script>

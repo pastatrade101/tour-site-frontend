@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
-    Activity, AlertTriangle, AppWindow, ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, Bot, Check,
+    Activity, AlertTriangle, AppWindow, ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, Check,
     CheckCircle2, ClipboardList, Compass, Copy, Download, ExternalLink, Eye, Filter, Flame, Globe, Hand, History,
     Info, Lightbulb, Link2, ListChecks, MapPin, MessageCircle, Monitor, MousePointer2, MousePointerClick,
-    MoveVertical, PlayCircle, RefreshCw, ScanEye, Send, ShieldCheck, Sparkles, Target, TrendingUp, Trophy, Users, Zap
+    MoveVertical, PlayCircle, RefreshCw, ScanEye, Send, ShieldCheck, Target, TrendingUp, Trophy, Users, Zap
   } from '@lucide/svelte';
   import { env as publicEnv } from '$env/dynamic/public';
   import { api } from '$lib/api/client';
@@ -14,25 +14,49 @@
   import Counter from '$lib/components/admin/Counter.svelte';
   import AnalyticsEmpty from '$lib/components/admin/AnalyticsEmpty.svelte';
   import MetricCard from '$lib/components/admin/ux/MetricCard.svelte';
-  import InsightCard from '$lib/components/admin/ux/InsightCard.svelte';
+  import SourceBadge from '$lib/components/admin/ux/SourceBadge.svelte';
   import BreakdownBars from '$lib/components/admin/ux/BreakdownBars.svelte';
   import DeepLinkCard from '$lib/components/admin/ux/DeepLinkCard.svelte';
   import ScoreRing from '$lib/components/admin/ux/ScoreRing.svelte';
+  import MainLeads from '$lib/components/admin/analytics/MainLeads.svelte';
+  import Interpretation from '$lib/components/admin/analytics/Interpretation.svelte';
+  import type { MainLeadsData } from '$lib/components/admin/analytics/types';
+  import type { Interpretation as InterpretationData } from '$lib/components/admin/analytics/interpretation';
   import { barConfig, doughnutConfig, funnelConfig, lineConfig } from '$lib/charts';
 
   type Tally = Array<{ label: string; value: number }>;
+  // `ok: false` on any of these: a read behind it failed, so its zeros are unknowns.
   type Overview = {
-    visitors: number; interactions: number; planMyTripSubmissions: number; requestTripSubmissions: number;
-    aiLeads: number; whatsappClicks: number; phoneClicks: number; emailClicks: number; aiAdvisorOpened: number;
-    totalLeads: number; formOpens: number; formConversionRate: number; leadConversionRate: number;
+    ok?: boolean;
+    visitors: number; pageViews: number; interactions: number; activeVisitors: number;
+    planMyTripSubmissions: number; requestTripSubmissions: number; itineraryRequests: number;
+    whatsappClicks: number; phoneClicks: number; emailClicks: number;
+    totalLeads: number; formOpens: number; formSubmissions: number; formOpenersWhoSent: number;
+    formConversionRate: number; leadConversionRate: number; automatedExcluded: number;
   };
   type LeadData = {
+    ok?: boolean;
     total: number; leadsByDay: Array<{ date: string; value: number }>;
     bySource: Tally; byDestination: Tally; byBudget: Tally; byExperience: Tally;
     byTravellerType: Tally; byAccommodation: Tally; byStatus: Tally;
   };
-  type Funnel = { stages: Array<{ key: string; label: string; value: number }>; rates: Record<string, number> };
-  type Traffic = { byDay: Array<{ date: string; visitors: number; whatsapp: number; ai: number; events: number }>; byDevice: Tally; topEvents: Tally };
+  type FunnelDrop = {
+    from: string; fromLabel: string; fromValue: number; to: string; toLabel: string; toValue: number;
+    comparable: boolean; dropPct: number | null;
+  };
+  type Funnel = {
+    ok?: boolean;
+    stages: Array<{ key: string; label: string; value: number }>;
+    drops: FunnelDrop[];
+    /** The one bottleneck, chosen by the API with the same rule as the Website Intelligence summary. */
+    biggestDrop: FunnelDrop | null;
+    rates: Record<string, number>;
+  };
+  type Traffic = {
+    ok?: boolean;
+    byDay: Array<{ date: string; visitors: number; pageViews: number; interactions: number; whatsapp: number; events: number }>;
+    byDevice: Tally; topEvents: Tally;
+  };
   type Ga4 = {
     configured: boolean; error?: string; activeUsers: number; totalUsers: number; sessions: number; pageViews: number;
     byDay: Array<{ date: string; users: number; sessions: number; pageViews: number }>;
@@ -48,14 +72,13 @@
     configured: boolean; error?: string; windowDays: number; fetchedAt: string | null;
     totals: ClarityTotals; byDevice: Tally; byBrowser: Tally; byCountry: Tally; byUrl: Tally;
   };
-  type UxInsight = {
-    id: string; priority: 'critical' | 'high' | 'medium' | 'low'; confidence: 'high' | 'medium' | 'low';
-    title: string; why: string; impact: string; difficulty: 'easy' | 'medium' | 'hard'; estTime: string; source: string;
-  };
-  type UxInsights = { available: boolean; reason?: string; generatedAt: string | null; summary: string | null; insights: UxInsight[]; dataSources: string[] };
   // Deterministic website-intelligence engine (no LLM) — health/category scores,
-  // executive summary, rule-based alerts, prioritized actions, real timeline.
-  type MetricRef = { value: number | null; source: string; changePct: number | null; status: 'direct' | 'derived' | 'na'; note?: string };
+  // executive summary, rule-based alerts, prioritized actions, real timeline,
+  // and the plain-language `interpretation` of the period shown under Main leads.
+  // `changePct` is null when the earlier figure is too small (under 5) or the
+  // earlier period ends before tracking / the first lead existed; the card then
+  // shows `previous` itself ("vs 12").
+  type MetricRef = { value: number | null; source: string; changePct: number | null; previous?: number | null; status: 'direct' | 'derived' | 'na'; note?: string };
   type CategoryScore = { key: string; label: string; score: number | null; changePct: number | null; available: boolean; reason: string; basis: string };
   type WiAlert = { id: string; severity: 'critical' | 'warning' | 'info' | 'success'; category: string; title: string; detail: string; metric: string | null; deepLink?: string };
   type WiAction = { id: string; priority: 'critical' | 'high' | 'medium' | 'low'; category: string; issue: string; supportingMetric: string; why: string; fix: string; expectedOutcome: string; effort: 'easy' | 'medium' | 'hard'; confidence: 'high' | 'medium' | 'low'; deepLink?: string };
@@ -65,8 +88,11 @@
     sources: { firstParty: boolean; ga4: boolean; clarity: boolean };
     health: { score: number | null; status: string; changePct: number | null; criticalCount: number; basis: string; contributing: string[] };
     categoryScores: CategoryScore[];
-    executive: { metrics: Record<string, MetricRef>; biggestDropOff: string | null; topIssue: string | null };
+    // automatedExcluded = sessions left out as automated in the range (a network
+    // opening more than 10 sessions in one UTC day).
+    executive: { metrics: Record<string, MetricRef>; automatedExcluded?: number; biggestDropOff: string | null; topIssue: string | null };
     alerts: WiAlert[]; actions: WiAction[]; timeline: WiTimeline[];
+    interpretation?: InterpretationData | null;
   };
   // A source-labeled KPI — provider-agnostic so new providers slot in unchanged.
   type MetricCardModel = {
@@ -88,9 +114,11 @@
   let traffic: Traffic | null = null;
   let ga4: Ga4 | null = null;
   let clarity: Clarity | null = null;
-  let ux: UxInsights | null = null;
   let intel: Intelligence | null = null;
-  let uxLoading = false;
+  // Starts true so the reading under Main leads shows its skeleton, not its
+  // empty state, until the first answer arrives.
+  let intelLoading = true;
+  let intelError = false;
   let copied = false;
   let updatedAt = 0;
   let eventView: 'business' | 'dev' = 'business';
@@ -104,8 +132,45 @@
   const clarityLink = (view: string) =>
     clarityId ? `https://clarity.microsoft.com/projects/view/${clarityId}/${view}` : 'https://clarity.microsoft.com/';
 
+  // ── Main leads (Plan My Trip · itinerary form · WhatsApp) — its own request
+  // so it renders as soon as it answers and a failure there never blanks the
+  // rest of the page. `mainLeadsReq` drops answers for a range no longer shown.
+  let mainLeads: MainLeadsData | null = null;
+  let mainLeadsLoading = true;
+  let mainLeadsError = false;
+  let mainLeadsReq = 0;
+  const loadMainLeads = async () => {
+    const req = ++mainLeadsReq;
+    mainLeadsLoading = true;
+    mainLeadsError = false;
+    try {
+      const res = await api.analytics.mainLeads({ range });
+      if (req !== mainLeadsReq) return;
+      mainLeads = (res.data ?? null) as MainLeadsData | null;
+      mainLeadsError = !mainLeads;
+    } catch {
+      if (req !== mainLeadsReq) return;
+      mainLeads = null;
+      mainLeadsError = true;
+    } finally {
+      if (req === mainLeadsReq) mainLeadsLoading = false;
+    }
+  };
+  $: rangeLabel = RANGES.find((r) => r.k === range)?.l ?? range;
+  $: intelShown = intelFor === range ? intel : null;
+
+  // `coreReq` drops answers for a range no longer selected (a slow 'Last month'
+  // must not overwrite a quick 'Today').
+  let coreReq = 0;
   const load = async () => {
+    const req = ++coreReq;
     loading = true;
+    // Drop any reading still on its way and show the panel as loading at once,
+    // so the previous range's reading never sits at full strength under the
+    // new one while the core figures load (loadIntel follows them below).
+    intelReq++;
+    intelLoading = true;
+    void loadMainLeads();
     const params = { range };
     try {
       const [o, l, f, t, g] = await Promise.all([
@@ -113,6 +178,10 @@
         api.analytics.funnel(params), api.analytics.timeseries(params),
         api.analytics.traffic(params)
       ]);
+      if (req !== coreReq) return;
+      const parts = [o.data, l.data, f.data, t.data] as Array<{ ok?: boolean } | null>;
+      // A read behind any of them failed: say so rather than show its zeros.
+      if (parts.some((p) => !p || p.ok === false)) throw new Error('incomplete');
       overview = o.data as Overview;
       leads = l.data as LeadData;
       funnel = f.data as Funnel;
@@ -120,41 +189,65 @@
       ga4 = g.data as Ga4;
       updatedAt = Date.now();
     } catch {
+      if (req !== coreReq) return;
       overview = null; leads = null; funnel = null; traffic = null; ga4 = null;
     } finally {
-      loading = false;
+      if (req === coreReq) loading = false;
     }
-    void loadUx();
+    if (req === coreReq) void loadIntel();
   };
 
-  // UX Intelligence (Clarity aggregates + grounded AI insights) loads separately
-  // so the core KPIs never wait on it. `force` bypasses the server-side cache.
-  const loadUx = async (force = false) => {
-    uxLoading = true;
-    const q = force ? { range, refresh: '1' } : { range };
+  // Website Intelligence (Clarity aggregates + the deterministic health, alerts,
+  // actions and the period's interpretation) loads after the core figures, so
+  // the KPIs never wait on it and GA4 answers come from the cache they warmed.
+  // `force` bypasses Clarity's server-side cache; `intelReq` drops answers for
+  // a range no longer shown.
+  let intelReq = 0;
+  // The range key the reading in `intel` was asked for; a reading for another
+  // range is never shown (`intelShown` is null until the new one arrives).
+  let intelFor = '';
+  const loadIntel = async (force = false) => {
+    const req = ++intelReq;
+    const forRange = range;
+    intelLoading = true;
     try {
-      const [c, u, w] = await Promise.all([
+      const [c, w] = await Promise.all([
         api.analytics.clarity(force ? { refresh: '1' } : undefined).catch(() => null),
-        api.analytics.uxInsights(q).catch(() => null),
-        api.analytics.intelligence({ range }).catch(() => null)
+        api.analytics.intelligence({ range: forRange }).catch(() => null)
       ]);
+      if (req !== intelReq) return;
       clarity = (c?.data ?? null) as Clarity | null;
-      ux = (u?.data ?? null) as UxInsights | null;
       intel = (w?.data ?? null) as Intelligence | null;
+      intelFor = forRange;
+      intelError = !intel;
     } finally {
-      uxLoading = false;
+      if (req === intelReq) intelLoading = false;
     }
   };
 
   // ── Export + share (real data only) ─────────────────────────────────────────
+  // One meaning per column: "Change vs prev" only ever holds a % change, the
+  // earlier figure sits in "Previous period", and a finding's or action's kind
+  // and next step have their own columns.
   const csvCell = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const SOURCE_NAME: Record<string, string> = { makutano: 'In-house', business: 'In-house', website: 'In-house', ga4: 'GA4', clarity: 'Microsoft Clarity' };
+  const sourceName = (src: string) => SOURCE_NAME[src] ?? src;
   const exportCsv = () => {
     if (typeof document === 'undefined') return;
-    const rows: string[][] = [['Section', 'Metric', 'Value', 'Source', 'Change vs prev']];
-    const m = intel?.executive.metrics ?? {};
-    for (const [k, v] of Object.entries(m)) rows.push(['Executive', k, v.value == null ? 'N/A' : String(v.value), v.source, v.changePct == null ? '' : `${v.changePct}%`]);
-    for (const s of intel?.categoryScores ?? []) rows.push(['Score', s.label, s.score == null ? 'N/A' : String(s.score), 'derived', s.changePct == null ? '' : `${s.changePct}%`]);
-    for (const a of intel?.actions ?? []) rows.push(['Action', a.issue, a.supportingMetric, a.priority, a.expectedOutcome]);
+    const rows: string[][] = [['Section', 'Kind', 'Metric', 'Value', 'Previous period', 'Change vs prev', 'Source', 'Next step']];
+    const shown = intelShown;
+    const m = shown?.executive.metrics ?? {};
+    for (const cfg of execConfig) {
+      const v = m[cfg.key];
+      if (!v) continue;
+      const unit = cfg.format === 'percent' ? '%' : '';
+      rows.push(['Executive', '', cfg.label, v.value == null ? 'N/A' : `${v.value}${unit}`, v.previous == null ? '' : `${v.previous}${unit}`, v.changePct == null ? '' : `${v.changePct}%`, sourceName(v.source), '']);
+    }
+    const auto = shown?.executive.automatedExcluded ?? 0;
+    if (auto > 0) rows.push(['Executive', '', 'Automated sessions left out', String(auto), '', '', 'In-house', '']);
+    for (const sc of categoryScores) rows.push(['Score', '', sc.label, sc.score == null ? 'N/A' : String(sc.score), '', sc.changePct == null ? '' : `${sc.changePct}%`, 'Derived', '']);
+    for (const a of shown?.actions ?? []) rows.push(['Action', a.priority, a.issue, a.supportingMetric, '', '', '', a.fix]);
+    for (const f of shown?.interpretation?.findings ?? []) rows.push(['Finding', f.kind, f.title, f.evidence, '', '', sourceName(f.source), f.action ?? '']);
     const csv = rows.map((r) => r.map(csvCell).join(',')).join('\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     const a = document.createElement('a');
@@ -172,19 +265,18 @@
 
   // ── helpers ──────────────────────────────────────────────────────────────
   const pct = (a: number, b: number) => (b > 0 ? Math.round(((a - b) / b) * 100) : a > 0 ? 100 : 0);
-  const share = (v: number, total: number) => (total > 0 ? Math.round((v / total) * 100) : 0);
-  // Momentum = 2nd half of the period vs the 1st half of the same daily series.
+  // Momentum = second half of the period vs the first, over whole days only
+  // (the series below leave today out) split into two equal halves; none when
+  // the first half is under 5, where a % says nothing.
   const momentum = (series: number[]): { pct: number } | null => {
     const s = (series ?? []).filter((n) => Number.isFinite(n));
     if (s.length < 4) return null;
-    const mid = Math.floor(s.length / 2);
-    const earlier = s.slice(0, mid).reduce((a, b) => a + b, 0);
-    const recent = s.slice(mid).reduce((a, b) => a + b, 0);
-    if (earlier === 0 && recent === 0) return null;
+    const half = Math.floor(s.length / 2);
+    const earlier = s.slice(s.length - 2 * half, s.length - half).reduce((a, b) => a + b, 0);
+    const recent = s.slice(s.length - half).reduce((a, b) => a + b, 0);
+    if (earlier < 5) return null;
     return { pct: pct(recent, earlier) };
   };
-  const topRow = (t?: Tally) =>
-    (t ?? []).filter((x) => x.value > 0 && x.label !== 'Not specified' && x.label !== '(not set)').sort((a, b) => b.value - a.value)[0] ?? null;
   const sum = (t?: Tally) => (t ?? []).reduce((a, x) => a + x.value, 0);
 
   const rel = (ts: number, ref: number) => {
@@ -199,23 +291,35 @@
   $: lastUpdatedLabel = updatedAt ? `Updated ${rel(updatedAt, now)}` : '';
 
   // ── KPI cards (with per-card daily series for sparkline + trend) ────────────
-  $: visitorSeries = (traffic?.byDay ?? []).map((d) => d.visitors);
-  $: leadSeries = (leads?.leadsByDay ?? []).map((d) => d.value);
-  $: eventSeries = (traffic?.byDay ?? []).map((d) => d.events);
-  $: waSeries = (traffic?.byDay ?? []).map((d) => d.whatsapp);
-  $: aiSeries = (traffic?.byDay ?? []).map((d) => d.ai);
+  // Whole days only: today is still filling up and would read as a fall.
+  $: todayUtc = new Date(now).toISOString().slice(0, 10);
+  $: wholeDays = (traffic?.byDay ?? []).filter((d) => d.date < todayUtc);
+  $: visitorSeries = wholeDays.map((d) => d.visitors);
+  $: interactionSeries = wholeDays.map((d) => d.interactions ?? 0);
+  $: waSeries = wholeDays.map((d) => d.whatsapp);
 
   // ── UX friction cards (Clarity) — real or honestly empty; source-labeled.
   // The business + GA4 KPIs now live in the deterministic Executive summary.
   $: ga4Cfg = ga4?.configured === true;
-  $: cCfg = clarity?.configured === true; // Data Export API token present (real numbers)
+  // Clarity has two separate switches: recordings and heatmaps run from
+  // PUBLIC_CLARITY_PROJECT_ID on the site; the figures here need the data-export
+  // token (CLARITY_API_TOKEN) on the server. `configured` with an `error` means
+  // the token is there but the export call failed — say why, never "not connected".
+  $: cCfg = clarity?.configured === true && !clarity.error; // export answering with real numbers
+  $: clarityExportStatus = !clarity
+    ? intelLoading ? 'Checking the data export…' : "Couldn't check the data export"
+    : clarity.configured
+      ? clarity.error ? `Export connected but failing: ${clarity.error}` : 'Data export live'
+      : 'Data export not set up on this server (CLARITY_API_TOKEN)';
+  // Short form for the small UX cards; the full reason sits in the connection panel.
+  $: clarityCardEmpty = !clarity || cCfg ? '' : clarity.configured ? 'Export failing' : 'Export not set up';
   $: cT = clarity?.totals ?? null;
 
   $: clarityMetrics = [
-    { key: 'rage', label: 'Rage clicks', value: cT?.rageClicks ?? null, source: 'clarity', available: cCfg && cT?.rageClicks != null, deepLink: clarityLink('impressions'), deepLinkLabel: 'Watch recordings', icon: Hand, accent: '#0F6CBD' },
-    { key: 'dead', label: 'Dead clicks', value: cT?.deadClicks ?? null, source: 'clarity', available: cCfg && cT?.deadClicks != null, deepLink: clarityLink('impressions'), deepLinkLabel: 'Watch recordings', icon: MousePointer2, accent: '#0F6CBD' },
-    { key: 'scroll', label: 'Avg scroll depth', value: cT?.avgScrollDepth ?? null, format: 'percent', source: 'clarity', available: cCfg && cT?.avgScrollDepth != null, deepLink: clarityLink('heatmaps'), deepLinkLabel: 'Open heatmap', icon: MoveVertical, accent: '#0F6CBD' },
-    { key: 'quick', label: 'Quick-backs', value: cT?.quickBacks ?? null, source: 'clarity', available: cCfg && cT?.quickBacks != null, deepLink: clarityLink('impressions'), deepLinkLabel: 'Watch recordings', icon: Zap, accent: '#0F6CBD' }
+    { key: 'rage', label: 'Rage clicks', value: cT?.rageClicks ?? null, source: 'clarity', available: cCfg && cT?.rageClicks != null, deepLink: clarityLink('impressions'), deepLinkLabel: 'Watch recordings', emptyText: clarityCardEmpty, icon: Hand, accent: '#0F6CBD' },
+    { key: 'dead', label: 'Dead clicks', value: cT?.deadClicks ?? null, source: 'clarity', available: cCfg && cT?.deadClicks != null, deepLink: clarityLink('impressions'), deepLinkLabel: 'Watch recordings', emptyText: clarityCardEmpty, icon: MousePointer2, accent: '#0F6CBD' },
+    { key: 'scroll', label: 'Avg scroll depth', value: cT?.avgScrollDepth ?? null, format: 'percent', source: 'clarity', available: cCfg && cT?.avgScrollDepth != null, deepLink: clarityLink('heatmaps'), deepLinkLabel: 'Open heatmap', emptyText: clarityCardEmpty, icon: MoveVertical, accent: '#0F6CBD' },
+    { key: 'quick', label: 'Quick-backs', value: cT?.quickBacks ?? null, source: 'clarity', available: cCfg && cT?.quickBacks != null, deepLink: clarityLink('impressions'), deepLinkLabel: 'Watch recordings', emptyText: clarityCardEmpty, icon: Zap, accent: '#0F6CBD' }
   ] as MetricCardModel[];
 
   // Breakdowns prefer GA4 (richer), falling back to Clarity; each stays labeled.
@@ -227,104 +331,137 @@
   $: pageSource = ga4Cfg && ga4!.topPages.length ? 'ga4' : 'clarity';
   $: browserRows = clarity?.byBrowser ?? [];
 
-  // Connection panel — Makutano AI is always live; the rest reflect real config.
+  // Connection panel — the outside sources, each reflecting its real config.
+  // `failing` = set up but the last call errored (the note says why).
   $: hubSources = [
-    { key: 'makutano', label: 'Makutano AI', connected: true, note: 'First-party events · live' },
-    { key: 'ga4', label: 'Google Analytics 4', connected: ga4Cfg, note: ga4Cfg ? 'Traffic API · live' : 'Add GA4 credentials' },
-    { key: 'clarity', label: 'Microsoft Clarity', connected: clarityConnected, note: cCfg ? 'Recordings + data export · live' : clarityConnected ? 'Recordings live · export off' : 'Not connected' }
+    {
+      key: 'ga4', label: 'Google Analytics 4', connected: ga4Cfg, failing: ga4Cfg && Boolean(ga4?.error),
+      note: !ga4Cfg ? 'Add GA4 credentials' : ga4?.error ? `Connected but failing: ${ga4.error}` : 'Traffic API · live'
+    },
+    {
+      key: 'clarity', label: 'Microsoft Clarity', connected: clarityConnected, failing: clarity?.configured === true && Boolean(clarity.error),
+      note: `${clarityConnected ? 'Recordings live' : 'Recordings off (PUBLIC_CLARITY_PROJECT_ID not set)'} · ${clarityExportStatus}`
+    }
   ];
   $: connectedCount = hubSources.filter((s) => s.connected).length;
 
+  // UX Health / Traffic Quality only come from the Clarity export: when it is
+  // off or failing, their N/A line says which, in the same words as above.
+  $: categoryScores = (intelShown?.categoryScores ?? []).map((cat) =>
+    (cat.key === 'ux' || cat.key === 'traffic') && cat.score == null && clarity && !cCfg ? { ...cat, reason: clarityExportStatus } : cat
+  );
+  // The server's Clarity alert is rewritten from the same status (or added when
+  // the export is failing and the server had none), so all three places agree.
+  $: alerts = (() => {
+    const list = intelShown?.alerts ?? [];
+    if (!intelShown || !clarity || cCfg) return list;
+    const status = clarityExportStatus.replace(/\.$/, '');
+    const recordings = clarityConnected ? 'still open in Clarity' : 'need PUBLIC_CLARITY_PROJECT_ID on the site';
+    const clarityAlert: WiAlert = clarity.configured
+      ? {
+          id: 'clarity-export', severity: 'warning', category: 'User Experience', title: 'Clarity data export failing',
+          detail: `${status}. Rage/dead-click, scroll and quick-back figures here stay empty until it answers; recordings and heatmaps ${recordings}.`,
+          metric: null
+        }
+      : {
+          id: 'clarity-export', severity: 'info', category: 'User Experience', title: 'Clarity data export not set up',
+          detail: `${status}. Rage/dead-click, scroll and quick-back figures here need it; recordings and heatmaps ${recordings}.`,
+          metric: null
+        };
+    const at = list.findIndex((a) => a.id.startsWith('clarity'));
+    if (at < 0) return [...list, clarityAlert];
+    return list.flatMap((a, i) => (i === at ? [clarityAlert] : a.id.startsWith('clarity') ? [] : [a]));
+  })();
+
   // ── Executive summary — real KPIs + previous-period benchmarks (deterministic).
-  const execConfig: Array<{ key: string; label: string; icon: typeof Users; accent: string; format?: 'percent'; series?: () => number[] }> = [
-    { key: 'visitors', label: 'Visitors', icon: Users, accent: '#4A3728', series: () => visitorSeries },
-    { key: 'sessions', label: 'Sessions', icon: Activity, accent: '#E37400' },
-    { key: 'pageViews', label: 'Page views', icon: Eye, accent: '#E37400' },
-    { key: 'interactions', label: 'Interactions', icon: MousePointerClick, accent: '#153733' },
-    { key: 'leads', label: 'Leads', icon: Target, accent: '#153733', series: () => leadSeries },
-    { key: 'conversionRate', label: 'Conversion rate', icon: TrendingUp, accent: '#153733', format: 'percent' },
-    { key: 'formOpens', label: 'Form opens', icon: ClipboardList, accent: '#4A3728' },
-    { key: 'formSubmissions', label: 'Form submissions', icon: Send, accent: '#4A3728' },
-    { key: 'bookingRequests', label: 'Booking requests', icon: MapPin, accent: '#153733' },
-    { key: 'whatsappClicks', label: 'WhatsApp clicks', icon: MessageCircle, accent: '#128C7E', series: () => waSeries }
+  // One source per card (the chip says which); the hint says what is counted.
+  // In-house counts leave automated sessions out; GA4 only sees visitors who
+  // accepted cookies, so it has its own card and is never mixed into another.
+  // No sparklines here: the daily series below count every session, which
+  // would not match these totals.
+  const execConfig: Array<{ key: string; label: string; hint: string; icon: typeof Users; accent: string; format?: 'percent' }> = [
+    { key: 'visitors', label: 'Visitors', hint: 'Sessions that viewed a page', icon: Users, accent: '#4A3728' },
+    { key: 'pageViews', label: 'Page views', hint: 'Pages opened on the site', icon: Eye, accent: '#4A3728' },
+    { key: 'ga4Visitors', label: 'GA4 visitors', hint: 'Accepted cookies', icon: Users, accent: '#E37400' },
+    { key: 'interactions', label: 'Interactions', hint: 'Clicks, form steps, contact taps', icon: MousePointerClick, accent: '#153733' },
+    { key: 'leads', label: 'Leads', hint: 'All website enquiries', icon: Target, accent: '#153733' },
+    { key: 'conversionRate', label: 'Conversion rate', hint: 'Leads ÷ visitors', icon: TrendingUp, accent: '#153733', format: 'percent' },
+    { key: 'formOpens', label: 'Saw an enquiry form', hint: 'Visitors shown or opening a form', icon: ClipboardList, accent: '#4A3728' },
+    { key: 'formSubmissions', label: 'Form submissions', hint: 'Enquiry forms sent', icon: Send, accent: '#4A3728' },
+    { key: 'itineraryRequests', label: 'Itinerary requests', hint: 'Tour itinerary form', icon: MapPin, accent: '#153733' },
+    { key: 'whatsappClicks', label: 'WhatsApp clicks', hint: 'Taps on WhatsApp buttons', icon: MessageCircle, accent: '#128C7E' }
   ];
-  $: execCards = intel
+  // The API's in-house key is 'makutano' ("In-house"); 'website' is the same tracker.
+  const execSource = (src: string) => (src === 'website' ? 'makutano' : src);
+  $: execCards = intelShown
     ? execConfig.flatMap((cfg) => {
-        const ref = intel!.executive.metrics[cfg.key];
+        const ref = intelShown!.executive.metrics[cfg.key];
         return ref ? [{ cfg, ref }] : [];
       })
     : [];
+  $: automatedExcluded = intelShown?.executive.automatedExcluded ?? 0;
 
   // deterministic-alert + action styling (const maps, used in markup)
   const ALERT_STYLE: Record<string, { cls: string; text: string; icon: typeof Info }> = {
     critical: { cls: 'border-red-300/70 bg-red-50/50', text: 'text-red-700', icon: AlertTriangle },
     warning: { cls: 'border-amber-300/70 bg-amber-50/40', text: 'text-amber-700', icon: AlertTriangle },
-    info: { cls: 'border-ink/12 bg-sand/25', text: 'text-ink/60', icon: Info },
+    info: { cls: 'border-ink/[0.12] bg-sand/25', text: 'text-ink/60', icon: Info },
     success: { cls: 'border-emerald-300/70 bg-emerald-50/40', text: 'text-emerald-700', icon: CheckCircle2 }
   };
   const PRIO_STYLE: Record<string, { label: string; cls: string; bar: string }> = {
-    critical: { label: 'Critical', cls: 'bg-red-500/12 text-red-600', bar: 'bg-red-500' },
-    high: { label: 'High', cls: 'bg-amber-500/12 text-amber-600', bar: 'bg-amber-500' },
-    medium: { label: 'Medium', cls: 'bg-forest/12 text-forest', bar: 'bg-forest' },
+    critical: { label: 'Critical', cls: 'bg-red-500/[0.12] text-red-600', bar: 'bg-red-500' },
+    high: { label: 'High', cls: 'bg-amber-500/[0.12] text-amber-600', bar: 'bg-amber-500' },
+    medium: { label: 'Medium', cls: 'bg-forest/[0.12] text-forest', bar: 'bg-forest' },
     low: { label: 'Low', cls: 'bg-ink/[0.06] text-ink/50', bar: 'bg-ink/30' }
   };
   $: healthStatusColor =
-    intel?.health.score == null ? 'text-ink/40'
-    : intel.health.score >= 70 ? 'text-emerald-600'
-    : intel.health.score >= 50 ? 'text-amber-600' : 'text-red-500';
+    intelShown?.health.score == null ? 'text-ink/40'
+    : intelShown.health.score >= 70 ? 'text-emerald-600'
+    : intelShown.health.score >= 50 ? 'text-amber-600' : 'text-red-500';
 
+  // Every top card is in-house: the tracker (automated sessions left out) or
+  // the website's enquiries in Bookings. GA4 has its own card further down.
   $: cards = overview
     ? [
-        { label: 'Visitors', value: overview.visitors, suffix: '', helper: 'Unique sessions', icon: Users, series: visitorSeries, anchor: 'sec-traffic' },
-        { label: 'Total leads', value: overview.totalLeads, suffix: '', helper: `${overview.leadConversionRate}% of visitors`, icon: ClipboardList, series: leadSeries, anchor: 'sec-leads' },
-        { label: 'Plan My Safari', value: overview.planMyTripSubmissions, suffix: '', helper: 'General planning leads', icon: MapPin, series: [] as number[], anchor: 'sec-leads' },
-        { label: 'Request This Trip', value: overview.requestTripSubmissions, suffix: '', helper: 'Tour-specific leads', icon: Send, series: [] as number[], anchor: 'sec-leads' },
-        { label: 'AI advisor leads', value: overview.aiLeads, suffix: '', helper: `${overview.aiAdvisorOpened} advisor opens`, icon: Bot, series: aiSeries, anchor: 'sec-events' },
+        { label: 'Visitors', value: overview.visitors, suffix: '', helper: 'Visitors who viewed a page', icon: Users, series: visitorSeries, anchor: 'sec-funnel' },
+        { label: 'Total leads', value: overview.totalLeads, suffix: '', helper: `${overview.leadConversionRate}% of visitors · all website enquiries`, icon: ClipboardList, series: [] as number[], anchor: 'sec-leads' },
+        { label: 'Plan My Trip', value: overview.planMyTripSubmissions, suffix: '', helper: 'Plans sent from the planner', icon: MapPin, series: [] as number[], anchor: 'sec-main-leads' },
+        { label: 'Itinerary form', value: overview.itineraryRequests, suffix: '', helper: 'Requests from tour pages', icon: Send, series: [] as number[], anchor: 'sec-main-leads' },
         { label: 'WhatsApp clicks', value: overview.whatsappClicks, suffix: '', helper: `${overview.phoneClicks} phone · ${overview.emailClicks} email`, icon: MessageCircle, series: waSeries, anchor: 'sec-events' },
-        { label: 'Form conversion', value: overview.formConversionRate, suffix: '%', helper: `${overview.formOpens} form opens`, icon: TrendingUp, series: [] as number[], anchor: 'sec-funnel' },
-        { label: 'Interactions', value: overview.interactions, suffix: '', helper: 'Tracked events', icon: MousePointerClick, series: eventSeries, anchor: 'sec-events' }
+        { label: 'Form conversion', value: overview.formConversionRate, suffix: '%', helper: `${overview.formOpenersWhoSent} of ${overview.formOpens} who saw a form sent one`, icon: TrendingUp, series: [] as number[], anchor: 'sec-funnel' },
+        { label: 'Interactions', value: overview.interactions, suffix: '', helper: 'Clicks, form steps, contact taps', icon: MousePointerClick, series: interactionSeries, anchor: 'sec-events' }
       ]
     : [];
 
   // ── Conversion funnel drop-offs + auto-detected bottleneck ──────────────────
-  const RATE_STEPS = [
-    { key: 'visitorsToFormOpen', label: 'Visitors → form open', tip: 'Few visitors start an enquiry — make the "Plan my safari" CTAs more prominent above the fold.' },
-    { key: 'formOpenToSubmit', label: 'Form open → submit', tip: 'People open the form but don\'t finish — shorten it, cut optional fields, and reassure on privacy.' },
-    { key: 'submitToContacted', label: 'Submit → contacted', tip: 'Leads submit but aren\'t marked contacted — speed up first response; most enquiries expect a reply within hours.' },
-    { key: 'contactedToBooked', label: 'Contacted → booked', tip: 'Contacted leads aren\'t booking — revisit quote turnaround, pricing clarity and follow-up cadence.' }
-  ];
-  $: funnelSteps = funnel ? RATE_STEPS.map((s) => ({ ...s, rate: funnel!.rates[s.key] ?? 0, dropoff: Math.max(0, 100 - (funnel!.rates[s.key] ?? 0)) })) : [];
-  $: bottleneck = funnelSteps.length ? [...funnelSteps].sort((a, b) => a.rate - b.rate)[0] : null;
-
-  // ── AI insight engine — plain-language, derived only from the real data ─────
-  type Insight = { icon: typeof Trophy; tone: 'up' | 'down' | 'good' | 'warn' | 'neutral'; label: string; text: string };
-  $: insights = (() => {
-    if (!overview) return [] as Insight[];
-    const out: Insight[] = [];
-    const vm = momentum(visitorSeries) ?? momentum(eventSeries);
-    if (vm) {
-      const up = vm.pct >= 0;
-      out.push({
-        icon: up ? ArrowUpRight : ArrowDownRight, tone: up ? 'up' : 'down', label: 'Traffic trend',
-        text: `Visitor activity is trending ${up ? 'up' : 'down'} ${Math.abs(vm.pct)}% across this period (second half vs first).`
-      });
-    }
-    const dest = topRow(leads?.byDestination);
-    if (dest) out.push({ icon: MapPin, tone: 'good', label: 'Top destination', text: `${dest.label} leads demand with ${dest.value} enquir${dest.value === 1 ? 'y' : 'ies'} (${share(dest.value, leads!.total)}% of leads).` });
-    const src = topRow(leads?.bySource);
-    if (src) out.push({ icon: Compass, tone: 'good', label: 'Best source', text: `Most leads arrive via ${src.label} — ${src.value} (${share(src.value, leads!.total)}% of the total).` });
-    if (bottleneck) out.push({ icon: AlertTriangle, tone: 'warn', label: 'Biggest drop-off', text: `${bottleneck.label}: only ${bottleneck.rate}% continue — this is the weakest step in your funnel.` });
-    if (overview.leadConversionRate != null) {
-      const good = overview.leadConversionRate >= 2;
-      out.push({ icon: Target, tone: good ? 'good' : 'neutral', label: 'Conversion', text: `${overview.leadConversionRate}% of visitors become a lead${good ? ' — a healthy rate for a considered purchase.' : '. There is room to lift this with stronger CTAs.'}` });
-    }
-    if (bottleneck) out.push({ icon: Lightbulb, tone: 'neutral', label: 'Recommended action', text: bottleneck.tip });
-    return out;
-  })();
-  const TONE: Record<Insight['tone'], string> = {
-    up: 'bg-emerald-500/12 text-emerald-600', down: 'bg-red-500/12 text-red-600',
-    good: 'bg-forest/12 text-forest', warn: 'bg-amber-500/15 text-amber-600', neutral: 'bg-goldfinch-gold/15 text-clay'
+  // Stages, in order: Visitors → Viewed a tour → Opened an enquiry form → Sent
+  // an enquiry → Contacted → Quoted → Booked (distinct visitors from the in-house
+  // tracker, then enquiry records and their status). Each step is worked out
+  // from the stage values the chart shows; when the later stage is larger (or
+  // the earlier one is empty) a drop can't be worked out, so the step reads
+  // "not comparable" and is never picked as the bottleneck.
+  const DROP_TIPS: Record<string, string> = {
+    'visitor>tour_view': 'Most visitors never open a tour — feature tours on the pages people land on and keep them in the menu.',
+    'tour_view>form_open': 'People look at tours but do not reach the enquiry form — keep the enquiry button in view near the price and itinerary.',
+    'form_open>submitted': 'People see a form but do not send it — shorten it and make clear which fields are required.',
+    'submitted>contacted': "Enquiries count as contacted only once their status in Bookings moves past 'pending' — reply and update the status.",
+    'contacted>quoted': 'Send an itinerary and quote to contacted leads, and update the status in Bookings.',
+    'quoted>booked': 'Follow up on sent quotes, and mark confirmed trips in Bookings.'
   };
+  // Every adjacent pair of stages, as the API worked them out; "not comparable"
+  // where the later stage is larger or the earlier one empty.
+  $: funnelSteps = funnel
+    ? (funnel.drops ?? []).map((d) => {
+        const rate = d.comparable && d.fromValue > 0 ? Math.round((d.toValue / d.fromValue) * 1000) / 10 : null;
+        return {
+          key: `${d.from}>${d.to}`, label: `${d.fromLabel} → ${d.toLabel.toLowerCase()}`, tip: DROP_TIPS[`${d.from}>${d.to}`] ?? '',
+          fromLabel: d.fromLabel, toLabel: d.toLabel, fromValue: d.fromValue, toValue: d.toValue, comparable: d.comparable, rate,
+          dropoff: d.dropPct
+        };
+      })
+    : [];
+  // The bottleneck is the API's choice — the same rule as "Biggest drop-off" above.
+  $: bottleneck = funnel?.biggestDrop ? funnelSteps.find((st) => st.key === `${funnel!.biggestDrop!.from}>${funnel!.biggestDrop!.to}`) ?? null : null;
 
   // ── Business-friendly event names (toggle vs raw GA4 names) ──────────────────
   const EVENT_LABELS: Record<string, string> = {
@@ -335,11 +472,14 @@
     plan_my_trip_opened: 'Safari planner opened', plan_my_trip_submitted: 'Plan lead submitted',
     begin_journey_opened: 'Journey planner opened', begin_journey_submitted: 'Journey lead submitted',
     request_trip_opened: 'Quote request started', request_trip_submitted: 'Quote lead submitted',
-    form_submit_error: 'Form error', ai_advisor_opened: 'AI advisor opened', ai_advisor_message_sent: 'AI advisor message',
-    ai_advisor_lead_created: 'AI advisor lead', cta_click: 'CTA clicked',
+    form_submit_error: 'Form error', cta_click: 'CTA clicked',
     whatsapp_click: 'WhatsApp clicked', phone_click: 'Phone clicked', email_click: 'Email clicked'
   };
   const prettyEvent = (raw: string) => EVENT_LABELS[raw] ?? raw.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  // Events from the retired advisor chat (no longer on the site) can still sit
+  // in older ranges; the Business view leaves them out, the Developer view
+  // keeps every raw name.
+  const isRetiredEvent = (raw: string) => raw.startsWith('ai_advisor_');
 
   // ── Chart configs ───────────────────────────────────────────────────────────
   const topRows = (t: Tally, n = 6) =>
@@ -379,7 +519,9 @@
       ]
     : [];
   $: statusRows = leads ? cleanRows(leads.byStatus, 8) : { rows: [], max: 1 };
-  $: topEventRows = traffic ? cleanRows(traffic.topEvents, 8) : { rows: [], max: 1 };
+  $: topEventRows = traffic
+    ? cleanRows(eventView === 'business' ? traffic.topEvents.filter((e) => !isRetiredEvent(e.label)) : traffic.topEvents, 8)
+    : { rows: [], max: 1 };
 </script>
 
 <section class="grid gap-6">
@@ -404,11 +546,16 @@
     </div>
   </div>
 
+  <!-- ── MAIN LEADS — Plan My Trip · itinerary form · WhatsApp (own loading/error) ── -->
+  <MainLeads data={mainLeads} loading={mainLeadsLoading} error={mainLeadsError} {rangeLabel} {clarityId} onRetry={loadMainLeads} />
+
+  <!-- ── WHAT THIS PERIOD TELLS YOU — built-in, rule-based reading (own loading/empty) ── -->
+  <Interpretation interpretation={intelShown?.interpretation ?? null} loading={intelLoading} error={intelError} {rangeLabel} onRetry={() => loadIntel()} />
+
   {#if loading}
     <!-- full-page skeleton -->
-    <div class="h-40 animate-pulse rounded-none border border-ink/10 bg-surface/70"></div>
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {#each Array(8) as _}<div class="h-32 animate-pulse rounded-none border border-ink/10 bg-surface/70"></div>{/each}
+      {#each Array(7) as _, i}<div class={`h-32 animate-pulse rounded-none border border-ink/10 bg-surface/70 ${i === 6 ? 'sm:col-span-2' : ''}`}></div>{/each}
     </div>
     <div class="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
       <div class="h-72 animate-pulse rounded-none border border-ink/10 bg-surface/70"></div>
@@ -419,58 +566,33 @@
       description="We couldn't reach the analytics service. Check your connection and try again — your tracking is still recording in the background."
       hint="Pick a date range above to retry." />
   {:else}
-    <!-- ── AI INSIGHTS (first thing you see) ─────────────────────────────── -->
-    <div class="rounded-none border border-goldfinch-gold/30 bg-gradient-to-br from-forest/[0.04] to-goldfinch-gold/[0.06] p-5 shadow-card">
-      <div class="mb-3 flex items-center gap-2">
-        <span class="grid h-8 w-8 place-items-center rounded-xl bg-forest text-white"><Sparkles size={17} /></span>
-        <div>
-          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">AI insights</p>
-          <h3 class="text-lg font-bold text-ink">Your key takeaways this period</h3>
-        </div>
-      </div>
-      {#if insights.length}
-        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {#each insights as ins}
-            {@const I = ins.icon}
-            <div class="flex gap-3 rounded-xl border border-ink/[0.07] bg-surface/80 p-3.5">
-              <span class={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${TONE[ins.tone]}`}><I size={16} /></span>
-              <div class="min-w-0">
-                <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-ink/45">{ins.label}</p>
-                <p class="mt-0.5 text-[13px] leading-5 text-ink/75">{ins.text}</p>
-              </div>
-            </div>
-          {/each}
-        </div>
-      {:else}
-        <AnalyticsEmpty icon={Sparkles} title="Insights are warming up" minHeight={140}
-          description="As soon as visitors browse tours and submit enquiries, we'll surface trends, your top destination, best traffic source and the biggest funnel drop-off here."
-          hint="Share your site link on WhatsApp, Instagram or Google to start collecting data." />
-      {/if}
-    </div>
-
-    <!-- ── KPI cards (sparkline + trend + click to drill in) ─────────────── -->
+    <!-- ── KPI cards (sparkline + trend + click to drill in) ───────────────
+         7 cards: the last spans two columns so 2- and 4-column rows both fill. -->
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {#each cards as c}
+      {#each cards as c, i}
         {@const Icon = c.icon}
         {@const m = c.series.length ? momentum(c.series) : null}
         <button
           type="button"
-          class="group rounded-none border border-ink/10 bg-surface p-5 text-left shadow-card transition hover:-translate-y-0.5 hover:border-goldfinch-gold/40 hover:shadow-[0_16px_40px_-18px_rgba(28,26,22,0.35)]"
+          class={`group rounded-none border border-ink/10 bg-surface p-5 text-left shadow-card transition hover:-translate-y-0.5 hover:border-goldfinch-gold/40 hover:shadow-[0_16px_40px_-18px_rgba(28,26,22,0.35)] ${i === cards.length - 1 && cards.length % 2 === 1 ? 'sm:col-span-2' : ''}`}
           on:click={() => scrollTo(c.anchor)}
         >
           <div class="flex items-start justify-between">
             <span class="grid h-11 w-11 place-items-center rounded-2xl bg-forest/10 text-forest ring-1 ring-ink/5 dark:text-goldfinch-gold"><Icon size={19} /></span>
             {#if m}
-              <span class={`inline-flex items-center gap-0.5 rounded-full px-2 py-1 text-[10px] font-bold ${m.pct >= 0 ? 'bg-emerald-500/12 text-emerald-600' : 'bg-red-500/12 text-red-600'}`}>
+              <span class={`inline-flex items-center gap-0.5 rounded-full px-2 py-1 text-[10px] font-bold ${m.pct >= 0 ? 'bg-emerald-500/[0.12] text-emerald-600' : 'bg-red-500/[0.12] text-red-600'}`}>
                 {#if m.pct >= 0}<ArrowUpRight size={12} />{:else}<ArrowDownRight size={12} />{/if}{Math.abs(m.pct)}%
               </span>
             {/if}
           </div>
-          <p class="mt-4 text-3xl font-bold text-ink"><Counter value={typeof c.value === 'number' ? c.value : 0} suffix={c.suffix} decimals={c.suffix === '%' ? 1 : 0} /></p>
+          <p class="mt-4 text-3xl font-bold text-ink">
+            {#if typeof c.value === 'number'}<Counter value={c.value} suffix={c.suffix} decimals={c.suffix === '%' ? 1 : 0} />
+            {:else}<span class="text-ink/30" title="Not comparable">—</span>{/if}
+          </p>
           <div class="mt-1 flex items-end justify-between gap-2">
             <div class="min-w-0">
-              <p class="text-sm font-semibold text-ink/70">{c.label}</p>
-              <p class="mt-0.5 truncate text-xs text-ink/50">{c.helper}</p>
+              <p class="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-ink/70">{c.label} <SourceBadge source="makutano" /></p>
+              <p class="mt-0.5 line-clamp-2 text-xs text-ink/50" title={c.helper}>{c.helper}</p>
             </div>
             {#if c.series.length}<span class="shrink-0 text-forest/70"><Sparkline data={c.series} color="#4A3728" /></span>{/if}
           </div>
@@ -483,7 +605,7 @@
       <!-- header: neutral branding · connection summary · quick actions -->
       <div class="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-br from-deep-green to-forest p-5 text-white">
         <div class="flex items-center gap-3">
-          <span class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/12 text-goldfinch-gold ring-1 ring-white/15"><ShieldCheck size={20} /></span>
+          <span class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/[0.12] text-goldfinch-gold ring-1 ring-white/15"><ShieldCheck size={20} /></span>
           <div>
             <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-goldfinch-gold">Website Intelligence</p>
             <h3 class="font-serif text-xl font-light leading-tight">Health, behaviour &amp; what to fix next</h3>
@@ -493,13 +615,13 @@
           <span class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold ring-1 ring-white/15">
             <span class="h-2 w-2 rounded-full bg-emerald-400"></span> {connectedCount}/{hubSources.length} sources live
           </span>
-          <button type="button" on:click={() => loadUx(true)} disabled={uxLoading} class="inline-flex items-center gap-1.5 rounded-lg bg-white/12 px-3 py-1.5 text-xs font-bold ring-1 ring-white/15 transition hover:bg-white/20 disabled:opacity-50" aria-label="Refresh website intelligence">
-            <RefreshCw size={14} class={uxLoading ? 'animate-spin' : ''} /> Refresh
+          <button type="button" on:click={() => loadIntel(true)} disabled={intelLoading} class="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.12] px-3 py-1.5 text-xs font-bold ring-1 ring-white/15 transition hover:bg-white/20 disabled:opacity-50" aria-label="Refresh website intelligence">
+            <RefreshCw size={14} class={intelLoading ? 'animate-spin' : ''} /> Refresh
           </button>
-          <button type="button" on:click={exportCsv} class="inline-flex items-center gap-1.5 rounded-lg bg-white/12 px-3 py-1.5 text-xs font-bold ring-1 ring-white/15 transition hover:bg-white/20" aria-label="Export CSV">
+          <button type="button" on:click={exportCsv} class="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.12] px-3 py-1.5 text-xs font-bold ring-1 ring-white/15 transition hover:bg-white/20" aria-label="Export CSV">
             <Download size={14} /> CSV
           </button>
-          <button type="button" on:click={copyLink} class="inline-flex items-center gap-1.5 rounded-lg bg-white/12 px-3 py-1.5 text-xs font-bold ring-1 ring-white/15 transition hover:bg-white/20" aria-label="Copy dashboard link">
+          <button type="button" on:click={copyLink} class="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.12] px-3 py-1.5 text-xs font-bold ring-1 ring-white/15 transition hover:bg-white/20" aria-label="Copy dashboard link">
             {#if copied}<Check size={14} /> Copied{:else}<Link2 size={14} /> Copy link{/if}
           </button>
           <a class="inline-flex items-center gap-1.5 rounded-lg bg-goldfinch-gold px-3 py-1.5 text-xs font-bold text-deep-green transition hover:brightness-105" href={clarityUrl} target="_blank" rel="noopener noreferrer">
@@ -510,68 +632,100 @@
 
       <div class="grid gap-5 p-5">
         <!-- connection panel -->
-        <div class="grid gap-2.5 sm:grid-cols-3">
+        <div class="grid gap-2.5 sm:grid-cols-2">
           {#each hubSources as s}
             <div class="flex items-center gap-2.5 rounded-xl border border-ink/[0.07] bg-sand/20 px-3.5 py-2.5">
-              <span class={`h-2.5 w-2.5 shrink-0 rounded-full ${s.connected ? 'bg-emerald-500 ring-4 ring-emerald-500/15' : 'bg-ink/20'}`}></span>
+              <span class={`h-2.5 w-2.5 shrink-0 rounded-full ${s.failing ? 'bg-amber-500 ring-4 ring-amber-500/15' : s.connected ? 'bg-emerald-500 ring-4 ring-emerald-500/15' : 'bg-ink/20'}`}></span>
               <div class="min-w-0">
                 <p class="truncate text-[13px] font-bold text-ink/80">{s.label}</p>
-                <p class="truncate text-[11px] text-ink/45">{s.note}</p>
+                <p class={`text-[11px] leading-4 [overflow-wrap:anywhere] ${s.failing ? 'text-amber-700 dark:text-amber-400' : 'text-ink/45'}`}>{s.note}</p>
               </div>
             </div>
           {/each}
         </div>
 
         <!-- Website Health + category scores (derived from real analytics) -->
-        <div class="grid gap-4 rounded-2xl border border-ink/10 bg-gradient-to-br from-sand/35 to-surface p-5 lg:grid-cols-[auto_1fr] lg:items-center">
+        <div class={`grid gap-4 rounded-2xl border border-ink/10 bg-gradient-to-br from-sand/35 to-surface p-5 transition-opacity lg:grid-cols-[auto_1fr] lg:items-center ${intelLoading && intelShown ? 'opacity-60' : ''}`} aria-busy={intelLoading}>
           <div class="flex items-center gap-4">
-            <ScoreRing score={intel?.health.score ?? null} label={intel?.health.status ?? ''} size={128} />
+            <ScoreRing score={intelShown?.health.score ?? null} label={intelShown?.health.status ?? ''} size={128} />
             <div>
               <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-ink/40">Website Health</p>
-              <p class={`text-2xl font-extrabold ${healthStatusColor}`}>{intel?.health.status ?? 'N/A'}</p>
-              <p class={`mt-1 flex items-center gap-1.5 text-[12px] font-semibold ${intel && intel.health.criticalCount > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                {#if intel && intel.health.criticalCount > 0}<AlertTriangle size={13} /> {intel.health.criticalCount} critical issue{intel.health.criticalCount === 1 ? '' : 's'}{:else}<CheckCircle2 size={13} /> No critical issues{/if}
-              </p>
+              {#if intelShown}
+                <p class={`text-2xl font-extrabold ${healthStatusColor}`}>{intelShown.health.status}</p>
+                <p class={`mt-1 flex items-center gap-1.5 text-[12px] font-semibold ${intelShown.health.criticalCount > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                  {#if intelShown.health.criticalCount > 0}<AlertTriangle size={13} /> {intelShown.health.criticalCount} critical issue{intelShown.health.criticalCount === 1 ? '' : 's'}{:else}<CheckCircle2 size={13} /> No critical issues{/if}
+                </p>
+              {:else if intelLoading}
+                <div class="mt-1 h-7 w-24 animate-pulse rounded-md bg-ink/[0.06]"></div>
+                <div class="mt-2 h-3 w-28 animate-pulse rounded bg-ink/[0.05]"></div>
+              {:else}
+                <p class={`text-2xl font-extrabold ${healthStatusColor}`}>N/A</p>
+              {/if}
               <p class="mt-1 text-[10px] uppercase tracking-wide text-ink/35">Derived from website analytics</p>
             </div>
           </div>
           <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {#each intel?.categoryScores ?? [] as cat (cat.key)}
+            {#if !intelShown && intelLoading}
+              {#each Array(4) as _}<div class="h-[132px] animate-pulse rounded-xl border border-ink/[0.07] bg-surface"></div>{/each}
+            {/if}
+            {#each categoryScores as cat (cat.key)}
               <div class="flex flex-col items-center rounded-xl border border-ink/[0.07] bg-surface p-3 text-center">
                 <ScoreRing score={cat.score} size={68} stroke={7} />
                 <p class="mt-1.5 text-[12px] font-bold text-ink/75">{cat.label}</p>
-                <p class="mt-0.5 line-clamp-2 text-[10px] leading-3 text-ink/40">{cat.reason}</p>
+                <p class="mt-0.5 line-clamp-2 text-[10px] leading-3 text-ink/40 [overflow-wrap:anywhere]" title={cat.reason}>{cat.reason}</p>
               </div>
             {/each}
           </div>
         </div>
 
-        <!-- Executive summary — real KPIs + previous-period benchmarks -->
+        <!-- Executive summary — real KPIs + previous-period benchmarks.
+             10 cards: 2 columns, then 5 at xl, so every row fills. -->
         <div>
           <div class="mb-2.5 flex flex-wrap items-center justify-between gap-2">
-            <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-ink/40">Executive summary · {intel?.range.label ?? `${range}`} vs previous period</p>
+            <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-ink/40">Executive summary · {intelShown?.range.label ?? rangeLabel} vs previous period</p>
             {#if lastUpdatedLabel}<span class="text-[11px] text-ink/40">{lastUpdatedLabel}</span>{/if}
           </div>
-          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {#each execCards as x (x.cfg.key)}
-              <MetricCard
-                label={x.cfg.label} value={x.ref.value} format={x.cfg.format ?? 'number'} source={x.ref.source}
-                available={x.ref.status !== 'na'} emptyText={x.ref.note ?? ''} changePct={x.ref.changePct}
-                series={x.cfg.series ? x.cfg.series() : []} icon={x.cfg.icon} accent={x.cfg.accent} loading={uxLoading && !intel} />
-            {/each}
-          </div>
-          {#if intel && (intel.executive.biggestDropOff || intel.executive.topIssue)}
-            <div class="mt-3 grid gap-3 sm:grid-cols-2">
-              {#if intel.executive.biggestDropOff}
+          {#if intelShown}
+            <div class={`grid gap-3 transition-opacity sm:grid-cols-2 xl:grid-cols-5 ${intelLoading ? 'opacity-60' : ''}`} aria-busy={intelLoading}>
+              {#each execCards as x (x.cfg.key)}
+                {@const silentGa4 = x.cfg.key === 'ga4Visitors' && /no visitors since|no visitors in this period/.test(x.ref.note ?? '')}
+                <!-- A note from the API (GA4 gone quiet, a period still in progress)
+                     replaces the static hint while the figure itself is shown. -->
+                <MetricCard
+                  label={silentGa4 ? 'GA4 (not receiving the live site)' : x.cfg.label}
+                  hint={x.ref.status !== 'na' && x.ref.note ? x.ref.note : x.cfg.hint}
+                  value={x.ref.value} format={x.cfg.format ?? 'number'} source={execSource(x.ref.source)}
+                  available={x.ref.status !== 'na'} emptyText={x.ref.note ?? ''} changePct={x.ref.changePct} previous={x.ref.previous ?? null}
+                  icon={x.cfg.icon} accent={x.cfg.accent} />
+              {/each}
+            </div>
+          {:else if intelLoading}
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-busy="true">
+              {#each execConfig as cfg (cfg.key)}
+                <MetricCard label={cfg.label} hint={cfg.hint} icon={cfg.icon} accent={cfg.accent} loading />
+              {/each}
+            </div>
+          {:else}
+            <p class="rounded-xl border border-dashed border-ink/[0.12] bg-sand/20 px-4 py-3 text-[13px] text-ink/60">The summary didn't come back this time — use Refresh above to try again. The figures further down are unaffected.</p>
+          {/if}
+          {#if intelShown && automatedExcluded > 0}
+            <p class="mt-2.5 flex items-start gap-1.5 text-[11px] leading-5 text-ink/50" title="A network that opens more than 10 sessions in one day (UTC) is counted as automated; its visits that day are left out of visitors, page views, interactions and WhatsApp clicks. Enquiries are never left out.">
+              <Info size={13} class="mt-1 shrink-0" />
+              {automatedExcluded.toLocaleString()} automated session{automatedExcluded === 1 ? '' : 's'} left out — e.g. a crawler that opened many sessions from one network.
+            </p>
+          {/if}
+          {#if intelShown && (intelShown.executive.biggestDropOff || intelShown.executive.topIssue)}
+            <div class={`mt-3 grid gap-3 transition-opacity sm:grid-cols-2 ${intelLoading ? 'opacity-60' : ''}`}>
+              {#if intelShown.executive.biggestDropOff}
                 <div class="flex items-center gap-2.5 rounded-xl border border-amber-300/60 bg-amber-50/40 px-4 py-3">
                   <ArrowDownRight size={18} class="shrink-0 text-amber-600" />
-                  <div><p class="text-[10px] font-bold uppercase tracking-wide text-amber-700/80">Biggest drop-off</p><p class="text-[13px] font-bold text-ink/80">{intel.executive.biggestDropOff}</p></div>
+                  <div><p class="text-[10px] font-bold uppercase tracking-wide text-amber-700/80">Biggest drop-off</p><p class="text-[13px] font-bold text-ink/80">{intelShown.executive.biggestDropOff}</p></div>
                 </div>
               {/if}
-              {#if intel.executive.topIssue}
+              {#if intelShown.executive.topIssue}
                 <div class="flex items-center gap-2.5 rounded-xl border border-red-300/60 bg-red-50/40 px-4 py-3">
                   <AlertTriangle size={18} class="shrink-0 text-red-500" />
-                  <div><p class="text-[10px] font-bold uppercase tracking-wide text-red-700/80">Most important issue</p><p class="text-[13px] font-bold text-ink/80">{intel.executive.topIssue}</p></div>
+                  <div><p class="text-[10px] font-bold uppercase tracking-wide text-red-700/80">Most important issue</p><p class="text-[13px] font-bold text-ink/80">{intelShown.executive.topIssue}</p></div>
                 </div>
               {/if}
             </div>
@@ -579,11 +733,11 @@
         </div>
 
         <!-- Alerts — rule-based on real conditions -->
-        {#if intel?.alerts.length}
-          <div>
-            <p class="mb-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-ink/40">Alerts · {intel.alerts.length}</p>
+        {#if alerts.length}
+          <div class={`transition-opacity ${intelLoading ? 'opacity-60' : ''}`}>
+            <p class="mb-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-ink/40">Alerts · {alerts.length}</p>
             <div class="grid gap-2">
-              {#each intel.alerts as a (a.id)}
+              {#each alerts as a (a.id)}
                 {@const st = ALERT_STYLE[a.severity]}
                 <div class={`flex items-start gap-3 rounded-xl border px-4 py-3 ${st.cls}`}>
                   <svelte:component this={st.icon} size={16} class={`mt-0.5 shrink-0 ${st.text}`} />
@@ -593,7 +747,7 @@
                       <span class="rounded-full bg-ink/[0.05] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-ink/50">{a.category}</span>
                       {#if a.metric}<span class={`text-[11px] font-bold ${st.text}`}>{a.metric}</span>{/if}
                     </div>
-                    <p class="mt-0.5 text-[12px] leading-5 text-ink/60">{a.detail}</p>
+                    <p class="mt-0.5 text-[12px] leading-5 text-ink/60 [overflow-wrap:anywhere]">{a.detail}</p>
                   </div>
                   {#if a.deepLink}<a class="shrink-0 text-[11px] font-bold text-forest hover:underline" href={clarityLink(a.deepLink)} target="_blank" rel="noopener noreferrer">View →</a>{/if}
                 </div>
@@ -603,11 +757,11 @@
         {/if}
 
         <!-- Recommended action plan — deterministic, priority-ordered -->
-        {#if intel?.actions.length}
-          <div>
+        {#if intelShown?.actions.length}
+          <div class={`transition-opacity ${intelLoading ? 'opacity-60' : ''}`}>
             <p class="mb-2.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-ink/40"><ListChecks size={13} /> Recommended action plan · priority order</p>
             <div class="grid gap-2.5">
-              {#each intel.actions as a, i (a.id)}
+              {#each intelShown.actions as a, i (a.id)}
                 {@const p = PRIO_STYLE[a.priority]}
                 <div class="relative flex gap-3 overflow-hidden rounded-2xl border border-ink/10 bg-surface p-4 shadow-[0_1px_2px_rgba(28,26,22,0.04)]">
                   <span class={`absolute inset-y-0 left-0 w-1 ${p.bar}`} aria-hidden="true"></span>
@@ -632,54 +786,22 @@
               {/each}
             </div>
           </div>
-        {:else if intel}
+        {:else if intelShown && !intelLoading}
           <div class="flex items-center gap-2.5 rounded-xl border border-emerald-300/50 bg-emerald-50/40 px-4 py-3">
             <CheckCircle2 size={18} class="shrink-0 text-emerald-600" />
             <p class="text-[13px] text-ink/70">No priority issues detected in this period. Keep an eye on the alerts above as traffic grows.</p>
           </div>
         {/if}
 
-        <!-- AI analyst summary — supporting, grounded in real data (not a chatbot) -->
-        <div class="rounded-2xl border border-goldfinch-gold/25 bg-gradient-to-br from-goldfinch-gold/[0.06] to-transparent p-4">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <p class="flex items-center gap-1.5 text-[13px] font-bold text-clay">
-              <Sparkles size={15} /> AI analyst summary
-              <span class="rounded bg-clay/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-clay/70">Supporting · grounded in real data</span>
-            </p>
-            {#if ux?.generatedAt}
-              <span class="text-[11px] text-ink/40">Generated {new Date(ux.generatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-            {/if}
-          </div>
-          {#if uxLoading && !ux}
-            <div class="mt-3 grid gap-2" aria-hidden="true">
-              <div class="h-4 w-3/4 animate-pulse rounded bg-ink/[0.07]"></div>
-              <div class="h-4 w-2/3 animate-pulse rounded bg-ink/[0.05]"></div>
-            </div>
-          {:else if ux?.available}
-            {#if ux.summary}<p class="mt-2 text-sm leading-6 text-ink/70">{ux.summary}</p>{/if}
-            {#if ux.insights.length}
-              <div class="mt-3 grid gap-3 lg:grid-cols-2">
-                {#each ux.insights as ins (ins.id)}<InsightCard insight={ins} />{/each}
-              </div>
-            {/if}
-            {#if ux.dataSources.length}<p class="mt-3 text-[11px] text-ink/40">Grounded in: {ux.dataSources.join(' · ')}</p>{/if}
-          {:else}
-            <div class="mt-2 flex items-start gap-2.5 rounded-xl border border-dashed border-ink/12 bg-sand/20 p-3.5">
-              <Lightbulb size={16} class="mt-0.5 shrink-0 text-clay/60" />
-              <p class="text-[13px] leading-6 text-ink/55">{ux?.reason ?? 'The AI summary fills in once there is enough traffic — the deterministic metrics above are unaffected.'}</p>
-            </div>
-          {/if}
-        </div>
-
         <!-- UX friction signals (Clarity) -->
         <div>
-          <p class="mb-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-ink/40">UX friction signals · Microsoft Clarity</p>
+          <p class="mb-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-ink/40">UX friction signals · Microsoft Clarity{#if cCfg && clarity?.windowDays} · last {clarity.windowDays} days{/if}</p>
           <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {#each clarityMetrics as m (m.key)}
               <MetricCard
                 label={m.label} value={m.value} format={m.format ?? 'number'} source={m.source}
                 available={m.available} deepLink={m.deepLink} deepLinkLabel={m.deepLinkLabel ?? 'Open in Clarity'}
-                emptyText={m.emptyText ?? ''} icon={m.icon} accent={m.accent ?? '#0F6CBD'} loading={uxLoading && !clarity} />
+                emptyText={m.emptyText ?? ''} icon={m.icon} accent={m.accent ?? '#0F6CBD'} loading={intelLoading && !clarity} />
             {/each}
           </div>
         </div>
@@ -693,11 +815,11 @@
         </div>
 
         <!-- Event timeline — real detected changes only -->
-        {#if intel?.timeline.length}
-          <div>
+        {#if intelShown?.timeline.length}
+          <div class={`transition-opacity ${intelLoading ? 'opacity-60' : ''}`}>
             <p class="mb-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-ink/40"><History size={13} /> Event timeline · detected changes</p>
             <div class="ml-2 grid gap-4 border-l border-ink/10 pl-5">
-              {#each intel.timeline as ev (ev.date + ev.label)}
+              {#each intelShown.timeline as ev (ev.date + ev.label)}
                 <div class="relative">
                   <span class={`absolute -left-[27px] top-0.5 grid h-4 w-4 place-items-center rounded-full ring-4 ring-surface ${ev.direction === 'up' ? 'bg-emerald-500' : ev.direction === 'down' ? 'bg-red-500' : 'bg-ink/30'}`}>
                     <svelte:component this={ev.direction === 'up' ? ArrowUpRight : ev.direction === 'down' ? ArrowDownRight : ArrowRight} size={10} class="text-white" strokeWidth={3} />
@@ -739,32 +861,47 @@
           <div>
             <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Conversion funnel</p>
             <h3 class="mt-1 text-xl font-bold text-ink">Visitor → Booked</h3>
+            <p class="mt-1 text-xs text-ink/50">Visitors, tour views and form opens: distinct visitors, in-house tracker (automated left out) · enquiries and their status: booking records</p>
           </div>
           {#if bottleneck}
-            <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/12 px-3 py-1 text-xs font-bold text-amber-600">
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/[0.12] px-3 py-1 text-xs font-bold text-amber-600">
               <AlertTriangle size={13} /> Bottleneck: {bottleneck.label}
             </span>
           {/if}
         </div>
         {#if funnelCfg}<ChartCanvas {...funnelCfg} height={300} />{/if}
-        <div class="mt-5 grid gap-3 sm:grid-cols-4">
+        <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
           {#each funnelSteps as step, i}
             <button
               type="button"
               class={`rounded-xl border p-3 text-center transition ${activeStep === i ? 'border-forest bg-forest/[0.06]' : step.key === bottleneck?.key ? 'border-amber-400/60 bg-amber-50/40' : 'border-ink/10 bg-sand/25 hover:border-goldfinch-gold/40'}`}
               on:click={() => (activeStep = activeStep === i ? -1 : i)}
             >
-              <p class="text-2xl font-extrabold text-heading">{step.rate}%</p>
+              {#if step.rate != null}
+                <p class="text-2xl font-extrabold text-heading">{step.rate}%</p>
+              {:else}
+                <p class="text-2xl font-extrabold text-ink/30" aria-hidden="true">—</p>
+              {/if}
               <p class="mt-0.5 text-[11px] font-semibold text-ink/55">{step.label}</p>
+              <p class="mt-0.5 text-[10px] text-ink/40">{step.rate != null ? `${step.fromValue.toLocaleString()} → ${step.toValue.toLocaleString()}` : 'not comparable'}</p>
             </button>
           {/each}
         </div>
         {#if activeStep >= 0 && funnelSteps[activeStep]}
+          {@const st = funnelSteps[activeStep]}
           <div class="mt-3 flex gap-3 rounded-xl border border-ink/[0.07] bg-sand/25 p-4">
             <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-goldfinch-gold/15 text-clay"><Lightbulb size={17} /></span>
             <div>
-              <p class="text-sm font-bold text-ink">{funnelSteps[activeStep].dropoff}% drop off at “{funnelSteps[activeStep].label}”</p>
-              <p class="mt-0.5 text-xs leading-5 text-ink/60">{funnelSteps[activeStep].tip}</p>
+              {#if st.rate != null}
+                <p class="text-sm font-bold text-ink">{st.dropoff}% drop off at “{st.label}”</p>
+                <p class="mt-0.5 text-xs leading-5 text-ink/60">{st.fromValue.toLocaleString()} at “{st.fromLabel}” → {st.toValue.toLocaleString()} at “{st.toLabel}”. {st.tip}</p>
+              {:else if st.fromValue === 0}
+                <p class="text-sm font-bold text-ink">Not comparable at “{st.label}”</p>
+                <p class="mt-0.5 text-xs leading-5 text-ink/60">Nothing was counted at “{st.fromLabel}” in this range, so there is no drop to work out.</p>
+              {:else}
+                <p class="text-sm font-bold text-ink">Not comparable at “{st.label}”</p>
+                <p class="mt-0.5 text-xs leading-5 text-ink/60">{st.toValue.toLocaleString()} reached “{st.toLabel}” but {st.fromValue.toLocaleString()} were counted at “{st.fromLabel}” — the later step is larger, so no drop can be worked out for it.</p>
+              {/if}
             </div>
           </div>
         {:else}
@@ -863,7 +1000,7 @@
         <div class="mt-3">
           {#if (leads?.leadsByDay ?? []).some((d) => d.value > 0)}<ChartCanvas {...leadsLineCfg} height={280} />
           {:else}<AnalyticsEmpty icon={ClipboardList} title="No leads in this range yet" minHeight={280}
-            description="Every 'Plan my safari', 'Request this trip' and AI advisor enquiry appears here so you can see which days and campaigns drive demand."
+            description="Every 'Plan my safari' and 'Request this trip' enquiry appears here so you can see which days and campaigns drive demand."
             hint="Run a WhatsApp or Instagram campaign, then check back." />{/if}
         </div>
       </div>
@@ -873,7 +1010,7 @@
         <div class="mt-3">
           {#if (leads?.bySource ?? []).some((x) => x.value > 0)}<ChartCanvas {...sourceDonutCfg} height={280} />
           {:else}<AnalyticsEmpty icon={Compass} title="No source data yet" minHeight={280}
-            description="Once enquiries come in, you'll see whether they start from the planner, a tour page or the AI advisor." />{/if}
+            description="Once enquiries come in, you'll see whether they start from the planner or a tour page." />{/if}
         </div>
       </div>
     </div>

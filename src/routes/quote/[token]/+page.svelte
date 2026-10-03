@@ -424,6 +424,7 @@
           href={waHref}
           target="_blank"
           rel="noopener noreferrer"
+          data-track-location="quote_page"
         >
           <MessageCircle size={19} />
           {#if expired}Request an updated price{:else if accepted}Message us about this booking{:else}WhatsApp us about this quote{/if}

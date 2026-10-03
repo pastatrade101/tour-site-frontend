@@ -6,6 +6,8 @@
 
   export let specialist: Specialist;
   export let heading = 'Your trip specialist';
+  /** Where this card sits, for the site-wide WhatsApp click listener. */
+  export let trackLocation = 'specialist_card';
 
   $: photo = specialist.photo_url || specialist.photo || '';
   $: rawWhatsApp = specialist.whatsapp_number || settingText($publicSettings, 'whatsapp_number') || '+255 700 000 000';
@@ -50,6 +52,7 @@
     href={waHref}
     target="_blank"
     rel="noopener noreferrer"
+    data-track-location={trackLocation}
   >
     <MessageCircle size={16} /> Message {firstName}
   </a>

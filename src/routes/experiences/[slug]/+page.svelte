@@ -9,8 +9,7 @@
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
-  import EnquiryForm from '$lib/components/public/enquiry/EnquiryForm.svelte';
-  import { configFor } from '$lib/enquiry/configs';
+  import { planTripHref } from '$lib/planHref';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { breadcrumbLd } from '$lib/seo';
   import { toMetaText } from '$lib/richText';
@@ -19,12 +18,8 @@
 
   $: origin = $page.url.origin;
 
-  // The experience IS the category here, so the form opens already knowing it.
-  let enquiryOpen = false;
-  $: enquiryContext = {
-    category: exp ? { id: String(exp.id ?? ''), name: String(exp.name ?? ''), slug: String(exp.slug ?? '') } : undefined
-  };
-  $: enquiryConfig = configFor('category_enquiry', enquiryContext);
+  // Planning starts on the six-step planner, already knowing this experience.
+  $: planHref = planTripHref({ name: exp ? String(exp.name ?? '') : '', slug: exp ? String(exp.slug ?? '') : slug, from: `experience: ${slug}` });
 
   let exp: Record<string, unknown> | null = null;
   let tours: Tour[] = [];
@@ -180,9 +175,9 @@
       <h1 class="max-w-3xl text-3xl font-extrabold leading-[1.08] tracking-tight md:text-5xl">{name}</h1>
       {#if exp.description}<RichText value={String(exp.description)} className="rich-on-dark mt-4 max-w-2xl text-[15px] leading-7 text-white/85 md:text-base" />{/if}
       <div class="mt-6 flex flex-wrap gap-3">
-        <button class="inline-flex h-12 items-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-heading transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white" type="button" on:click={() => (enquiryOpen = true)}>
+        <a class="inline-flex h-12 items-center gap-2 rounded-xl bg-goldfinch-gold px-6 font-bold text-heading transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white" href={planHref}>
           <Sparkles size={18} /> Plan a {name} trip
-        </button>
+        </a>
         <a class="inline-flex h-12 items-center gap-2 rounded-xl border border-white/30 px-6 font-semibold text-white transition hover:bg-surface/10" href={`/tours?experience=${slug}`}>
           See {name} tours <ArrowRight size={18} />
         </a>
@@ -275,4 +270,4 @@
   </section>
 {/if}
 
-<EnquiryForm open={enquiryOpen} config={enquiryConfig} context={enquiryContext} on:close={() => (enquiryOpen = false)} />
+

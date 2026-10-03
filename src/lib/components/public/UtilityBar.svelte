@@ -13,7 +13,6 @@
   import { ArrowDownToLine, CircleHelp, MessageCircle, Star } from '@lucide/svelte';
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
-  import { trackEvent } from '$lib/analytics';
   import { canInstall, promptInstall } from '$lib/pwa';
   import { DEFAULT_LOCALE } from '$lib/i18n';
   import CurrencySelector from './CurrencySelector.svelte';
@@ -103,7 +102,7 @@
           target="_blank"
           rel="noopener noreferrer"
           aria-label={waLabel}
-          on:click={() => trackEvent('whatsapp_click', { cta_location: 'utility_bar' })}
+          data-track-location="utility_bar"
         >
           <MessageCircle size={13} />{$t('cta.whatsapp')}</a>
       {/if}

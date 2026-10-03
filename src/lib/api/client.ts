@@ -538,11 +538,12 @@ export const api = {
     overview: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/overview${queryString(params)}`),
     leads: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/leads${queryString(params)}`),
     funnel: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/funnel${queryString(params)}`),
+    // Plan My Trip, itinerary form and WhatsApp — counts, funnels, sources and tracking health.
+    mainLeads: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/main-leads${queryString(params)}`),
     timeseries: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/timeseries${queryString(params)}`),
     traffic: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/traffic${queryString(params)}`),
     clarity: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/clarity${queryString(params)}`),
     intelligence: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/website-intelligence${queryString(params)}`),
-    uxInsights: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/ux-insights${queryString(params)}`),
     sessions: (params?: Record<string, QueryValue>) => apiRequest<Record<string, unknown>>(`/analytics/sessions${queryString(params)}`),
     integrations: () => apiRequest<Record<string, unknown>>('/analytics/integrations')
   },

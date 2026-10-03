@@ -5,6 +5,7 @@
    * component only knows about steps, validation, submission and analytics.
    */
   import { createEventDispatcher, tick } from 'svelte';
+  import { afterNavigate } from '$app/navigation';
   import { ArrowLeft, ArrowRight, Check, Loader2, MessageCircle, Send } from '@lucide/svelte';
   import { currency, formatUsd } from '$lib/currency';
   import { brand } from '$lib/brand';
@@ -28,11 +29,6 @@
    * not a decision made on the visitor's behalf.
    */
   export let initialValues: FormValues = {};
-
-  // An inline form has no open/close: it is simply there. Flipping `open` once
-  // keeps the tracking below — which fires "form_opened" on the transition —
-  // working the same way for both.
-  $: if (inline && !open) open = true;
 
   const dispatch = createEventDispatcher<{ close: void; submitted: { booking_code?: string | null } }>();
 
@@ -85,10 +81,10 @@
     tour_title: context.tour?.title
   });
 
-  // Opening and closing are tracked here rather than at each call site, so a
-  // new CTA cannot forget to instrument itself.
+  // Opening and closing a dialog are tracked here rather than at each call
+  // site, so a new CTA cannot forget to instrument itself.
   let wasOpen = false;
-  $: if (open !== wasOpen) {
+  $: if (!inline && open !== wasOpen) {
     wasOpen = open;
     if (open) {
       trackEvent('form_opened', eventMeta());
@@ -96,6 +92,66 @@
       trackEvent('form_abandoned', eventMeta());
     }
   }
+
+  // An inline form has no open/close: it is simply part of the page, so it
+  // being rendered says nothing about anyone seeing it — counting the render
+  // made every visit to a page carrying one a "form opened". It counts as
+  // opened once per page view instead, the first time at least ~40% of it is
+  // on screen — or, for a form taller than the screen, when it fills 40% of
+  // the screen. The same rule as the itinerary form (TripRequestForm). A copy
+  // that is not displayed never intersects, so it never counts.
+  let seen: IntersectionObserver | null = null;
+  let seenTarget: HTMLElement | null = null;
+  /** The page (path) this form has already been counted as opened on. */
+  let openedOn = '';
+
+  const reportSeen = () => {
+    const path = window.location.pathname;
+    if (openedOn === path) return;
+    openedOn = path;
+    trackEvent('form_opened', eventMeta());
+  };
+
+  /** Attached to the form body; does nothing for a dialog, and never runs on the server. */
+  const watchInline = (node: HTMLElement) => {
+    if (!inline) return;
+    // The whole panel — header, steps, fields and footer — which EnquiryModal
+    // labels with this form's title id; the body alone if that ever changes.
+    const target = node.closest<HTMLElement>('[aria-labelledby="enquiry-title-inline"]') ?? node;
+    seenTarget = target;
+    if (typeof IntersectionObserver === 'undefined') {
+      if (target.getClientRects().length) reportSeen();
+      return;
+    }
+    seen = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[entries.length - 1];
+        if (!entry?.isIntersecting) return;
+        const screen = entry.rootBounds?.height || window.innerHeight;
+        if (entry.intersectionRatio < 0.4 && entry.intersectionRect.height < screen * 0.4) return;
+        reportSeen();
+        seen?.unobserve(target); // once per page view; afterNavigate below watches again on the next page
+      },
+      { threshold: [0, 0.2, 0.4, 0.6, 0.8, 1] }
+    );
+    seen.observe(target);
+    return {
+      destroy: () => {
+        seen?.disconnect();
+        seen = null;
+        seenTarget = null;
+      }
+    };
+  };
+
+  // A page that keeps this form across a client-side navigation is still a new
+  // page view. Observing afresh reports the current visibility at once, so a
+  // form already on screen counts.
+  afterNavigate(() => {
+    if (!seen || !seenTarget || openedOn === window.location.pathname) return;
+    seen.unobserve(seenTarget);
+    seen.observe(seenTarget);
+  });
 
   /**
    * Budget labels are authored in USD; show them in the visitor's currency.
@@ -154,6 +210,9 @@
   const markStarted = () => {
     if (started) return;
     started = true;
+    // Someone filling the form in has seen it, even if less than 40% of it is
+    // on screen — keep "opened" ahead of "started", as the shared tracker does.
+    if (inline) reportSeen();
     trackEvent('form_started', eventMeta());
   };
 
@@ -231,7 +290,7 @@
   {stepIndex}
   on:close={close}
 >
-  <div bind:this={bodyEl}>
+  <div bind:this={bodyEl} use:watchInline>
     {#if done}
       <!-- success ------------------------------------------------------------>
       <div class="py-6 text-center">
@@ -318,13 +377,7 @@
             href={waHref}
             target="_blank"
             rel="noopener noreferrer"
-            on:click={() =>
-              trackEvent('whatsapp_click', {
-                form_type: config.formType,
-                tour_id: tour?.id,
-                tour_title: tour?.title,
-                cta_location: 'enquiry_success'
-              })}
+            data-track-location="enquiry_form_success"
           >
             <MessageCircle size={17} />{$t('ui.continue_on_whatsapp')}</a>
         {/if}

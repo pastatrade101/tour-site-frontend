@@ -116,7 +116,7 @@
             href={waHref}
             target="_blank"
             rel="noopener noreferrer"
-            on:click={() => trackEvent('whatsapp_click')}
+            data-track-location="contact_page"
           >
             <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/10 text-goldfinch-gold">
               <MessageCircle size={16} />

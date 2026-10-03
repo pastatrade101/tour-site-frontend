@@ -5,7 +5,6 @@
   import { ArrowDownToLine, ArrowRight, ChevronDown, ChevronRight, Compass, Globe, MapPin, Menu, MessageCircle, Search, TicketsPlane, X, BedDouble } from '@lucide/svelte';
   import { fade, fly } from 'svelte/transition';
   import { api } from '$lib/api/client';
-  import { trackEvent } from '$lib/analytics';
   import { navbarEntrance } from '$lib/animations';
   import { brand } from '$lib/brand';
   import { toMetaText } from '$lib/richText';
@@ -780,7 +779,7 @@
             <button type="button" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-forest px-4 py-3 text-sm font-bold text-white transition hover:bg-deep-green" on:click={() => { void promptInstall(); menuOpen = false; }}>
               <ArrowDownToLine size={18} strokeWidth={2.6} />{$t('ui.install_app')}</button>
           {/if}
-          <a class="flex items-center gap-3 rounded-2xl bg-[#25D366]/10 px-4 py-3" href={waHref} target="_blank" rel="noopener noreferrer" on:click={() => { trackEvent('whatsapp_click'); menuOpen = false; }}>
+          <a class="flex items-center gap-3 rounded-2xl bg-[#25D366]/10 px-4 py-3" href={waHref} target="_blank" rel="noopener noreferrer" data-track-location="navbar_menu" on:click={() => (menuOpen = false)}>
             <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#25D366] text-white"><MessageCircle size={20} strokeWidth={2.6} /></span>
             <span class="grid leading-tight">
               <span class="text-xs font-medium text-ink/70">{waButtonText}</span>

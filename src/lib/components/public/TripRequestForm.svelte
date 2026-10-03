@@ -1,3 +1,28 @@
+<script module lang="ts">
+  import { createFormTracker, type FormTracker } from '$lib/analytics';
+
+  /**
+   * One tracker per form per page view, shared by every copy of the form.
+   *
+   * A tour page renders this form twice: in the desktop sidebar (always in
+   * the page, hidden below lg) and in the phone sheet (mounted each time the
+   * sheet opens). A tracker per copy would count a phone visitor's form as
+   * opened again on every reopen of the sheet, and as abandoned on every
+   * close. So the copies share one, keyed by form name and tour, and held for
+   * as long as any copy of it is on the page: "this form for this tour on
+   * this page view" is counted once — opened, started, each step, the lead —
+   * whichever copy the visitor uses. The last copy to leave (navigating away,
+   * or to another tour) lets it go, and an unfinished form is reported as
+   * abandoned then.
+   *
+   * The page path is not part of the key: the copies' lifetime already is the
+   * page view, and the URL can lag a client-side navigation by a tick, which
+   * would split two copies on one page into two "forms".
+   */
+  type Shared = { tracker: FormTracker; users: number; stop: () => void };
+  const shared = new Map<string, Shared>();
+</script>
+
 <script lang="ts">
   import { t } from '$lib/i18n/ui';
   /**
@@ -14,7 +39,8 @@
    * interests, accommodation preference — is a conversation a specialist has
    * once they reply, not a barrier between a visitor and their enquiry.
    */
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onDestroy, onMount } from 'svelte';
+  import { browser } from '$app/environment';
   import {
     ArrowLeft,
     ArrowRight,
@@ -28,8 +54,8 @@
     User,
     Users
   } from '@lucide/svelte';
-  import { api } from '$lib/api/client';
-  import { getAttribution, trackEvent } from '$lib/analytics';
+  import { api, ApiRequestError } from '$lib/api/client';
+  import { getAttribution } from '$lib/analytics';
   import type { Tour } from '$lib/types';
 
   export let tour: Tour | null = null;
@@ -58,6 +84,12 @@
   /** Empty means the translated default ("Plan This Trip" and its intro). */
   export let heading = '';
   export let intro = '';
+  /**
+   * Which form this is, for the analytics funnel and for the lead itself
+   * (lead_context.form_name): the tour page's itinerary form by default,
+   * 'tour_booking_page' on /booking/[slug]. One of the main leads either way.
+   */
+  export let formName = 'tour_itinerary';
 
   const dispatch = createEventDispatcher<{ submitted: { bookingCode: string } }>();
 
@@ -123,6 +155,103 @@
     }
   };
 
+  // ── Tracking ───────────────────────────────────────────────────────────────
+  // The itinerary form is one of the main leads. Its path — seen, first field
+  // touched, step passed, what stopped a step, where it was left, the lead —
+  // goes through the shared tracker above. Only the tour and the step names
+  // leave the page: never a name, an address or a note.
+  const STEP_KEYS = ['trip_details', 'contact'];
+  let root: HTMLElement;
+  let tracker: FormTracker | null = null;
+  let trackerKey = '';
+  let seen: IntersectionObserver | null = null;
+
+  const release = () => {
+    const entry = shared.get(trackerKey);
+    if (entry && --entry.users === 0) {
+      shared.delete(trackerKey);
+      entry.stop(); // reports the form abandoned if it was started and not sent
+    }
+    trackerKey = '';
+    tracker = null;
+  };
+
+  /** Join (or start) the tracker for this form and tour — again when the page moves to another tour. */
+  const attach = (name: string, record: Tour | null) => {
+    if (!browser) return; // per browser tab; never a map shared by server requests
+    const key = `${name}|${record?.id ?? ''}`;
+    if (key === trackerKey) return;
+    release();
+    let entry = shared.get(key);
+    if (!entry) {
+      const created = createFormTracker(
+        {
+          form_name: name,
+          form_type: 'trip_request',
+          lead_type: 'itinerary_form',
+          tour_id: record?.id,
+          // Held to the lengths the analytics edge accepts: one over refuses
+          // the whole event, the lead with it.
+          tour_title: record?.title?.slice(0, 256),
+          tour_slug: record?.slug,
+          destination: record?.destinations?.name?.slice(0, 128),
+          price_from: record?.price_from,
+          duration_days: record?.duration_days,
+          currency: record?.currency
+        },
+        'request_trip_submitted'
+      );
+      entry = { tracker: created, users: 0, stop: created.watchLeave() };
+      shared.set(key, entry);
+    }
+    entry.users += 1;
+    trackerKey = key;
+    tracker = entry.tracker;
+    // A new tour's form is a new form to see. Observing afresh reports the
+    // current visibility at once, so one already on screen counts.
+    if (seen && root) {
+      seen.unobserve(root);
+      seen.observe(root);
+    }
+  };
+
+  $: attach(formName, tour);
+  // Where the visitor is, for the abandon event.
+  $: tracker?.at(step, STEP_KEYS[step]);
+
+  onMount(() => {
+    // Seen: at least ~40% of the form on screen — or, for a form taller than
+    // the screen, filling 40% of it. A copy that is not displayed (the
+    // sidebar on a phone) never intersects, so only a copy the visitor can
+    // actually see counts the form as opened.
+    if (typeof IntersectionObserver === 'undefined') {
+      if (root.getClientRects().length) tracker?.opened();
+      return;
+    }
+    seen = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[entries.length - 1];
+        if (!entry?.isIntersecting) return;
+        const screen = entry.rootBounds?.height || window.innerHeight;
+        if (entry.intersectionRatio < 0.4 && entry.intersectionRect.height < screen * 0.4) return;
+        tracker?.opened();
+        seen?.unobserve(root); // once per form; attach() watches again for another tour
+      },
+      { threshold: [0, 0.2, 0.4, 0.6, 0.8, 1] }
+    );
+    seen.observe(root);
+    return () => seen?.disconnect();
+  });
+  onDestroy(release);
+
+  /** The first touch of a field starts the form — not a focus on a button, nor the hidden trap. */
+  const begin = (event: Event) => {
+    const field = event.target;
+    if (field instanceof HTMLElement && field.matches('input, select, textarea') && field.getAttribute('name') !== 'gf-x1') tracker?.started();
+  };
+  /** The field a refused step stopped on first, by its name in the form (never its value). */
+  const firstInvalid = () => Object.keys(errors)[0] ?? 'unknown';
+
   const validateStep = (index: number): boolean => {
     const e: Record<string, string> = {};
     if (index === 0) {
@@ -141,7 +270,13 @@
 
   const next = () => {
     errorMessage = '';
-    if (!validateStep(step)) return;
+    if (!validateStep(step)) {
+      tracker?.invalid(STEP_KEYS[step], firstInvalid());
+      return;
+    }
+    // The second tab calls this too, from the second step itself; only
+    // leaving the first step passes a step (the second ends in the submit).
+    if (step === 0) tracker?.step(0, STEP_KEYS[0]);
     step = 1;
   };
   const back = () => {
@@ -152,7 +287,10 @@
   const submit = async () => {
     if (submitting) return;
     errorMessage = '';
-    if (!validateStep(1)) return;
+    if (!validateStep(1)) {
+      tracker?.invalid(STEP_KEYS[1], firstInvalid());
+      return;
+    }
 
     submitting = true;
     try {
@@ -169,19 +307,29 @@
         lead_context: {
           v: 1,
           ...leadContext,
+          // Which form sent it — the same name the analytics funnel uses, so
+          // a lead and its form's path can be matched up.
+          form_name: formName,
           // No column for the language, and it is not worth one: it is a
           // preference a person reads, not something anything computes on.
           language,
           tour_title: tour?.title ?? undefined,
+          // The page it was sent from: staff see it as "Enquired from", and the
+          // CMS can tell a developer's local test from a traveller.
+          page: { url: location.href, title: document.title, referrer: document.referrer || undefined },
           attribution: getAttribution()
         },
         hp_company
       });
       bookingCode = String((res.data as Record<string, unknown>)?.booking_code ?? '');
       submitted = true;
-      trackEvent('request_trip_submitted', { tour_id: tour?.id, metadata: { form: 'trip_request', language } });
+      // The lead: request_trip_submitted here, generate_lead in GA4 with
+      // lead_source itinerary_form. The reply language is a preference, not
+      // personal, so it rides along for the in-house record.
+      tracker?.submitted({ metadata: { language } });
       dispatch('submitted', { bookingCode });
     } catch (error) {
+      tracker?.failed(error instanceof ApiRequestError && error.status === 422 ? 'server_validation' : 'submit_failed');
       errorMessage = error instanceof Error && error.message ? error.message : $t('form.err_generic');
     } finally {
       submitting = false;
@@ -209,6 +357,7 @@
 </script>
 
 <div
+  bind:this={root}
   class={`trip-request ${dark ? 'gf-panel-dark' : ''} ${
     panel
       ? `mx-auto w-full max-w-[540px] rounded-[10px] p-5 sm:p-6 ${dark ? 'shadow-[0_24px_70px_rgba(57,61,50,0.22)]' : 'border border-ink/10 bg-surface shadow-sm'}`
@@ -255,7 +404,7 @@
       {/each}
     </div>
 
-    <form class="mt-5 grid gap-4" on:submit|preventDefault={step === 0 ? next : submit} novalidate>
+    <form class="mt-5 grid gap-4" on:submit|preventDefault={step === 0 ? next : submit} on:focusin={begin} on:input={begin} novalidate>
       <!-- Named as nothing, so autofill has nothing to match. A honeypot
            labelled "Company" eats real enquiries. -->
       <div class="absolute left-[-9999px] top-0 h-0 w-0 overflow-hidden" aria-hidden="true">

@@ -5,8 +5,9 @@
   export let source = 'makutano';
 
   const MAP: Record<string, { label: string; color: string }> = {
-    makutano: { label: 'Makutano AI', color: '#153733' },
-    business: { label: 'Makutano AI', color: '#153733' },
+    // The site's own tracker and lead records ('makutano' is the key the API still sends).
+    makutano: { label: 'In-house', color: '#153733' },
+    business: { label: 'In-house', color: '#153733' },
     website: { label: 'Website Tracking', color: '#4A3728' },
     ga4: { label: 'GA4', color: '#E37400' },
     clarity: { label: 'Microsoft Clarity', color: '#0F6CBD' },

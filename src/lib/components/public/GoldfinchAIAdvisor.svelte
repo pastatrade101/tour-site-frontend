@@ -247,9 +247,11 @@
   </button>
 {/if}
 
-<!-- Panel -->
+<!-- Panel. The location covers every WhatsApp link the advisor shows, so
+     the site-wide listener does not file them under the panel's own header. -->
 {#if $aiAdvisorOpen}
   <div
+    data-track-location="ai_advisor"
     class="fixed inset-0 z-[60] flex flex-col bg-surface md:inset-auto md:bottom-6 md:right-6 md:h-[640px] md:max-h-[85vh] md:w-[400px] md:rounded-[16px] md:border md:border-ink/10 md:shadow-[0_30px_80px_rgba(57,61,50,0.28)]"
     role="dialog"
     aria-label={$t('ui.goldfinch_ai_travel_advisor')}
