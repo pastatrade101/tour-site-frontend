@@ -172,7 +172,11 @@
   // tracker (afterNavigate → trackPageView) is the single source of truth; we send
   // the current page once here to catch the entry page.
   const loadGa4 = () => {
-    const id = publicEnv.PUBLIC_GA4_MEASUREMENT_ID;
+    // When the GA4 stream has been combined into a Google tag (GT-…), Google
+    // only serves GA4 through that tag — gtag/js?id=G-… answers 404 and nothing
+    // is measured. PUBLIC_GOOGLE_TAG_ID names the combined tag; GA4 hits still
+    // land in the PUBLIC_GA4_MEASUREMENT_ID stream it carries.
+    const id = publicEnv.PUBLIC_GOOGLE_TAG_ID || publicEnv.PUBLIC_GA4_MEASUREMENT_ID;
     if (!browser || !id || isAdmin || !isProdHost() || document.getElementById('ga4-src')) return;
     const script = document.createElement('script');
     script.id = 'ga4-src';
