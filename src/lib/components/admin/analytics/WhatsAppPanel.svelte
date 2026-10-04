@@ -12,7 +12,7 @@
   const accent = CHANNEL_ACCENT.whatsapp;
 </script>
 
-<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+<div class="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-4">
   <BreakdownBars title="By button location" source="makutano" rows={prettyRows(whatsapp?.byLocation)} icon={MousePointerClick} {accent}
     emptyText="No WhatsApp clicks in this period yet." />
   <BreakdownBars title="By page" source="makutano" rows={whatsapp?.byPage ?? []} icon={AppWindow} {accent}

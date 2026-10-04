@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
+  import { fly } from 'svelte/transition';
+  import { cubicIn, cubicOut } from 'svelte/easing';
   import {
     Activity, AlertTriangle, AppWindow, ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, Check,
     CheckCircle2, ClipboardList, Compass, Copy, Download, ExternalLink, Eye, Filter, Flame, Globe, Hand, History,
@@ -107,6 +109,30 @@
     { k: '30d', l: '30 days' }, { k: 'this_month', l: 'This month' }, { k: 'last_month', l: 'Last month' }
   ];
 
+  // Each analytics area is intentionally a focused workspace rather than one
+  // long scroll. The selected area is saved in the URL so a copied dashboard
+  // link opens the exact report a teammate was reviewing.
+  type AnalyticsTab = 'overview' | 'leads' | 'conversion' | 'demand' | 'health' | 'experience' | 'traffic';
+  const ANALYTICS_TABS: Array<{ key: AnalyticsTab; label: string; description: string; icon: typeof Target }> = [
+    { key: 'overview', label: 'Overview', description: 'Snapshot, insights & next move', icon: BarChart3 },
+    { key: 'leads', label: 'Leads', description: 'Channels, sources & pipeline', icon: Target },
+    { key: 'conversion', label: 'Conversion', description: 'Visitor-to-booked journey', icon: TrendingUp },
+    { key: 'demand', label: 'Demand', description: 'Destinations, budgets & preferences', icon: Compass },
+    { key: 'health', label: 'Website health', description: 'Scores, alerts & action plan', icon: ShieldCheck },
+    { key: 'experience', label: 'Visitor experience', description: 'Friction, behaviour & Clarity', icon: MousePointerClick },
+    { key: 'traffic', label: 'Traffic', description: 'GA4, content & interactions', icon: Globe }
+  ];
+  const TAB_FOR_ANCHOR: Record<string, AnalyticsTab> = {
+    'sec-interpretation': 'overview',
+    'sec-main-leads': 'leads',
+    'sec-leads': 'leads',
+    'sec-funnel': 'conversion',
+    'sec-ux': 'health',
+    'sec-experience': 'experience',
+    'sec-traffic': 'traffic',
+    'sec-events': 'traffic'
+  };
+
   let range = '30d';
   let loading = true;
   let overview: Overview | null = null;
@@ -124,6 +150,10 @@
   let updatedAt = 0;
   let eventView: 'business' | 'dev' = 'business';
   let activeStep = -1;
+  let activeAnalyticsTab: AnalyticsTab = 'overview';
+  let analyticsTabEls: HTMLButtonElement[] = [];
+  let tabDirection = 1;
+  let reduceMotion = false;
 
   // ── Microsoft Clarity — one source inside the UX Intelligence Hub. Recordings
   // & heatmaps stay in Clarity (deep-linked); real aggregates come from the API.
@@ -261,8 +291,64 @@
   };
 
   const setRange = (k: string) => { range = k; activeStep = -1; void load(); };
-  const scrollTo = (id: string) => { if (typeof document !== 'undefined') document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
-  onMount(load);
+  const panelEnter = () => reduceMotion
+    ? { duration: 0 }
+    : { x: 14 * tabDirection, y: 8, duration: 320, easing: cubicOut };
+  const panelExit = () => reduceMotion
+    ? { duration: 0 }
+    : { x: -8 * tabDirection, y: -4, duration: 170, easing: cubicIn };
+  const scrollWorkspaceToTop = () => {
+    if (typeof document === 'undefined') return;
+    const scroller = document.querySelector<HTMLElement>('.admin-shell main[data-lenis-prevent]');
+    scroller?.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+  };
+  const setAnalyticsTab = (key: AnalyticsTab, writeUrl = true, resetScroll = true) => {
+    if (key !== activeAnalyticsTab) {
+      const currentIndex = ANALYTICS_TABS.findIndex((tab) => tab.key === activeAnalyticsTab);
+      const nextIndex = ANALYTICS_TABS.findIndex((tab) => tab.key === key);
+      tabDirection = nextIndex >= currentIndex ? 1 : -1;
+      activeAnalyticsTab = key;
+      if (resetScroll) requestAnimationFrame(scrollWorkspaceToTop);
+    }
+    if (!writeUrl || typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (key === 'overview') url.searchParams.delete('tab');
+    else url.searchParams.set('tab', key);
+    window.history.replaceState(window.history.state, '', url);
+  };
+  const onAnalyticsTabKey = (event: KeyboardEvent, index: number) => {
+    if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const next = event.key === 'Home'
+      ? 0
+      : event.key === 'End'
+        ? ANALYTICS_TABS.length - 1
+        : (index + (event.key === 'ArrowRight' ? 1 : ANALYTICS_TABS.length - 1)) % ANALYTICS_TABS.length;
+    setAnalyticsTab(ANALYTICS_TABS[next].key);
+    analyticsTabEls[next]?.focus();
+  };
+  const scrollTo = async (id: string) => {
+    if (typeof document === 'undefined') return;
+    const target = id.replace(/^#/, '');
+    const tab = TAB_FOR_ANCHOR[target];
+    if (tab && tab !== activeAnalyticsTab) {
+      setAnalyticsTab(tab, true, false);
+      await tick();
+    }
+    const element = document.getElementById(target);
+    const reduceMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    element?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  };
+  onMount(() => {
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const syncMotionPreference = () => (reduceMotion = motionPreference.matches);
+    syncMotionPreference();
+    motionPreference.addEventListener?.('change', syncMotionPreference);
+    const requested = new URLSearchParams(window.location.search).get('tab');
+    if (requested && ANALYTICS_TABS.some((tab) => tab.key === requested)) setAnalyticsTab(requested as AnalyticsTab, false);
+    void load();
+    return () => motionPreference.removeEventListener?.('change', syncMotionPreference);
+  });
 
   // ── helpers ──────────────────────────────────────────────────────────────
   const pct = (a: number, b: number) => (b > 0 ? Math.round(((a - b) / b) * 100) : a > 0 ? 100 : 0);
@@ -525,7 +611,7 @@
     : { rows: [], max: 1 };
 </script>
 
-<section class="grid gap-6">
+<section class="grid min-h-full min-w-0 gap-6 overflow-x-clip bg-white p-4 sm:p-6">
   <!-- header + range filter -->
   <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
     <div>
@@ -547,24 +633,62 @@
     </div>
   </div>
 
-  <!-- Fast owner-facing summary: demand, channel mix and the next evidence-backed move. -->
-  <AnalyticsDecisionDeck
-    data={mainLeads}
-    interpretation={intelShown?.interpretation ?? null}
-    loading={mainLeadsLoading || intelLoading}
-    {rangeLabel}
-    onNavigate={scrollTo}
-  />
+  <!-- Workspace navigation: the content below is intentionally split into focused reports. -->
+  <div class="sticky top-0 z-30 -mx-4 border-y border-ink/10 bg-white/95 px-4 py-2 shadow-[0_8px_18px_-18px_rgba(28,26,22,0.6)] backdrop-blur sm:-mx-5 sm:px-5 lg:mx-0 lg:px-0">
+    <div class="overflow-visible">
+      <div class="grid min-w-0 grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7" role="tablist" aria-label="Analytics report areas">
+        {#each ANALYTICS_TABS as tab, index (tab.key)}
+          {@const TabIcon = tab.icon}
+          <button
+            type="button"
+            role="tab"
+            id={`analytics-tab-${tab.key}`}
+            aria-selected={activeAnalyticsTab === tab.key}
+            aria-controls={`analytics-panel-${tab.key}`}
+            tabindex={activeAnalyticsTab === tab.key ? 0 : -1}
+            bind:this={analyticsTabEls[index]}
+            on:click={() => setAnalyticsTab(tab.key)}
+            on:keydown={(event) => onAnalyticsTabKey(event, index)}
+            class={`group relative flex min-w-0 items-center gap-2 rounded-xl px-3 py-2 text-left transition-[background-color,color,box-shadow,transform] duration-200 ease-out active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold ${activeAnalyticsTab === tab.key ? 'bg-forest text-white shadow-[0_6px_16px_rgba(21,55,51,0.18)]' : 'text-ink/60 hover:bg-surface hover:text-ink'}`}
+          >
+            <span class={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${activeAnalyticsTab === tab.key ? 'bg-white/14 text-goldfinch-gold' : 'bg-ink/[0.05] text-forest'}`}><TabIcon size={14} /></span>
+            <span class="min-w-0">
+              <span class="block truncate text-xs font-bold">{tab.label}</span>
+              <span class={`mt-0.5 hidden truncate text-[10px] font-medium sm:block ${activeAnalyticsTab === tab.key ? 'text-white/65' : 'text-ink/40'}`}>{tab.description}</span>
+            </span>
+            <span class={`absolute inset-x-3 bottom-1 h-0.5 rounded-full bg-goldfinch-gold transition-[transform,opacity] duration-300 ease-out ${activeAnalyticsTab === tab.key ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'}`} aria-hidden="true"></span>
+          </button>
+        {/each}
+      </div>
+    </div>
+  </div>
 
-  <!-- ── MAIN LEADS — Plan My Trip · itinerary form · WhatsApp (own loading/error) ── -->
-  <MainLeads data={mainLeads} loading={mainLeadsLoading} error={mainLeadsError} {rangeLabel} {clarityId} onRetry={loadMainLeads} />
+  {#if activeAnalyticsTab === 'overview'}
+    <div id="analytics-panel-overview" role="tabpanel" aria-labelledby="analytics-tab-overview" class="grid min-w-0 gap-6" in:fly={panelEnter()} out:fly={panelExit()}>
+      <!-- Fast owner-facing summary: demand, channel mix and the next evidence-backed move. -->
+      <AnalyticsDecisionDeck
+        data={mainLeads}
+        interpretation={intelShown?.interpretation ?? null}
+        loading={mainLeadsLoading || intelLoading}
+        {rangeLabel}
+        onNavigate={scrollTo}
+      />
 
-  <!-- ── WHAT THIS PERIOD TELLS YOU — built-in, rule-based reading (own loading/empty) ── -->
-  <Interpretation interpretation={intelShown?.interpretation ?? null} loading={intelLoading} error={intelError} {rangeLabel} onRetry={() => loadIntel()} />
+      <!-- Built-in, rule-based reading of the selected range. -->
+      <Interpretation interpretation={intelShown?.interpretation ?? null} loading={intelLoading} error={intelError} {rangeLabel} onRetry={() => loadIntel()} />
+    </div>
+  {/if}
+
+  {#if activeAnalyticsTab === 'leads'}
+    <div id="analytics-panel-leads" role="tabpanel" aria-labelledby="analytics-tab-leads" class="min-w-0" in:fly={panelEnter()} out:fly={panelExit()}>
+      <!-- Plan My Trip · itinerary form · WhatsApp (own loading/error). -->
+      <MainLeads data={mainLeads} loading={mainLeadsLoading} error={mainLeadsError} {rangeLabel} {clarityId} onRetry={loadMainLeads} />
+    </div>
+  {/if}
 
   {#if loading}
     <!-- full-page skeleton -->
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
       {#each Array(7) as _, i}<div class={`h-32 animate-pulse rounded-none border border-ink/10 bg-surface/70 ${i === 6 ? 'sm:col-span-2' : ''}`}></div>{/each}
     </div>
     <div class="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
@@ -576,49 +700,51 @@
       description="We couldn't reach the analytics service. Check your connection and try again — your tracking is still recording in the background."
       hint="Pick a date range above to retry." />
   {:else}
-    <!-- ── KPI cards (sparkline + trend + click to drill in) ───────────────
-         7 cards: the last spans two columns so 2- and 4-column rows both fill. -->
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {#each cards as c, i}
-        {@const Icon = c.icon}
-        {@const m = c.series.length ? momentum(c.series) : null}
-        <button
-          type="button"
-          class={`group rounded-none border border-ink/10 bg-surface p-5 text-left shadow-card transition hover:-translate-y-0.5 hover:border-goldfinch-gold/40 hover:shadow-[0_16px_40px_-18px_rgba(28,26,22,0.35)] ${i === cards.length - 1 && cards.length % 2 === 1 ? 'sm:col-span-2' : ''}`}
-          on:click={() => scrollTo(c.anchor)}
-        >
-          <div class="flex items-start justify-between">
-            <span class="grid h-11 w-11 place-items-center rounded-2xl bg-forest/10 text-forest ring-1 ring-ink/5 dark:text-goldfinch-gold"><Icon size={19} /></span>
-            {#if m}
-              <span class={`inline-flex items-center gap-0.5 rounded-full px-2 py-1 text-[10px] font-bold ${m.pct >= 0 ? 'bg-emerald-500/[0.12] text-emerald-600' : 'bg-red-500/[0.12] text-red-600'}`}>
-                {#if m.pct >= 0}<ArrowUpRight size={12} />{:else}<ArrowDownRight size={12} />{/if}{Math.abs(m.pct)}%
-              </span>
-            {/if}
-          </div>
-          <p class="mt-4 text-3xl font-bold text-ink">
-            {#if typeof c.value === 'number'}<Counter value={c.value} suffix={c.suffix} decimals={c.suffix === '%' ? 1 : 0} />
-            {:else}<span class="text-ink/30" title="Not comparable">—</span>{/if}
-          </p>
-          <div class="mt-1 flex items-end justify-between gap-2">
-            <div class="min-w-0">
-              <p class="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-ink/70">{c.label} <SourceBadge source="makutano" /></p>
-              <p class="mt-0.5 line-clamp-2 text-xs text-ink/50" title={c.helper}>{c.helper}</p>
+    {#if activeAnalyticsTab === 'overview'}
+      <!-- KPI cards (sparkline + trend + click to drill in). -->
+      <div class="grid gap-4 lg:grid-cols-2 xl:grid-cols-4" in:fly={panelEnter()} out:fly={panelExit()}>
+        {#each cards as c, i}
+          {@const Icon = c.icon}
+          {@const m = c.series.length ? momentum(c.series) : null}
+          <button
+            type="button"
+            class={`group rounded-none border border-ink/10 bg-surface p-5 text-left shadow-card transition hover:-translate-y-0.5 hover:border-goldfinch-gold/40 hover:shadow-[0_16px_40px_-18px_rgba(28,26,22,0.35)] ${i === cards.length - 1 && cards.length % 2 === 1 ? 'sm:col-span-2' : ''}`}
+            on:click={() => scrollTo(c.anchor)}
+          >
+            <div class="flex items-start justify-between">
+              <span class="grid h-11 w-11 place-items-center rounded-2xl bg-forest/10 text-forest ring-1 ring-ink/5 dark:text-goldfinch-gold"><Icon size={19} /></span>
+              {#if m}
+                <span class={`inline-flex items-center gap-0.5 rounded-full px-2 py-1 text-[10px] font-bold ${m.pct >= 0 ? 'bg-emerald-500/[0.12] text-emerald-600' : 'bg-red-500/[0.12] text-red-600'}`}>
+                  {#if m.pct >= 0}<ArrowUpRight size={12} />{:else}<ArrowDownRight size={12} />{/if}{Math.abs(m.pct)}%
+                </span>
+              {/if}
             </div>
-            {#if c.series.length}<span class="shrink-0 text-forest/70"><Sparkline data={c.series} color="#4A3728" /></span>{/if}
-          </div>
-        </button>
-      {/each}
-    </div>
+            <p class="mt-4 text-3xl font-bold text-ink">
+              {#if typeof c.value === 'number'}<Counter value={c.value} suffix={c.suffix} decimals={c.suffix === '%' ? 1 : 0} />
+              {:else}<span class="text-ink/30" title="Not comparable">—</span>{/if}
+            </p>
+            <div class="mt-1 flex items-end justify-between gap-2">
+              <div class="min-w-0">
+                <p class="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-ink/70">{c.label} <SourceBadge source="makutano" /></p>
+                <p class="mt-0.5 line-clamp-2 text-xs text-ink/50" title={c.helper}>{c.helper}</p>
+              </div>
+              {#if c.series.length}<span class="shrink-0 text-forest/70"><Sparkline data={c.series} color="#4A3728" /></span>{/if}
+            </div>
+          </button>
+        {/each}
+      </div>
+    {/if}
 
     <!-- ══ Website Intelligence — deterministic health, behaviour & priorities (real-only) ══ -->
-    <section id="sec-ux" class="scroll-mt-24 overflow-hidden rounded-none border border-ink/10 bg-surface shadow-card">
+    {#if activeAnalyticsTab === 'health' || activeAnalyticsTab === 'experience'}
+    <section id={activeAnalyticsTab === 'health' ? 'sec-ux' : 'sec-experience'} class="scroll-mt-24 overflow-hidden rounded-none border border-ink/10 bg-surface shadow-card" in:fly={panelEnter()} out:fly={panelExit()}>
       <!-- header: neutral branding · connection summary · quick actions -->
       <div class="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-br from-deep-green to-forest p-5 text-white">
         <div class="flex items-center gap-3">
           <span class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/[0.12] text-goldfinch-gold ring-1 ring-white/15"><ShieldCheck size={20} /></span>
           <div>
             <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-goldfinch-gold">Website Intelligence</p>
-            <h3 class="font-serif text-xl font-light leading-tight">Health, behaviour &amp; what to fix next</h3>
+            <h3 class="font-serif text-xl font-light leading-tight">{activeAnalyticsTab === 'health' ? 'Health, priorities & what to fix next' : 'Visitor behaviour & experience signals'}</h3>
           </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
@@ -641,8 +767,10 @@
       </div>
 
       <div class="grid gap-5 p-5">
+        {#if activeAnalyticsTab === 'health'}
+        <div class="grid min-w-0 gap-5" in:fly={panelEnter()} out:fly={panelExit()}>
         <!-- connection panel -->
-        <div class="grid gap-2.5 sm:grid-cols-2">
+        <div class="grid gap-2.5 lg:grid-cols-2">
           {#each hubSources as s}
             <div class="flex items-center gap-2.5 rounded-xl border border-ink/[0.07] bg-sand/20 px-3.5 py-2.5">
               <span class={`h-2.5 w-2.5 shrink-0 rounded-full ${s.failing ? 'bg-amber-500 ring-4 ring-amber-500/15' : s.connected ? 'bg-emerald-500 ring-4 ring-emerald-500/15' : 'bg-ink/20'}`}></span>
@@ -674,7 +802,7 @@
               <p class="mt-1 text-[10px] uppercase tracking-wide text-ink/35">Derived from website analytics</p>
             </div>
           </div>
-          <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {#if !intelShown && intelLoading}
               {#each Array(4) as _}<div class="h-[132px] animate-pulse rounded-xl border border-ink/[0.07] bg-surface"></div>{/each}
             {/if}
@@ -696,7 +824,7 @@
             {#if lastUpdatedLabel}<span class="text-[11px] text-ink/40">{lastUpdatedLabel}</span>{/if}
           </div>
           {#if intelShown}
-            <div class={`grid gap-3 transition-opacity sm:grid-cols-2 xl:grid-cols-5 ${intelLoading ? 'opacity-60' : ''}`} aria-busy={intelLoading}>
+            <div class={`grid gap-3 transition-opacity lg:grid-cols-2 xl:grid-cols-5 ${intelLoading ? 'opacity-60' : ''}`} aria-busy={intelLoading}>
               {#each execCards as x (x.cfg.key)}
                 {@const silentGa4 = x.cfg.key === 'ga4Visitors' && /no visitors since|no visitors in this period/.test(x.ref.note ?? '')}
                 <!-- A note from the API (GA4 gone quiet, a period still in progress)
@@ -710,7 +838,7 @@
               {/each}
             </div>
           {:else if intelLoading}
-            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-busy="true">
+            <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-5" aria-busy="true">
               {#each execConfig as cfg (cfg.key)}
                 <MetricCard label={cfg.label} hint={cfg.hint} icon={cfg.icon} accent={cfg.accent} loading />
               {/each}
@@ -719,23 +847,23 @@
             <p class="rounded-xl border border-dashed border-ink/[0.12] bg-sand/20 px-4 py-3 text-[13px] text-ink/60">The summary didn't come back this time — use Refresh above to try again. The figures further down are unaffected.</p>
           {/if}
           {#if intelShown && automatedExcluded > 0}
-            <p class="mt-2.5 flex items-start gap-1.5 text-[11px] leading-5 text-ink/50" title="A network that opens more than 10 sessions in one day (UTC) is counted as automated; its visits that day are left out of visitors, page views, interactions and WhatsApp clicks. Enquiries are never left out.">
+            <p class="mt-2.5 flex min-w-0 items-start gap-1.5 text-[11px] leading-5 text-ink/50 [overflow-wrap:anywhere]" title="A network that opens more than 10 sessions in one day (UTC) is counted as automated; its visits that day are left out of visitors, page views, interactions and WhatsApp clicks. Enquiries are never left out.">
               <Info size={13} class="mt-1 shrink-0" />
               {automatedExcluded.toLocaleString()} automated session{automatedExcluded === 1 ? '' : 's'} left out — e.g. a crawler that opened many sessions from one network.
             </p>
           {/if}
           {#if intelShown && (intelShown.executive.biggestDropOff || intelShown.executive.topIssue)}
-            <div class={`mt-3 grid gap-3 transition-opacity sm:grid-cols-2 ${intelLoading ? 'opacity-60' : ''}`}>
+            <div class={`mt-3 grid gap-3 transition-opacity lg:grid-cols-2 ${intelLoading ? 'opacity-60' : ''}`}>
               {#if intelShown.executive.biggestDropOff}
                 <div class="flex items-center gap-2.5 rounded-xl border border-amber-300/60 bg-amber-50/40 px-4 py-3">
                   <ArrowDownRight size={18} class="shrink-0 text-amber-600" />
-                  <div><p class="text-[10px] font-bold uppercase tracking-wide text-amber-700/80">Biggest drop-off</p><p class="text-[13px] font-bold text-ink/80">{intelShown.executive.biggestDropOff}</p></div>
+                  <div class="min-w-0"><p class="text-[10px] font-bold uppercase tracking-wide text-amber-700/80">Biggest drop-off</p><p class="text-[13px] font-bold text-ink/80 [overflow-wrap:anywhere]">{intelShown.executive.biggestDropOff}</p></div>
                 </div>
               {/if}
               {#if intelShown.executive.topIssue}
                 <div class="flex items-center gap-2.5 rounded-xl border border-red-300/60 bg-red-50/40 px-4 py-3">
                   <AlertTriangle size={18} class="shrink-0 text-red-500" />
-                  <div><p class="text-[10px] font-bold uppercase tracking-wide text-red-700/80">Most important issue</p><p class="text-[13px] font-bold text-ink/80">{intelShown.executive.topIssue}</p></div>
+                  <div class="min-w-0"><p class="text-[10px] font-bold uppercase tracking-wide text-red-700/80">Most important issue</p><p class="text-[13px] font-bold text-ink/80 [overflow-wrap:anywhere]">{intelShown.executive.topIssue}</p></div>
                 </div>
               {/if}
             </div>
@@ -803,10 +931,13 @@
           </div>
         {/if}
 
+        </div>
+        {:else}
+        <div class="grid min-w-0 gap-5" in:fly={panelEnter()} out:fly={panelExit()}>
         <!-- UX friction signals (Clarity) -->
         <div>
           <p class="mb-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-ink/40">UX friction signals · Microsoft Clarity{#if cCfg && clarity?.windowDays} · last {clarity.windowDays} days{/if}</p>
-          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
             {#each clarityMetrics as m (m.key)}
               <MetricCard
                 label={m.label} value={m.value} format={m.format ?? 'number'} source={m.source}
@@ -817,7 +948,7 @@
         </div>
 
         <!-- breakdowns (GA4 preferred, Clarity fallback — each stays labeled) -->
-        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
           <BreakdownBars title="Devices" source={deviceSource} rows={deviceRows} icon={Monitor} accent="#153733" emptyText="Device split appears once GA4 or Clarity export is live." />
           <BreakdownBars title="Top countries" source={countrySource} rows={countryRows} icon={Globe} accent="#4A3728" emptyText="Country data appears with GA4 or Clarity export." />
           <BreakdownBars title="Top pages" source={pageSource} rows={pageRows} icon={AppWindow} accent="#0F6CBD" emptyText="Top pages appear with GA4 or Clarity export." />
@@ -848,7 +979,7 @@
           <p class="mb-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-ink/40">
             Explore in Microsoft Clarity <span class="font-medium normal-case tracking-normal text-ink/30">— recordings &amp; heatmaps open in Clarity</span>
           </p>
-          <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
             <DeepLinkCard title="Session recordings" desc="Watch real visitor sessions" href={clarityLink('impressions')} icon={PlayCircle} enabled={clarityConnected} />
             <DeepLinkCard title="Click & scroll heatmaps" desc="Where attention actually goes" href={clarityLink('heatmaps')} icon={Flame} enabled={clarityConnected} />
             <DeepLinkCard title="Rage & dead clicks" desc="Frustration & friction signals" href={clarityLink('impressions')} icon={Hand} enabled={clarityConnected} />
@@ -861,12 +992,15 @@
             description="Set PUBLIC_CLARITY_PROJECT_ID on the site and CLARITY_API_TOKEN on the backend to unlock live recordings, heatmaps and real rage/dead-click metrics here — the panels above light up automatically."
             hint="Clarity masks all form inputs by default — keep dashboard masking on 'Mask' or 'Balanced' for privacy." />
         {/if}
+        </div>
+        {/if}
       </div>
     </section>
+    {/if}
 
-    <!-- ── funnel (interactive: click a step; bottleneck auto-flagged) ───── -->
-    {#if funnel}
-      <div id="sec-funnel" class="scroll-mt-24 rounded-none border border-ink/10 bg-surface p-5 shadow-card">
+    <!-- ── Conversion — interactive funnel with a single auto-flagged bottleneck. -->
+    {#if activeAnalyticsTab === 'conversion' && funnel}
+      <div id="sec-funnel" class="scroll-mt-24 rounded-none border border-ink/10 bg-surface p-5 shadow-card" in:fly={panelEnter()} out:fly={panelExit()}>
         <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div>
             <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Conversion funnel</p>
@@ -920,9 +1054,10 @@
       </div>
     {/if}
 
+    {#if activeAnalyticsTab === 'traffic'}
     <!-- ── GA4 traffic quality ──────────────────────────────────────────── -->
     {#if ga4}
-      <div id="sec-traffic" class="scroll-mt-24 rounded-none border border-ink/10 bg-surface p-5 shadow-card">
+      <div id="sec-traffic" class="scroll-mt-24 rounded-none border border-ink/10 bg-surface p-5 shadow-card" in:fly={panelEnter()} out:fly={panelExit()}>
         <div class="mb-4 flex items-center justify-between">
           <div>
             <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Website traffic · GA4</p>
@@ -942,7 +1077,7 @@
         {:else if ga4.error}
           <p class="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">GA4 error: {ga4.error}</p>
         {:else}
-          <div class="grid gap-4 sm:grid-cols-4">
+          <div class="grid gap-4 lg:grid-cols-4">
             {#each [['Users', ga4.totalUsers], ['Sessions', ga4.sessions], ['Page views', ga4.pageViews], ['Active now', ga4.activeUsers]] as [label, value]}
               <div class="rounded-xl border border-ink/10 bg-sand/25 p-4">
                 <p class="text-2xl font-extrabold text-ink"><Counter value={Number(value)} /></p>
@@ -976,7 +1111,7 @@
               {/each}
             </div>
             {#if topTourPages.rows.length || topDestPages.rows.length}
-              <div class="mt-5 grid gap-5 md:grid-cols-2">
+              <div class="mt-5 grid gap-5 lg:grid-cols-2">
                 {#each [{ t: 'Most viewed tours', d: topTourPages, i: Trophy }, { t: 'Most viewed destinations', d: topDestPages, i: MapPin }] as blk}
                   {@const BI = blk.i}
                   <div class="rounded-xl border border-ink/[0.07] bg-sand/20 p-4">
@@ -1002,9 +1137,12 @@
       </div>
     {/if}
 
+    {/if}
+
+    {#if activeAnalyticsTab === 'leads'}
     <!-- ── leads over time + source ─────────────────────────────────────── -->
-    <div id="sec-leads" class="grid scroll-mt-24 gap-6 xl:grid-cols-[1.3fr_0.7fr]">
-      <div class="rounded-none border border-ink/10 bg-surface p-5 shadow-card">
+    <div id="sec-leads" class="grid scroll-mt-24 gap-6 xl:grid-cols-[1.3fr_0.7fr]" in:fly={panelEnter()} out:fly={panelExit()}>
+      <div class="rounded-none border border-ink/10 bg-surface p-5 shadow-card" in:fly={panelEnter()} out:fly={panelExit()}>
         <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Leads over time</p>
         <h3 class="mt-1 text-xl font-bold text-ink">Leads by day</h3>
         <div class="mt-3">
@@ -1030,7 +1168,7 @@
       <div class="rounded-none border border-ink/10 bg-surface p-5 shadow-card">
         <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Pipeline</p>
         <h3 class="mt-1 text-xl font-bold text-ink">Lead status</h3>
-        <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+        <div class="mt-4 grid gap-3 lg:grid-cols-2 xl:grid-cols-5">
           {#each statusRows.rows as s}
             <div class="rounded-xl border border-ink/10 bg-sand/25 p-4">
               <p class="text-2xl font-extrabold text-heading">{s.value}</p>
@@ -1043,7 +1181,10 @@
         </div>
       </div>
     {/if}
+    {/if}
 
+    {#if activeAnalyticsTab === 'demand'}
+    <div class="grid min-w-0 gap-6" in:fly={panelEnter()} out:fly={panelExit()}>
     <!-- ── demand + budget ──────────────────────────────────────────────── -->
     <div class="grid gap-6 xl:grid-cols-2">
       <div class="rounded-none border border-ink/10 bg-surface p-5 shadow-card">
@@ -1091,10 +1232,13 @@
         </div>
       {/each}
     </div>
+    </div>
+    {/if}
 
+    {#if activeAnalyticsTab === 'traffic'}
     <!-- ── events (business/dev toggle) + devices ───────────────────────── -->
     {#if traffic}
-      <div id="sec-events" class="grid scroll-mt-24 gap-6 lg:grid-cols-[0.55fr_0.45fr]">
+      <div id="sec-events" class="grid scroll-mt-24 gap-6 lg:grid-cols-[0.55fr_0.45fr]" in:fly={panelEnter()} out:fly={panelExit()}>
         <div class="rounded-none border border-ink/10 bg-surface p-5 shadow-card">
           <div class="flex items-center justify-between">
             <h3 class="text-sm font-bold text-ink">Top interactions</h3>
@@ -1132,6 +1276,7 @@
           </div>
         </div>
       </div>
+    {/if}
     {/if}
   {/if}
 </section>

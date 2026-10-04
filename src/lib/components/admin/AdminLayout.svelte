@@ -13,6 +13,10 @@
   let sidebarCollapsed = false;
   let mobileSidebarOpen = false;
   let user: { email?: string; name?: string; role?: string } | null = null;
+  // Analytics is a workspace, not a card inside the standard grey content
+  // well. Give it an edge-to-edge white canvas without changing any other
+  // admin route's spacing or background.
+  $: analyticsWorkspace = currentPath === '/admin/analytics';
 
   const loadUser = () => {
     if (!browser) return;
@@ -62,7 +66,7 @@
       />
 
       <main
-        class="min-h-0 flex-1 overflow-y-auto bg-[#f5f6f8] p-4 sm:p-6 dark:bg-[#0b100e]"
+        class={`min-h-0 flex-1 overflow-y-auto ${analyticsWorkspace ? 'bg-white p-0' : 'bg-[#f5f6f8] p-4 sm:p-6 dark:bg-[#0b100e]'}`}
         data-lenis-prevent
       >
         <slot />

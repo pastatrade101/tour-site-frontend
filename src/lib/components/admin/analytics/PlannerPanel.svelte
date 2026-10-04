@@ -128,7 +128,7 @@
   <div>
     <p class="mb-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-ink/40">What planners asked for · submitted enquiries</p>
     {#if hasAsked}
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-4">
         <BreakdownBars title="Trip types" source="makutano" rows={prettyRows(planner?.byTripType)} icon={Compass} {accent} emptyText="No trip types yet." />
         <BreakdownBars title="Stage" source="makutano" rows={prettyRows(planner?.byStage)} icon={ListChecks} {accent} emptyText="No planning stages yet." />
         <BreakdownBars title="Comfort" source="makutano" rows={prettyRows(planner?.byComfort)} icon={Bed} {accent} emptyText="No comfort choices yet." />

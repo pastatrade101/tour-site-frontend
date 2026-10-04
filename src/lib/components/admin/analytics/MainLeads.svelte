@@ -124,7 +124,7 @@
   <div class="grid grid-cols-1 gap-5 p-4 sm:p-5">
     {#if loading && !data}
       <!-- skeleton -->
-      <div class="grid grid-cols-1 gap-3 md:grid-cols-3" aria-hidden="true">
+      <div class="grid grid-cols-1 gap-3 lg:grid-cols-3" aria-hidden="true">
         {#each Array(3) as _}<div class="h-40 animate-pulse rounded-2xl border border-ink/10 bg-sand/30"></div>{/each}
       </div>
       <div class="h-9 w-full animate-pulse rounded-xl bg-sand/30" aria-hidden="true"></div>
@@ -147,7 +147,7 @@
     {:else if report}
       <div class={`grid grid-cols-1 gap-5 transition-opacity ${loading ? 'pointer-events-none opacity-60' : ''}`}>
         <!-- channel cards -->
-        <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div class="grid grid-cols-1 gap-3 lg:grid-cols-3">
           {#each channels as c (c.key)}
             <LeadChannelCard channel={c} icon={CHANNEL_ICON[c.key] ?? Target} active={tab === c.key} panelId="main-leads-panel" onSelect={select} />
           {/each}
@@ -158,8 +158,8 @@
         {/if}
 
         <!-- panel tabs -->
-        <div class="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <div class="inline-flex min-w-full gap-1 rounded-xl border border-ink/10 bg-sand/30 p-1 sm:min-w-0" role="tablist" aria-label="Main lead details">
+        <div class="-mx-4 px-4 sm:mx-0 sm:px-0">
+          <div class="grid grid-cols-2 gap-1 rounded-xl border border-ink/10 bg-sand/30 p-1 sm:grid-cols-3 lg:flex lg:min-w-0" role="tablist" aria-label="Main lead details">
             {#each TABS as t, i (t.key)}
               <button
                 type="button"
@@ -169,7 +169,7 @@
                 aria-controls="main-leads-panel"
                 tabindex={tab === t.key ? 0 : -1}
                 bind:this={tabEls[i]}
-                class={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-bold transition ${tab === t.key ? 'bg-forest text-white shadow-sm' : 'text-ink/60 hover:bg-surface hover:text-ink/80'}`}
+                class={`inline-flex min-w-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-left text-xs font-bold transition lg:shrink-0 lg:whitespace-nowrap ${tab === t.key ? 'bg-forest text-white shadow-sm' : 'text-ink/60 hover:bg-surface hover:text-ink/80'}`}
                 on:click={() => select(t.key)}
                 on:keydown={(e) => onTabKey(e, i)}
               >

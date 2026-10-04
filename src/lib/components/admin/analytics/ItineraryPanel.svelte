@@ -46,7 +46,7 @@
 
     {#if hasFunnel}
       <div class="mt-3"><ChartCanvas {...cfg} height={200} /></div>
-      <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <div class="mt-3 grid grid-cols-1 gap-2 lg:grid-cols-3">
         {#each handoffs as h (h.key)}
           {@const isWeak = weakest?.key === h.key}
           <div class={`rounded-xl border p-3 ${isWeak ? 'border-amber-300/70 bg-amber-50/50 dark:bg-amber-500/[0.08]' : 'border-ink/[0.07] bg-sand/20'}`}>
