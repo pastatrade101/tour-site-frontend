@@ -3,10 +3,10 @@
   import type { MainLeadsData } from './types';
   import { readingFailed, type Interpretation } from './interpretation';
 
-  // The decision deck deliberately uses only figures already present in the
-  // main-leads report and the deterministic interpretation. It gives an owner
-  // a fast answer to three questions before they drill into the reports below:
-  // how much demand arrived, which channel carried it, and what to do next.
+  // The overview deliberately uses only figures already present in the
+  // main-leads report and the deterministic interpretation. It answers three
+  // owner questions without inventing a score: how much demand arrived, where
+  // it came from, and the next evidence-backed thing to review.
   export let data: MainLeadsData | null = null;
   export let interpretation: Interpretation | null = null;
   export let loading = false;
@@ -22,7 +22,7 @@
   $: leadChange = previousLeads > 0 ? Math.round((leadDifference / previousLeads) * 100) : null;
   $: tinyComparison = previousLeads > 0 && previousLeads < 5;
   $: leadChangeText = previousLeads === 0
-    ? totalLeads > 0 ? 'New demand in this comparison' : 'No comparison data yet'
+    ? totalLeads > 0 ? 'No main leads in the previous period' : 'No comparison data yet'
     : tinyComparison
       ? `${leadDifference >= 0 ? '+' : ''}${leadDifference.toLocaleString()} vs ${previousLeads.toLocaleString()} before`
       : `${leadChange != null && leadChange >= 0 ? '+' : ''}${leadChange ?? 0}% vs previous period`;
@@ -56,24 +56,29 @@
   const go = (anchor: string) => onNavigate(anchor);
 </script>
 
-<section class="overflow-hidden rounded-2xl border border-deep-green/20 bg-deep-green text-white shadow-[0_18px_45px_-28px_rgba(17,48,44,0.75)]" aria-labelledby="decision-deck-title" aria-busy={loading}>
+<section class="overflow-hidden rounded-2xl border border-deep-green/20 bg-deep-green text-white shadow-[0_18px_45px_-28px_rgba(17,48,44,0.75)]" aria-labelledby="decision-deck-title" aria-busy={loading} aria-live="polite">
   <div class="relative overflow-hidden px-4 py-4 sm:px-5 sm:py-5">
     <div class="pointer-events-none absolute -right-20 -top-24 h-56 w-56 rounded-full bg-goldfinch-gold/[0.13] blur-3xl" aria-hidden="true"></div>
     <div class="pointer-events-none absolute -bottom-24 left-[32%] h-48 w-48 rounded-full bg-emerald-300/[0.08] blur-3xl" aria-hidden="true"></div>
 
-    <div class="relative flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.1fr)_minmax(0,1.15fr)] xl:items-stretch xl:gap-0">
-      <div class="flex min-w-0 flex-col justify-between xl:border-r xl:border-white/10 xl:pr-5">
+    <div class="relative">
+      <div class="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-goldfinch-gold">Decision deck</p>
-          <h3 id="decision-deck-title" class="mt-1 text-lg font-bold leading-tight text-white sm:text-xl">Your clearest next move</h3>
-          <p class="mt-1 text-xs leading-5 text-white/60">{rangeLabel} · based on the same live lead data below</p>
+          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-goldfinch-gold">Performance snapshot</p>
+          <h3 id="decision-deck-title" class="mt-1 text-lg font-bold leading-tight text-white sm:text-xl">Lead activity at a glance</h3>
+          <p class="mt-1 text-xs leading-5 text-white/60">{rangeLabel} · first-party tracking and lead records</p>
         </div>
+        <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/45">Updates with the selected range</p>
+      </div>
 
+      <div class="mt-4 grid min-w-0 divide-y divide-white/10 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.1fr)_minmax(0,1.15fr)] xl:divide-x xl:divide-y-0">
+      <div class="flex min-w-0 flex-col justify-between py-4 first:pt-0 xl:py-0 xl:pr-5">
+        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">Main lead activity</p>
         {#if loading && !report}
-          <div class="mt-5 h-12 w-36 animate-pulse rounded-xl bg-white/10"></div>
+          <div class="mt-3 h-12 w-36 animate-pulse rounded-xl bg-white/10"></div>
         {:else if report}
-          <div class="mt-5 flex items-end gap-3">
-            <p class="text-4xl font-extrabold tracking-tight tabular-nums text-white">{totalLeads.toLocaleString()}</p>
+          <div class="mt-3 flex items-end gap-3">
+            <p class="text-4xl font-extrabold tracking-tight tabular-nums text-white sm:text-5xl">{totalLeads.toLocaleString()}</p>
             <div class="pb-1">
               <p class="text-xs font-bold text-white/85">main lead{totalLeads === 1 ? '' : 's'}</p>
               <p class={`mt-0.5 flex items-center gap-1 text-[11px] font-semibold ${leadDifference < 0 ? 'text-red-200' : 'text-emerald-200'}`}>
@@ -85,18 +90,18 @@
             </div>
           </div>
         {:else}
-          <p class="mt-5 text-sm text-white/60">Lead data could not be read for this period.</p>
+          <p class="mt-3 text-sm text-white/60">Lead data could not be read for this period.</p>
         {/if}
       </div>
 
-      <div class="min-w-0 border-t border-white/10 pt-4 xl:border-t-0 xl:px-5 xl:pt-0">
+      <div class="min-w-0 py-4 xl:px-5 xl:py-0">
         <div class="flex items-center justify-between gap-3">
           <div>
-            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">Lead mix</p>
+            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">Leading channel</p>
             <p class="mt-1 text-sm font-bold text-white">{bestChannelText}</p>
           </div>
           <button type="button" on:click={() => go('#sec-main-leads')} class="shrink-0 rounded-lg border border-white/15 bg-white/[0.07] px-2.5 py-1.5 text-[11px] font-bold text-white/80 transition hover:bg-white/[0.14] focus:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold">
-            Details <ArrowRight size={12} class="ml-1 inline" />
+            Lead report <ArrowRight size={12} class="ml-1 inline" />
           </button>
         </div>
 
@@ -122,7 +127,7 @@
         {/if}
       </div>
 
-      <div class="min-w-0 border-t border-white/10 pt-4 xl:border-l xl:border-t-0 xl:border-white/10 xl:pl-5 xl:pt-0">
+      <div class="min-w-0 py-4 last:pb-0 xl:py-0 xl:pl-5">
         {#if loading && !safeInterpretation}
           <div class="h-28 animate-pulse rounded-xl bg-white/[0.08]"></div>
         {:else if nextMove}
@@ -131,7 +136,7 @@
             <span class={`absolute inset-y-0 left-0 w-1 ${toneBar[nextTone]}`} aria-hidden="true"></span>
             <div class="flex flex-wrap items-center gap-2 pl-1">
               <span class={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${toneClass[nextTone]}`}><NextIcon size={11} /> {nextLabel}</span>
-              <span class="text-[10px] font-bold uppercase tracking-[0.14em] text-white/40">Evidence-backed</span>
+              <span class="text-[10px] font-bold uppercase tracking-[0.14em] text-white/40">From your data</span>
             </div>
             <p class="mt-2 pl-1 text-sm font-bold leading-snug text-white [overflow-wrap:anywhere]">{nextMove.title}</p>
             <p class="mt-1 pl-1 text-[11px] leading-4 text-white/60 [overflow-wrap:anywhere]">{nextMove.action}</p>
@@ -147,4 +152,5 @@
       </div>
     </div>
   </div>
+</div>
 </section>

@@ -134,7 +134,7 @@
       <div class="min-w-0">
         <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70 dark:text-goldfinch-gold">Built-in intelligence</p>
         <h3 id="interpretation-title" class="text-lg font-bold leading-tight text-ink sm:text-xl">What this period tells you</h3>
-        {#if basisLine}<p class="mt-0.5 text-xs text-ink/50">{basisLine}</p>{/if}
+        {#if basisLine}<p class="mt-0.5 text-xs text-ink/50 [overflow-wrap:anywhere]">{basisLine}</p>{/if}
       </div>
     </div>
     <div class="flex flex-wrap items-center gap-2">
@@ -187,7 +187,7 @@
               <p class="mb-2.5 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-ink/45">
                 <svelte:component this={k.icon} size={13} strokeWidth={2.4} class={k.ink} aria-hidden="true" />{k.group} · {g.items.length}
               </p>
-              <ul class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              <ul class="grid grid-cols-1 gap-3 md:grid-cols-2">
                 {#each g.items as f (f.id)}
                   {@const linked = Boolean(f.anchor) && present.has(anchorId(f.anchor))}
                   <li class={`relative flex min-w-0 flex-col overflow-hidden rounded-2xl border p-4 pl-5 shadow-[0_1px_2px_rgba(28,26,22,0.04)] ${k.card}`}>

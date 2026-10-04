@@ -382,7 +382,6 @@
   $: todayUtc = new Date(now).toISOString().slice(0, 10);
   $: wholeDays = (traffic?.byDay ?? []).filter((d) => d.date < todayUtc);
   $: visitorSeries = wholeDays.map((d) => d.visitors);
-  $: interactionSeries = wholeDays.map((d) => d.interactions ?? 0);
   $: waSeries = wholeDays.map((d) => d.whatsapp);
 
   // ── UX friction cards (Clarity) — real or honestly empty; source-labeled.
@@ -508,15 +507,15 @@
 
   // Every top card is in-house: the tracker (automated sessions left out) or
   // the website's enquiries in Bookings. GA4 has its own card further down.
+  // Overview keeps just the four metrics a manager can act on quickly. Channel,
+  // form and event detail has its own report, so it does not create a long,
+  // duplicate dashboard on a phone.
   $: cards = overview
     ? [
         { label: 'Visitors', value: overview.visitors, suffix: '', helper: 'Visitors who viewed a page', icon: Users, series: visitorSeries, anchor: 'sec-funnel' },
         { label: 'Total leads', value: overview.totalLeads, suffix: '', helper: `${overview.leadConversionRate}% of visitors · all website enquiries`, icon: ClipboardList, series: [] as number[], anchor: 'sec-leads' },
-        { label: 'Plan My Trip', value: overview.planMyTripSubmissions, suffix: '', helper: 'Plans sent from the planner', icon: MapPin, series: [] as number[], anchor: 'sec-main-leads' },
-        { label: 'Itinerary form', value: overview.itineraryRequests, suffix: '', helper: 'Requests from tour pages', icon: Send, series: [] as number[], anchor: 'sec-main-leads' },
         { label: 'WhatsApp clicks', value: overview.whatsappClicks, suffix: '', helper: `${overview.phoneClicks} phone · ${overview.emailClicks} email`, icon: MessageCircle, series: waSeries, anchor: 'sec-events' },
-        { label: 'Form conversion', value: overview.formConversionRate, suffix: '%', helper: `${overview.formOpenersWhoSent} of ${overview.formOpens} who saw a form sent one`, icon: TrendingUp, series: [] as number[], anchor: 'sec-funnel' },
-        { label: 'Interactions', value: overview.interactions, suffix: '', helper: 'Clicks, form steps, contact taps', icon: MousePointerClick, series: interactionSeries, anchor: 'sec-events' }
+        { label: 'Lead rate', value: overview.leadConversionRate, suffix: '%', helper: 'Website enquiries ÷ visitors', icon: TrendingUp, series: [] as number[], anchor: 'sec-funnel' }
       ]
     : [];
 
@@ -611,7 +610,7 @@
     : { rows: [], max: 1 };
 </script>
 
-<section class="grid min-h-full min-w-0 gap-6 overflow-x-clip bg-white p-4 sm:p-6">
+<section class="grid min-h-full min-w-0 gap-5 overflow-x-clip bg-white p-3 sm:gap-6 sm:p-6">
   <!-- header + range filter -->
   <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
     <div>
@@ -621,11 +620,11 @@
         What's working, what's not, and what to do next.{#if lastUpdatedLabel}<span class="ml-1 text-ink/40">· {lastUpdatedLabel}</span>{/if}
       </p>
     </div>
-    <div class="flex flex-wrap items-center gap-1.5">
-      <Filter size={15} class="mr-1 text-ink/40" />
+    <div class="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:items-center">
+      <Filter size={15} class="mr-1 hidden text-ink/40 sm:block" />
       {#each RANGES as r}
         <button
-          class={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${range === r.k ? 'bg-forest text-white' : 'border border-ink/10 bg-surface text-ink/65 hover:border-goldfinch-gold/40'}`}
+          class={`min-h-9 rounded-lg px-2 py-1.5 text-xs font-bold transition sm:px-3 ${range === r.k ? 'bg-forest text-white' : 'border border-ink/10 bg-surface text-ink/65 hover:border-goldfinch-gold/40'}`}
           type="button"
           on:click={() => setRange(r.k)}
         >{r.l}</button>
@@ -634,9 +633,9 @@
   </div>
 
   <!-- Workspace navigation: the content below is intentionally split into focused reports. -->
-  <div class="sticky top-0 z-30 -mx-4 border-y border-ink/10 bg-white/95 px-4 py-2 shadow-[0_8px_18px_-18px_rgba(28,26,22,0.6)] backdrop-blur sm:-mx-5 sm:px-5 lg:mx-0 lg:px-0">
+  <div class="sticky top-0 z-30 -mx-3 border-y border-ink/10 bg-white/95 px-3 py-2 shadow-[0_8px_18px_-18px_rgba(28,26,22,0.6)] backdrop-blur sm:-mx-5 sm:px-5 lg:mx-0 lg:px-0">
     <div class="overflow-visible">
-      <div class="grid min-w-0 grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7" role="tablist" aria-label="Analytics report areas">
+      <div class="grid min-w-0 grid-cols-2 gap-1 sm:grid-cols-4 xl:grid-cols-7" role="tablist" aria-label="Analytics report areas">
         {#each ANALYTICS_TABS as tab, index (tab.key)}
           {@const TabIcon = tab.icon}
           <button
@@ -702,37 +701,37 @@
   {:else}
     {#if activeAnalyticsTab === 'overview'}
       <!-- KPI cards (sparkline + trend + click to drill in). -->
-      <div class="grid gap-4 lg:grid-cols-2 xl:grid-cols-4" in:fly={panelEnter()} out:fly={panelExit()}>
-        {#each cards as c, i}
+      <section class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4" aria-label="Key activity metrics" in:fly={panelEnter()} out:fly={panelExit()}>
+        {#each cards as c}
           {@const Icon = c.icon}
           {@const m = c.series.length ? momentum(c.series) : null}
           <button
             type="button"
-            class={`group rounded-none border border-ink/10 bg-surface p-5 text-left shadow-card transition hover:-translate-y-0.5 hover:border-goldfinch-gold/40 hover:shadow-[0_16px_40px_-18px_rgba(28,26,22,0.35)] ${i === cards.length - 1 && cards.length % 2 === 1 ? 'sm:col-span-2' : ''}`}
+            class="group min-w-0 rounded-2xl border border-ink/10 bg-surface p-3.5 text-left shadow-card transition hover:-translate-y-0.5 hover:border-goldfinch-gold/40 hover:shadow-[0_16px_40px_-18px_rgba(28,26,22,0.35)] sm:p-5"
             on:click={() => scrollTo(c.anchor)}
           >
             <div class="flex items-start justify-between">
-              <span class="grid h-11 w-11 place-items-center rounded-2xl bg-forest/10 text-forest ring-1 ring-ink/5 dark:text-goldfinch-gold"><Icon size={19} /></span>
+              <span class="grid h-9 w-9 place-items-center rounded-xl bg-forest/10 text-forest ring-1 ring-ink/5 dark:text-goldfinch-gold sm:h-11 sm:w-11 sm:rounded-2xl"><Icon size={17} /></span>
               {#if m}
-                <span class={`inline-flex items-center gap-0.5 rounded-full px-2 py-1 text-[10px] font-bold ${m.pct >= 0 ? 'bg-emerald-500/[0.12] text-emerald-600' : 'bg-red-500/[0.12] text-red-600'}`}>
-                  {#if m.pct >= 0}<ArrowUpRight size={12} />{:else}<ArrowDownRight size={12} />{/if}{Math.abs(m.pct)}%
+                <span title="Recent whole days compared with the earlier part of this period" class={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-1 text-[10px] font-bold ${m.pct >= 0 ? 'bg-emerald-500/[0.12] text-emerald-600' : 'bg-red-500/[0.12] text-red-600'}`}>
+                  {#if m.pct >= 0}<ArrowUpRight size={12} />{:else}<ArrowDownRight size={12} />{/if}<span class="hidden sm:inline">Pace </span>{Math.abs(m.pct)}%
                 </span>
               {/if}
             </div>
-            <p class="mt-4 text-3xl font-bold text-ink">
+            <p class="mt-3 text-2xl font-bold text-ink sm:mt-4 sm:text-3xl">
               {#if typeof c.value === 'number'}<Counter value={c.value} suffix={c.suffix} decimals={c.suffix === '%' ? 1 : 0} />
               {:else}<span class="text-ink/30" title="Not comparable">—</span>{/if}
             </p>
-            <div class="mt-1 flex items-end justify-between gap-2">
+            <div class="mt-1 flex min-w-0 items-end justify-between gap-2">
               <div class="min-w-0">
-                <p class="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-ink/70">{c.label} <SourceBadge source="makutano" /></p>
-                <p class="mt-0.5 line-clamp-2 text-xs text-ink/50" title={c.helper}>{c.helper}</p>
+                <p class="flex flex-wrap items-center gap-1 text-[12px] font-semibold text-ink/70 sm:gap-1.5 sm:text-sm">{c.label} <SourceBadge source="makutano" /></p>
+                <p class="mt-0.5 line-clamp-2 text-[11px] leading-4 text-ink/50 sm:text-xs" title={c.helper}>{c.helper}</p>
               </div>
-              {#if c.series.length}<span class="shrink-0 text-forest/70"><Sparkline data={c.series} color="#4A3728" /></span>{/if}
+              {#if c.series.length}<span class="hidden shrink-0 text-forest/70 sm:block"><Sparkline data={c.series} color="#4A3728" /></span>{/if}
             </div>
           </button>
         {/each}
-      </div>
+      </section>
     {/if}
 
     <!-- ══ Website Intelligence — deterministic health, behaviour & priorities (real-only) ══ -->

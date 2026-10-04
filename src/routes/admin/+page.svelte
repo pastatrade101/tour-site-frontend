@@ -221,7 +221,9 @@
     { label: 'Inbox', href: '/admin/messages', icon: Mail }
   ];
 
-  const card = 'rounded-[10px] border border-ink/10 bg-surface p-5 shadow-sm';
+  // Every dashboard panel can live inside a narrow phone viewport. `min-w-0`
+  // is especially important around chart canvases and long booking details.
+  const card = 'min-w-0 max-w-full rounded-[10px] border border-ink/10 bg-surface p-4 shadow-sm sm:p-5';
   const eyebrow = 'text-[11px] font-bold uppercase tracking-[0.16em] text-forest/70';
 </script>
 
@@ -234,17 +236,17 @@
     {/each}
   </div>
 {:else}
-  <div class="grid gap-5">
+  <div class="grid min-w-0 max-w-full gap-4 sm:gap-5">
     <!-- ── The band: money, and whether anyone is waiting ──────────────── -->
     <section
-      class="relative overflow-hidden rounded-[10px] border border-white/10 bg-gradient-to-br from-deep-green via-forest to-[#232620] p-6 text-white shadow-[0_26px_80px_rgba(57,61,50,0.18)] lg:p-8"
+      class="relative min-w-0 overflow-hidden rounded-[10px] border border-white/10 bg-gradient-to-br from-deep-green via-forest to-[#232620] p-4 text-white shadow-[0_26px_80px_rgba(57,61,50,0.18)] sm:p-6 lg:p-8"
     >
       <div class="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-goldfinch-gold/10 blur-3xl"></div>
 
-      <div class="relative grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:items-end">
+      <div class="relative grid min-w-0 gap-4 sm:gap-5 lg:grid-cols-[1.1fr_1fr] lg:items-end">
         <div class="min-w-0">
           <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-goldfinch-gold">{greeting}</p>
-          <h1 class="mt-2 font-serif text-3xl font-semibold leading-[1.1] md:text-[38px]">
+          <h1 class="mt-2 font-serif text-[1.75rem] font-semibold leading-[1.1] sm:text-3xl md:text-[38px]">
             {#if urgentCount > 0}
               {urgentCount} {urgentCount === 1 ? 'thing needs' : 'things need'} you today
             {:else if todo.length}
@@ -253,7 +255,7 @@
               Everything is clear
             {/if}
           </h1>
-          <p class="mt-2 max-w-lg text-sm leading-relaxed text-white/70">
+          <p class="mt-2 max-w-lg text-sm leading-relaxed text-white/70 [overflow-wrap:anywhere]">
             {#if urgentCount > 0}
               Someone is waiting on a reply or on money being checked. The list below is ordered by who has been waiting longest for a decision.
             {:else if todo.length}
@@ -264,17 +266,17 @@
           </p>
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-2">
-          <div class="rounded-[8px] bg-white/[0.07] p-4 ring-1 ring-white/10">
+        <div class="grid grid-cols-2 gap-2.5 sm:gap-3">
+          <div class="min-w-0 rounded-[8px] bg-white/[0.07] p-3 ring-1 ring-white/10 sm:p-4">
             <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-white/55">Received</p>
-            <p class="mt-1 font-serif text-3xl font-semibold leading-none text-goldfinch-gold">{money(pot.received, primary)}</p>
+            <p class="mt-1 break-words font-serif text-2xl font-semibold leading-none text-goldfinch-gold sm:text-3xl">{money(pot.received, primary)}</p>
             <p class="mt-1.5 text-[11px] text-white/50">
               {#if pot.refunded > 0}less {money(pot.refunded, primary)} refunded{:else}all time{/if}
             </p>
           </div>
-          <div class="rounded-[8px] bg-white/[0.07] p-4 ring-1 ring-white/10">
+          <div class="min-w-0 rounded-[8px] bg-white/[0.07] p-3 ring-1 ring-white/10 sm:p-4">
             <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-white/55">Outstanding</p>
-            <p class="mt-1 font-serif text-3xl font-semibold leading-none text-white">{money(pot.outstanding, primary)}</p>
+            <p class="mt-1 break-words font-serif text-2xl font-semibold leading-none text-white sm:text-3xl">{money(pot.outstanding, primary)}</p>
             <p class="mt-1.5 text-[11px] text-white/50">
               {commerce?.attention.unpaidConfirmed ?? 0} confirmed {(commerce?.attention.unpaidConfirmed ?? 0) === 1 ? 'trip' : 'trips'}
             </p>
@@ -297,17 +299,17 @@
 
     <!-- ── What needs a human ──────────────────────────────────────────── -->
     {#if todo.length}
-      <section class="grid gap-3">
+      <section class="grid min-w-0 gap-3">
         <div class="flex items-baseline justify-between gap-3">
           <div>
             <p class={eyebrow}>Waiting on you</p>
             <h2 class="mt-1 text-xl font-bold text-ink">Where the work is</h2>
           </div>
         </div>
-        <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+        <div class="grid min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-3">
           {#each todo as row (row.key)}
             <a
-              class="group flex items-start gap-3 rounded-[10px] border bg-surface p-4 shadow-sm transition hover:shadow-md
+              class="group flex min-w-0 items-start gap-3 rounded-[10px] border bg-surface p-3.5 shadow-sm transition hover:shadow-md sm:p-4
                 {row.tone === 'urgent' ? 'border-clay/30' : row.tone === 'warn' ? 'border-goldfinch-gold/35' : 'border-ink/10'}"
               href={row.href}
             >
@@ -320,7 +322,7 @@
               <span class="min-w-0 flex-1">
                 <span class="flex items-baseline gap-1.5">
                   <span class="text-2xl font-extrabold leading-none text-ink">{row.count}</span>
-                  <span class="text-sm font-semibold text-ink/80">{row.label}</span>
+                  <span class="min-w-0 text-sm font-semibold text-ink/80 [overflow-wrap:anywhere]">{row.label}</span>
                 </span>
                 <span class="mt-1 block text-xs leading-5 text-ink/55">{row.detail}</span>
               </span>
@@ -339,7 +341,7 @@
     {/if}
 
     <!-- ── Trend ───────────────────────────────────────────────────────── -->
-    <section class="grid gap-4 xl:grid-cols-2">
+    <section class="grid min-w-0 gap-4 xl:grid-cols-2">
       <div class={card}>
         <div class="flex items-baseline justify-between gap-3">
           <div>
@@ -351,7 +353,7 @@
           </p>
         </div>
         {#if hasMoneyHistory}
-          <div class="mt-4"><ChartCanvas {...moneyChart} height={220} /></div>
+          <div class="mt-4 min-w-0"><ChartCanvas {...moneyChart} height={220} /></div>
         {:else}
           <!-- An empty chart implies a measured zero. This says there is no
                history yet, which is a different thing. -->
@@ -370,7 +372,7 @@
           <p class="text-right text-sm font-bold text-ink">{series.reduce((n, d) => n + d.enquiries, 0)}</p>
         </div>
         {#if hasEnquiryHistory}
-          <div class="mt-4"><ChartCanvas {...enquiryChart} height={220} /></div>
+          <div class="mt-4 min-w-0"><ChartCanvas {...enquiryChart} height={220} /></div>
         {:else}
           <p class="mt-6 rounded-[8px] border border-dashed border-ink/15 px-4 py-8 text-center text-sm text-ink/45">
             No enquiries in this period.
@@ -380,7 +382,7 @@
     </section>
 
     <!-- ── Deals ───────────────────────────────────────────────────────── -->
-    <section class="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+    <section class="grid min-w-0 gap-4 xl:grid-cols-[1.15fr_0.85fr]">
       <div class={card}>
         <div class="flex items-baseline justify-between gap-3">
           <div>
@@ -390,7 +392,7 @@
           <a class="text-xs font-semibold text-forest underline underline-offset-4 hover:no-underline" href="/admin/quotations">Open</a>
         </div>
         {#if hasFunnel}
-          <div class="mt-4"><ChartCanvas {...funnelChart} height={240} /></div>
+          <div class="mt-4 min-w-0"><ChartCanvas {...funnelChart} height={240} /></div>
         {:else}
           <p class="mt-6 rounded-[8px] border border-dashed border-ink/15 px-4 py-8 text-center text-sm text-ink/45">
             No quotations raised yet.
@@ -398,7 +400,7 @@
         {/if}
       </div>
 
-      <div class="grid gap-3">
+      <div class="grid min-w-0 gap-3">
         <div class={card}>
           <p class={eyebrow}>Accepted value</p>
           <p class="mt-1 font-serif text-3xl font-semibold leading-none text-heading">{money(commerce?.acceptedValue, primary)}</p>
@@ -444,7 +446,7 @@
           Nothing has been sent in this period.
         </p>
       {:else}
-        <div class="mt-4 grid gap-3 sm:grid-cols-3">
+        <div class="mt-4 grid min-w-0 gap-3 sm:grid-cols-3">
           {#each [['Delivered', delivery.sent, 'text-emerald-600', 'bg-emerald-500', CheckCircle2], ['Skipped', delivery.skipped, 'text-amber-600', 'bg-amber-400', Ban], ['Failed', delivery.failed, 'text-clay', 'bg-clay', AlertTriangle]] as [label, value, tone, accent, icon]}
             <div class="flex items-center gap-3 rounded-[8px] border border-ink/10 px-3.5 py-3">
               <span class={`h-9 w-1 shrink-0 rounded-full ${accent}`}></span>
@@ -474,7 +476,7 @@
     </section>
 
     <!-- ── Movement ────────────────────────────────────────────────────── -->
-    <section class="grid gap-4 xl:grid-cols-[1fr_1fr_0.7fr]">
+    <section class="grid min-w-0 gap-4 lg:grid-cols-2 xl:grid-cols-[1fr_1fr_0.7fr]">
       <div class={card}>
         <div class="flex items-baseline justify-between gap-3">
           <h2 class="text-base font-bold text-ink">Latest enquiries</h2>
@@ -483,7 +485,7 @@
         {#if recentBookings.length}
           <ul class="mt-3 grid gap-2">
             {#each recentBookings.slice(0, 5) as b}
-              <li class="flex items-baseline justify-between gap-3 border-b border-ink/[0.06] pb-2 last:border-0 last:pb-0">
+              <li class="flex min-w-0 items-baseline justify-between gap-3 border-b border-ink/[0.06] pb-2 last:border-0 last:pb-0">
                 <span class="min-w-0">
                   <span class="block truncate text-sm font-semibold text-heading">{b.full_name}</span>
                   <span class="font-mono text-[11px] text-ink/45">{b.booking_code}</span>
@@ -505,7 +507,7 @@
         {#if recentMessages.length}
           <ul class="mt-3 grid gap-2">
             {#each recentMessages.slice(0, 5) as m}
-              <li class="flex items-baseline justify-between gap-3 border-b border-ink/[0.06] pb-2 last:border-0 last:pb-0">
+              <li class="flex min-w-0 items-baseline justify-between gap-3 border-b border-ink/[0.06] pb-2 last:border-0 last:pb-0">
                 <span class="min-w-0">
                   <span class="block truncate text-sm font-semibold text-heading">{m.name ?? m.full_name ?? 'Someone'}</span>
                   <span class="block truncate text-[11px] text-ink/45">{m.subject ?? m.email ?? ''}</span>
@@ -544,7 +546,7 @@
         </div>
         <a class="text-xs font-semibold text-forest underline underline-offset-4 hover:no-underline" href="/admin/tours">Manage</a>
       </div>
-      <div class="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-5">
+      <div class="mt-4 grid min-w-0 grid-cols-2 gap-2 lg:grid-cols-5">
         {#each [['Published tours', counts.publishedTours, Newspaper], ['Drafts', counts.draftTours, FileText], ['Destinations', counts.destinations, Images], ['Blog posts', counts.blogPosts, Newspaper], ['Media', counts.mediaFiles, Images]] as [label, value, icon]}
           <div class="rounded-[8px] border border-ink/10 px-3 py-2.5">
             <span class="block text-xl font-extrabold leading-none text-ink">{value ?? 0}</span>
