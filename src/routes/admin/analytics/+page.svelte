@@ -19,6 +19,7 @@
   import DeepLinkCard from '$lib/components/admin/ux/DeepLinkCard.svelte';
   import ScoreRing from '$lib/components/admin/ux/ScoreRing.svelte';
   import MainLeads from '$lib/components/admin/analytics/MainLeads.svelte';
+  import AnalyticsDecisionDeck from '$lib/components/admin/analytics/AnalyticsDecisionDeck.svelte';
   import Interpretation from '$lib/components/admin/analytics/Interpretation.svelte';
   import type { MainLeadsData } from '$lib/components/admin/analytics/types';
   import type { Interpretation as InterpretationData } from '$lib/components/admin/analytics/interpretation';
@@ -545,6 +546,15 @@
       {/each}
     </div>
   </div>
+
+  <!-- Fast owner-facing summary: demand, channel mix and the next evidence-backed move. -->
+  <AnalyticsDecisionDeck
+    data={mainLeads}
+    interpretation={intelShown?.interpretation ?? null}
+    loading={mainLeadsLoading || intelLoading}
+    {rangeLabel}
+    onNavigate={scrollTo}
+  />
 
   <!-- ── MAIN LEADS — Plan My Trip · itinerary form · WhatsApp (own loading/error) ── -->
   <MainLeads data={mainLeads} loading={mainLeadsLoading} error={mainLeadsError} {rangeLabel} {clarityId} onRetry={loadMainLeads} />
