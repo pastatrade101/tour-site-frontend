@@ -5,6 +5,33 @@ import { localeFromPath, withLocale } from '$lib/i18n';
 import { cachedJson } from '$lib/cache';
 import { attachResolvedVariantFields, type ImageVariantMap } from '$lib/img';
 
+const HOME_SEO: Record<string, { title: string; description: string }> = {
+  en: {
+    title: 'Tanzania Safari & Zanzibar Tours | Tailor-Made East Africa Trips | Goldfinch Adventures',
+    description: 'Plan a private Tanzania safari, Zanzibar beach holiday or East Africa itinerary with a local team. Tailored routes, clear guidance and on-the-ground support.'
+  },
+  sw: {
+    title: 'Safari za Tanzania na Ziara za Zanzibar | Safari Binafsi Afrika Mashariki | Goldfinch Adventures',
+    description: 'Panga safari binafsi ya Tanzania, likizo ya ufukweni Zanzibar au safari ya Afrika Mashariki ukiongozwa na timu ya wenyeji. Ratiba zinazokufaa na usaidizi wa karibu.'
+  },
+  de: {
+    title: 'Tansania-Safaris & Sansibar-Reisen | Maßgeschneiderte Ostafrika-Reisen | Goldfinch Adventures',
+    description: 'Planen Sie eine private Tansania-Safari, einen Sansibar-Strandurlaub oder eine Ostafrika-Reise mit einem lokalen Team. Individuelle Routen und Betreuung vor Ort.'
+  },
+  fr: {
+    title: 'Safaris en Tanzanie et séjours à Zanzibar | Voyages sur mesure en Afrique de l’Est | Goldfinch Adventures',
+    description: 'Planifiez un safari privé en Tanzanie, un séjour à Zanzibar ou un voyage en Afrique de l’Est avec une équipe locale. Itinéraires sur mesure et accompagnement sur place.'
+  },
+  es: {
+    title: 'Safaris en Tanzania y viajes a Zanzíbar | Viajes a medida por África Oriental | Goldfinch Adventures',
+    description: 'Planifica un safari privado en Tanzania, unas vacaciones en Zanzíbar o un viaje por África Oriental con un equipo local. Rutas a medida y apoyo sobre el terreno.'
+  },
+  it: {
+    title: 'Safari in Tanzania e viaggi a Zanzibar | Viaggi su misura in Africa orientale | Goldfinch Adventures',
+    description: 'Organizza un safari privato in Tanzania, una vacanza a Zanzibar o un viaggio in Africa orientale con un team locale. Itinerari su misura e assistenza sul posto.'
+  }
+};
+
 const items = <T>(result: PromiseSettledResult<{ data?: { items?: T[] } }>) =>
   result.status === 'fulfilled' ? result.value?.data?.items ?? [] : [];
 
@@ -117,6 +144,9 @@ export const load: PageLoad = async ({ fetch, url }) => {
   attachResolvedVariantFields(categoryItems as Array<Record<string, any>>, imageVariants, ['image_url', 'icon_url']);
 
   return {
+    // Read by the root layout during SSR. The homepage now targets the real
+    // Tanzania/Zanzibar demand instead of falling back to a brand-only title.
+    seo: HOME_SEO[locale] ?? HOME_SEO.en,
     heroSlides,
     tours: tourItems,
     destinations: destinationItems,

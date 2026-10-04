@@ -241,3 +241,35 @@ export const variantSrc = (variants: ImageVariants | null, renderWidth: number, 
   const pick = widths.find((width) => width >= target) ?? widths[widths.length - 1];
   return `${variants.base}/${pick}.${ext}`;
 };
+
+const isAvif = (url: string): boolean => /\.avif(?:[?#]|$)/i.test(url);
+
+/**
+ * A share image (og:image) that link previews can show. Facebook, WhatsApp,
+ * LinkedIn and X do not render AVIF, so an AVIF original is swapped for the
+ * WebP in its responsive ladder (1200px or the widest there is). A field with
+ * no readable version is skipped, so the next field — or the site default —
+ * is used instead of a preview that comes out blank.
+ */
+export const shareImageOf = (record: Record<string, any> | null | undefined, ...fields: string[]): string => {
+  if (!record) return '';
+  // The ladders this record carries, so an og image that is the same file as
+  // the main image (the usual case) can borrow that image's ladder.
+  const ladders = Object.keys(record)
+    .filter((key) => key.endsWith('_variants'))
+    .map((key) => variantForUrl(String(record[key.slice(0, -'_variants'.length)] ?? ''), record[key]))
+    .filter((ladder): ladder is ImageVariants => Boolean(ladder));
+  for (const field of fields) {
+    const url = record[field];
+    if (typeof url !== 'string' || !url.trim()) continue;
+    if (!isAvif(url)) return url;
+    const base = variantBaseFromUrl(url);
+    const ladder = variantForUrl(url, record[`${field}_variants`]) ?? ladders.find((candidate) => candidate.base === base) ?? null;
+    const webp = variantSrc(ladder, 600, 'webp');
+    if (webp) return webp;
+  }
+  return '';
+};
+
+/** True when a share image URL is one link previews cannot show. */
+export const unreadableShareImage = (url: string | null | undefined): boolean => Boolean(url && isAvif(url));

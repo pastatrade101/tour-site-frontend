@@ -8,7 +8,7 @@ import type { Language } from '$lib/types';
 /** Resolve language and SEO before rendering, including on server requests. */
 export const load: LayoutLoad = async ({ fetch, url }) => {
   const locale = localeFromPath(url.pathname);
-  const [languages, seoOverride] = await Promise.all([
+  const [languages, seoOverride, publicSettings] = await Promise.all([
     cachedJson<{ data?: Language[] }>(`${API_URL}/translations/languages`, fetch)
       .then((body) => body.data ?? []).catch(() => [] as Language[]),
     (async (): Promise<SeoOverride | null> => {
@@ -23,7 +23,13 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
       } catch {
         return null;
       }
-    })()
+    })(),
+    // A CMS default share image must be available during SSR; client-only
+    // settings were too late for social crawlers and link previews.
+    cachedJson<{ data?: Record<string, unknown> }>(`${API_URL}/public/settings`, fetch)
+      .then((body) => body.data ?? {}).catch(() => ({} as Record<string, unknown>))
   ]);
-  return { locale, languages, seoOverride };
+  const rawDefaultOgImage = publicSettings.default_og_image_url;
+  const defaultOgImage = typeof rawDefaultOgImage === 'string' ? rawDefaultOgImage.trim() : '';
+  return { locale, languages, seoOverride, defaultOgImage };
 };

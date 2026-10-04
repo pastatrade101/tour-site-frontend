@@ -2,7 +2,9 @@ import type { PageServerLoad } from './$types';
 import { env as publicEnv } from '$env/dynamic/public';
 import { localeFromPath, withLocale } from '$lib/i18n';
 import { toMetaText } from '$lib/richText';
+import { titleWithBrand } from '$lib/seo';
 import type { Activity, Destination, FAQ, Lodge, Tour, TourCategory, TripPoint } from '$lib/types';
+import { shareImageOf } from '$lib/img';
 
 /**
  * Pick the description a search engine should see.
@@ -78,8 +80,10 @@ export const load: PageServerLoad = async ({ fetch, params, url }) => {
     // title here as well would leave two in the document.
     seo: destination
       ? {
-          title: `${destination.meta_title || destination.name} | Goldfinch Adventures`,
-          description: seoDescription(destination as unknown as Record<string, unknown>, ['meta_description', 'short_description', 'description'])
+          title: titleWithBrand(destination.meta_title, destination.name),
+          description: seoDescription(destination as unknown as Record<string, unknown>, ['meta_description', 'short_description', 'description']),
+          ogImage: shareImageOf(destination, 'og_image_url', 'banner_image_url', 'main_image_url', 'image_url'),
+          imageAlt: destination.name
         }
       : null,
     ...emptyRelatedData(),

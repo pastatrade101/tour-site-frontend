@@ -24,7 +24,7 @@
   import { KNOWN_LOCALES, stripLocale } from '$lib/i18n';
   import { loadPublicSettings } from '$lib/settings';
   import { initCurrency } from '$lib/currency';
-  import { cdnUrl } from '$lib/img';
+  import { cdnUrl, unreadableShareImage } from '$lib/img';
   import LanguageSwitcher from '$lib/components/public/LanguageSwitcher.svelte';
   import { DEFAULT_LOCALE, localeFromPath, localizeHref, rememberedLocale } from '$lib/i18n';
   import { locale as localeStore } from '$lib/i18n/ui';
@@ -107,13 +107,28 @@
   // pages get a server-rendered title and description instead of emitting a
   // second <head> block of their own, which would leave two titles and two
   // canonicals in the document. Admin overrides still win over everything.
-  $: pageSeo = ($page.data as { seo?: { title?: string; description?: string } })?.seo ?? null;
+  $: pageSeo = ($page.data as {
+    seo?: { title?: string; description?: string; ogImage?: string; imageAlt?: string; type?: 'article' | 'website' };
+  })?.seo ?? null;
   $: seoTitle = seoOverride?.title || pageSeo?.title || $branding.site_name;
   $: seoDescription = seoOverride?.meta_description || pageSeo?.description || `${$branding.tagline}. ${$branding.positioning}`;
   $: seoOgTitle = seoOverride?.og_title || seoOverride?.title || pageSeo?.title || $branding.site_name;
   $: seoOgDescription = seoOverride?.og_description || seoOverride?.meta_description || pageSeo?.description || $branding.positioning;
   $: seoCanonical = seoOverride?.canonical_url || canonicalUrl;
-  $: seoOgImage = cdnUrl(seoOverride?.og_image_url || '');
+  // Prefer a page image, then the editor-configured default, then the bundled
+  // 1200×630 safari share image. Crawlers need an absolute URL, so a site path
+  // is resolved against the site origin.
+  $: defaultOgImage = typeof data.defaultOgImage === 'string' && data.defaultOgImage ? data.defaultOgImage : '/images/og-default.jpg';
+  // An AVIF set by hand (page override or CMS default) cannot be shown in link
+  // previews, so it gives way to the next image rather than a blank card.
+  $: seoOgImageRaw = cdnUrl(
+    [seoOverride?.og_image_url, pageSeo?.ogImage, defaultOgImage, '/images/og-default.jpg'].find(
+      (url) => url && !unreadableShareImage(url)
+    ) ?? ''
+  );
+  $: seoOgImage = seoOgImageRaw.startsWith('/') ? `${siteOrigin}${seoOgImageRaw}` : seoOgImageRaw;
+  $: seoOgImageAlt = pageSeo?.imageAlt || seoOgTitle;
+  $: seoType = pageSeo?.type || (stripLocale($page.url.pathname).startsWith('/blog/') ? 'article' : 'website');
   $: indexingData = $page.data as { package?: { indexable?: boolean }; lodge?: { indexable?: boolean } };
   $: contentNoindex = (indexingData.package && indexingData.package.indexable !== true) || indexingData.lodge?.indexable === false;
   $: seoRobots = contentNoindex || isPrivateOrUtilityPath($page.url.pathname) ? 'noindex, nofollow' : seoOverride?.robots || '';
@@ -257,8 +272,16 @@
   <meta name="description" content={seoDescription} />
   <meta property="og:title" content={seoOgTitle} />
   <meta property="og:description" content={seoOgDescription} />
-  <meta property="og:type" content="website" />
+  <meta property="og:type" content={seoType} />
+  <meta property="og:url" content={seoCanonical} />
+  <meta property="og:site_name" content={$branding.site_name} />
   {#if seoOgImage}<meta property="og:image" content={seoOgImage} />{/if}
+  {#if seoOgImage}<meta property="og:image:alt" content={seoOgImageAlt} />{/if}
+  <meta name="twitter:card" content={seoOgImage ? 'summary_large_image' : 'summary'} />
+  <meta name="twitter:title" content={seoOgTitle} />
+  <meta name="twitter:description" content={seoOgDescription} />
+  {#if seoOgImage}<meta name="twitter:image" content={seoOgImage} />{/if}
+  {#if seoOgImage}<meta name="twitter:image:alt" content={seoOgImageAlt} />{/if}
   <link rel="canonical" href={seoCanonical} />
   {#if seoRobots}<meta name="robots" content={seoRobots} />{/if}
   <!-- hreflang for every locale this page genuinely exists in, plus x-default
@@ -279,7 +302,30 @@
 
 <!-- Org-wide schema (JsonLd injects via {@html}; a {mustache} inside <script> is
      not interpolated by Svelte, which is what broke the old inline block). -->
-<JsonLd data={{ '@type': 'TravelAgency', name: $branding.company_name, url: orgUrl, slogan: $branding.tagline }} />
+<JsonLd
+  data={{
+    '@graph': [
+      {
+        '@id': `${orgUrl}#organization`,
+        '@type': 'TravelAgency',
+        name: $branding.company_name,
+        url: orgUrl,
+        slogan: $branding.tagline
+      },
+      {
+        '@id': `${orgUrl}#website`,
+        '@type': 'WebSite',
+        name: $branding.site_name,
+        url: orgUrl,
+        publisher: { '@id': `${orgUrl}#organization` },
+        // Every language the site is published in, not just this page's.
+        inLanguage: languages
+          .filter((language) => language.enabled && (KNOWN_LOCALES as readonly string[]).includes(language.code))
+          .map((language) => language.code)
+      }
+    ]
+  }}
+/>
 <!-- Per-page structured data override (Tier 2), only when an admin has set one. -->
 {#if seoStructured}
   <JsonLd data={seoStructured} />

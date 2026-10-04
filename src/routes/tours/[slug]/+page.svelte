@@ -291,9 +291,18 @@
         description: shortText(tour.short_description ?? tour.full_description, 300),
         ...(heroImage ? { image: cdnUrl(heroImage) } : {}),
         ...(tour.price_from
-          ? { offers: { '@type': 'Offer', price: tour.price_from, priceCurrency: tour.currency ?? 'USD' } }
+          ? {
+              offers: {
+                '@type': 'Offer',
+                price: tour.price_from,
+                priceCurrency: tour.currency ?? 'USD',
+                availability: tour.is_available === false ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+                url: `${origin}/tours/${tour.slug}`
+              }
+            }
           : {}),
-        url: `${origin}/tours/${tour.slug}`
+        url: `${origin}/tours/${tour.slug}`,
+        provider: { '@id': `${origin}/#organization` }
       }
     : null;
   $: breadcrumbLd = tour

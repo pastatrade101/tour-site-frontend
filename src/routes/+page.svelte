@@ -380,7 +380,7 @@
   <HomeHero
     eyebrow={typeof heroExtra.eyebrow === 'string' ? heroExtra.eyebrow : 'Tanzania & East Africa specialists'}
     title={cms('hero', 'title', $t('home.hero_title'))}
-    highlight={typeof heroExtra.title_highlight === 'string' ? heroExtra.title_highlight : 'your way.'}
+    highlight={typeof heroExtra.title_highlight === 'string' ? heroExtra.title_highlight : $t('home.hero_title_highlight')}
     description={cms('hero', 'subtitle', $t('home.hero_subtitle'))}
     imageUrl={heroImageResolved}
     slides={heroSlides}

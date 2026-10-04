@@ -68,6 +68,7 @@ export type Tour = {
   seo_title?: string | null;
   meta_title?: string | null;
   meta_description?: string | null;
+  og_image_url?: string | null;
   destination_id?: string | null;
   category_id?: string | null;
   specialist_id?: string | null;
@@ -480,11 +481,17 @@ export type BlogPost = {
   id: string;
   title: string;
   slug: string;
-  excerpt?: string;
-  content?: string;
-  featured_image_url?: string;
-  status?: string;
-  author_name?: string;
+  excerpt?: string | null;
+  content?: string | null;
+  featured_image_url?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  og_image_url?: string | null;
+  status?: string | null;
+  author_name?: string | null;
+  published_at?: string | null;
+  updated_at?: string | null;
+  available_locales?: string[];
 };
 
 export type Testimonial = {

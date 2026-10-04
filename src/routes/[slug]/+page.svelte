@@ -74,7 +74,9 @@
                 offers: {
                   '@type': 'Offer',
                   price: linkedTour.price_from,
-                  priceCurrency: linkedTour.currency ?? 'USD'
+                  priceCurrency: linkedTour.currency ?? 'USD',
+                  availability: linkedTour.is_available === false ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+                  url: canonical
                 }
               }
             : {}),
@@ -90,7 +92,7 @@
                 }
               }
             : {}),
-          provider: { '@type': 'TravelAgency', name: 'Goldfinch Adventures' }
+          provider: { '@id': `${origin}/#organization` }
         }
       : null;
 
@@ -117,18 +119,11 @@
 </script>
 
 <svelte:head>
-  <title>{title}</title>
-  {#if description}<meta name="description" content={description} />{/if}
   {#if !indexable}
     <!-- Paired with the sitemap, which drops the same rows. A noindex tag on a
          page the sitemap still advertises is worse than neither. -->
     <meta name="robots" content="noindex, nofollow" />
   {/if}
-  {#if record?.og_image_url || record?.hero_image_url}
-    <meta property="og:image" content={cdnUrl(record.og_image_url || record.hero_image_url)} />
-  {/if}
-  <meta property="og:title" content={title} />
-  {#if description}<meta property="og:description" content={description} />{/if}
 </svelte:head>
 
 {#if touristTripLd}<JsonLd data={touristTripLd} />{/if}

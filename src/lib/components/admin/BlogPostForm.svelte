@@ -58,6 +58,13 @@
   const slugify = (v: string) => v.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
   $: if (!slugManuallyEdited) form.slug = slugify(form.title);
+  // Preview the fallbacks the public site applies when an editor leaves an
+  // optional SEO field blank (title, then excerpt, then featured image). They
+  // are worked out on every page view rather than saved, so they follow the
+  // article as it is edited and each language uses its own translated title.
+  $: seoTitlePreview = form.meta_title.trim() || (form.title.trim() ? `${form.title.trim()} | Goldfinch Adventures` : 'Add an article title');
+  $: seoDescriptionPreview = form.meta_description.trim() || form.excerpt.trim() || 'Add an excerpt or a meta description';
+  $: seoShareImage = form.og_image_url.trim() || form.featured_image_url.trim();
 
   const showToast = (message: string, type: Toast['type'] = 'success') => {
     const id = crypto.randomUUID();
@@ -258,6 +265,13 @@
           </div>
 
           <MediaPicker label="OG image (1200×630 recommended)" media={mediaItems} uploadFolder="blog" bind:value={form.og_image_url} />
+
+          <div class="grid gap-2 rounded-lg border border-ink/10 bg-canvas px-4 py-3 text-sm">
+            <p class="font-semibold text-ink">Search and sharing preview</p>
+            <p class="truncate font-medium text-forest">{seoTitlePreview} <span class="text-ink/45">({seoTitlePreview.length} chars)</span></p>
+            <p class="line-clamp-2 text-ink/65">{seoDescriptionPreview} <span class="text-ink/45">({seoDescriptionPreview.length} chars)</span></p>
+            <p class={seoShareImage ? 'text-forest' : 'text-amber-700'}>{seoShareImage ? 'Share image ready' : 'No share image selected — the featured image will be used if one is set.'}</p>
+          </div>
         </div>
       </div>
 

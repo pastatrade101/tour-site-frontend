@@ -3,7 +3,9 @@ import { API_URL } from '$lib/config/env';
 import { cachedJson } from '$lib/cache';
 import { localeFromPath, withLocale } from '$lib/i18n';
 import { toMetaText } from '$lib/richText';
+import { titleWithBrand } from '$lib/seo';
 import type { Tour } from '$lib/types';
+import { shareImageOf } from '$lib/img';
 
 /**
  * Pick the description a search engine should see.
@@ -49,8 +51,10 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
       tour,
       availableLocales: (tour as { available_locales?: string[] }).available_locales ?? null,
       seo: {
-        title: `${tour.seo_title || tour.meta_title || tour.title} | Goldfinch Adventures`,
-        description: seoDescription(tour as unknown as Record<string, unknown>, ['meta_description', 'short_description', 'full_description'])
+        title: titleWithBrand(tour.seo_title || tour.meta_title, tour.title),
+        description: seoDescription(tour as unknown as Record<string, unknown>, ['meta_description', 'short_description', 'full_description']),
+        ogImage: shareImageOf(tour, 'og_image_url', 'main_image_url', 'banner_image_url'),
+        imageAlt: tour.title
       },
       origin: url.origin
     };

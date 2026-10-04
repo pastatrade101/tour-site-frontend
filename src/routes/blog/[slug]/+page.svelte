@@ -12,9 +12,13 @@
   import LoadingState from '$lib/components/public/LoadingState.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
   import SectionHeader from '$lib/components/public/SectionHeader.svelte';
+  import { cdnUrl } from '$lib/img';
   import { toMetaText } from '$lib/richText';
   import { breadcrumbLd } from '$lib/seo';
   import type { BlogPost, Destination } from '$lib/types';
+  import type { PageData } from './$types';
+
+  export let data: PageData;
 
   $: origin = $page.url.origin;
 
@@ -41,38 +45,36 @@
     }
   };
 
-  const load = async (slug: string) => {
-    loading = true;
+  // The article comes from the route load (and therefore from the server's
+  // initial HTML). Related cards remain best-effort client work because they
+  // do not determine what this article itself is about.
+  $: post = (data.post ?? null) as BlogPost | null;
+  $: loading = !post;
+  $: description = post ? toMetaText(post.meta_description || post.excerpt || post.content || '', 170) : '';
+  let relatedFor = '';
+  $: if (browser && post && relatedFor !== post.slug) {
+    relatedFor = post.slug;
     morePosts = [];
     exploreDestinations = [];
-    try {
-      const response = await api.blog.get(slug);
-      post = response.data ?? null;
-    } catch {
-      post = null;
-    } finally {
-      loading = false;
-    }
-
-    if (post) void loadRelated(post);
-  };
-
-  // The component is reused across /blog/[slug] navigations, so a one-shot
-  // onMount would leave the page stale. Re-load whenever the slug changes.
-  $: slug = $page.params.slug ?? '';
-  $: if (browser && slug) void load(slug);
-  $: postMeta = post
-    ? String((post as unknown as { meta_description?: string | null }).meta_description ?? '')
-    : '';
-  $: description = post ? toMetaText(postMeta || post.excerpt || post.content || '', 170) : '';
+    void loadRelated(post);
+  }
+  $: blogPostingLd = post
+    ? {
+        '@type': 'BlogPosting',
+        headline: post.title,
+        description,
+        mainEntityOfPage: `${origin}/blog/${post.slug}`,
+        url: `${origin}/blog/${post.slug}`,
+        ...(post.og_image_url || post.featured_image_url ? { image: cdnUrl(post.og_image_url || post.featured_image_url || '') } : {}),
+        ...(post.published_at ? { datePublished: post.published_at } : {}),
+        ...(post.updated_at ? { dateModified: post.updated_at } : {}),
+        author: post.author_name
+          ? { '@type': 'Person', name: post.author_name }
+          : { '@id': `${origin}/#organization` },
+        publisher: { '@id': `${origin}/#organization` }
+      }
+    : null;
 </script>
-
-<svelte:head>
-  {#if post}
-    <title>{post.title} | Goldfinch Adventures</title>
-    {#if description}<meta name="description" content={description} />{/if}
-  {/if}
-</svelte:head>
 
 <article class="container-shell py-14">
   {#if loading}
@@ -86,6 +88,7 @@
     </div>
   {:else}
     <JsonLd data={breadcrumbLd(origin, [{ name: 'Home', path: '/' }, { name: 'Expert Advice', path: '/expert-advice' }, { name: post.title, path: `/blog/${post.slug}` }])} />
+    {#if blogPostingLd}<JsonLd data={blogPostingLd} />{/if}
     <nav class="mb-6 flex items-center gap-2 text-sm">
       <a class="font-medium text-ink/70 transition hover:text-forest" href="/blog">{$t('nav.blog')}</a>
       <span class="text-ink/30">/</span>

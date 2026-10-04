@@ -3,7 +3,10 @@ import { API_URL } from '$lib/config/env';
 import { cachedJson } from '$lib/cache';
 import { attachedFaqQuery, generalFaqQuery, mergeFaqs } from '$lib/faqEntities';
 import { DEFAULT_LOCALE, localeFromPath, withLocale } from '$lib/i18n';
+import { toMetaText } from '$lib/richText';
+import { titleWithBrand } from '$lib/seo';
 import type { FAQ, Review, ReviewSummary, Tour, TourCategory } from '$lib/types';
+import { shareImageOf } from '$lib/img';
 
 type Items<T> = { data?: { items?: T[] } };
 
@@ -73,6 +76,14 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     reviewSummary: reviewSummary.status === 'fulfilled' ? reviewSummary.value?.data ?? null : null,
     homeSections: homeSections.status === 'fulfilled' ? homeSections.value?.data ?? [] : [],
     startPoints: items(startPoints).filter((point) => ['start', 'both'].includes(String(point.role ?? ''))),
-    galleryItems: items(galleryItems)
+    galleryItems: items(galleryItems),
+    // The shared layout owns the document head. Supplying this in load keeps
+    // category metadata in the initial HTML instead of waiting for hydration.
+    seo: {
+      title: titleWithBrand(category.meta_title, category.name),
+      description: toMetaText(category.meta_description || category.short_description || category.description || '', 160),
+      ogImage: shareImageOf(category, 'seo_image_url', 'image_url'),
+      imageAlt: category.name
+    }
   };
 };

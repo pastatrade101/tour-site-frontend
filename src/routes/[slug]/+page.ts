@@ -3,7 +3,10 @@ import type { PageLoad } from './$types';
 import { attachedFaqQuery, generalFaqQuery, mergeFaqs } from '$lib/faqEntities';
 import { lines, routeTourSlugs } from '$lib/safariPackageBlocks';
 import { localeFromPath, withLocale } from '$lib/i18n';
+import { toMetaText } from '$lib/richText';
+import { titleWithBrand } from '$lib/seo';
 import type { FAQ, Lodge, SafariPackage, Tour } from '$lib/types';
+import { shareImageOf } from '$lib/img';
 
 /**
  * Safari-package landing pages, served straight off the root: /2-day-safari.
@@ -161,8 +164,17 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
       ? (((await homepageResult.value.json()) as { data?: Record<string, unknown>[] })?.data ?? [])
       : [];
 
+  const title = record.meta_title || record.name;
+  const description = toMetaText(record.meta_description || record.hero_subtitle || '', 160);
+
   return {
     package: record,
+    seo: {
+      title: titleWithBrand(title, record.name),
+      description,
+      ogImage: shareImageOf(record, 'og_image_url', 'hero_image_url'),
+      imageAlt: record.name
+    },
     // Read by the root layout for hreflang and the canonical, so a package is
     // only announced in the languages it has a published translation in —
     // same as tours. Without it every enabled language was claimed.

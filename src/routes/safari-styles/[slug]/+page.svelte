@@ -22,7 +22,7 @@
   import TravellerMomentsMarquee from '$lib/components/public/TravellerMomentsMarquee.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import { currency, formatUsd } from '$lib/currency';
-  import { imgUrl, srcsetFor, variantSrc, variantsOf } from '$lib/img';
+  import { cdnUrl, imgUrl, srcsetFor, variantSrc, variantsOf } from '$lib/img';
   import { publicSettings, settingText } from '$lib/settings';
   import { defaultStyleLandingContent } from '$lib/safariStyleLanding';
   import { breadcrumbLd, faqLd } from '$lib/seo';
@@ -211,13 +211,37 @@
   // Planning starts on the six-step planner page, already knowing this style.
   $: planHref = planTripHref({ name: category?.name, slug: category?.slug, from: `safari style: ${category?.slug ?? ''}` });
 
+  // This is a real editorial collection, not a thin filter page: expose the
+  // category and the published trips it curates to search engines in one
+  // compact, truthful graph.
+  $: categorySchema = category
+    ? {
+        '@type': 'CollectionPage',
+        name: category.name,
+        description: toMetaText(category.meta_description || category.short_description || category.description || '', 160),
+        url: `${origin}/safari-styles/${category.slug}`,
+        ...(category.image_url ? { image: cdnUrl(category.image_url) } : {}),
+        ...(tours.length
+          ? {
+              mainEntity: {
+                '@type': 'ItemList',
+                itemListElement: tours.slice(0, 24).map((tour, index) => ({
+                  '@type': 'ListItem',
+                  position: index + 1,
+                  name: tour.title,
+                  url: `${origin}/tours/${tour.slug}`
+                }))
+              }
+            }
+          : {})
+      }
+    : null;
+
   $: waDigits = (settingText($publicSettings, 'whatsapp_number') || settingText($publicSettings, 'contact_phone') || '255754600905').replace(/[^0-9]/g, '');
   $: whatsappHref = `https://wa.me/${waDigits}?text=${encodeURIComponent(`Hello Goldfinch Adventures, I would like help planning ${category?.name ?? 'my safari'}.`)}`;
 </script>
 
 <svelte:head>
-  <title>{title}</title>
-  <meta name="description" content={description} />
   {#if category?.image_url}
     <link rel="preload" as="image" href={heroPreloadHref} imagesrcset={heroPreloadSrcset || undefined} imagesizes="100vw" type={heroPreloadType} fetchpriority="high" />
   {/if}
@@ -229,6 +253,7 @@
     { name: 'Safari Styles', path: '/safari-styles' },
     { name: category.name, path: `/safari-styles/${category.slug}` }
   ])} />
+  {#if categorySchema}<JsonLd data={categorySchema} />{/if}
 
   <!-- 2 · Hero -->
   <!-- The words sit along the bottom edge rather than through the middle, so

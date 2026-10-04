@@ -816,6 +816,24 @@
   });
   $: availableTourListSchema = tourItemListLd(origin, destination, availableTours);
   $: categoryListSchema = categoryItemListLd(origin, destination, relevantTourCategories);
+  $: destinationSchema = destination
+    ? {
+        '@type': 'TouristDestination',
+        name: destination.name,
+        description,
+        url: absoluteUrl(origin, `/destinations/${destination.slug}`),
+        ...(heroImage ? { image: cdnUrl(heroImage) } : {}),
+        ...(destination.country || destination.region
+          ? {
+              address: {
+                '@type': 'PostalAddress',
+                ...(destination.country ? { addressCountry: destination.country } : {}),
+                ...(destination.region ? { addressRegion: destination.region } : {})
+              }
+            }
+          : {})
+      }
+    : null;
   $: title = destination?.meta_title || (destination ? `${destination.name} Travel Guide` : 'Destination');
   $: description = toMetaText(destination?.meta_description || summary || 'Explore this destination with Goldfinch Adventures.', 170);
 
@@ -843,9 +861,6 @@
   <!-- Title and description are published to the root layout through the
        load's `seo` field; emitting them here as well left the document with a
        duplicate meta description. -->
-  {#if destination?.og_image_url || heroImage}
-    <meta property="og:image" content={cdnUrl(destination?.og_image_url || heroImage)} />
-  {/if}
   {#if heroImage}
     <link
       rel="preload"
@@ -876,6 +891,9 @@
         { name: destination.name, path: `/destinations/${destination.slug}` }
       ])}
     />
+    {#if destinationSchema}
+      <JsonLd data={destinationSchema} />
+    {/if}
     {#if availableTourListSchema}
       <JsonLd data={availableTourListSchema} />
     {/if}

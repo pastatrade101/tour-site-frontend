@@ -1,6 +1,17 @@
 // schema.org JSON-LD builders (SRS v2.0 §7.4). Pair with <JsonLd data={...} />.
 import { toPlainText } from '$lib/richText';
 
+const brandName = 'Goldfinch Adventures';
+
+/**
+ * Keep the operator name in document titles without producing the very common
+ * "… | Goldfinch Adventures | Goldfinch Adventures" CMS mistake.
+ */
+export const titleWithBrand = (value: string | null | undefined, fallback: string): string => {
+  const title = String(value ?? '').trim() || fallback;
+  return title.toLowerCase().includes(brandName.toLowerCase()) ? title : `${title} | ${brandName}`;
+};
+
 export const breadcrumbLd = (origin: string, items: { name: string; path: string }[]) => ({
   '@type': 'BreadcrumbList',
   itemListElement: items.map((it, i) => ({
