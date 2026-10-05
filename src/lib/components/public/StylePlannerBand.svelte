@@ -338,7 +338,7 @@
         <form novalidate on:submit|preventDefault={step === TOTAL ? submit : next}>
           <!-- Honeypot: named as nothing, so autofill has nothing to match. -->
           <div class="absolute left-[-9999px] top-0 h-0 w-0 overflow-hidden" aria-hidden="true">
-            <input type="text" name="gf-x1" tabindex="-1" autocomplete="off" bind:value={hp} />
+            <input type="text" name="gf-x1" tabindex="-1" autocomplete="off" hidden bind:value={hp} />
           </div>
 
           <div bind:this={stepFields}>

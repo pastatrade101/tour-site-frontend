@@ -408,7 +408,7 @@
       <!-- Named as nothing, so autofill has nothing to match. A honeypot
            labelled "Company" eats real enquiries. -->
       <div class="absolute left-[-9999px] top-0 h-0 w-0 overflow-hidden" aria-hidden="true">
-        <input type="text" name="gf-x1" tabindex="-1" autocomplete="off" bind:value={hp_company} />
+        <input type="text" name="gf-x1" tabindex="-1" autocomplete="off" hidden bind:value={hp_company} />
       </div>
 
       <!--

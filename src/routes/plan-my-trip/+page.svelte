@@ -976,9 +976,9 @@
           </dl>
 
           <form class="relative mt-5 grid gap-4 sm:grid-cols-2" on:submit|preventDefault={submit} novalidate>
-            <!-- Honeypot, named as nothing so autofill leaves it alone. -->
+            <!-- Honeypot: not rendered (hidden), so browser autofill skips it; bots reading the HTML still fill it. -->
             <div class="absolute left-[-9999px] top-0 h-0 w-0 overflow-hidden" aria-hidden="true">
-              <input type="text" name="gf-x1" tabindex="-1" autocomplete="off" bind:value={hp_company} />
+              <input type="text" name="gf-x1" tabindex="-1" autocomplete="off" hidden bind:value={hp_company} />
             </div>
             <label class="grid gap-1.5">
               <span class="gf-label">{$t('form.full_name')}<span class="gf-req">*</span></span>
