@@ -45,7 +45,7 @@
     Wallet
   } from '@lucide/svelte';
   import { api, ApiRequestError } from '$lib/api/client';
-  import { createFormTracker, getAttribution, lastCtaClicked, pushDataLayerEvent } from '$lib/analytics';
+  import { campaignTags, createFormTracker, getAttribution, lastCtaClicked, pushDataLayerEvent } from '$lib/analytics';
   import { afterNavigate } from '$app/navigation';
   import { currency, formatUsd } from '$lib/currency';
   import { brand } from '$lib/brand';
@@ -645,7 +645,6 @@
       // repeat. Trip shape and campaign only — never name, email or phone.
       if (!conversionSent) {
         conversionSent = true;
-        const campaign = { ...getAttribution(), ...incoming.campaign };
         const children = people.children ? `, ${people.children} ${people.children === 1 ? 'child' : 'children'}` : '';
         let referrerPath = '';
         try {
@@ -663,12 +662,7 @@
           priorities: d.priorities.join(', '),
           source_page: incoming.context.tourSlug ? `/tours/${incoming.context.tourSlug}` : incoming.from || cameFromPath || referrerPath || '(direct)',
           cta_clicked: lastCtaClicked(),
-          gclid: campaign.gclid,
-          utm_source: campaign.utm_source,
-          utm_medium: campaign.utm_medium,
-          utm_campaign: campaign.utm_campaign,
-          utm_term: campaign.utm_term,
-          utm_content: campaign.utm_content
+          ...campaignTags()
         });
       }
     } catch (error) {

@@ -426,6 +426,27 @@ export const pushDataLayerEvent = (event: string, params: Record<string, string 
   }
 };
 
+/**
+ * gclid and UTM tags for a conversion event: this visit's link first, then
+ * what first brought this browser here.
+ */
+export const campaignTags = (): Record<string, string> => {
+  if (!browser) return {};
+  const out: Record<string, string> = {};
+  const stored = storedAttribution();
+  let current: URLSearchParams | null = null;
+  try {
+    current = new URLSearchParams(window.location.search);
+  } catch {
+    current = null;
+  }
+  for (const key of ['gclid', ...UTM_KEYS]) {
+    const value = current?.get(key) || stored[key];
+    if (value) out[key] = value.slice(0, 200);
+  }
+  return out;
+};
+
 export const getAttribution = (): Record<string, string> => {
   const sid = getSessionId();
   return { ...(sid ? { session_id: sid } : {}), ...storedAttribution() };

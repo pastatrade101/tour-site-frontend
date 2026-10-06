@@ -39,7 +39,7 @@
    * interests, accommodation preference — is a conversation a specialist has
    * once they reply, not a barrier between a visitor and their enquiry.
    */
-  import { createEventDispatcher, onDestroy, onMount } from 'svelte';
+  import { createEventDispatcher, onDestroy, onMount, tick } from 'svelte';
   import { browser } from '$app/environment';
   import {
     ArrowLeft,
@@ -55,7 +55,7 @@
     Users
   } from '@lucide/svelte';
   import { api, ApiRequestError } from '$lib/api/client';
-  import { getAttribution } from '$lib/analytics';
+  import { campaignTags, getAttribution, lastCtaClicked, pushDataLayerEvent } from '$lib/analytics';
   import type { Tour } from '$lib/types';
 
   export let tour: Tour | null = null;
@@ -110,6 +110,9 @@
   let submitting = false;
   let submitted = false;
   let bookingCode = '';
+  // The Google Ads conversion is pushed once per form, however often the
+  // success path runs.
+  let conversionSent = false;
   let errorMessage = '';
   let errors: Record<string, string> = {};
 
@@ -328,6 +331,29 @@
       // personal, so it rides along for the in-house record.
       tracker?.submitted({ metadata: { language } });
       dispatch('submitted', { bookingCode });
+      // Google Ads conversion, through GTM's Custom Event trigger — the same
+      // event as the Plan My Trip planner: only now the server has stored the
+      // enquiry and the success message is showing, and only once. The
+      // reference is the transaction id that lets Ads drop a repeat. Trip
+      // shape and campaign only — never name, email or phone.
+      await tick();
+      if (!conversionSent) {
+        conversionSent = true;
+        const adultCount = Number(adults) || 1;
+        const childCount = Number(children) || 0;
+        pushDataLayerEvent('trip_request_submitted', {
+          form_type: 'Tour Request Form',
+          form_name: formName,
+          reference_id: bookingCode,
+          trip_type: tour?.tour_categories?.name ?? '',
+          tour_name: tour?.title ?? '',
+          travel_date: travel_date,
+          travellers: `${adultCount} ${adultCount === 1 ? 'adult' : 'adults'}${childCount ? `, ${childCount} ${childCount === 1 ? 'child' : 'children'}` : ''}`,
+          source_page: location.pathname,
+          cta_clicked: lastCtaClicked(),
+          ...campaignTags()
+        });
+      }
     } catch (error) {
       tracker?.failed(error instanceof ApiRequestError && error.status === 422 ? 'server_validation' : 'submit_failed');
       errorMessage = error instanceof Error && error.message ? error.message : $t('form.err_generic');
