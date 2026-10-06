@@ -232,6 +232,7 @@ const emit = (name: AnalyticsEventName, meta: EventMeta, place?: EventPlace): vo
   if (getConsent() === 'denied') return; // explicit decline → nothing at all
   try {
     const params = safeParams(meta);
+    if (name === 'cta_click') rememberCta(params);
     const ga4Name = GA4_EVENT_MAP[name] ?? name;
     // GA4's generate_lead reads its channel from lead_source.
     const ga4Params = ga4Name === 'generate_lead' && params.lead_type ? { ...params, lead_source: params.lead_type } : params;
@@ -384,6 +385,47 @@ const storedAttribution = (): Record<string, string> => {
 };
 
 /** First-touch attribution + session id, to attach to a lead's lead_context. */
+// ── Google Tag Manager events ─────────────────────────────────────────────────
+// The last call-to-action clicked in this tab, so a later conversion can say
+// which button started it. Only the CTA's own place and name — nothing personal.
+const LAST_CTA_KEY = 'gf_last_cta';
+const rememberCta = (params: Record<string, unknown>): void => {
+  try {
+    const label = [params.cta_location, params.cta_name].filter(Boolean).map(String).join(':');
+    if (label) sessionStorage.setItem(LAST_CTA_KEY, label.slice(0, 120));
+  } catch {
+    /* storage unavailable — the conversion simply goes without it */
+  }
+};
+export const lastCtaClicked = (): string => {
+  if (!browser) return '';
+  try {
+    return sessionStorage.getItem(LAST_CTA_KEY) ?? '';
+  } catch {
+    return '';
+  }
+};
+
+/**
+ * Push an event onto the dataLayer for Google Tag Manager — e.g. the Custom
+ * Event trigger behind the Google Ads conversion. Same consent rule as every
+ * other channel here, and never throws. Callers pass non-personal values only:
+ * GTM tags can forward them to Google Ads, whose policies forbid names, email
+ * addresses and phone numbers.
+ */
+export const pushDataLayerEvent = (event: string, params: Record<string, string | number | null | undefined> = {}): void => {
+  if (!browser || getConsent() === 'denied') return;
+  try {
+    const clean = Object.fromEntries(Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== ''));
+    const w = window as unknown as { dataLayer?: unknown[] };
+    w.dataLayer = w.dataLayer || [];
+    w.dataLayer.push({ event, ...clean });
+    if (debugOn()) console.info('[analytics] dataLayer', event, clean);
+  } catch {
+    /* never break the page over measurement */
+  }
+};
+
 export const getAttribution = (): Record<string, string> => {
   const sid = getSessionId();
   return { ...(sid ? { session_id: sid } : {}), ...storedAttribution() };

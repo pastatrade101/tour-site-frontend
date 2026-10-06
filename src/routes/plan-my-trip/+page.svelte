@@ -45,7 +45,8 @@
     Wallet
   } from '@lucide/svelte';
   import { api, ApiRequestError } from '$lib/api/client';
-  import { createFormTracker, getAttribution } from '$lib/analytics';
+  import { createFormTracker, getAttribution, lastCtaClicked, pushDataLayerEvent } from '$lib/analytics';
+  import { afterNavigate } from '$app/navigation';
   import { currency, formatUsd } from '$lib/currency';
   import { brand } from '$lib/brand';
   import { locale, t } from '$lib/i18n/ui';
@@ -212,6 +213,14 @@
   let submitting = false;
   let submitted = false;
   let bookingCode = '';
+  // The Google Ads conversion is pushed once per page visit, however the
+  // success path is reached.
+  let conversionSent = false;
+  // The page the visitor came to the planner from, inside the site.
+  let cameFromPath = '';
+  afterNavigate(({ from }) => {
+    if (from?.url && !cameFromPath) cameFromPath = from.url.pathname;
+  });
   let errorMessage = '';
   let card: HTMLElement;
 
@@ -630,6 +639,38 @@
       await tick();
       window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
       sentHeading?.focus({ preventScroll: true });
+      // Google Ads conversion, through GTM's Custom Event trigger: only now the
+      // server has stored the enquiry and the success screen is showing, and
+      // only once. The reference is the transaction id that lets Ads drop a
+      // repeat. Trip shape and campaign only — never name, email or phone.
+      if (!conversionSent) {
+        conversionSent = true;
+        const campaign = { ...getAttribution(), ...incoming.campaign };
+        const children = people.children ? `, ${people.children} ${people.children === 1 ? 'child' : 'children'}` : '';
+        let referrerPath = '';
+        try {
+          referrerPath = document.referrer ? new URL(document.referrer).hostname : '';
+        } catch {
+          referrerPath = '';
+        }
+        pushDataLayerEvent('trip_request_submitted', {
+          form_type: 'Goldfinch Guided Trip Planner',
+          reference_id: bookingCode,
+          trip_type: d.types.map((type) => typeOf(type).label).join(', '),
+          travel_date: exact ? d.startDate : travelMonth(),
+          travellers: `${partyLabel ? `${partyLabel} · ` : ''}${people.adults} ${people.adults === 1 ? 'adult' : 'adults'}${children}`,
+          comfort_level: d.comfort === NOT_SURE ? NOT_SURE : tierLabel(d.comfort),
+          priorities: d.priorities.join(', '),
+          source_page: incoming.context.tourSlug ? `/tours/${incoming.context.tourSlug}` : incoming.from || cameFromPath || referrerPath || '(direct)',
+          cta_clicked: lastCtaClicked(),
+          gclid: campaign.gclid,
+          utm_source: campaign.utm_source,
+          utm_medium: campaign.utm_medium,
+          utm_campaign: campaign.utm_campaign,
+          utm_term: campaign.utm_term,
+          utm_content: campaign.utm_content
+        });
+      }
     } catch (error) {
       tracker.failed(error instanceof ApiRequestError && error.status === 422 ? 'server_validation' : 'submit_failed');
       const fields = error instanceof ApiRequestError ? error.errors : [];
