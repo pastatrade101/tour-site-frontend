@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { plannerHref } from '$lib/plannerContext';
   import { openConsentSettings } from '$lib/consent';
   import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { ArrowRight, Mail, MapPin, MessageCircle, Phone } from '@lucide/svelte';
   import { api } from '$lib/api/client';
-  import { trackEvent } from '$lib/analytics';
+  import { trackEvent, trackCta } from '$lib/analytics';
   import { brand, brandKeys } from '$lib/brand';
   import { publicSettings, settingText } from '$lib/settings';
   import SocialIcon from './SocialIcon.svelte';
@@ -122,7 +123,8 @@
         </a>
         <p class="mt-4 max-w-sm text-sm leading-relaxed">{statement}</p>
         <a
-          href="/plan-my-trip"
+          href={$plannerHref}
+          on:click={() => trackCta({ cta_name: 'Plan My Trip', cta_location: 'footer' })}
           class="mt-6 inline-flex items-center gap-2 rounded-md bg-goldfinch-gold px-4 py-2.5 text-sm font-semibold text-heading transition hover:brightness-105"
         >
           {$t('cta.plan_my_trip')}

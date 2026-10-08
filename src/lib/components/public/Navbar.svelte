@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { plannerHref } from '$lib/plannerContext';
+  import { trackCta } from '$lib/analytics';
   import { onMount } from 'svelte';
   import { afterNavigate, goto, preloadData } from '$app/navigation';
   import { page } from '$app/stores';
@@ -633,9 +635,12 @@
 
       <a
         class={`hidden h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-md px-4 text-sm font-semibold transition sm:inline-flex ${isActive(path, '/plan-my-trip') ? 'bg-white/15 text-white' : 'bg-goldfinch-gold text-heading hover:brightness-105'}`}
-        href="/plan-my-trip"
+        href={$plannerHref}
         aria-current={isActive(path, '/plan-my-trip') ? 'page' : undefined}
-        on:click={() => activateLink('/plan-my-trip')}
+        on:click={() => {
+          trackCta({ cta_name: 'Plan My Trip', cta_location: 'navbar' });
+          activateLink('/plan-my-trip');
+        }}
         on:focus={() => preloadRoute('/plan-my-trip')}
       >
         {$t('cta.plan_my_trip')}
