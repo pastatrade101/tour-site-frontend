@@ -71,22 +71,40 @@ const readChoice = (): ConsentChoice | null => {
   return null;
 };
 
-export const consentChoice = writable<ConsentChoice | null>(readChoice());
+/**
+ * Outside the regions that require opt-in (EU/EEA, UK, Switzerland — decided
+ * by the inline script in app.html), analytics and advertising measurement are
+ * on until the visitor switches them off. Nothing is saved for that: it is the
+ * default where the law allows one, not a recorded consent.
+ */
+export const consentRegion = (): 'opt_in' | 'opt_out' => {
+  if (!browser) return 'opt_in';
+  return (window as unknown as { __gfConsentRegion?: string }).__gfConsentRegion === 'opt_out' ? 'opt_out' : 'opt_in';
+};
+
+/** The saved choice, else the regional default (null where we must ask). */
+const effectiveChoice = (): ConsentChoice | null =>
+  readChoice() ?? (consentRegion() === 'opt_out' ? { analytics: true, marketing: true } : null);
+
+export const consentChoice = writable<ConsentChoice | null>(effectiveChoice());
 
 /** Analytics consent, as callers have always read it. */
 export const consent = derived(consentChoice, (choice): Consent =>
   choice === null ? null : choice.analytics ? 'granted' : 'denied'
 );
 
-export const getConsentChoice = (): ConsentChoice | null => readChoice();
+export const getConsentChoice = (): ConsentChoice | null => effectiveChoice();
+
+/** Whether the visitor has made (and saved) a choice — the dialog asks until they have. */
+export const hasSavedChoice = (): boolean => readChoice() !== null;
 
 export const getConsent = (): Consent => {
-  const choice = readChoice();
+  const choice = effectiveChoice();
   return choice === null ? null : choice.analytics ? 'granted' : 'denied';
 };
 
 /** Advertising measurement allowed — the only case an ad click id may be shared. */
-export const hasMarketingConsent = (): boolean => readChoice()?.marketing === true;
+export const hasMarketingConsent = (): boolean => effectiveChoice()?.marketing === true;
 
 /** Tell Google tags (Consent Mode v2) and GTM what the visitor chose. */
 const applyToGoogle = (choice: ConsentChoice) => {

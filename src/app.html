@@ -42,19 +42,34 @@
     </noscript>
     <!--
       Google Consent Mode v2 defaults — must run before any Google tag loads.
-      Everything starts denied; a saved choice (lib/consent.ts, key
-      gf_consent_v2) is applied straight away so returning visitors are not
-      measured as undecided. Personalised advertising is never granted.
+
+      Where the visitor is decides whether we must ask first. In the EU/EEA,
+      the UK and Switzerland the law requires opt-in, so everything starts
+      denied and the cookie dialog asks. Elsewhere analytics and advertising
+      measurement are on by default and can be switched off from "Cookie
+      settings" in the footer (lib/consent.ts reads window.__gfConsentRegion).
+      The browser's time zone stands in for the location; an unknown one asks.
+      PUBLIC_CONSENT_ASK_EVERYWHERE=true asks every visitor.
+
+      A saved choice (key gf_consent_v2) always wins. Personalised
+      advertising is never granted.
     -->
     <script>
       window.dataLayer = window.dataLayer || [];
       window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
       (function () {
+        var tz = '';
+        try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { tz = ''; }
+        var askEverywhere = '%sveltekit.env.PUBLIC_CONSENT_ASK_EVERYWHERE%' === 'true';
+        var optIn = askEverywhere || !tz || /^Europe\//.test(tz) ||
+          /^(Atlantic\/(Canary|Madeira|Azores|Reykjavik|Faroe)|Arctic\/Longyearbyen|Indian\/(Reunion|Mayotte)|America\/(Guadeloupe|Martinique|Cayenne|St_Barthelemy|Marigot)|Asia\/(Nicosia|Famagusta))$/.test(tz);
+        window.__gfConsentRegion = optIn ? 'opt_in' : 'opt_out';
+
         var c = null;
         try { c = JSON.parse(localStorage.getItem('gf_consent_v2') || 'null'); } catch (e) { c = null; }
         var ok = !!(c && c.v === 2 && c.expiresAt > Date.now());
-        var analytics = ok && c.analytics === true;
-        var marketing = ok && c.marketing === true;
+        var analytics = ok ? c.analytics === true : !optIn;
+        var marketing = ok ? c.marketing === true : !optIn;
         window.gtag('consent', 'default', {
           analytics_storage: analytics ? 'granted' : 'denied',
           ad_storage: marketing ? 'granted' : 'denied',

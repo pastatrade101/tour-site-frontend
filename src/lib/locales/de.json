@@ -1425,5 +1425,12 @@
   "consent.review": "Auswahl ansehen",
   "consent.dismiss": "Schließen",
   "consent.art_caption": "Tansania & Ostafrika, ganz nach Ihren Wünschen.",
-  "consent.settings_link": "Cookie-Einstellungen"
+  "consent.settings_link": "Cookie-Einstellungen",
+  "consent.settings_intro_on": "Analyse und Werbemessung sind aktiv. Schalten Sie aus, was Sie nicht teilen möchten.",
+  "consent.banner_title": "Diese Website verwendet Cookies",
+  "consent.banner_text": "Wir verwenden Cookies, damit diese Website funktioniert, um zu verstehen, wie Besucher sie nutzen (Google Analytics, Microsoft Clarity und unsere eigene Statistik), und um zu messen, welche unserer Google-Anzeigen zu Anfragen führen. Für personalisierte Werbung nutzen wir sie nie.",
+  "consent.details_prefix": "Mehr dazu in unserer",
+  "consent.manage": "Einstellungen verwalten",
+  "consent.allow_all": "Alle erlauben",
+  "consent.continue_without": "Weiter ohne Zustimmung"
 }

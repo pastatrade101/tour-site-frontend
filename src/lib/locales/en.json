@@ -1425,5 +1425,12 @@
   "consent.review": "Review choices",
   "consent.dismiss": "Dismiss",
   "consent.art_caption": "Tanzania & East Africa, planned your way.",
-  "consent.settings_link": "Cookie settings"
+  "consent.settings_link": "Cookie settings",
+  "consent.settings_intro_on": "Analytics and advertising measurement are on. Switch off anything you'd rather not share.",
+  "consent.banner_title": "This website uses cookies",
+  "consent.banner_text": "We use cookies to keep this site working, to understand how visitors use it (Google Analytics, Microsoft Clarity and our own statistics) and to measure which of our Google ads lead to enquiries. We never use them to show you personalised ads.",
+  "consent.details_prefix": "For more details, see our",
+  "consent.manage": "Manage settings",
+  "consent.allow_all": "Allow all",
+  "consent.continue_without": "Continue without accepting"
 }

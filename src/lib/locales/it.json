@@ -1425,5 +1425,12 @@
   "consent.review": "Rivedi le scelte",
   "consent.dismiss": "Chiudi",
   "consent.art_caption": "Tanzania e Africa orientale, a modo tuo.",
-  "consent.settings_link": "Impostazioni cookie"
+  "consent.settings_link": "Impostazioni cookie",
+  "consent.settings_intro_on": "Statistiche e misurazione pubblicitaria sono attive. Disattiva ciò che preferisci non condividere.",
+  "consent.banner_title": "Questo sito utilizza i cookie",
+  "consent.banner_text": "Usiamo i cookie per far funzionare questo sito, capire come lo usano i visitatori (Google Analytics, Microsoft Clarity e le nostre statistiche) e misurare quali annunci Google portano a richieste. Non li usiamo mai per mostrarti pubblicità personalizzata.",
+  "consent.details_prefix": "Per maggiori dettagli, consulta la nostra",
+  "consent.manage": "Gestisci impostazioni",
+  "consent.allow_all": "Consenti tutti",
+  "consent.continue_without": "Continua senza accettare"
 }

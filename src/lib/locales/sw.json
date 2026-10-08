@@ -1425,5 +1425,12 @@
   "consent.review": "Kagua chaguo",
   "consent.dismiss": "Funga",
   "consent.art_caption": "Tanzania na Afrika Mashariki, kwa namna yako.",
-  "consent.settings_link": "Mipangilio ya vidakuzi"
+  "consent.settings_link": "Mipangilio ya vidakuzi",
+  "consent.settings_intro_on": "Takwimu na upimaji wa matangazo vimewashwa. Zima chochote ambacho hungependa kushiriki.",
+  "consent.banner_title": "Tovuti hii inatumia vidakuzi",
+  "consent.banner_text": "Tunatumia vidakuzi ili tovuti hii ifanye kazi, kuelewa jinsi wageni wanavyoitumia (Google Analytics, Microsoft Clarity na takwimu zetu wenyewe) na kupima ni matangazo yetu yapi ya Google yanaleta maombi. Hatuvitumii kamwe kukuonyesha matangazo yaliyobinafsishwa.",
+  "consent.details_prefix": "Kwa maelezo zaidi, soma",
+  "consent.manage": "Dhibiti mipangilio",
+  "consent.allow_all": "Ruhusu yote",
+  "consent.continue_without": "Endelea bila kukubali"
 }

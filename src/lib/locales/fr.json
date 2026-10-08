@@ -1425,5 +1425,12 @@
   "consent.review": "Revoir mes choix",
   "consent.dismiss": "Fermer",
   "consent.art_caption": "La Tanzanie et l’Afrique de l’Est, à votre façon.",
-  "consent.settings_link": "Paramètres des cookies"
+  "consent.settings_link": "Paramètres des cookies",
+  "consent.settings_intro_on": "Les statistiques et la mesure publicitaire sont activées. Désactivez ce que vous préférez ne pas partager.",
+  "consent.banner_title": "Ce site utilise des cookies",
+  "consent.banner_text": "Nous utilisons des cookies pour faire fonctionner ce site, comprendre comment les visiteurs l’utilisent (Google Analytics, Microsoft Clarity et nos propres statistiques) et mesurer quelles annonces Google mènent à des demandes. Nous ne les utilisons jamais pour vous montrer des publicités personnalisées.",
+  "consent.details_prefix": "Pour en savoir plus, consultez notre",
+  "consent.manage": "Gérer les paramètres",
+  "consent.allow_all": "Tout autoriser",
+  "consent.continue_without": "Continuer sans accepter"
 }
