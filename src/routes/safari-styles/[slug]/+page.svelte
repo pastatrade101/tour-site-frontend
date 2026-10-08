@@ -344,6 +344,7 @@
     interests={[{ name: category.name, slug: category.slug }, ...otherStyles.map((style) => ({ name: style.name, slug: style.slug }))]}
     categoryName={category.name}
     categorySlug={category.slug}
+    handoffHref={planHref}
   />
 
   <!-- 6 · Tour collection / itinerary fallback -->

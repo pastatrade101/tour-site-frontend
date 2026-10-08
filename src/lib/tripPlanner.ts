@@ -745,7 +745,7 @@ const PERSONA: Record<string, Party> = {
 };
 
 /** Query strings a link may carry, kept for the specialist exactly as they arrived. */
-const ENTRY_KEYS = ['from', 'tour', 'destination', 'place', 'persona', 'experience', 'category', 'month', 'date', 'stay', 'stay_name'];
+const ENTRY_KEYS = ['from', 'tour', 'destination', 'place', 'persona', 'experience', 'category', 'month', 'date', 'stay', 'stay_name', 'adults', 'children', 'days'];
 const CAMPAIGN_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid'];
 
 const pick = (query: URLSearchParams, keys: string[]) => {
@@ -789,9 +789,40 @@ export const fromQuery = (query: URLSearchParams, now = new Date(), categories: 
   const parsed = rawDate ? new Date(`${rawDate}T00:00:00Z`) : null;
   const date = parsed && !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === rawDate ? rawDate : undefined;
 
+  // Numbers a page's own short form already asked (a safari-style page hands
+  // its first step over here): only whole numbers in a sensible range count.
+  const count = (name: string, min: number, max: number) => {
+    const raw = query.get(name);
+    const n = raw === null || raw.trim() === '' ? NaN : Number(raw);
+    return Number.isInteger(n) && n >= min && n <= max ? n : undefined;
+  };
+  const adults = count('adults', 1, 30);
+  const children = count('children', 0, 20);
+  const days = count('days', 1, 60);
+  // Who is travelling, only where the numbers leave no doubt: one adult alone
+  // is solo, anyone with children is a family. Two adults could be a couple or
+  // two friends, so that stays the traveller's answer.
+  const partyFromCounts: Party | undefined =
+    adults === 1 && !children ? 'solo' : children ? 'family' : undefined;
+  // A trip length, only when the trip is one kind — days spread across a
+  // safari and a beach stay cannot be split without guessing.
+  const definiteTypes = types.filter((type) => type !== 'unsure');
+  const lengths: Partial<Record<TypeId, string>> = {};
+  if (days && definiteTypes.length === 1) {
+    const type = definiteTypes[0];
+    const band = LENGTHS[type].find((candidate) => {
+      const [lo, hi] = bandRange(candidate);
+      return days >= Math.floor(lo) && (candidate.includes('+') || days <= hi);
+    });
+    if (band) lengths[type] = band;
+  }
+
   return {
     types,
-    party: party ?? '',
+    party: party ?? partyFromCounts ?? '',
+    adults,
+    children,
+    lengths,
     priorities: priority ? [priority] : [],
     year,
     month,

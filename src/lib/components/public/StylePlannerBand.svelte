@@ -17,6 +17,7 @@
    * enquiry and "Mid-range" in the next would be two answers to one question.
    */
   import { tick } from 'svelte';
+  import { goto } from '$app/navigation';
   import { ChevronDown, ChevronLeft, ChevronRight, Loader2, Lock } from '@lucide/svelte';
   import { getAttribution, trackEvent } from '$lib/analytics';
   import { api } from '$lib/api/client';
@@ -52,6 +53,13 @@
    * arrives at a form that already knows which option they meant.
    */
   export let suggestedRoute = '';
+  /**
+   * Hand the trip over to the Plan My Trip planner after the first step, so
+   * every lead from this page is captured on the one form. The planner opens
+   * already knowing the style, date, travellers and days answered here.
+   * Empty keeps the full three-step form (safari package pages).
+   */
+  export let handoffHref = '';
 
   type Field =
     | 'route'
@@ -207,6 +215,15 @@
   const next = async () => {
     formError = '';
     if (!(await validate(step))) return;
+    if (handoffHref && step === 1) {
+      const url = new URL(handoffHref, window.location.origin);
+      url.searchParams.set('adults', String(Number(travellers)));
+      url.searchParams.set('date', travelDate);
+      url.searchParams.set('days', days);
+      trackEvent('cta_click', { cta_name: 'Continue', cta_location: 'style_planner' });
+      await goto(`${url.pathname}${url.search}`);
+      return;
+    }
     if (step < TOTAL) {
       step += 1;
       void focusStep();
@@ -300,7 +317,7 @@
         <p class="mt-2 text-[14px] leading-relaxed text-white/70">{description}</p>
       {/if}
 
-      {#if !submitted}
+      {#if !submitted && !handoffHref}
         <!-- Progress reads as bars rather than numbered circles: three steps do
              not need the ceremony, and it keeps the left column short. -->
         <div class="mt-4 flex items-center gap-2">
