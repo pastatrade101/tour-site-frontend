@@ -7,12 +7,12 @@
   import '../app.css';
   import Navbar from '$lib/components/public/Navbar.svelte';
   import Footer from '$lib/components/public/Footer.svelte';
-  import ConsentBanner from '$lib/components/public/ConsentBanner.svelte';
+  import ConsentDialog from '$lib/components/public/ConsentDialog.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import BackToTop from '$lib/components/public/BackToTop.svelte';
   import NavigationProgress from '$lib/components/public/NavigationProgress.svelte';
   import ShortlistFab from '$lib/components/public/ShortlistFab.svelte';
-  import { consent } from '$lib/consent';
+  import { consentChoice } from '$lib/consent';
   import { setupPwaInstall } from '$lib/pwa';
   import { initSmoothScrolling, setupGsap } from '$lib/animations';
   import { api } from '$lib/api/client';
@@ -167,7 +167,7 @@
   // Local dev / preview hosts must never pollute the production GA4 / Clarity
   // data — isProdHost (lib/analytics) also keeps them out of the in-house record.
 
-  // Load GA4 (gtag) on the public site — gated by consent ('granted') above and a
+  // Load GA4 (gtag) on the public site — gated by the consent mode below and a
   // configured PUBLIC_GA4_MEASUREMENT_ID. send_page_view is off so the SPA page-view
   // tracker (afterNavigate → trackPageView) is the single source of truth; we send
   // the current page once here to catch the entry page.
@@ -192,7 +192,7 @@
   };
 
   // Microsoft Clarity — UX companion to GA4 (session recordings, heatmaps, rage/dead
-  // clicks). Same gates as GA4: consent granted, production host, public site, and a
+  // clicks). Analytics consent, production host, public site, and a
   // configured PUBLIC_CLARITY_PROJECT_ID. Clarity handles SPA route changes itself.
   const loadClarityIfReady = () => {
     const id = publicEnv.PUBLIC_CLARITY_PROJECT_ID;
@@ -201,7 +201,7 @@
   };
 
   // Google Tag Manager — the official container snippet, behind the same gates as
-  // GA4 and Clarity: consent granted, production host, public site, and a configured
+  // GA4: the consent mode below, production host, public site, and a configured
   // PUBLIC_GTM_ID. It shares the `dataLayer` gtag already uses. If the container also
   // fires a GA4 page-view tag, page views will count twice alongside loadGa4 — pick one.
   const loadGtm = () => {
@@ -218,8 +218,18 @@
     (first?.parentNode ?? document.head).insertBefore(script, first ?? null);
   };
 
-  // Load analytics (GA4 + Clarity + GTM) only once the visitor has explicitly granted consent.
-  $: if (browser && $consent === 'granted') { loadGa4(); loadClarityIfReady(); loadGtm(); }
+  // Google Consent Mode v2 (defaults set in app.html, updates in lib/consent).
+  // 'advanced' (default): GA4 and GTM load for every visitor and stay
+  // cookieless until the matching consent, so a lead from someone who declined
+  // still reaches Google as an anonymous signal it can model. 'basic'
+  // (PUBLIC_CONSENT_MODE=basic): they load only after consent, as before.
+  // Clarity records sessions, so it waits for analytics consent either way.
+  const advancedConsent = publicEnv.PUBLIC_CONSENT_MODE !== 'basic';
+  $: if (browser) {
+    if (advancedConsent || $consentChoice?.analytics) loadGa4();
+    if (advancedConsent || $consentChoice?.marketing) loadGtm();
+    if ($consentChoice?.analytics) loadClarityIfReady();
+  }
 
   // One page_view per navigation (initial + every client-side route change). Deduped
   // + query-stripped inside trackPageView. Public site only.
@@ -346,5 +356,5 @@
   <Footer />
   <ShortlistFab />
   <BackToTop />
-  <ConsentBanner />
+  <ConsentDialog />
 {/if}

@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { API_URL } from '$lib/config/env';
-import { getConsent } from '$lib/consent';
+import { getConsent, hasMarketingConsent } from '$lib/consent';
 
 // ----------------------------------------------------------------------------
 // Analytics — one place for every layer.
@@ -229,21 +229,26 @@ const here = (): EventPlace => ({ path: window.location.pathname, url: cleanLoca
 
 const emit = (name: AnalyticsEventName, meta: EventMeta, place?: EventPlace): void => {
   if (!browser) return;
-  if (getConsent() === 'denied') return; // explicit decline → nothing at all
+  // A decline stops everything stored in this browser — Clarity and our own
+  // statistics. Google tags still get the event: they only exist when Consent
+  // Mode lets them run, and without consent they send it cookieless.
+  const declined = getConsent() === 'denied';
   try {
     const params = safeParams(meta);
-    if (name === 'cta_click') rememberCta(params);
+    if (name === 'cta_click' && !declined) rememberCta(params);
     const ga4Name = GA4_EVENT_MAP[name] ?? name;
     // GA4's generate_lead reads its channel from lead_source.
     const ga4Params = ga4Name === 'generate_lead' && params.lead_type ? { ...params, lead_source: params.lead_type } : params;
 
     if (debugOn()) console.info('[analytics]', name, '→ GA4', ga4Name, ga4Params, meta.metadata ?? '');
 
-    // 1) GA4 — only when gtag is loaded (which only happens after 'granted').
+    // 1) GA4 — whenever gtag is loaded; Consent Mode decides what it may store.
     const gtag = hasGtag();
     if (gtag) gtag('event', ga4Name, ga4Params);
 
-    // 2) Clarity — likewise only once loaded (consent granted).
+    if (declined) return;
+
+    // 2) Clarity — only loaded with analytics consent.
     toClarity(name, params);
 
     // 3) First-party — the live site only, so development never counts as traffic.
@@ -281,7 +286,8 @@ let lastGa4Path = '';
 let lastFirstPartyPath = '';
 
 export const trackPageView = (): void => {
-  if (!browser || getConsent() === 'denied') return;
+  if (!browser) return;
+  const declined = getConsent() === 'denied';
   if (debugOn()) console.info('[analytics] page_view', window.location.pathname);
   const path = window.location.pathname;
   const location = cleanLocation();
@@ -296,7 +302,7 @@ export const trackPageView = (): void => {
         page_referrer: document.referrer || undefined
       });
     }
-    if (path !== lastFirstPartyPath && isProdHost()) {
+    if (!declined && path !== lastFirstPartyPath && isProdHost()) {
       lastFirstPartyPath = path;
       void fetch(`${API_URL}/analytics/events`, {
         method: 'POST',
@@ -414,9 +420,15 @@ export const lastCtaClicked = (): string => {
  * addresses and phone numbers.
  */
 export const pushDataLayerEvent = (event: string, params: Record<string, string | number | null | undefined> = {}): void => {
-  if (!browser || getConsent() === 'denied') return;
+  if (!browser) return;
+  // GTM only runs under Consent Mode, so the event itself always goes (without
+  // consent Google measures it cookieless). The ad click id is an advertising
+  // identifier: it rides along only with advertising consent.
+  const marketing = hasMarketingConsent();
   try {
-    const clean = Object.fromEntries(Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== ''));
+    const clean = Object.fromEntries(
+      Object.entries(params).filter(([key, value]) => value !== undefined && value !== null && value !== '' && (marketing || key !== 'gclid'))
+    );
     const w = window as unknown as { dataLayer?: unknown[] };
     w.dataLayer = w.dataLayer || [];
     w.dataLayer.push({ event, ...clean });

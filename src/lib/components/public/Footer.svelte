@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { openConsentSettings } from '$lib/consent';
   import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { ArrowRight, Mail, MapPin, MessageCircle, Phone } from '@lucide/svelte';
@@ -285,6 +286,8 @@
       <p>© {year} {settingText(s, 'company_name') || brand.companyName}. {$t('footer.rights')}</p>
       <nav class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
         <a class="transition hover:text-white" href={privacyUrl}>{$t('footer.privacy')}</a>
+        <!-- Reopens the cookie dialog, so a choice can be changed or withdrawn as easily as it was given. -->
+        <button type="button" class="transition hover:text-white" on:click={openConsentSettings}>{$t('consent.settings_link')}</button>
         <a class="transition hover:text-white" href={termsUrl}>{$t('footer.terms')}</a>
         <a class="transition hover:text-white" href={cancellationUrl}>{$t('footer.cancellation')}</a>
         <a class="transition hover:text-white" href={dataRetentionUrl}>{$t('footer.data_retention')}</a>
