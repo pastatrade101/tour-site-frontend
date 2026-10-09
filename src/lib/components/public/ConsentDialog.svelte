@@ -43,6 +43,16 @@
   const optIn = consentRegion() === 'opt_in';
   $: locale = localeFromPath($page.url.pathname);
   $: privacyHref = settingText($publicSettings, 'privacy_policy_url') || localizeHref('/privacy', locale);
+  // There is no separate cookie policy page: the cookie section lives in the
+  // privacy policy, unless a cookie_policy_url setting says otherwise.
+  $: cookieHref = settingText($publicSettings, 'cookie_policy_url') || privacyHref;
+
+  /** Copy with {allow}/{manage}/{privacy}/{cookie} slots, as text and slot parts. */
+  const parts = (copy: string): Array<{ text: string; slot?: string }> =>
+    copy
+      .split(/(\{[a-z]+\})/g)
+      .filter(Boolean)
+      .map((segment) => (/^\{[a-z]+\}$/.test(segment) ? { text: '', slot: segment.slice(1, -1) } : { text: segment }));
 
   const open = async (start: 'intro' | 'settings', viaLink = false) => {
     if (!dialog) return;
@@ -150,8 +160,7 @@
       <h2 id="consent-title" bind:this={titleEl} tabindex="-1" class="text-[19px] font-bold text-heading outline-none sm:text-xl">{$t('consent.banner_title')}</h2>
       <p id="consent-description" class="mt-2 text-[15px] leading-7 text-ink/80">{$t('consent.banner_text')}</p>
       <p class="mt-3 text-[15px] leading-7 text-ink/80">
-        {$t('consent.details_prefix')}
-        <a class="font-semibold text-forest underline underline-offset-2 dark:text-goldfinch-gold" href={privacyHref} on:click={close}>{$t('consent.privacy_link')}</a>.
+        {#each parts($t('consent.banner_select')) as part}{#if part.slot === 'allow'}<strong class="font-semibold text-heading">{$t('consent.allow_all')}</strong>{:else if part.slot === 'manage'}<strong class="font-semibold text-heading">{$t('consent.manage')}</strong>{:else}{part.text}{/if}{/each}
       </p>
     </section>
     <div class="h-px bg-ink/10"></div>
@@ -174,9 +183,17 @@
         </button>
       {/if}
       <h2 id="consent-title" bind:this={titleEl} tabindex="-1" class="mt-2 text-[19px] font-bold text-heading outline-none sm:text-xl">{$t('consent.settings_title')}</h2>
-      <p id="consent-description" class="mt-2 text-[14px] leading-6 text-ink/75">{$t(optIn ? 'consent.settings_intro' : 'consent.settings_intro_on')}</p>
+      <div id="consent-description" class="mt-3 grid gap-3 text-[14px] leading-6 text-ink/75">
+        {#each ['consent.settings_p1', 'consent.settings_p2', 'consent.settings_p3', 'consent.settings_p4', 'consent.settings_p5'] as key}
+          <p>{$t(key)}</p>
+        {/each}
+        <p>
+          {#each parts($t('consent.settings_p6')) as part}{#if part.slot === 'privacy'}<a class="font-semibold text-forest underline underline-offset-2 dark:text-goldfinch-gold" href={privacyHref} on:click={close}>{$t('consent.privacy_policy')}</a>{:else if part.slot === 'cookie'}<a class="font-semibold text-forest underline underline-offset-2 dark:text-goldfinch-gold" href={cookieHref} on:click={close}>{$t('consent.cookie_policy')}</a>{:else}{part.text}{/if}{/each}
+        </p>
+      </div>
 
-      <div class="mt-4 divide-y divide-ink/10">
+      <h3 class="mt-6 text-[15px] font-bold text-heading">{$t('consent.choose_title')}</h3>
+      <div class="mt-3 divide-y divide-ink/10">
         <label class="grid cursor-default grid-cols-[22px_minmax(0,1fr)] gap-3 pb-4">
           <input type="checkbox" checked disabled class="mt-0.5 h-[18px] w-[18px] accent-[rgb(var(--c-deep-green))]" />
           <span>
@@ -199,7 +216,6 @@
           </span>
         </label>
       </div>
-      <p class="mt-4 rounded-[8px] bg-canvas px-3.5 py-2.5 text-[11px] leading-5 text-ink/65">{$t('consent.without_consent')}</p>
     </section>
     <div class="h-px bg-ink/10"></div>
     <div class="flex flex-col-reverse gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
