@@ -137,8 +137,10 @@
     types: incoming.types.filter((type) => offered.some((o) => o.id === type)),
     party: incoming.party,
     adults: incoming.adults ?? 2,
-    children: incoming.children ?? (incoming.party === 'family' ? 1 : 0),
-    childAges: Array.from({ length: incoming.children ?? (incoming.party === 'family' ? 1 : 0) }, () => ''),
+    // A family from a page's head count is that many people, split unknown —
+    // no child is invented; one is only the starting point when nothing was counted.
+    children: incoming.children ?? (incoming.party === 'family' && incoming.adults === undefined ? 1 : 0),
+    childAges: Array.from({ length: incoming.children ?? (incoming.party === 'family' && incoming.adults === undefined ? 1 : 0) }, () => ''),
     dateMode: startDate ? 'exact' : 'flexible',
     year: startDate ? Number(startDate.slice(0, 4)) : startYear,
     month: startDate ? Number(startDate.slice(5, 7)) - 1 : startMonth,

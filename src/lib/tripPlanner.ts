@@ -805,11 +805,17 @@ export const fromQuery = (query: URLSearchParams, now = new Date(), categories: 
   const adults = count('adults', 1, 30);
   const children = count('children', 0, 20);
   const days = count('days', 1, 60);
-  // Who is travelling, only where the numbers leave no doubt: one adult alone
-  // is solo, anyone with children is a family. Two adults could be a couple or
-  // two friends, so that stays the traveller's answer.
+  // Who is travelling, from the head count a page's own form asked: one person
+  // is solo, two a partner trip (one tap changes it to a group of friends),
+  // three or more a group, anyone with children a family. The count wins over
+  // what the page's name suggests — nine people on a honeymoon page are a
+  // group, not a couple — except on a family page, where the count is the
+  // whole family.
   const partyFromCounts: Party | undefined =
-    adults === 1 && !children ? 'solo' : children ? 'family' : undefined;
+    adults === undefined ? undefined : children ? 'family' : adults === 1 ? 'solo' : adults === 2 ? 'partner' : 'group';
+  const personaFits = (value: Party) =>
+    adults === undefined ||
+    (value === 'solo' ? adults === 1 && !children : value === 'partner' ? adults === 2 && !children : true);
   // A trip length, only when the trip is one kind — days spread across a
   // safari and a beach stay cannot be split without guessing.
   const definiteTypes = types.filter((type) => type !== 'unsure');
@@ -825,7 +831,7 @@ export const fromQuery = (query: URLSearchParams, now = new Date(), categories: 
 
   return {
     types,
-    party: party ?? partyFromCounts ?? '',
+    party: (party && personaFits(party) ? party : partyFromCounts ?? party) ?? '',
     adults,
     children,
     lengths,
