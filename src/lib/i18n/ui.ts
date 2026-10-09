@@ -30,6 +30,15 @@ export const locale = writable<KnownLocale>(DEFAULT_LOCALE);
  * translation has not covered, and to the key itself if it is unknown, so a
  * missing string is visible in review rather than rendering as blank.
  */
+/**
+ * Translate into a given language, whatever the page is in — the cookie
+ * dialog speaks the visitor's own language on a first visit to an English page.
+ */
+export const translateIn = (lang: KnownLocale, key: string): string => {
+  const dictionary = DICTIONARIES[lang] ?? DICTIONARIES[DEFAULT_LOCALE];
+  return dictionary[key] ?? DICTIONARIES[DEFAULT_LOCALE][key] ?? key;
+};
+
 export const t = derived(locale, ($locale) => (key: string): string => {
   const dictionary = DICTIONARIES[$locale] ?? DICTIONARIES[DEFAULT_LOCALE];
   return dictionary[key] ?? DICTIONARIES[DEFAULT_LOCALE][key] ?? key;
