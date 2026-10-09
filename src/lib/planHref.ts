@@ -36,6 +36,11 @@ export const planTripHref = ({ name, slug, from }: { name?: string | null; slug?
   else if (/zanzibar|beach/.test(hay) && !/safari/.test(hay)) query.set('experience', 'beach');
   else if (hay.trim()) query.set('experience', 'safari');
 
+  // The style itself, when the page is one: the planner maps each published
+  // style to its own trip types and priority ("Safari from Zanzibar" is the
+  // Zanzibar fly-in, not a mainland safari). The keyword guess above stays as
+  // the fallback for pages that are not a style.
+  if (slug?.trim()) query.set('category', slug.trim());
   if (name?.trim()) query.set('place', name.trim());
   if (from) query.set('from', from);
 

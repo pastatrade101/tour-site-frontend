@@ -761,10 +761,16 @@ const pick = (query: URLSearchParams, keys: string[]) => {
 export const fromQuery = (query: URLSearchParams, now = new Date(), categories: PlannerCategory[] = []) => {
   const experience = String(query.get('experience') ?? query.get('category') ?? '').trim();
   const key = experience.toLowerCase();
-  const category = categories.find((c) => c.slug.toLowerCase() === key || c.name.toLowerCase() === key);
+  // A link that names a published style (a style page sends its slug as
+  // `category`) is read through that style's own mapping first; a bare
+  // experience keyword is the fallback for links from anywhere else.
+  const styleKey = String(query.get('category') ?? '').trim().toLowerCase();
+  const named = (value: string) => categories.find((c) => c.slug.toLowerCase() === value || c.name.toLowerCase() === value);
+  const category = (styleKey ? named(styleKey) : undefined) ?? named(key);
   const types: TypeId[] =
+    (category ? CATEGORY_TYPES[category.slug] : undefined) ??
     EXPERIENCE[key] ??
-    (category ? CATEGORY_TYPES[category.slug] ?? (/safari/.test(category.slug) ? ['safari'] : []) : []);
+    (category ? (/safari/.test(category.slug) ? ['safari'] : []) : []);
   const priority = category ? CATEGORY_PRIORITY[category.slug] : undefined;
   const party = PERSONA[String(query.get('persona') ?? '').toLowerCase()];
 
