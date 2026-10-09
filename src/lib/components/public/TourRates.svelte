@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '$lib/i18n/ui';
+  import { locale, t } from '$lib/i18n/ui';
   /**
    * What a tour costs — one renderer, wherever a price is shown.
    *
@@ -114,6 +114,26 @@
       group_prices: [...(season.group_prices ?? [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
     }));
 
+  /** A season's cheapest bookable rate — shown on its collapsed card on a phone. */
+  const lowestRate = (season: TourPricingSeason): string => {
+    const amounts = season.group_prices
+      .filter((price) => price.price_status !== 'NOT_AVAILABLE' && price.price_status !== 'ON_REQUEST' && price.price != null)
+      .map((price) => Number(price.price))
+      .filter((amount) => Number.isFinite(amount) && amount > 0);
+    return amounts.length ? formatPublishedRate(Math.min(...amounts), season.currency) : '';
+  };
+
+  /** "1 Jun – 31 Oct" when the season has dates, in the reader's language. */
+  $: seasonDates = (season: TourPricingSeason): string => {
+    if (!season.start_date || !season.end_date) return '';
+    try {
+      const format = new Intl.DateTimeFormat($locale, { day: 'numeric', month: 'short', timeZone: 'UTC' });
+      return `${format.format(new Date(season.start_date))} – ${format.format(new Date(season.end_date))}`;
+    } catch {
+      return '';
+    }
+  };
+
   /** One column per party size across every season, smallest party first. */
   $: groupColumns = [
     ...new Map(seasons.flatMap((season) => season.group_prices).map((price) => [groupKey(price), price])).values()
@@ -136,25 +156,67 @@
       {/each}
     </div>
   {:else}
-  <div class="mt-6 overflow-x-auto rounded-[10px] border border-ink/10 bg-surface shadow-sm">
-    <table class="w-full min-w-[820px] border-collapse text-[14px]">
+  <!-- Phones: one card per season with every party size as its own row, so
+       the whole price list reads top to bottom. The table below needed a
+       sideways swipe that nothing on screen announced. The first season is
+       open; the others show their lowest price so it is clear they hold more. -->
+  <div class="mt-5 grid gap-3 xl:hidden">
+    {#each seasons as season, index}
+      {@const lowest = lowestRate(season)}
+      {@const dates = seasonDates(season)}
+      <details class="season-card overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-sm" open={index === 0}>
+        <summary class="flex cursor-pointer items-center justify-between gap-3 bg-deep-green px-4 py-3.5 text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-goldfinch-gold">
+          <span class="min-w-0">
+            <span class="block text-[15px] font-bold leading-snug">{season.season_name}</span>
+            {#if dates}<span class="mt-0.5 block text-[12px] text-white/70">{dates}</span>{/if}
+          </span>
+          <span class="flex shrink-0 items-center gap-2.5">
+            {#if lowest}
+              <span class="text-right text-[11px] leading-tight text-white/70">{$t('label.from')}<strong class="block text-[15px] font-bold text-goldfinch-gold">{lowest}</strong></span>
+            {/if}
+            <svg viewBox="0 0 24 24" class="chevron h-4 w-4 text-white/80" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+          </span>
+        </summary>
+        <dl class="divide-y divide-ink/8 px-4">
+          {#each groupColumns as group}
+            {@const rate = groupRate(season, groupKey(group))}
+            <div class="flex items-baseline justify-between gap-3 py-3">
+              <dt class="text-[14px] font-semibold text-heading">{groupLabel(group)}</dt>
+              <dd class="text-right text-[13px] text-ink/60">
+                {#if rate.amount}
+                  {rate.label} <strong class="text-[16px] font-extrabold text-forest">{rate.amount}</strong>
+                {:else}
+                  {rate.label}
+                {/if}
+              </dd>
+            </div>
+          {/each}
+        </dl>
+      </details>
+    {/each}
+  </div>
+
+  <!-- Wide screens: the full matrix, sized to fit its column so no party
+       size is cut off behind a scroll. -->
+  <div class="mt-6 hidden overflow-x-auto rounded-[10px] border border-ink/10 bg-surface shadow-sm xl:block">
+    <table class="w-full border-collapse text-[14px]">
       <thead>
         <tr class="bg-[#34382d] text-left text-white">
-          <th class="sticky left-0 z-10 min-w-40 bg-[#34382d] px-5 py-5 text-[15px] font-bold">{$t('ui.season')}</th>
+          <th class="sticky left-0 z-10 bg-[#34382d] px-4 py-5 text-[15px] font-bold">{$t('ui.season')}</th>
           {#each groupColumns as group}
-            <th class="min-w-28 whitespace-nowrap px-4 py-5 text-left text-[15px] font-bold">{groupLabel(group)}</th>
+            <th class="whitespace-nowrap px-3 py-5 text-left text-[14px] font-bold">{groupLabel(group)}</th>
           {/each}
         </tr>
       </thead>
       <tbody>
         {#each seasons as season, index}
           <tr class={index % 2 === 0 ? 'bg-surface' : 'bg-canvas'}>
-            <th class={`sticky left-0 z-10 border-t border-ink/8 px-5 py-6 text-left ${index % 2 === 0 ? 'bg-surface' : 'bg-canvas'}`}>
+            <th class={`sticky left-0 z-10 border-t border-ink/8 px-4 py-6 text-left ${index % 2 === 0 ? 'bg-surface' : 'bg-canvas'}`}>
               <span class="block max-w-32 text-[16px] font-extrabold leading-6 text-heading">{season.season_name}</span>
             </th>
             {#each groupColumns as group}
               {@const rate = groupRate(season, groupKey(group))}
-              <td class="border-t border-ink/8 px-4 py-6 text-left text-[15px] leading-6 text-ink/65">
+              <td class="border-t border-ink/8 px-3 py-6 text-left text-[14px] leading-6 text-ink/65">
                 <span class="block">{rate.label}</span>
                 {#if rate.amount}<span class="block font-semibold text-ink/70">{rate.amount}</span>{/if}
               </td>
@@ -170,7 +232,6 @@
       {$t('ui.prices_are_basis_in_currency')
         .replace('{basis}', $t(seasons[0].pricing_basis === 'PER_GROUP' ? 'ui.basis_per_group' : 'ui.basis_per_person'))
         .replace('{currency}', seasons[0].currency)}
-      {#if !compact}<span class="md:hidden">{$t('ui.swipe_horizontally_to_compare_party')}</span>{/if}
     </p>
   {/if}
 {:else}
@@ -215,6 +276,11 @@
 {/if}
 
 <style>
+  .season-card summary { list-style: none; }
+  .season-card summary::-webkit-details-marker { display: none; }
+  .season-card .chevron { transition: transform 0.2s ease; }
+  .season-card[open] .chevron { transform: rotate(180deg); }
+  @media (prefers-reduced-motion: reduce) { .season-card .chevron { transition: none; } }
   .compact-seasons { display:grid; gap:10px; margin-top:20px; }
   .compact-season { overflow:hidden; border:1px solid rgb(var(--c-ink)/.1); border-radius:8px; background:rgb(var(--c-surface)); }
   .compact-season summary { padding:13px 15px; cursor:pointer; background:rgb(var(--c-deep-green)); color:rgb(var(--c-surface)); font-size:12px; font-weight:600; line-height:1.5; }
