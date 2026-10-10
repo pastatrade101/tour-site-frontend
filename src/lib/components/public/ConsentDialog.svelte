@@ -131,7 +131,7 @@
     close();
     toast = choice.analytics || choice.marketing ? tr('consent.toast_some') : tr('consent.toast_essential');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => (toast = ''), 7000);
+    toastTimer = setTimeout(() => (toast = ''), 2000);
   };
 
   const goTo = async (next: 'intro' | 'settings') => {
