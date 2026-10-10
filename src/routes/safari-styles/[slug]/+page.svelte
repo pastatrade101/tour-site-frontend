@@ -390,7 +390,7 @@
             {/each}
           </div>
           <div class="mt-10 flex flex-col items-center gap-4 text-center">
-            <p class="text-[13px] text-ink/65">Showing {visibleTours.length} of {filteredTours.length} {landing.tourCollection.resultsNoun}</p>
+            <p class="text-[13px] text-ink/65">{$t('ui.showing_n_of_total').replace('{n}', String(visibleTours.length)).replace('{total}', String(filteredTours.length)).replace('{noun}', landing.tourCollection.resultsNoun)}</p>
             {#if visibleCount < filteredTours.length}<button type="button" on:click={() => (visibleCount += 6)} class="inline-flex h-12 items-center justify-center rounded-md bg-deep-green px-7 text-xs font-semibold uppercase tracking-[0.14em] text-white hover:bg-forest">{landing.tourCollection.loadMoreLabel}</button>{/if}
             <a href={planHref} on:click={() => planClick('style_trip_list', 'Not sure which one fits')} class="text-[13px] font-semibold text-clay hover:text-goldfinch-gold">{$t('ui.not_sure_which_one_fits')}</a>
           </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locale, t } from '$lib/i18n/ui';
   import { Star } from '@lucide/svelte';
 
   // Traveller stories / verified reviews carousel. Renders ONLY from props:
@@ -133,7 +134,7 @@
               </span>
             {/if}
             <span>
-              {#if avg}{avg.toFixed(1)} average{/if}{#if avg && sourcesLabel} · {/if}{sourcesLabel}
+              {#if avg}{$t('ui.rating_average').replace('{n}', avg.toLocaleString($locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }))}{/if}{#if avg && sourcesLabel} · {/if}{sourcesLabel}
             </span>
           </div>
         {/if}

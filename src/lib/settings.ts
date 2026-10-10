@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store';
 import { api } from '$lib/api/client';
+import { translateIn } from '$lib/i18n/ui';
 
 /**
  * Safe fallbacks so the public site always renders even if settings fail to load.
@@ -47,6 +48,21 @@ export const loadPublicSettings = async (): Promise<void> => {
 export const settingText = (settings: Record<string, unknown>, key: string): string => {
   const value = settings[key];
   return typeof value === 'string' ? value.trim() : '';
+};
+
+/**
+ * A Settings text that also lives in the dictionaries. While the setting still
+ * holds the built-in English wording, the visitor's language is shown; a
+ * wording the team has changed in Settings is shown as typed.
+ */
+export const settingOrTranslated = (
+  settings: Record<string, unknown>,
+  key: string,
+  dictionaryKey: string,
+  translate: (key: string) => string
+): string => {
+  const value = settingText(settings, key);
+  return !value || value === translateIn('en', dictionaryKey) ? translate(dictionaryKey) : value;
 };
 
 /** Reads a public setting as a boolean (with a fallback when unset). */

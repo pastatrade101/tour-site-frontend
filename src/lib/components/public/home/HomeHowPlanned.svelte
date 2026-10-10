@@ -8,32 +8,20 @@
     "You do not need to arrive with a finished itinerary. Share the basics, and we'll help turn the idea into a route that makes sense.";
   export let imageUrl = '';
   export let fallbackImageUrl = '';
-  export let captionEyebrow = 'Planned With You';
-  export let caption = 'From first message to arrival, we shape it together.';
-  export let steps: Array<{ body?: string; text?: string; title: string }> = [
-    {
-      title: 'Tell Us What You Have in Mind',
-      text: 'Share your dates, starting point, number of travellers, budget range and whether you want safari, Zanzibar, Kilimanjaro, culture or a mix.'
-    },
-    {
-      title: 'We Shape the Right Route',
-      text: 'We suggest what fits, what to avoid and how the journey could flow from arrival to departure.'
-    },
-    {
-      title: 'We Refine the Details',
-      text: 'Lodges, camps, beach areas, domestic flights, transfers, guides and timing are matched to your season and comfort level.'
-    },
-    {
-      title: 'You Travel With Local Support',
-      text: 'You travel with trusted guides and a Tanzania-based team reachable from arrival to departure.'
-    }
-  ];
+  /** Left out, the caption and the four steps are the built-in ones, in the page's language. */
+  export let captionEyebrow: string | undefined = undefined;
+  export let caption: string | undefined = undefined;
+  export let steps: Array<{ body?: string; text?: string; title: string }> | undefined = undefined;
+
+  $: captionEyebrowText = captionEyebrow ?? $t('home.how_it_works_caption_eyebrow');
+  $: captionText = caption ?? $t('home.how_it_works_caption');
+  $: stepList = steps ?? [1, 2, 3, 4].map((n) => ({ title: $t(`home.how_step_${n}_title`), text: $t(`home.how_step_${n}_text`) }));
 
   const stepNumber = (index: number) => String(index + 1).padStart(2, '0');
   const stepText = (step: { body?: string; text?: string }) => step.text?.trim() || step.body?.trim() || '';
 
   $: displayImage = imageUrl || fallbackImageUrl;
-  $: visibleSteps = (steps ?? []).filter((step) => step?.title?.trim()).slice(0, 4);
+  $: visibleSteps = (stepList ?? []).filter((step) => step?.title?.trim()).slice(0, 4);
 </script>
 
 {#if visibleSteps.length}
@@ -66,11 +54,11 @@
           {/if}
           <div class="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" aria-hidden="true"></div>
           <div class="absolute inset-x-0 bottom-0 p-6">
-            {#if captionEyebrow}
-              <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">{captionEyebrow}</div>
+            {#if captionEyebrowText}
+              <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-goldfinch-gold">{captionEyebrowText}</div>
             {/if}
-            {#if caption}
-              <p class="mt-1.5 font-serif text-xl font-semibold leading-tight text-white md:text-2xl">{caption}</p>
+            {#if captionText}
+              <p class="mt-1.5 font-serif text-xl font-semibold leading-tight text-white md:text-2xl">{captionText}</p>
             {/if}
           </div>
         </div>

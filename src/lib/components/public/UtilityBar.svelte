@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '$lib/i18n/ui';
+  import { locale, t } from '$lib/i18n/ui';
   /**
    * The strip above the header: proof in the middle, switches on the right.
    *
@@ -41,7 +41,7 @@
     .filter(Boolean);
   $: platformText =
     platforms.length > 1
-      ? `${platforms.slice(0, -1).join(', ')} and ${platforms[platforms.length - 1]}`
+      ? new Intl.ListFormat($locale, { type: 'conjunction' }).format(platforms)
       : platforms[0] ?? '';
   $: rating = summary ? Math.round(Number(summary.average) * 10) / 10 : 0;
   /** Width of the gold overlay: 4.7 of 5 fills 94% of the row, not five stars. */
@@ -71,10 +71,10 @@
           {#if platformText}
             <!-- On the narrowest screens the rating stands alone: the short
                  label truncated against the switches and read as broken. -->
-            <span class="hidden md:inline"> · Verified reviews across {platformText}</span>
-            <span class="hidden sm:inline md:hidden"> · Verified reviews</span>
+            <span class="hidden md:inline"> · {$t('ui.verified_reviews_across').replace('{platforms}', platformText)}</span>
+            <span class="hidden sm:inline md:hidden"> · {$t('ui.verified_reviews')}</span>
           {:else}
-            <span> · {summary.count} verified review{summary.count === 1 ? '' : 's'}</span>
+            <span> · {$t(summary.count === 1 ? 'ui.n_verified_review' : 'ui.n_verified_reviews').replace('{n}', String(summary.count))}</span>
           {/if}
         </span>
       {/if}

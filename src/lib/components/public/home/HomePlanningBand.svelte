@@ -1,18 +1,20 @@
 <script lang="ts">
   import { Check } from '@lucide/svelte';
+  import { t } from '$lib/i18n/ui';
 
   /** Small uppercase label above the heading. */
   export let eyebrow = 'Start Planning';
   export let title = 'Tell Us the Tanzania Trip You Have in Mind';
   export let subtitle =
     "Share your travel dates, group size and the experiences you are considering. We'll help you understand the best route, timing, pace and logistics.";
-  /** Reassurance bullets shown with gold check chips. */
-  export let points: string[] = [
-    'Planned around your dates and budget',
-    'Local Tanzania travel experts',
-    'Safari, beach, trekking and culture options',
-    'Clear proposal with no obligation',
-    'Response within 24 hours'
+  /** Reassurance bullets shown with gold check chips; left out, the built-in five in the page's language. */
+  export let points: string[] | undefined = undefined;
+  $: pointList = points ?? [
+    $t('home.plan_point_dates_budget'),
+    $t('home.plan_point_local_experts'),
+    $t('home.plan_point_options'),
+    $t('home.plan_point_no_obligation'),
+    $t('home.plan_point_response_24h')
   ];
   /** Optional CTA — rendered only when both label and href are provided. */
   export let ctaLabel = '';
@@ -44,9 +46,9 @@
           </p>
         {/if}
 
-        {#if points.length}
+        {#if pointList.length}
           <ul class="mt-7 space-y-3">
-            {#each points as p (p)}
+            {#each pointList as p (p)}
               <li class="flex items-start gap-3 text-base text-white/90">
                 <span
                   class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-goldfinch-gold text-deep-green"

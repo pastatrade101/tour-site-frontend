@@ -151,8 +151,8 @@
     .sort((a, b) => a.name.localeCompare(b.name));
   $: tourDurations = allTours.map((tour) => Number(tour.duration_days)).filter((duration) => Number.isFinite(duration) && duration > 0);
   $: durationMeta = tourDurations.length
-    ? `${Math.min(...tourDurations)}–${Math.max(...tourDurations)} days`
-    : 'Flexible length';
+    ? `${Math.min(...tourDurations)}–${Math.max(...tourDurations)} ${$t('label.days')}`
+    : $t('pg_tours.flexible_length');
 
   const matchSearch = (t: Tour, q: string) => {
     const hay = `${t.title} ${t.short_description ?? ''} ${getTourDestinationNames(t)}`.toLowerCase();
@@ -252,15 +252,15 @@
   };
 
   $: moneyFormatter = (n: number) => formatUsd(n, $currency);
-  const days = (n: number) => `${n} day${n === 1 ? '' : 's'}`;
+  $: days = (n: number) => `${n} ${$t(n === 1 ? 'label.day' : 'label.days')}`;
   $: catName = (slug: string) => categoryOptions.find((c) => c.slug === slug)?.name ?? slug;
   $: destName = destinationOptions.find((d) => d.slug === destSlug)?.name ?? destSlug;
   $: featuredVisible = sorted.filter((t) => t.is_featured || t.is_popular).length;
 </script>
 
 <svelte:head>
-  <title>Safari &amp; Tour Packages | Goldfinch Adventures</title>
-  <meta name="description" content="Browse and filter East Africa safari and tour packages by destination, experience, length, price and comfort level." />
+  <title>{$t('pg_tours.seo_title')}</title>
+  <meta name="description" content={$t('pg_tours.seo_description')} />
 </svelte:head>
 
 <section data-hero class="relative isolate min-h-[390px] overflow-hidden bg-deep-green text-savanna md:min-h-[460px]">
@@ -285,14 +285,14 @@
 
   <div class="tour-shell relative z-10 flex min-h-[390px] min-w-0 items-end py-8 md:min-h-[460px] md:py-12 lg:py-14">
     <div class="min-w-0">
-      <p class="font-serif text-xl italic text-goldfinch-gold">{personaCfg ? `For ${personaCfg.label}` : 'Safari & Tours'}</p>
+      <p class="font-serif text-xl italic text-goldfinch-gold">{personaCfg ? $t('pg_tours.for_persona').replace('{name}', personaCfg.label) : $t('pg_tours.hero_eyebrow')}</p>
       {#key personaCfg?.headline ?? 'default'}
         <h1 class="mt-2 max-w-4xl break-words text-[2rem] font-extrabold leading-[1.08] tracking-normal text-white sm:text-5xl lg:text-[56px]">
-          {personaCfg?.headline ?? 'Find the safari that fits your travel style'}
+          {personaCfg?.headline ?? $t('pg_tours.hero_title')}
         </h1>
       {/key}
       <p class="mt-4 max-w-3xl break-words text-base leading-7 text-savanna/82 md:text-lg">
-        {personaCfg?.sub ?? 'Choose a destination, set your budget and trip length, then compare the best East Africa itineraries without hunting through every page.'}
+        {personaCfg?.sub ?? $t('pg_tours.hero_sub')}
       </p>
 
       {#if personaCfg}
@@ -309,15 +309,15 @@
       <div class="mt-6 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3" aria-label={$t('ui.tour_collection_details')}>
         <div class="hero-meta">
           <Compass size={18} class="shrink-0 text-goldfinch-gold" />
-          <div><span>{allTours.length}</span><small>itineraries</small></div>
+          <div><span>{allTours.length}</span><small>{$t('pg_tours.stat_itineraries')}</small></div>
         </div>
         <div class="hero-meta">
           <MapPin size={18} class="shrink-0 text-goldfinch-gold" />
-          <div><span>{destinationOptions.length}</span><small>destinations</small></div>
+          <div><span>{destinationOptions.length}</span><small>{$t('pg_tours.stat_destinations')}</small></div>
         </div>
         <div class="hero-meta">
           <CalendarDays size={18} class="shrink-0 text-goldfinch-gold" />
-          <div><span>{durationMeta}</span><small>trip duration</small></div>
+          <div><span>{durationMeta}</span><small>{$t('ui.trip_duration')}</small></div>
         </div>
       </div>
 
@@ -327,7 +327,7 @@
             <button
               type="button"
               class={`h-1.5 rounded-full transition-all ${index === heroIndex ? 'w-8 bg-goldfinch-gold' : 'w-2 bg-white/45 hover:bg-white/75'}`}
-              aria-label={`Show image ${index + 1}: ${slide.title}`}
+              aria-label={$t('pg_tours.show_image').replace('{n}', String(index + 1)).replace('{title}', slide.title)}
               aria-current={index === heroIndex ? 'true' : undefined}
               on:click={() => (heroIndex = index)}
             ></button>
@@ -465,7 +465,7 @@
           <div class="grid gap-4">
             <EmptyState
               title={$t('ui.no_tours_match_your_filters')}
-              message="Try a wider budget, a different duration, or remove one filter. A custom trip can still be planned around your exact dates."
+              message={$t('pg_tours.no_results_message')}
             />
             <div class="flex flex-wrap justify-center gap-3">
               <button type="button" class="h-11 rounded-[8px] border border-ink/15 bg-surface px-4 text-sm font-bold text-ink" on:click={clearAll}>{$t('ui.clear_filters')}</button>
@@ -514,7 +514,7 @@
               </button>
             </nav>
             <p class="mt-3 text-center text-xs text-ink/55">
-              Showing {(safePage - 1) * PER_PAGE + 1}–{Math.min(safePage * PER_PAGE, sorted.length)} of {sorted.length} tours
+              {$t('ui.showing_range_tours').replace('{from}', String((safePage - 1) * PER_PAGE + 1)).replace('{to}', String(Math.min(safePage * PER_PAGE, sorted.length))).replace('{total}', String(sorted.length))}
             </p>
           {/if}
         {/if}
@@ -532,7 +532,7 @@
 {#if parkDestinations.length}
   <HomeDestinationsCarousel
     destinations={parkDestinations}
-    eyebrow="Best parks"
+    eyebrow={$t('ui.best_parks')}
     title={$t('ui.where_these_safaris_take_you')}
     subtitle={$t('ui.some_parks_are_best_for')}
   />
@@ -543,7 +543,7 @@
 {/if}
 
 <HomeHowPlanned
-  eyebrow="How your trip is planned"
+  eyebrow={$t('ui.how_your_trip_is_planned')}
   title={$t('ui.from_first_note_to_final')}
   subtitle={$t('ui.you_do_not_need_to')}
 />
@@ -552,7 +552,7 @@
   <HomeTravellerStories
     reviews={tourReviews}
     summary={tourReviewSummary}
-    eyebrow="Traveller stories"
+    eyebrow={$t('ui.traveller_stories')}
     title={$t('ui.travellers_who_planned_tanzania_with')}
     subtitle={$t('ui.real_guests_real_routes_and')}
   />
@@ -576,7 +576,7 @@
 {/if}
 
 <HomePlanningBand
-  eyebrow="Start planning"
+  eyebrow={$t('ui.start_planning')}
   title={$t('ui.request_your_tanzania_safari_plan')}
   subtitle={$t('ui.tell_us_your_dates_group')}
 >

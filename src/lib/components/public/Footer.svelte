@@ -7,7 +7,7 @@
   import { api } from '$lib/api/client';
   import { trackEvent, trackCta } from '$lib/analytics';
   import { brand, brandKeys } from '$lib/brand';
-  import { publicSettings, settingText } from '$lib/settings';
+  import { publicSettings, settingText, settingOrTranslated } from '$lib/settings';
   import SocialIcon from './SocialIcon.svelte';
 
   type Item = { label: string; href: string };
@@ -23,7 +23,7 @@
 
   $: s = $publicSettings;
   $: siteName = settingText(s, 'site_name') || brand.name;
-  $: statement = settingText(s, 'brand_statement') || $t(brandKeys.positioning);
+  $: statement = settingOrTranslated(s, 'brand_statement', brandKeys.positioning, $t);
   $: contactEmail = settingText(s, 'contact_email');
   $: contactPhone = settingText(s, 'contact_phone');
   $: address = settingText(s, 'contact_address') || settingText(s, 'office_address');

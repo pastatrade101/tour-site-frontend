@@ -44,13 +44,13 @@
   $: href = ctaHref || `/tours/${tour.slug}`;
   $: duration = tour.duration_days
     ? `${tour.duration_days} ${tour.duration_days === 1 ? $t('label.day') : $t('label.days')}`
-    : 'Tailor-made';
+    : $t('ui.tailor_made');
   $: resolvedBadge = badge === undefined
     ? tour.is_popular
-      ? 'Most Popular 🔥'
+      ? $t('ui.badge_most_popular')
       : tour.is_featured
-        ? 'Featured'
-        : tour.tour_categories?.name || 'Tailor-made'
+        ? $t('label.featured')
+        : tour.tour_categories?.name || $t('ui.tailor_made')
     : badge;
   $: resolvedBadgeType = badgeType ?? (tour.is_popular ? 'rust' : tour.is_featured ? 'gold' : 'olive');
   $: badgeStyle = badgeStyles[resolvedBadgeType];
@@ -77,7 +77,7 @@
   data-tour-card
 >
   <div class="relative aspect-[4/3] w-full overflow-hidden bg-canvas">
-    <a href={href} aria-label={`View ${tour.title}`} on:click={recordClick} class="block h-full w-full">
+    <a href={href} aria-label={$t('ui.view_name').replace('{name}', tour.title)} on:click={recordClick} class="block h-full w-full">
       {#if image}
         <Img
           record={tour}

@@ -263,7 +263,7 @@
   $: planDreamExtra = (sections.plan_dream?.extra_data ?? {}) as Record<string, unknown>;
   $: planDreamPoints = arr<string>(planDreamExtra.points).length
     ? arr<string>(planDreamExtra.points)
-    : ['Fully tailored to your dates & budget', 'A reply within one business day', 'Honest advice, never a hard sell'];
+    : [$t('home.plan_point_tailored'), $t('home.plan_point_reply_1_day'), $t('home.plan_point_honest')];
   $: blogCtaText = cms('blog_preview', 'button_text', $t('home.blog_preview_button_text'));
   $: blogCtaUrl = cms('blog_preview', 'button_url', '/blog');
   $: galleryCtaText = cms('gallery_preview', 'button_text', $t('home.gallery_preview_button_text'));

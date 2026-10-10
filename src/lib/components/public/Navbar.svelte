@@ -8,9 +8,9 @@
   import { fade, fly } from 'svelte/transition';
   import { api } from '$lib/api/client';
   import { navbarEntrance } from '$lib/animations';
-  import { brand } from '$lib/brand';
+  import { brand, brandKeys } from '$lib/brand';
   import { toMetaText } from '$lib/richText';
-  import { publicSettings, settingText } from '$lib/settings';
+  import { publicSettings, settingOrTranslated, settingText } from '$lib/settings';
   import { canInstall, promptInstall } from '$lib/pwa';
   import CurrencySelector from './CurrencySelector.svelte';
   import LanguageSwitcher from './LanguageSwitcher.svelte';
@@ -262,7 +262,7 @@
   $: waMessage = settingText(s, 'whatsapp_default_message') || 'Hello Goldfinch Adventures, I would like help planning an East Africa trip.';
   $: waDigits = waNumber.replace(/[^0-9]/g, '');
   $: waHref = `https://wa.me/${waDigits}?text=${encodeURIComponent(waMessage)}`;
-  $: waButtonText = settingText(s, 'whatsapp_button_text') || brand.whatsappCta;
+  $: waButtonText = settingOrTranslated(s, 'whatsapp_button_text', brandKeys.whatsappCta, $t);
   $: supportEmail = settingText(s, 'contact_email') || 'hello@goldfinch.local';
   $: supportPhone = settingText(s, 'contact_phone') || waNumber;
 
