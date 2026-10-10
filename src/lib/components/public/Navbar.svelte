@@ -23,44 +23,46 @@
   type DropdownKey = 'destinations' | 'tours' | 'safariStyles' | 'accommodation';
   type NavItem = { dropdown?: DropdownKey; href: string; label: string };
 
-  // Featured image panel + copy for each mega menu.
+  // Featured image panel + copy for each mega menu. The copy fields hold
+  // dictionary keys, translated with $t where they render.
   const FEATURE: Record<DropdownKey, { eyebrow: string; title: string; blurb: string; cta: string; href: string }> = {
     destinations: {
-      eyebrow: 'Where to go',
-      title: 'Explore East Africa',
-      blurb: 'From savannahs to seascapes, mountains to markets — your adventure starts here.',
-      cta: 'Explore all destinations',
+      eyebrow: 'nav_menu.destinations_eyebrow',
+      title: 'nav_menu.destinations_feature_title',
+      blurb: 'nav_menu.destinations_blurb',
+      cta: 'nav_menu.destinations_cta',
       href: '/destinations'
     },
     tours: {
-      eyebrow: 'Featured trips',
-      title: 'Find your safari',
-      blurb: 'Compare published itineraries, signature routes, and guest-ready tour ideas from the Goldfinch collection.',
-      cta: 'Explore all tours',
+      eyebrow: 'nav_menu.tours_eyebrow',
+      title: 'nav_menu.tours_feature_title',
+      blurb: 'nav_menu.tours_blurb',
+      cta: 'nav_menu.tours_cta',
       href: '/tours'
     },
     accommodation: {
-      eyebrow: 'Where to stay',
-      title: 'Camps, lodges & hotels',
-      blurb: 'The places we book and return to — chosen for where they sit, how they are run and who they suit.',
-      cta: 'Browse all stays',
+      eyebrow: 'ui.where_to_stay',
+      title: 'nav_menu.accommodation_feature_title',
+      blurb: 'nav_menu.accommodation_blurb',
+      cta: 'ui.browse_all_stays',
       href: '/accommodation'
     },
     safariStyles: {
-      eyebrow: 'How to travel',
-      title: 'Choose your safari style',
-      blurb: 'Browse the live Goldfinch trip categories and start from the travel style that fits you.',
-      cta: 'Explore safari styles',
+      eyebrow: 'nav_menu.safari_styles_eyebrow',
+      title: 'nav_menu.safari_styles_feature_title',
+      blurb: 'nav_menu.safari_styles_blurb',
+      cta: 'nav_menu.safari_styles_cta',
       href: '/safari-styles'
     }
   };
 
-  // Left-panel header (icon + title + subtitle) and the "view all" pill label.
+  // Left-panel header (icon + title + subtitle) and the "view all" pill label,
+  // also as dictionary keys.
   const MENU_META: Record<DropdownKey, { icon: typeof Globe; title: string; subtitle: string; viewAll: string }> = {
-    destinations: { icon: Globe, title: 'All Destinations', subtitle: 'Discover the best of East Africa', viewAll: 'View all destinations' },
-    tours: { icon: TicketsPlane, title: 'Tour Packages', subtitle: 'Published safari itineraries', viewAll: 'View all tours' },
-    safariStyles: { icon: Compass, title: 'Safari Styles', subtitle: 'Browse by travel category', viewAll: 'View all styles' },
-    accommodation: { icon: BedDouble, title: 'Accommodation', subtitle: 'Camps, lodges and hotels we book', viewAll: 'View all stays' }
+    destinations: { icon: Globe, title: 'label.all_destinations', subtitle: 'nav_menu.destinations_subtitle', viewAll: 'ui.view_all_destinations' },
+    tours: { icon: TicketsPlane, title: 'nav_menu.tours_heading', subtitle: 'nav_menu.tours_subtitle', viewAll: 'cta.view_all_tours' },
+    safariStyles: { icon: Compass, title: 'nav.safari_styles', subtitle: 'nav_menu.safari_styles_subtitle', viewAll: 'nav_menu.safari_styles_view_all' },
+    accommodation: { icon: BedDouble, title: 'nav.accommodation', subtitle: 'nav_menu.accommodation_subtitle', viewAll: 'nav_menu.accommodation_view_all' }
   };
 
   // Reactive so the primary navigation follows the active locale.
@@ -487,7 +489,7 @@
                   aria-haspopup="true"
                   aria-expanded={openDropdown === item.dropdown}
                   aria-controls={`dd-${item.dropdown}`}
-                  aria-label={`${item.label} menu`}
+                  aria-label={$t('nav_menu.dropdown_label').replace('{name}', item.label)}
                   on:click|stopPropagation={() => item.dropdown && toggleDropdown(item.dropdown)}
                 >
                   <ChevronDown size={15} strokeWidth={2.6} class={`transition-transform ${openDropdown === item.dropdown ? 'rotate-180' : ''}`} />
@@ -520,12 +522,12 @@
                           <svelte:component this={meta.icon} size={21} strokeWidth={2.2} />
                         </span>
                         <div class="min-w-0">
-                          <p class="text-[13px] font-extrabold uppercase tracking-[0.12em] text-goldfinch-gold">{meta.title}</p>
-                          <p class="mt-1 text-sm font-medium text-ink/60">{meta.subtitle}</p>
+                          <p class="text-[13px] font-extrabold uppercase tracking-[0.12em] text-goldfinch-gold">{$t(meta.title)}</p>
+                          <p class="mt-1 text-sm font-medium text-ink/60">{$t(meta.subtitle)}</p>
                         </div>
                       </div>
-                      <a href={item.href} class="inline-flex h-10 shrink-0 items-center gap-2 rounded-[8px] border border-goldfinch-gold/35 px-4 text-sm font-bold text-clay transition hover:bg-goldfinch-gold hover:text-heading" role="menuitem" aria-label={meta.viewAll} on:click={() => activateLink(item.href)} on:pointerenter={() => preloadRoute(item.href)} on:focus={() => preloadRoute(item.href)}>
-                        {meta.viewAll}
+                      <a href={item.href} class="inline-flex h-10 shrink-0 items-center gap-2 rounded-[8px] border border-goldfinch-gold/35 px-4 text-sm font-bold text-clay transition hover:bg-goldfinch-gold hover:text-heading" role="menuitem" aria-label={$t(meta.viewAll)} on:click={() => activateLink(item.href)} on:pointerenter={() => preloadRoute(item.href)} on:focus={() => preloadRoute(item.href)}>
+                        {$t(meta.viewAll)}
                         <ArrowRight size={15} strokeWidth={2.5} />
                       </a>
                     </div>
@@ -566,20 +568,20 @@
                     <a href={item.href} class="mt-4 flex h-11 items-center justify-between gap-4 rounded-[8px] border border-ink/10 bg-canvas px-4 text-sm font-bold text-heading transition hover:border-goldfinch-gold/30 hover:brightness-95" role="menuitem" on:click={() => activateLink(item.href)} on:pointerenter={() => preloadRoute(item.href)} on:focus={() => preloadRoute(item.href)}>
                       <span class="inline-flex items-center gap-2">
                         <svelte:component this={meta.icon} size={16} strokeWidth={2.4} />
-                        {meta.viewAll}
+                        {$t(meta.viewAll)}
                       </span>
-                      <span class="text-xs font-semibold text-ink/50">{links.length} option{links.length === 1 ? '' : 's'}</span>
+                      <span class="text-xs font-semibold text-ink/50">{$t(links.length === 1 ? 'nav_menu.option_count_one' : 'nav_menu.option_count_other').replace('{count}', String(links.length))}</span>
                     </a>
                   </div>
 
                   <!-- right: featured image panel with gold CTA -->
-                  <a href={feat.href} class="group/feat relative m-3.5 block min-h-[370px] overflow-hidden rounded-[8px] bg-deep-green" role="menuitem" aria-label={feat.cta} on:click={() => activateLink(feat.href)} on:pointerenter={() => preloadRoute(feat.href)} on:focus={() => preloadRoute(feat.href)}>
+                  <a href={feat.href} class="group/feat relative m-3.5 block min-h-[370px] overflow-hidden rounded-[8px] bg-deep-green" role="menuitem" aria-label={$t(feat.cta)} on:click={() => activateLink(feat.href)} on:pointerenter={() => preloadRoute(feat.href)} on:focus={() => preloadRoute(feat.href)}>
                     {#if featureImg}
                       <Img
                         record={featureLink?.record}
                         fields={featureLink?.fields ?? []}
                         src={featureLink?.record ? '' : featureImg}
-                        alt={feat.title}
+                        alt={$t(feat.title)}
                         width={720}
                         sizes="340px"
                         className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover/feat:scale-105"
@@ -591,11 +593,11 @@
                     {/if}
                     <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-deep-green/58 to-deep-green/10"></div>
                     <div class="absolute inset-x-0 bottom-0 p-6 text-white">
-                      <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-goldfinch-gold">{feat.eyebrow}</p>
-                      <p class="mt-2 text-2xl font-extrabold leading-tight">{feat.title}</p>
-                      <p class="mt-2.5 text-sm leading-6 text-white/80">{feat.blurb}</p>
+                      <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-goldfinch-gold">{$t(feat.eyebrow)}</p>
+                      <p class="mt-2 text-2xl font-extrabold leading-tight">{$t(feat.title)}</p>
+                      <p class="mt-2.5 text-sm leading-6 text-white/80">{$t(feat.blurb)}</p>
                       <span class="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-goldfinch-gold px-4 text-sm font-bold text-heading transition group-hover/feat:brightness-105">
-                        {feat.cta} <ArrowRight size={15} strokeWidth={2.6} class="transition-transform group-hover/feat:translate-x-0.5" />
+                        {$t(feat.cta)} <ArrowRight size={15} strokeWidth={2.6} class="transition-transform group-hover/feat:translate-x-0.5" />
                       </span>
                     </div>
                   </a>
@@ -726,7 +728,7 @@
               <div class="rounded-[8px]">
                 <div class="flex items-center">
                   <a class={`flex-1 rounded-[8px] px-3 py-3 text-[17px] font-semibold transition ${active ? 'text-forest dark:text-goldfinch-gold' : 'text-ink'}`} href={item.href} on:click={() => activateLink(item.href)} on:focus={() => preloadRoute(item.href)}>{item.label}</a>
-                  <button class="grid h-11 w-11 place-items-center rounded-[8px] text-ink/70 transition hover:bg-canvas" type="button" aria-expanded={mobileAccordion === item.dropdown} aria-label={`Toggle ${item.label}`} on:click={() => item.dropdown && toggleMobileDropdown(item.dropdown)}>
+                  <button class="grid h-11 w-11 place-items-center rounded-[8px] text-ink/70 transition hover:bg-canvas" type="button" aria-expanded={mobileAccordion === item.dropdown} aria-label={$t('nav_menu.toggle_label').replace('{name}', item.label)} on:click={() => item.dropdown && toggleMobileDropdown(item.dropdown)}>
                     <ChevronDown size={18} strokeWidth={2.6} class={`transition-transform ${mobileAccordion === item.dropdown ? 'rotate-180' : ''}`} />
                   </button>
                 </div>
@@ -763,7 +765,7 @@
                     <a href={item.href} class="flex h-10 items-center justify-between rounded-[6px] bg-canvas px-3 text-sm font-bold text-heading transition hover:brightness-95" on:click={() => activateLink(item.href)} on:focus={() => preloadRoute(item.href)}>
                       <span class="inline-flex items-center gap-2">
                         <svelte:component this={meta.icon} size={15} strokeWidth={2.4} />
-                        {meta.viewAll}
+                        {$t(meta.viewAll)}
                       </span>
                       <ArrowRight size={15} strokeWidth={2.5} />
                     </a>

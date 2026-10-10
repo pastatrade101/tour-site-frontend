@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '$lib/i18n/ui';
+  import { locale, t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { CalendarDays, CheckCircle2, LogOut, MapPin, MessageCircle, Send, Users, Wallet } from '@lucide/svelte';
   import { api, submitErrorKey } from '$lib/api/client';
@@ -61,13 +61,48 @@
 
   onMount(load);
 
-  const money = (amount?: number | null, currency = 'USD') =>
-    amount == null ? '—' : `${currency} ${Number(amount).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  $: money = (amount?: number | null, currency = 'USD') =>
+    amount == null ? '—' : `${currency} ${new Intl.NumberFormat($locale, { maximumFractionDigits: 2 }).format(Number(amount))}`;
 
-  const prettyDate = (d?: string | null) =>
-    d ? new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'To be confirmed';
+  // A bare YYYY-MM-DD travel date is a calendar day: read and print it in UTC so
+  // it never slips a day; timestamps (paid_at) print in the visitor's own zone.
+  $: prettyDate = (d?: string | null) => {
+    if (!d) return $t('pg_trip.date_tbc');
+    const dayOnly = /^\d{4}-\d{2}-\d{2}$/.test(d);
+    return new Intl.DateTimeFormat($locale, { year: 'numeric', month: 'long', day: 'numeric', ...(dayOnly ? { timeZone: 'UTC' } : {}) }).format(
+      new Date(dayOnly ? `${d}T00:00:00Z` : d)
+    );
+  };
 
   const titleCase = (s: string) => s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+  // Booking, payment-status and payment-row enums from the API. A value not
+  // listed here still shows, title-cased, rather than disappearing.
+  const STATUS_KEYS: Record<string, string> = {
+    pending: 'pg_trip.status_pending',
+    contacted: 'pg_trip.status_contacted',
+    itinerary_sent: 'pg_trip.status_itinerary_sent',
+    negotiating: 'pg_trip.status_negotiating',
+    confirmed: 'pg_trip.status_confirmed',
+    cancelled: 'pg_trip.status_cancelled',
+    completed: 'pg_trip.status_completed',
+    rejected: 'pg_trip.status_rejected',
+    unpaid: 'pg_trip.status_unpaid',
+    partial: 'pg_trip.status_partial',
+    partially_paid: 'pg_trip.status_partially_paid',
+    paid: 'ui.paid',
+    refunded: 'pg_trip.status_refunded',
+    failed: 'pg_trip.status_failed'
+  };
+
+  $: statusLabel = (s: string) => (STATUS_KEYS[s] ? $t(STATUS_KEYS[s]) : titleCase(s));
+
+  $: travellers = trip
+    ? $t(trip.number_of_adults === 1 ? 'pg_plan_my_trip.n_adult' : 'pg_plan_my_trip.n_adults').replace('{n}', String(trip.number_of_adults)) +
+      (trip.number_of_children
+        ? ', ' + $t(trip.number_of_children === 1 ? 'pg_plan_my_trip.n_child' : 'pg_plan_my_trip.n_children').replace('{n}', String(trip.number_of_children))
+        : '')
+    : '';
 
   const statusTone = (s: string) =>
     ({
@@ -118,7 +153,7 @@
 </script>
 
 <svelte:head>
-  <title>Your trip · Goldfinch Adventures</title>
+  <title>{$t('ui.your_trip')} · Goldfinch Adventures</title>
   <meta name="robots" content="noindex, nofollow" />
 </svelte:head>
 
@@ -132,9 +167,7 @@
     <div class="mx-auto max-w-lg rounded-2xl border border-ink/10 bg-surface p-8 text-center shadow-soft">
       <span class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-goldfinch-gold/10 text-goldfinch-gold"><MapPin size={22} /></span>
       <h1 class="mt-4 text-xl font-bold text-heading">{$t('ui.access_your_trip')}</h1>
-      <p class="mt-2 text-sm leading-6 text-ink/65">
-        Enter the email on your booking and we’ll send a fresh, secure link to view your trip. (Your previous link may have expired or been replaced.)
-      </p>
+      <p class="mt-2 text-sm leading-6 text-ink/65">{$t('pg_trip.request_intro')}</p>
 
       {#if requested}
         <div class="mt-5 flex items-start gap-2 rounded-xl border border-forest/20 bg-forest/[0.06] p-3 text-left text-sm font-medium text-forest">
@@ -157,7 +190,7 @@
             on:click={requestLink}
             disabled={requesting || !requestEmail.trim()}
           >
-            <Send size={16} /> {requesting ? 'Sending…' : 'Email me a link'}
+            <Send size={16} /> {requesting ? $t('ui.sending') : $t('pg_trip.email_me_link')}
           </button>
         </div>
       {/if}
@@ -168,11 +201,11 @@
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p class="text-xs font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{$t('ui.your_trip')}</p>
-        <h1 class="mt-1 text-2xl font-extrabold tracking-tight text-heading md:text-3xl">{trip.tour?.title ?? 'Your East Africa trip'}</h1>
-        <p class="mt-1 text-sm text-ink/60">{$t('ui.booking_reference')}<span class="font-mono font-bold text-ink/80">{trip.booking_code}</span></p>
+        <h1 class="mt-1 text-2xl font-extrabold tracking-tight text-heading md:text-3xl">{trip.tour?.title ?? $t('pg_trip.default_title')}</h1>
+        <p class="mt-1 text-sm text-ink/60">{$t('ui.booking_reference')} <span class="font-mono font-bold text-ink/80">{trip.booking_code}</span></p>
       </div>
       <div class="flex items-center gap-2">
-        <span class={`inline-flex h-7 items-center rounded-full px-3 text-xs font-bold ${statusTone(trip.status)}`}>{titleCase(trip.status)}</span>
+        <span class={`inline-flex h-7 items-center rounded-full px-3 text-xs font-bold ${statusTone(trip.status)}`}>{statusLabel(trip.status)}</span>
         <button type="button" class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-ink/15 px-3 text-xs font-semibold text-ink/70 transition hover:bg-canvas" on:click={logout}><LogOut size={14} />{$t('ui.sign_out')}</button>
       </div>
     </div>
@@ -186,7 +219,7 @@
             <Img
               record={trip.tour}
               fields={['main_image_url', 'banner_image_url']}
-              alt={trip.tour?.title ?? 'Trip'}
+              alt={trip.tour?.title ?? $t('pg_plan_my_trip.row_trip')}
               width={1100}
               sizes="(max-width: 1024px) 92vw, 62vw"
               eager
@@ -200,12 +233,12 @@
             </div>
             <div class="flex items-start gap-2.5">
               <Users size={18} class="mt-0.5 shrink-0 text-forest" />
-              <div><p class="text-[11px] font-semibold uppercase tracking-wide text-ink/45">{$t('ui.travellers')}</p><p class="text-sm font-semibold text-ink">{trip.number_of_adults} adult{trip.number_of_adults === 1 ? '' : 's'}{trip.number_of_children ? `, ${trip.number_of_children} child${trip.number_of_children === 1 ? '' : 'ren'}` : ''}</p></div>
+              <div><p class="text-[11px] font-semibold uppercase tracking-wide text-ink/45">{$t('ui.travellers')}</p><p class="text-sm font-semibold text-ink">{travellers}</p></div>
             </div>
             {#if trip.tour?.duration_days}
               <div class="flex items-start gap-2.5">
                 <MapPin size={18} class="mt-0.5 shrink-0 text-forest" />
-                <div><p class="text-[11px] font-semibold uppercase tracking-wide text-ink/45">{$t('label.duration')}</p><p class="text-sm font-semibold text-ink">{trip.tour.duration_days} days</p></div>
+                <div><p class="text-[11px] font-semibold uppercase tracking-wide text-ink/45">{$t('label.duration')}</p><p class="text-sm font-semibold text-ink">{$t('pg_plan_my_trip.n_days').replace('{n}', String(trip.tour.duration_days))}</p></div>
               </div>
             {/if}
           </div>
@@ -250,13 +283,13 @@
             <div class="flex items-center justify-between"><dt class="text-ink/55">{$t('ui.paid')}</dt><dd class="font-semibold text-forest">{money(trip.amount_paid, trip.currency)}</dd></div>
             <div class="flex items-center justify-between border-t border-ink/10 pt-2.5"><dt class="font-semibold text-ink">{$t('ui.balance_due')}</dt><dd class="text-base font-extrabold text-heading">{money(trip.balance_due, trip.currency)}</dd></div>
           </dl>
-          <span class={`mt-3 inline-flex h-6 items-center rounded-full px-2.5 text-[11px] font-bold ${statusTone(trip.payment_status)}`}>{titleCase(trip.payment_status)}</span>
+          <span class={`mt-3 inline-flex h-6 items-center rounded-full px-2.5 text-[11px] font-bold ${statusTone(trip.payment_status)}`}>{statusLabel(trip.payment_status)}</span>
 
           {#if trip.payments.length}
             <ul class="mt-4 grid gap-2 border-t border-ink/10 pt-4">
               {#each trip.payments as p}
                 <li class="flex items-center justify-between text-xs">
-                  <span class="text-ink/60">{p.paid_at ? prettyDate(p.paid_at) : titleCase(p.status)}{p.payment_method ? ` · ${p.payment_method}` : ''}</span>
+                  <span class="text-ink/60">{p.paid_at ? prettyDate(p.paid_at) : statusLabel(p.status)}{p.payment_method ? ` · ${p.payment_method}` : ''}</span>
                   <span class="font-semibold text-ink">{money(p.amount, p.currency)}</span>
                 </li>
               {/each}
@@ -287,7 +320,7 @@
               on:click={sendMessage}
               disabled={sending || messageText.trim().length < 2}
             >
-              <Send size={16} /> {sending ? 'Sending…' : 'Send message'}
+              <Send size={16} /> {sending ? $t('ui.sending') : $t('ui.send_message')}
             </button>
           {/if}
         </div>

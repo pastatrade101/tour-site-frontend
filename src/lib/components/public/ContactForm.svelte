@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '$lib/i18n/ui';
+  import { locale, t } from '$lib/i18n/ui';
   /**
    * The general contact form.
    *
@@ -75,7 +75,9 @@
         email: email.trim(),
         phone: phone.trim() || null,
         subject: subject.trim() || null,
-        message: message.trim()
+        message: message.trim(),
+        // The page's language, so the sender's confirmation email is written in it.
+        locale: $locale
       });
       full_name = '';
       email = '';

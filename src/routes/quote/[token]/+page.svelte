@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '$lib/i18n/ui';
+  import { locale, t } from '$lib/i18n/ui';
   /**
    * The quotation as the traveller sees it.
    *
@@ -20,6 +20,7 @@
   import { brand } from '$lib/brand';
   import { publicSettings, settingText } from '$lib/settings';
   import Img from '$lib/components/public/Img.svelte';
+  import { quotationMoney } from '$lib/quotations';
   import type { ActionData, PageData } from './$types';
 
   export let data: PageData;
@@ -29,15 +30,16 @@
   $: travellers = Number(quote.adults ?? 0) + Number(quote.children ?? 0);
   $: items = Array.isArray(quote.items) ? (quote.items as Array<Record<string, any>>) : [];
 
-  const money = (amount: unknown, currency: unknown) =>
-    `${String(currency ?? 'USD')} ${Number(amount ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  // Reactive so a language switch re-renders every amount and date. Digits and
+  // month names follow the page's language; the currency stays the quote's own.
+  $: money = (amount: unknown, currency: unknown) => quotationMoney(amount, currency, $locale);
 
-  const day = (value: unknown) =>
-    value ? new Intl.DateTimeFormat('en', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(String(value))) : '';
+  $: dateFormat = new Intl.DateTimeFormat($locale, { day: 'numeric', month: 'long', year: 'numeric' });
+  $: day = (value: unknown) => (value ? dateFormat.format(new Date(String(value))) : '');
 
   $: waDigits = (settingText($publicSettings, 'whatsapp_number') || '').replace(/[^0-9]/g, '');
   $: waHref = waDigits
-    ? `https://wa.me/${waDigits}?text=${encodeURIComponent(`Hello, I'd like to talk about quotation ${quote.quote_code}.`)}`
+    ? `https://wa.me/${waDigits}?text=${encodeURIComponent($t('pg_quote.wa_prefill').replace('{code}', String(quote.quote_code ?? '')))}`
     : '';
 
   // An expired quote still displays — the traveller should see what they were
@@ -64,14 +66,17 @@
   // on their answer. 'revised' is likewise ours — by the time they open the
   // link the version in front of them is simply the current one.
   $: state = accepted
-    ? { label: 'Accepted', tone: 'accepted' }
+    ? { key: 'pg_quote.status_accepted', tone: 'accepted' }
     : declined
-      ? { label: 'Closed', tone: 'muted' }
+      ? { key: 'pg_quote.status_closed', tone: 'muted' }
       : expired
-        ? { label: 'Expired', tone: 'muted' }
+        ? { key: 'pg_quote.status_expired', tone: 'muted' }
         : changesRequested
-          ? { label: 'With us for changes', tone: 'working' }
-          : { label: 'Pending acceptance', tone: 'pending' };
+          ? { key: 'pg_quote.status_with_us', tone: 'working' }
+          : { key: 'pg_quote.status_pending', tone: 'pending' };
+
+  $: adultsLabel = $t(Number(quote.adults) === 1 ? 'pg_plan_my_trip.n_adult' : 'pg_plan_my_trip.n_adults').replace('{n}', String(quote.adults ?? 0));
+  $: childrenLabel = $t(Number(quote.children) === 1 ? 'pg_plan_my_trip.n_child' : 'pg_plan_my_trip.n_children').replace('{n}', String(quote.children ?? 0));
 
   /** 'idle' until the traveller commits to answering, so the page opens calm. */
   let mode: 'idle' | 'accept' | 'decline' | 'changes' = 'idle';
@@ -88,7 +93,7 @@
 </script>
 
 <svelte:head>
-  <title>Quotation {quote.quote_code} | {brand.name}</title>
+  <title>{$t('pg_quote.meta_title').replace('{code}', String(quote.quote_code ?? ''))} | {brand.name}</title>
   <!-- A private document: never indexed, never followed. -->
   <meta name="robots" content="noindex, nofollow" />
 </svelte:head>
@@ -99,11 +104,11 @@
       <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-clay">{$t('ui.your_quotation')}</p>
       <h1 class="mt-2 font-serif text-3xl font-semibold leading-tight text-heading md:text-[40px]">{quote.title}</h1>
       <div class="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm text-ink/55">
-        <span>Reference {quote.quote_code}</span>
+        <span>{$t('pg_quote.reference').replace('{code}', String(quote.quote_code ?? ''))}</span>
         {#if revision > 1}
           <!-- Only from v2. Telling someone their first quotation is "version 1"
                invites a question about versions they never had. -->
-          <span class="rounded-full bg-ink/[0.06] px-2 py-0.5 text-[11px] font-semibold text-ink/60">Version {revision}</span>
+          <span class="rounded-full bg-ink/[0.06] px-2 py-0.5 text-[11px] font-semibold text-ink/60">{$t('pg_quote.version').replace('{n}', String(revision))}</span>
         {/if}
         <span
           class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.1em]
@@ -114,7 +119,7 @@
               : 'bg-ink/[0.06] text-ink/50'}"
         >
           {#if state.tone === 'accepted'}<CheckCircle2 size={12} />{:else if state.tone === 'working'}<MessageCircle size={12} />{:else if state.tone === 'pending'}<Clock size={12} />{/if}
-          {state.label}
+          {$t(state.key)}
         </span>
       </div>
     </header>
@@ -134,7 +139,7 @@
             <div>
               <dt class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45"><Users size={12} />{$t('ui.travellers')}</dt>
               <dd class="mt-1 font-serif text-lg font-semibold text-heading">
-                {quote.adults} {Number(quote.adults) === 1 ? 'adult' : 'adults'}{#if Number(quote.children) > 0}, {quote.children} {Number(quote.children) === 1 ? 'child' : 'children'}{/if}
+                {adultsLabel}{#if Number(quote.children) > 0}, {childrenLabel}{/if}
               </dd>
             </div>
           {/if}
@@ -154,7 +159,7 @@
                  instead — so the heading follows what the document actually has
                  rather than labelling two lists the same thing. -->
             <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">
-              {inclusions.length ? 'Breakdown' : "What's included"}
+              {inclusions.length ? $t('pg_quote.breakdown') : $t('ui.whats_included_2')}
             </p>
             <ul class="mt-2 grid gap-2">
               {#each items as item}
@@ -214,7 +219,7 @@
             <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">{$t('ui.total')}</p>
             <p class="font-serif text-3xl font-semibold leading-tight text-heading">{money(quote.total_amount, quote.currency)}</p>
             {#if travellers > 1}
-              <p class="mt-0.5 text-xs text-ink/50">for {travellers} travellers</p>
+              <p class="mt-0.5 text-xs text-ink/50">{$t('pg_quote.for_n_travellers').replace('{n}', String(travellers))}</p>
             {/if}
           </div>
           {#if quote.valid_until && !expired && !accepted}
@@ -229,7 +234,7 @@
           <div class="rounded-[8px] bg-canvas p-4">
             <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-ink/45">{$t('ui.payment')}</p>
             {#if quote.deposit_amount != null}
-              <p class="mt-1.5 text-sm text-ink/75">{$t('ui.deposit_to_confirm')}<span class="font-semibold text-heading">{money(quote.deposit_amount, quote.currency)}</span>
+              <p class="mt-1.5 text-sm text-ink/75">{$t('ui.deposit_to_confirm')} <span class="font-semibold text-heading">{money(quote.deposit_amount, quote.currency)}</span>
               </p>
             {/if}
             {#if quote.payment_terms}
@@ -247,7 +252,7 @@
         <p class="flex items-center gap-2 font-serif text-xl font-semibold text-heading">
           <CheckCircle2 size={20} class="text-forest" />{$t('ui.thank_you_this_quotation_is')}</p>
         <p class="mt-2 text-sm leading-7 text-ink/70">
-          {#if quote.accepted_at}Recorded on {day(quote.accepted_at)}. {/if}Nothing has been charged.
+          {#if quote.accepted_at}{$t('pg_quote.recorded_on').replace('{date}', day(quote.accepted_at))} {/if}{$t('pg_quote.nothing_charged')}
         </p>
         <ol class="mt-4 grid gap-3 border-t border-forest/15 pt-4 text-sm text-ink/75">
           <li class="flex gap-3"><span class="font-serif font-semibold text-forest">1</span>{$t('ui.we_confirm_availability_for_your')}</li>
@@ -257,8 +262,7 @@
       </section>
     {:else if declined}
       <section class="mt-6 rounded-[12px] border border-ink/10 bg-surface p-5 text-sm leading-7 text-ink/70 md:p-6">
-        Thank you for letting us know. If anything about the price, the dates or the lodges was the sticking point, tell us — we can almost always
-        put together something that fits better.
+        {$t('pg_quote.declined_message')}
       </section>
     {:else if changesRequested}
       <!-- The ball is with us. Saying so plainly stops the traveller wondering
@@ -331,7 +335,7 @@
                 disabled={submitting}
                 class="flex h-12 flex-1 items-center justify-center gap-2 rounded-[10px] bg-forest px-6 font-bold text-white transition hover:brightness-110 disabled:opacity-60"
               >
-                {submitting ? 'Recording…' : 'Confirm acceptance'}
+                {submitting ? $t('pg_quote.recording') : $t('pg_quote.confirm_acceptance')}
               </button>
               <button
                 type="button"
@@ -356,7 +360,7 @@
                 disabled={submitting}
                 class="flex h-12 flex-1 items-center justify-center rounded-[10px] border border-ink/20 px-6 font-semibold text-heading transition hover:bg-ink/[0.04] disabled:opacity-60"
               >
-                {submitting ? 'Sending…' : 'Send response'}
+                {submitting ? $t('ui.sending') : $t('pg_quote.send_response')}
               </button>
               <button
                 type="button"
@@ -368,10 +372,7 @@
         {:else if mode === 'changes'}
           <form method="POST" action="?/requestChanges" use:enhance={submit} class="rounded-[12px] border border-ink/10 bg-surface p-5 md:p-6">
             <p class="font-serif text-xl font-semibold text-heading">{$t('ui.ask_for_changes')}</p>
-            <p class="mt-1.5 text-sm leading-6 text-ink/60">
-              Tell us what you'd like different and we'll send you an updated quotation. This doesn't cancel anything — the current price stays open
-              to you in the meantime.
-            </p>
+            <p class="mt-1.5 text-sm leading-6 text-ink/60">{$t('pg_quote.changes_intro')}</p>
             <textarea
               name="comment"
               rows="4"
@@ -385,7 +386,7 @@
                 disabled={submitting}
                 class="flex h-12 flex-1 items-center justify-center gap-2 rounded-[10px] bg-clay px-6 font-bold text-white transition hover:brightness-110 disabled:opacity-60"
               >
-                {submitting ? 'Sending…' : 'Send my changes'}
+                {submitting ? $t('ui.sending') : $t('pg_quote.send_my_changes')}
               </button>
               <button
                 type="button"
@@ -410,7 +411,7 @@
             class="flex items-center justify-center gap-2 rounded-[10px] border border-ink/15 bg-surface px-6 py-3.5 font-semibold text-heading transition hover:bg-ink/[0.03]"
           >
             <PencilLine size={18} class="text-clay" />
-            {changesRequested ? 'Send another change' : 'Ask for changes'}
+            {changesRequested ? $t('pg_quote.send_another_change') : $t('ui.ask_for_changes')}
           </button>
         {/if}
       {/if}
@@ -427,7 +428,7 @@
           data-track-location="quote_page"
         >
           <MessageCircle size={19} />
-          {#if expired}Request an updated price{:else if accepted}Message us about this booking{:else}WhatsApp us about this quote{/if}
+          {#if expired}{$t('pg_quote.wa_request_updated_price')}{:else if accepted}{$t('pg_quote.wa_message_booking')}{:else}{$t('pg_quote.wa_about_quote')}{/if}
         </a>
       {/if}
     </div>
@@ -441,8 +442,8 @@
     {/if}
 
     <p class="mt-8 text-center text-xs leading-6 text-ink/45">
-      Prepared for you by {brand.name}.
-      {#if !accepted}Prices are held until the valid-until date and are subject to availability at the time of booking.{/if}
+      {$t('pg_quote.prepared_by').replace('{brand}', brand.name)}
+      {#if !accepted}{$t('pg_quote.prices_held')}{/if}
     </p>
   </div>
 </main>

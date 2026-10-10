@@ -48,9 +48,13 @@ export const quotationStatusChip = (status: unknown) =>
  * the code is printed rather than a symbol that could be read as the wrong
  * money — the shared currency store exists to re-express USD prices for a
  * visitor, which is the opposite of what a quoted total needs.
+ *
+ * `locale` only changes the digit grouping and decimal mark (the traveller's
+ * page passes its own language); the currency code stays the quotation's own.
+ * The CMS leaves it out and keeps reading en-US.
  */
-export const quotationMoney = (amount: unknown, currencyCode: unknown) =>
-  `${String(currencyCode ?? 'USD')} ${Number(amount ?? 0).toLocaleString('en-US', {
+export const quotationMoney = (amount: unknown, currencyCode: unknown, locale: string = 'en-US') =>
+  `${String(currencyCode ?? 'USD')} ${Number(amount ?? 0).toLocaleString(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })}`;

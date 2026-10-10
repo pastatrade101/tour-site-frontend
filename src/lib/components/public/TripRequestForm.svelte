@@ -160,6 +160,33 @@
     }
   };
 
+  /** Rows as the confirmation email takes them: trimmed, held to 300 characters, none empty, at most 12. */
+  const recapRows = (rows: Array<{ label: string; value: string }>) =>
+    rows
+      .map((row) => ({ label: row.label.trim().slice(0, 300).trim(), value: row.value.trim().slice(0, 300).trim() }))
+      .filter((row) => row.label && row.value)
+      .slice(0, 12);
+
+  /*
+   * The traveller's own confirmation email is written in the page's language,
+   * so it repeats their answers the way they read them here — the labels on
+   * screen, the date in their own format, the language by its own name. Never
+   * their name, email or phone: the email does not repeat contact details.
+   * The rest of the request, which staff read, is unchanged.
+   */
+  $: travellerRecap = recapRows([
+    {
+      label: layout === 'inline' ? $t('form.start_date') : $t('form.preferred_start_date'),
+      value: /^\d{4}-\d{2}-\d{2}$/.test(travel_date)
+        ? new Intl.DateTimeFormat($locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${travel_date}T00:00:00Z`))
+        : ''
+    },
+    { label: $t('form.adults'), value: adults },
+    { label: $t('ui.children'), value: children },
+    { label: layout === 'inline' ? $t('label.language') : $t('form.preferred_language'), value: LANGUAGES.find((l) => l.code === language)?.label ?? '' },
+    { label: $t('form.special_requests'), value: special_requests }
+  ]);
+
   // ── Tracking ───────────────────────────────────────────────────────────────
   // The itinerary form is one of the main leads. Its path — seen, first field
   // touched, step passed, what stopped a step, where it was left, the lead —
@@ -318,6 +345,10 @@
           // No column for the language, and it is not worth one: it is a
           // preference a person reads, not something anything computes on.
           language,
+          // For the traveller's confirmation email: the page's language, and
+          // their answers as they read them (see travellerRecap).
+          page_locale: $locale,
+          traveller_recap: travellerRecap,
           tour_title: tour?.title ?? undefined,
           // The page it was sent from: staff see it as "Enquired from", and the
           // CMS can tell a developer's local test from a traveller.

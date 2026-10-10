@@ -139,6 +139,36 @@
     clearError('days');
   }
 
+  /** Rows as the confirmation email takes them: trimmed, held to 300 characters, none empty, at most 12. */
+  const recapRows = (rows: Array<{ label: string; value: string }>) =>
+    rows
+      .map((row) => ({ label: row.label.trim().slice(0, 300).trim(), value: row.value.trim().slice(0, 300).trim() }))
+      .filter((row) => row.label && row.value)
+      .slice(0, 12);
+
+  /*
+   * The traveller's own confirmation email is written in the page's language,
+   * so it repeats their answers the way the fields above showed them —
+   * "Not sure yet" and the comfort levels translated, the date in their own
+   * format. Never their name, email or phone: the email does not repeat
+   * contact details. The English values staff read are unchanged.
+   */
+  $: shown = (value: string) => (value === NOT_SURE ? $t('ui.not_sure_yet') : value);
+  $: travellerRecap = recapRows([
+    { label: $t('ui.route_option'), value: hasRouteOptions ? shown(routeChoice) : '' },
+    { label: $t('ui.travellers'), value: String(Number(travellers)) },
+    {
+      label: $t('ui.travel_date'),
+      value: /^\d{4}-\d{2}-\d{2}$/.test(travelDate)
+        ? new Intl.DateTimeFormat($locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${travelDate}T00:00:00Z`))
+        : ''
+    },
+    { label: $t('ui.number_of_days'), value: days ? `${days} ${days === '1' ? $t('label.day') : $t('label.days')}` : '' },
+    { label: $t('ui.starting_point'), value: hasStartPoints ? shown(startPoint) : '' },
+    { label: $t('ui.comfort_level'), value: COMFORT_LABEL_KEYS[comfort] ? $t(COMFORT_LABEL_KEYS[comfort]) : shown(comfort) },
+    { label: $t('ui.main_interest'), value: shown(interest) }
+  ]);
+
   $: stepLabel = $t('ui.step_x_of_y').replace('{step}', String(step)).replace('{total}', String(TOTAL));
   $: submitLabel = step === TOTAL ? $t('ui.start_my_trip_plan') : $t('ui.continue');
 
@@ -274,6 +304,10 @@
           starting_point: startPoint || undefined,
           comfort_level: comfort || undefined,
           main_interest: interest || undefined,
+          // For the traveller's confirmation email: the page's language, and
+          // their answers as they read them (see travellerRecap).
+          page_locale: $locale,
+          traveller_recap: travellerRecap,
           attribution: getAttribution()
         },
         hp_company: hp

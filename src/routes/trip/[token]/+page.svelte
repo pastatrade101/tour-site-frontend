@@ -20,7 +20,7 @@
 </script>
 
 <svelte:head>
-  <title>Opening your trip · Goldfinch Adventures</title>
+  <title>{$t('pg_trip.title_opening')} · Goldfinch Adventures</title>
   <meta name="robots" content="noindex, nofollow" />
 </svelte:head>
 

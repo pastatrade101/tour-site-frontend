@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '$lib/i18n/ui';
+  import { t, locale } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
@@ -41,7 +41,8 @@
 
   let departures: Departure[] = [];
   let loading = true;
-  let error = '';
+  // A dictionary key, never the API's own message.
+  let errorKey = '';
 
   // Initial filters can arrive from the homepage hero search (?destination=&month=).
   let search = '';
@@ -51,34 +52,52 @@
   let status = 'all';
   let sort = 'start_date';
 
-  let destinationOptions: Option[] = [{ label: 'All destinations', value: 'all' }];
-  let categoryOptions: Option[] = [{ label: 'All categories', value: 'all' }];
+  // Destination / category names come from the CMS; only the "all" entry is translated.
+  let destinationItems: Option[] = [];
+  let categoryItems: Option[] = [];
+  $: destinationOptions = [{ label: $t('label.all_destinations'), value: 'all' }, ...destinationItems];
+  $: categoryOptions = [{ label: $t('pg_departures.all_categories'), value: 'all' }, ...categoryItems];
 
-  const statusOptions: Option[] = [
-    { label: 'All statuses', value: 'all' },
-    { label: 'Available', value: 'available' },
-    { label: 'Limited', value: 'limited' }
+  $: statusOptions = [
+    { label: $t('pg_departures.all_statuses'), value: 'all' },
+    { label: $t('pg_departures.status_available'), value: 'available' },
+    { label: $t('pg_departures.status_limited'), value: 'limited' }
   ];
-  const sortOptions: Option[] = [
-    { label: 'Soonest first', value: 'start_date' },
-    { label: 'Lowest price', value: 'price' }
+  $: sortOptions = [
+    { label: $t('pg_departures.sort_soonest'), value: 'start_date' },
+    { label: $t('pg_departures.sort_lowest_price'), value: 'price' }
   ];
 
-  const monthOptions: Option[] = (() => {
-    const out: Option[] = [{ label: 'Any month', value: 'all' }];
+  $: monthOptions = (() => {
+    const out: Option[] = [{ label: $t('pg_departures.any_month'), value: 'all' }];
+    const fmt = new Intl.DateTimeFormat($locale, { month: 'long', year: 'numeric' });
     const now = new Date();
     for (let i = 0; i < 12; i += 1) {
       const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
       const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      out.push({ value, label: d.toLocaleDateString('en', { month: 'long', year: 'numeric' }) });
+      // fr/es/it write month names in lower case; a list entry starts with a capital.
+      const label = fmt.format(d);
+      out.push({ value, label: label.charAt(0).toLocaleUpperCase($locale) + label.slice(1) });
     }
     return out;
   })();
 
-  const fmtDate = (value: string | null) =>
-    value ? new Intl.DateTimeFormat('en', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value)) : '';
-  const fmtMoney = (amount: number | null) =>
-    amount == null ? 'On request' : formatUsd(amount, $currency);
+  $: dateFormat = new Intl.DateTimeFormat($locale, { day: '2-digit', month: 'short', year: 'numeric' });
+  $: fmtDate = (value: string | null) => (value ? dateFormat.format(new Date(value)) : '');
+  $: fmtMoney = (amount: number | null) =>
+    amount == null ? $t('ui.on_request') : formatUsd(amount, $currency);
+
+  // Singular or plural the way the active language counts (French treats 0 as singular).
+  $: pluralRules = new Intl.PluralRules($locale);
+  $: count = (n: number, oneKey: string, otherKey: string) =>
+    $t(pluralRules.select(n) === 'one' ? oneKey : otherKey).replace('{n}', String(n));
+
+  // Status pills: translated label per API status, the raw value if a new one appears.
+  $: statusLabel = (value: string) => {
+    const key = `pg_departures.status_${value}`;
+    const label = $t(key);
+    return label === key ? value : label;
+  };
 
   // Group departures by tour so the same tour shows once with a list of dates.
   let expanded = new Set<string>();
@@ -104,7 +123,7 @@
 
   const load = async () => {
     loading = true;
-    error = '';
+    errorKey = '';
     try {
       const res = await api.departures.list({
         search,
@@ -116,8 +135,8 @@
         limit: 60
       });
       departures = res.data as unknown as Departure[];
-    } catch (err) {
-      error = err instanceof Error ? err.message : 'Unable to load departures.';
+    } catch {
+      errorKey = 'pg_departures.load_error';
     } finally {
       loading = false;
     }
@@ -147,14 +166,8 @@
         api.destinations.list({ status: 'published', limit: 100 }),
         api.categories.list({ status: 'published', limit: 100 })
       ]);
-      destinationOptions = [
-        { label: 'All destinations', value: 'all' },
-        ...dest.data.items.map((d) => ({ label: String(d.name ?? d.slug), value: String(d.slug) }))
-      ];
-      categoryOptions = [
-        { label: 'All categories', value: 'all' },
-        ...cat.data.items.map((c) => ({ label: String(c.name ?? c.slug), value: String(c.slug) }))
-      ];
+      destinationItems = dest.data.items.map((d) => ({ label: String(d.name ?? d.slug), value: String(d.slug) }));
+      categoryItems = cat.data.items.map((c) => ({ label: String(c.name ?? c.slug), value: String(c.slug) }));
     } catch {
       // filters still work via fallback "all"
     }
@@ -169,7 +182,7 @@
     <p class="font-serif text-xl italic text-savanna">{$t('ui.scheduled_departures')}</p>
     <h1 class="mx-auto mt-5 max-w-3xl text-3xl font-extrabold leading-[1.1] tracking-normal md:text-[44px]" use:revealHeading>{$t('ui.confirmed_east_africa_departure_dates')}</h1>
     <p class="mx-auto mt-4 max-w-2xl text-[15px] font-medium leading-7 text-white/75 md:text-lg">
-      Browse our scheduled safari, Kilimanjaro, gorilla trekking and beach departures with confirmed dates, availability and pricing. Reserve a place or let a local expert tailor your own.
+      {$t('pg_departures.hero_body')}
     </p>
   </div>
 </section>
@@ -204,16 +217,16 @@
     <!-- ── results ─────────────────────────────────────────────────────── -->
     <div class="mt-8">
       {#if loading}
-        <LoadingState message="Loading departures..." />
-      {:else if error}
-        <ErrorState message={error} />
+        <LoadingState message={$t('pg_departures.loading')} />
+      {:else if errorKey}
+        <ErrorState message={$t(errorKey)} />
       {:else if departures.length === 0}
-        <EmptyState title={$t('ui.no_departures_match_your_filters')} message="Try a different month or destination — or plan a custom trip and we'll schedule dates around you." />
+        <EmptyState title={$t('ui.no_departures_match_your_filters')} message={$t('pg_departures.empty_body')} />
         <div class="mt-5 flex justify-center">
           <Button href="/plan-my-trip">{$t('cta.plan_my_trip')}</Button>
         </div>
       {:else}
-        <p class="mb-5 text-sm font-medium text-ink/70">{grouped.length} tour{grouped.length === 1 ? '' : 's'} · {departures.length} upcoming departure{departures.length === 1 ? '' : 's'}</p>
+        <p class="mb-5 text-sm font-medium text-ink/70">{count(grouped.length, 'pg_departures.tours_one', 'pg_departures.tours_other')} · {count(departures.length, 'pg_departures.departures_one', 'pg_departures.departures_other')}</p>
         <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3" use:staggeredCardReveal={{ y: 16, stagger: 0.05 }}>
           {#each grouped as g (g.tour.tour_id)}
             {@const dates = expanded.has(g.tour.tour_id) ? g.dates : g.dates.slice(0, 3)}
@@ -232,7 +245,7 @@
                   <div class="grid h-full w-full place-items-center text-forest/30"><Compass size={36} /></div>
                 {/if}
                 <span class="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-deep-green/85 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur">
-                  <CalendarDays size={11} />{g.dates.length} date{g.dates.length === 1 ? '' : 's'}
+                  <CalendarDays size={11} />{count(g.dates.length, 'pg_departures.dates_one', 'pg_departures.dates_other')}
                 </span>
                 {#if g.tour.category_name}
                   <span class="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-surface/90 px-2.5 py-1 text-[11px] font-semibold text-heading backdrop-blur">
@@ -245,7 +258,7 @@
                 <h3 class="text-lg font-extrabold leading-snug tracking-normal text-heading">{g.tour.tour_title}</h3>
                 <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
                   {#if g.tour.destination_name}<span class="inline-flex items-center gap-1.5 font-semibold text-clay"><MapPin size={14} />{g.tour.destination_name}</span>{/if}
-                  {#if g.tour.duration_days}<span class="inline-flex items-center gap-1.5 text-ink/70"><Clock size={14} class="text-forest" />{g.tour.duration_days} day{g.tour.duration_days === 1 ? '' : 's'}</span>{/if}
+                  {#if g.tour.duration_days}<span class="inline-flex items-center gap-1.5 text-ink/70"><Clock size={14} class="text-forest" />{count(g.tour.duration_days, 'pg_destinations_slug.n_day', 'pg_destinations_slug.n_days')}</span>{/if}
                 </div>
 
                 <div class="mt-3 flex items-baseline gap-1.5">
@@ -260,8 +273,8 @@
                       <div class="min-w-0">
                         <p class="text-sm font-semibold text-ink">{fmtDate(dt.start_date)}{#if dt.end_date} <span class="font-normal text-ink/40">→ {fmtDate(dt.end_date)}</span>{/if}</p>
                         <p class="mt-0.5 flex items-center gap-2 text-xs">
-                          {#if dt.available_slots != null}<span class="inline-flex items-center gap-1 text-ink/70"><Users size={11} />{dt.available_slots} left</span>{/if}
-                          <span class={`font-semibold ${dt.status === 'limited' ? 'text-amber-600' : 'text-emerald-600'}`}>{dt.status === 'limited' ? 'Limited' : 'Available'}</span>
+                          {#if dt.available_slots != null}<span class="inline-flex items-center gap-1 text-ink/70"><Users size={11} />{count(dt.available_slots, 'pg_departures.seats_left_one', 'pg_departures.seats_left_other')}</span>{/if}
+                          <span class={`font-semibold ${dt.status === 'limited' ? 'text-amber-600' : 'text-emerald-600'}`}>{statusLabel(dt.status)}</span>
                         </p>
                       </div>
                       <a class="shrink-0 rounded-lg bg-forest px-3 py-1.5 text-xs font-bold text-white transition hover:bg-deep-green" href={`/booking/${g.tour.tour_slug}?departureId=${dt.id}`}>{$t('ui.book')}</a>
@@ -270,7 +283,7 @@
                 </div>
                 {#if g.dates.length > 3}
                   <button class="mt-2 inline-flex items-center gap-1 self-start text-xs font-semibold text-forest transition hover:text-heading" type="button" on:click={() => toggleExpand(g.tour.tour_id)}>
-                    {expanded.has(g.tour.tour_id) ? 'Show fewer dates' : `+ ${g.dates.length - 3} more date${g.dates.length - 3 === 1 ? '' : 's'}`}
+                    {expanded.has(g.tour.tour_id) ? $t('pg_departures.show_fewer_dates') : count(g.dates.length - 3, 'pg_departures.more_dates_one', 'pg_departures.more_dates_other')}
                   </button>
                 {/if}
 

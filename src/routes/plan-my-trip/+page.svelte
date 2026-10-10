@@ -375,6 +375,26 @@
     { label: $t('pg_plan_my_trip.step_planning_stage'), value: tp(d.stage), at: 5 }
   ];
 
+  /*
+   * The traveller's own confirmation email is written in the page's language,
+   * so it repeats the Summary step as they read it: the rows above, the place
+   * they came about, and how they asked to be answered. Never their name,
+   * email or phone — the email does not repeat contact details. Trimmed, held
+   * to 300 characters, none empty, at most 12. The English `answers` staff
+   * read are unchanged.
+   */
+  $: travellerRecap = [
+    review[0],
+    { label: $t('pg_plan_my_trip.row_interest'), value: interest },
+    ...review.slice(1),
+    { label: $t('pg_plan_my_trip.reply_in'), value: LANGUAGES.find((l) => l.code === language)?.name ?? '' },
+    { label: $t('pg_plan_my_trip.preferred_contact'), value: $t(CONTACT_LABELS[contact]) },
+    { label: $t('pg_plan_my_trip.anything_else'), value: d.notes }
+  ]
+    .map((row) => ({ label: row.label.trim().slice(0, 300).trim(), value: row.value.trim().slice(0, 300).trim() }))
+    .filter((row) => row.label && row.value)
+    .slice(0, 12);
+
   // The final screen's recap, in the order the traveller will recognise it.
   $: recap = [
     { label: $t('pg_plan_my_trip.row_trip_type'), value: typesDisplay },
@@ -624,6 +644,10 @@
           form_type: 'trip_planner',
           lead_source: 'Plan My Trip',
           language,
+          // For the traveller's confirmation email: the page's language, and
+          // their answers as they read them (see travellerRecap).
+          page_locale: $locale,
+          traveller_recap: travellerRecap,
           page: { url: location.href, title: document.title, referrer: document.referrer || undefined },
           attribution: getAttribution(),
           // The link that brought them here, and any campaign tags on this visit.
