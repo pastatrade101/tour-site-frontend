@@ -10,7 +10,6 @@
  * goes to a specialist as a custom plan.
  */
 import type { Tour } from '$lib/types';
-import { monthRanges } from '$lib/categoryFacts';
 
 // ── What the tours list carries (embedded relations are not on the Tour type) ──
 
@@ -219,6 +218,57 @@ export type Party = (typeof PARTIES)[number]['id'];
 
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 export const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+/**
+ * How the planner's own sentences and terms are worded. English by default —
+ * what the specialist reads. The page passes the visitor's language: it looks
+ * each English template or term up in the dictionary (falling back to English)
+ * and supplies month names and list joining from the browser's Intl.
+ */
+export type Speak = {
+  /** A sentence template with {slots}, worded in the reader's language. */
+  say: (template: string, vars?: Record<string, string | number>) => string;
+  /** A fixed English term (trip type, tier, priority, season…) in the reader's language. */
+  term: (english: string) => string;
+  /** "a, b and c". */
+  list: (items: string[]) => string;
+  /** Month name (0-based). */
+  month: (index: number) => string;
+  /** Short month name (0-based). */
+  monthShort: (index: number) => string;
+};
+
+/** Fill {slots} in a template. */
+export const fill = (template: string, vars: Record<string, string | number> = {}) =>
+  template.replace(/\{(\w+)\}/g, (match, key: string) => (key in vars ? String(vars[key]) : match));
+
+export const ENGLISH: Speak = {
+  say: fill,
+  term: (english) => english,
+  list: (items) => (items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`),
+  month: (index) => MONTH_NAMES[index],
+  monthShort: (index) => MONTHS[index]
+};
+
+/** "Jan–Feb, Jun–Oct" from 1-based months, in the reader's language. */
+const monthRangesIn = (months: number[], speak: Speak): string => {
+  const sorted = [...new Set(months)].filter((m) => m >= 1 && m <= 12).sort((a, b) => a - b);
+  if (!sorted.length) return '';
+  if (sorted.length === 12) return speak.say('All year round');
+  const runs: Array<[number, number]> = [];
+  for (const month of sorted) {
+    const last = runs[runs.length - 1];
+    if (last && month === last[1] + 1) last[1] = month;
+    else runs.push([month, month]);
+  }
+  if (runs.length > 1 && runs[0][0] === 1 && runs[runs.length - 1][1] === 12) {
+    const wrap = runs.pop();
+    if (wrap) runs[0][0] = wrap[0];
+  }
+  return runs
+    .map(([from, to]) => (from === to ? speak.monthShort(from - 1) : `${speak.monthShort(from - 1)}–${speak.monthShort(to - 1)}`))
+    .join(', ');
+};
 
 // Season calendar for northern Tanzania / Zanzibar.
 export const SEASON: Array<'Peak' | 'Shoulder' | 'Low'> = ['Peak', 'Peak', 'Shoulder', 'Low', 'Low', 'Shoulder', 'Peak', 'Peak', 'Peak', 'Shoulder', 'Shoulder', 'Peak'];
@@ -453,7 +503,7 @@ export const whenText = (d: Draft): string => {
 
 // ── Expert tips ────────────────────────────────────────────────────────────────
 
-export const insights = (d: Draft): string[] => {
+export const insights = (d: Draft, speak: Speak = ENGLISH): string[] => {
   const out: string[] = [];
   const has = (type: TypeId) => d.types.includes(type);
   const month = activeMonth(d);
@@ -480,7 +530,7 @@ export const insights = (d: Draft): string[] => {
     out.push('A week or more lets you combine Tarangire, Ngorongoro and a deep Serengeti stay without rushing.');
   if (month !== null && SEASON[month] === 'Peak')
     out.push('Peak season — the best lodges fill 6–9 months ahead, so an early request helps.');
-  return out.slice(0, 3);
+  return out.slice(0, 3).map((sentence) => speak.say(sentence));
 };
 
 /**
@@ -492,20 +542,23 @@ export const catalogueTips = (
   d: Draft,
   tours: PlannerTour[],
   categories: PlannerCategory[],
-  formatPrice: (usd: number) => string
+  formatPrice: (usd: number) => string,
+  speak: Speak = ENGLISH
 ): Array<{ id: string; text: string }> => {
   const out: Array<{ id: string; text: string }> = [];
   if (!d.types.length) return out;
   const chosen = definite(d.types);
   const pool = chosen.length ? tours.filter((t) => chosen.some((type) => typeOf(type).matches(t))) : tours;
-  const trips = (n: number) => (n === 1 ? 'trip' : 'trips');
 
   if (chosen.length > 1) {
     const both = tours.filter((t) => chosen.every((type) => typeOf(type).matches(t))).length;
     if (both)
       out.push({
         id: 'combo',
-        text: `${both} of our published ${trips(both)} already ${both === 1 ? 'combines' : 'combine'} ${chosen.map((type) => typeOf(type).label.toLowerCase()).join(' and ')}.`
+        text: speak.say('Published trips that already combine {types}: {n}.', {
+          types: speak.list(chosen.map((type) => speak.term(typeOf(type).label))),
+          n: both
+        })
       });
   }
 
@@ -520,8 +573,8 @@ export const catalogueTips = (
     out.push({
       id: 'length',
       text: n
-        ? `${n} of the ${pool.length} published ${trips(pool.length)} that match your trip type ${n === 1 ? 'runs' : 'run'} ${lo}–${hi} days.`
-        : `None of our published trips of this type runs ${lo}–${hi} days yet — we'll plan yours as a custom trip.`
+        ? speak.say('Published trips of your type that run {lo}–{hi} days: {n} of {total}.', { lo, hi, n, total: pool.length })
+        : speak.say("None of our published trips of this type runs {lo}–{hi} days yet — we'll plan yours as a custom trip.", { lo, hi })
     });
   }
 
@@ -532,8 +585,13 @@ export const catalogueTips = (
         id: 'comfort',
         text:
           option.min === option.max
-            ? `Our ${option.label.toLowerCase()} ${trips(option.count)} ${option.count === 1 ? 'starts' : 'start'} from ${formatPrice(option.min)} per person.`
-            : `Our ${option.count} ${option.label.toLowerCase()} trips start between ${formatPrice(option.min)} and ${formatPrice(option.max)} per person.`
+            ? speak.say('{tier} trips start from {min} per person.', { tier: speak.term(option.label), min: formatPrice(option.min) })
+            : speak.say('{tier} trips ({n}) start between {min} and {max} per person.', {
+                tier: speak.term(option.label),
+                n: option.count,
+                min: formatPrice(option.min),
+                max: formatPrice(option.max)
+              })
       });
     }
   }
@@ -542,7 +600,11 @@ export const catalogueTips = (
     const n = startingAtOrUnder(pool, d.budget);
     out.push({
       id: 'budget',
-      text: `${n} of the ${pool.length} published ${trips(pool.length)} that match your trip type ${n === 1 ? 'starts' : 'start'} at or under ${formatPrice(d.budget)} per person.`
+      text: speak.say('Published trips of your type starting at or under {budget} per person: {n} of {total}.', {
+        budget: formatPrice(d.budget),
+        n,
+        total: pool.length
+      })
     });
   }
 
@@ -552,13 +614,13 @@ export const catalogueTips = (
       const category = categories.find((c) => c.slug === slug);
       const best = (category?.best_months ?? []).map(Number).filter((m) => m >= 1 && m <= 12);
       if (!category || !best.length) continue;
-      const ranges = monthRanges(best);
+      const ranges = monthRangesIn(best, speak);
       out.push({
         id: `months-${slug}`,
         text:
           month !== null && best.includes(month + 1)
-            ? `${MONTH_NAMES[month]} is one of the best months listed for our ${category.name} (${ranges}).`
-            : `Best months listed for our ${category.name}: ${ranges}.`
+            ? speak.say('{month} is one of the best months listed for our {style} ({ranges}).', { month: speak.month(month), style: category.name, ranges })
+            : speak.say('Best months listed for our {style}: {ranges}.', { style: category.name, ranges })
       });
     }
   }
@@ -571,6 +633,14 @@ export const catalogueTips = (
 export type PlannerContext = { tourSlug?: string; destinationSlug?: string; placeName?: string };
 
 export type Recommendation = { tour: PlannerTour; reasons: string[] };
+
+/** Who a trip suits, as one sentence per party. */
+const SUITS: Record<Party, string> = {
+  solo: 'Suits solo travellers',
+  partner: 'Suits couples',
+  family: 'Suits families',
+  group: 'Suits groups'
+};
 
 const personaParty = (tag: string): Party | null => {
   const text = tag.toLowerCase();
@@ -592,7 +662,8 @@ export const recommend = (
   d: Draft,
   tours: PlannerTour[],
   context: PlannerContext = {},
-  formatPrice: (usd: number) => string = (usd) => `$${usd.toLocaleString()}`
+  formatPrice: (usd: number) => string = (usd) => `$${usd.toLocaleString()}`,
+  speak: Speak = ENGLISH
 ): Recommendation[] => {
   if (!d.types.length) return [];
   const chosen = definite(d.types);
@@ -618,14 +689,14 @@ export const recommend = (
     const days = Number(tour.duration_days ?? 0);
     if (target && days) {
       score -= Math.abs(days - target) * 0.6;
-      if (Math.abs(days - target) <= 1) reasons.push(`${days} days — about the length you want`);
+      if (Math.abs(days - target) <= 1) reasons.push(speak.say('{days} days — about the length you want', { days }));
     }
 
     const price = Number(tour.price_from ?? 0);
     if (d.budget !== null && !d.budgetUnsure && price) {
       if (price <= d.budget) {
         score += 2;
-        reasons.push(`From ${formatPrice(price)} per person — within your budget`);
+        reasons.push(speak.say('From {price} per person — within your budget', { price: formatPrice(price) }));
       } else if (price > d.budget * 1.15) {
         score -= 2;
       } else {
@@ -635,13 +706,13 @@ export const recommend = (
 
     if (d.party && (tour.persona_tags ?? []).some((tag) => personaParty(tag) === d.party)) {
       score += 1.5;
-      reasons.push(`Suits ${PARTIES.find((p) => p.id === d.party)!.label.toLowerCase()} travellers`);
+      reasons.push(speak.say(SUITS[d.party]));
     }
 
     if (d.comfort && d.comfort !== NOT_SURE && tour.budget_tier) {
       if (tour.budget_tier === d.comfort) {
         score += 1.5;
-        reasons.push(`${tierLabel(d.comfort)} comfort, as you asked`);
+        reasons.push(speak.say('{tier} comfort, as you asked', { tier: speak.term(tierLabel(d.comfort)) }));
       } else {
         score -= 0.5;
       }
@@ -650,17 +721,23 @@ export const recommend = (
     const hits = wanted.filter((p) => p.matches(tour, valueCut)).map((p) => p.id);
     if (hits.length) {
       score += hits.length * 1.5;
-      reasons.push(`Fits your ${hits.length > 1 ? 'priorities' : 'priority'}: ${hits.join(', ')}`);
+      reasons.push(
+        speak.say(hits.length > 1 ? 'Fits your priorities: {list}' : 'Fits your priority: {list}', { list: speak.list(hits.map((hit) => speak.term(hit))) })
+      );
     }
 
     // Pace, read from the route: days per place visited.
     const ratio = daysPerPlace(tour);
     if (ratio && d.pace === 'Relaxed' && ratio >= 2.5) {
       score += 1;
-      reasons.push(`${days} days for ${places.length} ${places.length === 1 ? 'place' : 'places'} — an unhurried route`);
+      reasons.push(
+        places.length === 1
+          ? speak.say('{days} days in one place — an unhurried route', { days })
+          : speak.say('{days} days for {places} places — an unhurried route', { days, places: places.length })
+      );
     } else if (ratio && d.pace === 'Active' && ratio <= 1.34 && places.length > 1) {
       score += 1;
-      reasons.push(`${places.length} places in ${days} days`);
+      reasons.push(speak.say('{places} places in {days} days', { places: places.length, days }));
     } else if (ratio && d.pace === 'Balanced' && ratio > 1.34 && ratio < 2.5) {
       score += 0.5;
     }
@@ -676,18 +753,18 @@ export const recommend = (
       const calving = /calving|ndutu/i.test(`${tour.title ?? ''} ${tour.slug ?? ''}`);
       if ((calving ? [0, 1, 2] : [6, 7, 8, 9]).includes(month)) {
         score += 1;
-        reasons.push(`Timed for the migration in ${MONTH_NAMES[month]}`);
+        reasons.push(speak.say('Timed for the migration in {month}', { month: speak.month(month) }));
       }
     }
 
     if (context.tourSlug && tour.slug === context.tourSlug) {
       score += 5;
-      reasons.unshift('The trip you were looking at');
+      reasons.unshift(speak.say('The trip you were looking at'));
     }
     if (context.destinationSlug && places.some((p) => p.slug === context.destinationSlug)) score += 2;
     // Places last: every match visits somewhere, so it is the weakest reason
     // and the page may only show the first.
-    if (named.length) reasons.push(`Visits ${named.map((p) => p.name).join(', ')}`);
+    if (named.length) reasons.push(speak.say('Visits {places}', { places: speak.list(named.map((p) => p.name)) }));
 
     return { tour, score, reasons: reasons.slice(0, 3) };
   });

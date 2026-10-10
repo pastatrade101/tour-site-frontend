@@ -82,6 +82,8 @@
     travellers,
     typeOf,
     whenText,
+    fill,
+    type Speak,
     type Draft,
     type Party,
     type PlannerCategory,
@@ -252,13 +254,49 @@
   $: people = travellers(d);
   $: days = totalDays(d);
   $: month = activeMonth(d);
+  // ── What the visitor reads, in their language ─────────────────────────────
+  // The planner's lists and sentences are English (what the specialist reads);
+  // each is looked up here by its English text. A text with no translation
+  // stays English rather than breaking.
+  const keyOf = (english: string) =>
+    'tp.' + english.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 80);
+  $: tp = (english: string): string => {
+    if (!english) return english;
+    const key = keyOf(english);
+    const out = $t(key);
+    return out === key ? english : out;
+  };
+  $: monthName = (index: number) => new Intl.DateTimeFormat($locale, { month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, index, 1)));
+  $: monthShort = (index: number) => new Intl.DateTimeFormat($locale, { month: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, index, 1)));
+  $: speak = {
+    say: (template: string, vars?: Record<string, string | number>) => fill(tp(template), vars),
+    term: tp,
+    list: (items: string[]) => (items.length < 2 ? items.join('') : new Intl.ListFormat($locale, { type: 'conjunction' }).format(items)),
+    month: monthName,
+    monthShort
+  } satisfies Speak;
+  /** "12 Mar 2027" in the reader's language. */
+  $: dateIn = (iso: string) =>
+    /^\d{4}-\d{2}-\d{2}/.test(iso)
+      ? new Intl.DateTimeFormat($locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${iso.slice(0, 10)}T00:00:00Z`))
+      : iso;
+  /** When, as the visitor reads it (whenText stays the specialist's English). */
+  $: whenLocal = (() => {
+    if (d.dateMode === 'exact') {
+      if (!d.startDate) return '';
+      return d.endDate ? `${dateIn(d.startDate)} → ${dateIn(d.endDate)}` : speak.say('From {date}', { date: dateIn(d.startDate) });
+    }
+    if (d.dateUnsure) return NOT_SURE;
+    return d.month === null ? '' : `${monthName(d.month)} ${d.year}`;
+  })();
+
   $: price = (usd: number) => formatUsd(usd, $currency);
   // Round figures read better without the formatter's cents.
   $: whole = (usd: number) => price(usd).replace(/[.,]00(?!\d)/, '');
-  $: recs = recommend(d, data.tours, incoming.context, whole);
+  $: recs = recommend(d, data.tours, incoming.context, whole, speak);
   // Changes whenever a different set of trips is suggested — replays the highlight.
   $: recKey = recs.map((rec) => rec.tour.id).join('|');
-  $: tips = [...catalogueTips(d, data.tours, data.categories, whole).map((tip) => tip.text), ...insights(d)].slice(0, 4);
+  $: tips = [...catalogueTips(d, data.tours, data.categories, whole, speak).map((tip) => tip.text), ...insights(d, speak)].slice(0, 4);
   $: chosenTypes = d.types.filter((type) => type !== 'unsure');
   // The trips the budget count is measured against: those of the chosen kinds.
   $: pool = chosenTypes.length ? data.tours.filter((tour) => chosenTypes.some((type) => typeOf(type).matches(tour))) : data.tours;
@@ -283,7 +321,7 @@
   // ── What the visitor sees of their own answers ──────────────────────────────
   $: travellerText = d.party
     ? [
-        partyLabel,
+        tp(partyLabel),
         $t(people.adults > 1 ? 'pg_plan_my_trip.n_adults' : 'pg_plan_my_trip.n_adult').replace('{n}', String(people.adults)),
         people.children
           ? $t(people.children > 1 ? 'pg_plan_my_trip.n_children' : 'pg_plan_my_trip.n_child').replace('{n}', String(people.children)) +
@@ -294,24 +332,25 @@
         .join(' · ')
     : '';
   $: whenDisplay = (() => {
-    const text = whenText(d);
+    const text = whenLocal;
     if (!text || text === NOT_SURE) return text ? $t('ui.not_sure_yet') : '';
-    return month !== null ? `${text} · ${$t('pg_plan_my_trip.season_value').replace('{season}', SEASON[month])}` : text;
+    return month !== null ? `${text} · ${$t('pg_plan_my_trip.season_value').replace('{season}', tp(SEASON[month]))}` : text;
   })();
   $: lengthDisplay = d.types.some((type) => d.lengths[type])
     ? d.types
         .filter((type) => d.lengths[type])
-        .map((type) => `${type === 'unsure' ? $t('pg_plan_my_trip.whole_trip') : lengthLabel(type)}: ${d.lengths[type] === NOT_SURE ? $t('ui.not_sure_yet') : d.lengths[type]}`)
+        .map((type) => `${type === 'unsure' ? $t('pg_plan_my_trip.whole_trip') : tp(lengthLabel(type))}: ${d.lengths[type] === NOT_SURE ? $t('ui.not_sure_yet') : tp(d.lengths[type] ?? '')}`)
         .join(' · ') + (days ? ` (${$t('pg_plan_my_trip.about_n_days').replace('{n}', String(days))})` : '')
     : '';
-  $: comfortDisplay = d.comfort ? (d.comfort === NOT_SURE ? $t('ui.not_sure_yet') : tierLabel(d.comfort)) : '';
+  $: comfortDisplay = d.comfort ? (d.comfort === NOT_SURE ? $t('ui.not_sure_yet') : tp(tierLabel(d.comfort))) : '';
   $: budgetDisplay = d.budgetUnsure
     ? $t('ui.not_sure_yet')
     : d.budget !== null
       ? `${budgetText(d.budget)} ${$t('pg_plan_my_trip.per_person')}`
       : '';
-  $: prioritiesDisplay = d.priorities.map((p) => (p === NOT_SURE ? $t('ui.not_sure_yet') : p)).join(', ');
-  $: typesDisplay = d.types.map((type) => (type === 'unsure' ? $t('ui.not_sure_yet') : typeOf(type).label)).join(', ');
+  $: prioritiesDisplay = d.priorities.map((p) => (p === NOT_SURE ? $t('ui.not_sure_yet') : tp(p))).join(', ');
+  $: typesDisplay = d.types.map((type) => (type === 'unsure' ? $t('ui.not_sure_yet') : tp(typeOf(type).label))).join(', ');
+  $: paceDisplay = d.pace === NOT_SURE ? $t('ui.not_sure_yet') : tp(d.pace);
 
   /*
    * "Your trip so far": one row per answer, each with its icon. Answers that
@@ -319,31 +358,31 @@
    * joined line, so the panel stays easy to scan as it fills.
    */
   $: soFar = [
-    { key: 'trip', icon: Compass, label: $t('pg_plan_my_trip.row_trip'), value: typesDisplay, chips: d.types.map((type) => (type === 'unsure' ? $t('ui.not_sure_yet') : typeOf(type).label)) },
+    { key: 'trip', icon: Compass, label: $t('pg_plan_my_trip.row_trip'), value: typesDisplay, chips: d.types.map((type) => (type === 'unsure' ? $t('ui.not_sure_yet') : tp(typeOf(type).label))) },
     { key: 'interest', icon: MapPin, label: $t('pg_plan_my_trip.row_interest'), value: interest, chips: [] as string[] },
     { key: 'travellers', icon: Users, label: $t('ui.travellers'), value: travellerText, chips: [] as string[] },
     { key: 'when', icon: CalendarDays, label: $t('pg_plan_my_trip.step_when'), value: whenDisplay, chips: [] as string[] },
     { key: 'length', icon: Clock, label: $t('pg_plan_my_trip.row_length'), value: lengthDisplay, chips: [] as string[] },
-    { key: 'pace', icon: Gauge, label: $t('pg_plan_my_trip.row_pace'), value: d.pace === NOT_SURE ? $t('ui.not_sure_yet') : d.pace, chips: [] as string[] },
-    { key: 'priorities', icon: Heart, label: $t('pg_plan_my_trip.row_priorities'), value: prioritiesDisplay, chips: d.priorities.map((p) => (p === NOT_SURE ? $t('ui.not_sure_yet') : p)) },
+    { key: 'pace', icon: Gauge, label: $t('pg_plan_my_trip.row_pace'), value: d.pace ? paceDisplay : '', chips: [] as string[] },
+    { key: 'priorities', icon: Heart, label: $t('pg_plan_my_trip.row_priorities'), value: prioritiesDisplay, chips: d.priorities.map((p) => (p === NOT_SURE ? $t('ui.not_sure_yet') : tp(p))) },
     { key: 'comfort', icon: BedDouble, label: $t('pg_plan_my_trip.row_comfort'), value: comfortDisplay, chips: [] as string[] },
     { key: 'budget', icon: Wallet, label: $t('pg_plan_my_trip.row_budget'), value: budgetDisplay, chips: [] as string[] },
-    { key: 'stage', icon: Flag, label: $t('pg_plan_my_trip.row_stage'), value: d.stage, chips: [] as string[] }
+    { key: 'stage', icon: Flag, label: $t('pg_plan_my_trip.row_stage'), value: tp(d.stage), chips: [] as string[] }
   ].filter((row) => row.value);
 
   $: review = [
     { label: $t('pg_plan_my_trip.row_trip_types'), value: typesDisplay, at: 0 },
     { label: $t('ui.travellers'), value: travellerText, at: 1 },
     { label: $t('pg_plan_my_trip.step_when'), value: whenDisplay, at: 2 },
-    { label: $t('pg_plan_my_trip.step_length_pace'), value: [lengthDisplay, d.pace === NOT_SURE ? '' : d.pace].filter(Boolean).join(' · '), at: 3 },
+    { label: $t('pg_plan_my_trip.step_length_pace'), value: [lengthDisplay, d.pace === NOT_SURE ? '' : tp(d.pace)].filter(Boolean).join(' · '), at: 3 },
     { label: $t('pg_plan_my_trip.row_preferences'), value: [prioritiesDisplay, comfortDisplay, budgetDisplay].filter(Boolean).join(' · '), at: 4 },
-    { label: $t('pg_plan_my_trip.step_planning_stage'), value: d.stage, at: 5 }
+    { label: $t('pg_plan_my_trip.step_planning_stage'), value: tp(d.stage), at: 5 }
   ];
 
   // The final screen's recap, in the order the traveller will recognise it.
   $: recap = [
     { label: $t('pg_plan_my_trip.row_trip_type'), value: typesDisplay },
-    { label: $t('pg_plan_my_trip.row_travel_date'), value: whenText(d) === NOT_SURE ? $t('ui.not_sure_yet') : whenText(d) },
+    { label: $t('pg_plan_my_trip.row_travel_date'), value: whenLocal === NOT_SURE ? $t('ui.not_sure_yet') : whenLocal },
     { label: $t('ui.travellers'), value: travellerText },
     { label: $t('pg_plan_my_trip.row_comfort_level'), value: comfortDisplay },
     { label: $t('pg_plan_my_trip.row_priorities'), value: prioritiesDisplay }
@@ -759,8 +798,8 @@
               {@const on = d.types.includes(option.id)}
               <button type="button" class={`pm-rise ${choice(on)} pr-10`} style={`--i: ${i}`} aria-pressed={on} on:click={() => toggleType(option.id)}>
                 {#if on}<span class="absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full bg-goldfinch-gold text-heading" in:pop={{ start: 0.3, duration: ms(300), easing: backOut }}><Check size={12} /></span>{/if}
-                <span class="block font-semibold text-heading">{option.id === 'unsure' ? $t('ui.not_sure_yet') : option.label}</span>
-                <span class="mt-0.5 block text-xs text-ink/60">{option.desc}</span>
+                <span class="block font-semibold text-heading">{option.id === 'unsure' ? $t('ui.not_sure_yet') : tp(option.label)}</span>
+                <span class="mt-0.5 block text-xs text-ink/60">{tp(option.desc)}</span>
               </button>
             {/each}
           </div>
@@ -770,7 +809,7 @@
           <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {#each PARTIES as option, i (option.id)}
               <button type="button" class={`pm-rise ${choice(d.party === option.id)} text-center`} style={`--i: ${i}`} aria-pressed={d.party === option.id} on:click={() => pickParty(option.id)}>
-                <span class="block font-semibold text-heading">{option.label}</span>
+                <span class="block font-semibold text-heading">{tp(option.label)}</span>
               </button>
             {/each}
           </div>
@@ -831,8 +870,8 @@
                 <button type="button" disabled={past} aria-pressed={on} style={`--i: ${i * 0.45}`}
                   class={`pm-rise min-h-[56px] rounded-[10px] border p-3 text-left transition ${past ? 'cursor-not-allowed opacity-35' : ''} ${on ? 'border-goldfinch-gold bg-goldfinch-gold/10' : 'border-ink/12 hover:border-goldfinch-gold'}`}
                   on:click={() => pickMonth(i)}>
-                  <span class="block text-sm font-semibold text-heading">{label}</span>
-                  <span class={`mt-1 block text-[10px] font-semibold uppercase tracking-wide ${SEASON[i] === 'Peak' ? 'text-clay' : SEASON[i] === 'Low' ? 'text-forest' : 'text-ink/55'}`}>{SEASON[i]}</span>
+                  <span class="block text-sm font-semibold text-heading">{monthShort(i)}</span>
+                  <span class={`mt-1 block text-[10px] font-semibold uppercase tracking-wide ${SEASON[i] === 'Peak' ? 'text-clay' : SEASON[i] === 'Low' ? 'text-forest' : 'text-ink/55'}`}>{tp(SEASON[i])}</span>
                 </button>
               {/each}
             </div>
@@ -857,7 +896,7 @@
           {#if month !== null}
             {#key month}
             <p in:fly={{ y: 8, duration: ms(340), easing: cubicOut }} class="mt-4 flex items-start gap-2 rounded-[10px] bg-canvas px-4 py-3 text-sm text-heading">
-              <Lightbulb size={15} class="mt-0.5 shrink-0 text-clay" /><span><b>{MONTH_NAMES[month]}:</b> {MONTH_TIP[month]}</span>
+              <Lightbulb size={15} class="mt-0.5 shrink-0 text-clay" /><span><b>{monthName(month)}:</b> {tp(MONTH_TIP[month])}</span>
             </p>
             {/key}
           {/if}
@@ -868,11 +907,11 @@
             {#each d.types as type (type)}
               {@const popular = type === 'unsure' ? null : popularBand(type, data.tours)}
               <div>
-                <p class="mb-2 text-sm font-semibold text-heading">{type === 'unsure' ? $t('pg_plan_my_trip.whole_trip') : lengthLabel(type)}</p>
+                <p class="mb-2 text-sm font-semibold text-heading">{type === 'unsure' ? $t('pg_plan_my_trip.whole_trip') : tp(lengthLabel(type))}</p>
                 <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                   {#each [...LENGTHS[type], NOT_SURE] as band, i}
                     <button type="button" class={`pm-rise ${pill(d.lengths[type] === band)}`} style={`--i: ${i}`} aria-pressed={d.lengths[type] === band} on:click={() => pickLength(type, band)}>
-                      {band === NOT_SURE ? $t('ui.not_sure_yet') : band}
+                      {band === NOT_SURE ? $t('ui.not_sure_yet') : tp(band)}
                       {#if popular === band}<span class="pm-shine ml-2 rounded bg-clay px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">{$t('pg_plan_my_trip.popular')}</span>{/if}
                     </button>
                   {/each}
@@ -890,8 +929,8 @@
                 {@const on = d.pace === option.id}
                 <button type="button" class={`pm-rise ${choice(on)} pr-10`} style={`--i: ${i + 3}`} aria-pressed={on} on:click={() => pickPace(option.id)}>
                   {#if on}<span class="absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full bg-goldfinch-gold text-heading" in:pop={{ start: 0.3, duration: ms(300), easing: backOut }}><Check size={12} /></span>{/if}
-                  <span class="block font-semibold text-heading">{option.id === NOT_SURE ? $t('ui.not_sure_yet') : option.id}</span>
-                  <span class="mt-0.5 block text-xs text-ink/60">{option.desc}</span>
+                  <span class="block font-semibold text-heading">{option.id === NOT_SURE ? $t('ui.not_sure_yet') : tp(option.id)}</span>
+                  <span class="mt-0.5 block text-xs text-ink/60">{tp(option.desc)}</span>
                 </button>
               {/each}
             </div>
@@ -911,7 +950,7 @@
               <button type="button" aria-pressed={on} disabled={full} style={`--i: ${i * 0.6}`}
                 class={`pm-rise inline-flex min-h-[44px] items-center gap-2 rounded-[10px] border px-3.5 text-sm font-medium text-heading transition disabled:cursor-not-allowed disabled:opacity-40 ${on ? 'border-goldfinch-gold bg-goldfinch-gold/10' : 'border-ink/15 hover:border-goldfinch-gold'}`}
                 on:click={() => togglePriority(option)}>
-                {option === NOT_SURE ? $t('ui.not_sure_yet') : option}
+                {option === NOT_SURE ? $t('ui.not_sure_yet') : tp(option)}
                 {#if on}<span class="inline-flex" in:pop={{ start: 0.3, duration: ms(280), easing: backOut }}><Check size={15} class="shrink-0 text-clay" /></span>{/if}
               </button>
             {/each}
@@ -926,8 +965,8 @@
                 {@const on = d.comfort === option.id}
                 <button type="button" class={`pm-rise ${choice(on)} pr-10`} style={`--i: ${i + 4}`} aria-pressed={on} on:click={() => pickComfort(option.id)}>
                   {#if on}<span class="absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full bg-goldfinch-gold text-heading" in:pop={{ start: 0.3, duration: ms(300), easing: backOut }}><Check size={12} /></span>{/if}
-                  <span class="block font-semibold text-heading">{option.label}</span>
-                  {#if option.desc}<span class="mt-0.5 block text-xs text-ink/60">{option.desc}</span>{/if}
+                  <span class="block font-semibold text-heading">{tp(option.label)}</span>
+                  {#if option.desc}<span class="mt-0.5 block text-xs text-ink/60">{tp(option.desc)}</span>{/if}
                   {#if option.count && option.min}
                     <!-- Counted from the published trips in this tier. -->
                     <span class="mt-2 block text-xs font-semibold text-forest">
@@ -993,8 +1032,8 @@
               {@const on = d.stage === option.id}
               <button type="button" class={`pm-rise ${choice(on)} pr-10`} style={`--i: ${i}`} aria-pressed={on} on:click={() => pickStage(option.id)}>
                 {#if on}<span class="absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full bg-goldfinch-gold text-heading" in:pop={{ start: 0.3, duration: ms(300), easing: backOut }}><Check size={12} /></span>{/if}
-                <span class="block font-semibold text-heading">{option.id}</span>
-                <span class="mt-0.5 block text-xs text-ink/60">{option.desc}</span>
+                <span class="block font-semibold text-heading">{tp(option.id)}</span>
+                <span class="mt-0.5 block text-xs text-ink/60">{tp(option.desc)}</span>
               </button>
             {/each}
           </div>
