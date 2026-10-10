@@ -151,9 +151,21 @@
     return item.start_location || item.end_location || '';
   };
 
-  const dayListLabel = (days: number[]): string => {
+  $: dayListLabel = (days: number[]): string => {
     const sorted = [...new Set(days)].sort((a, b) => a - b);
-    return `${sorted.length === 1 ? 'Day' : 'Days'} ${sorted.join(', ')}`;
+    return `${$t(sorted.length === 1 ? 'label.day' : 'label.days')} ${sorted.join(', ')}`;
+  };
+
+  /** Difficulty is free text in the CMS; the usual words are translated, anything else shows as typed. */
+  $: difficultyLabel = (value: string): string => {
+    const key = `difficulty.${value.trim().toLowerCase()}`;
+    const out = $t(key);
+    return out === key ? normaliseLabel(value) : out;
+  };
+  $: levelLabel = (level: string): string => {
+    const key = `tier.${level}`;
+    const out = $t(key);
+    return out === key ? normaliseLabel(level) : out;
   };
 
   /** The stay's pictures, plus anything fetched for it below. */
@@ -217,7 +229,7 @@
   $: groupSize = groupSizeOf(tour);
   $: routeLabel = routeOf(tour);
   $: priceLabel = tour?.price_from ? formatUsd(tour.price_from, $currency) : '';
-  $: priceFromLabel = priceLabel ? `${$t('label.from')} ${priceLabel} ${$t('label.per_person').toLowerCase()}` : $t('ui.on_request');
+  $: priceFromLabel = priceLabel ? `${$t('label.from')} ${priceLabel} ${$t('label.per_person_inline')}` : $t('ui.on_request');
   $: tourSpecialist = tour?.specialist?.name ? tour.specialist : null;
   $: heroStats = ([
     durationLabel ? { icon: CalendarDays, label: $t('label.duration'), value: durationLabel } : null,
@@ -231,7 +243,7 @@
     ? ([
         routeLabel ? { icon: Route, label: $t('ui.start_end'), value: routeLabel } : null,
         groupSize ? { icon: Users, label: $t('ui.group_size'), value: groupSize } : null,
-        tour.difficulty_level ? { icon: Compass, label: $t('ui.difficulty'), value: normaliseLabel(tour.difficulty_level) } : null,
+        tour.difficulty_level ? { icon: Compass, label: $t('ui.difficulty'), value: difficultyLabel(tour.difficulty_level) } : null,
         tour.minimum_age ? { icon: Check, label: $t('ui.minimum_age'), value: `${tour.minimum_age}+` } : null
       ].filter(Boolean) as FactCard[])
     : [];
@@ -259,7 +271,7 @@
     for (const [key, item] of linked) {
       const summary = unique([
         LODGE_TYPES[String(item.stay.lodge_type)] ?? '',
-        item.stay.accommodation_level ? normaliseLabel(item.stay.accommodation_level) : '',
+        item.stay.accommodation_level ? levelLabel(item.stay.accommodation_level) : '',
         item.stay.destinations?.name ?? ''
       ]).join(' / ');
       blocks.push({
@@ -401,7 +413,7 @@
   $: if (browser && !data.tour) {
     tour = null;
     loading = false;
-    error = 'Unable to load tour.';
+    error = $t('ui.tour_not_found');
   }
 
   $: if (browser) document.body.style.overflow = sheetOpen || specialistOpen ? 'hidden' : '';
@@ -490,7 +502,7 @@
   </div>
 {:else if !tour}
   <section class="container-shell py-16">
-    <ErrorState message={error || 'Tour not found.'} />
+    <ErrorState message={error || $t('ui.tour_not_found')} />
   </section>
 {:else}
   <section data-hero class="tour-detail-hero relative isolate overflow-hidden bg-deep-green">
@@ -622,8 +634,8 @@
                     <tr class={index % 2 === 0 ? 'bg-surface' : 'bg-canvas'}>
                       <td class="w-[92px] min-w-[92px] whitespace-nowrap border-t border-ink/5 px-4 py-3 align-top font-semibold text-heading">{row.day}</td>
                       <td class="border-t border-ink/5 px-4 py-3 align-top font-semibold text-clay">{row.place}</td>
-                      <td class="border-t border-ink/5 px-4 py-3 align-top text-ink/70">{row.highlights || 'Published details on request'}</td>
-                      <td class="border-t border-ink/5 px-4 py-3 align-top text-ink/70">{row.hotel || 'Confirmed when quoted'}</td>
+                      <td class="border-t border-ink/5 px-4 py-3 align-top text-ink/70">{row.highlights || $t('ui.details_on_request')}</td>
+                      <td class="border-t border-ink/5 px-4 py-3 align-top text-ink/70">{row.hotel || $t('ui.confirmed_when_quoted')}</td>
                     </tr>
                   {/each}
                 </tbody>
@@ -744,7 +756,7 @@
                       {/if}
                     </div>
                     {#if block.href}
-                      <a class="absolute inset-0 z-10 rounded-[12px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-goldfinch-gold" href={block.href} aria-label={`View accommodation ${block.label}`} data-sveltekit-preload-data="hover"></a>
+                      <a class="absolute inset-0 z-10 rounded-[12px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-goldfinch-gold" href={block.href} aria-label={$t('pg_destinations_slug.view_accommodation_name').replace('{name}', block.label)} data-sveltekit-preload-data="hover"></a>
                     {/if}
                   </div>
                 </article>
@@ -819,7 +831,7 @@
             <button
               type="button"
               class="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[8px] border border-forest/20 bg-surface px-4 text-sm font-bold text-forest transition hover:border-forest/40 hover:bg-canvas"
-              aria-label={`View specialist ${tourSpecialist.name}`}
+              aria-label={`${$t('ui.view_specialist')}: ${tourSpecialist.name}`}
               on:click={() => (specialistOpen = true)}
             >{$t('ui.view_specialist')}<ArrowRight size={15} strokeWidth={2.5} />
             </button>
@@ -831,7 +843,7 @@
 
   <ReviewsWidget
     variant="stories"
-    eyebrow="Traveller stories"
+    eyebrow={$t('ui.traveller_stories')}
     title={$t('ui.travellers_who_planned_tanzania_with')}
     subtitle={$t('ui.real_approved_reviews_from_goldfinch')}
   />
@@ -840,7 +852,7 @@
     <section class="border-t border-ink/[0.06] bg-canvas py-14 md:py-20">
       <div class="container-shell">
         <div class="flex flex-wrap items-end justify-between gap-4">
-          <SectionHeader eyebrow="You might also like" title={$t('ui.more_tours')} description="Other published trips travellers book with us." />
+          <SectionHeader eyebrow={$t('ui.you_might_also_like')} title={$t('ui.more_tours')} description={$t('ui.other_published_trips')} />
           <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href="/tours">{$t('ui.browse_all_tours')}<ArrowRight size={16} />
           </a>
         </div>
@@ -857,7 +869,7 @@
     <section class="py-14 md:py-20">
       <div class="container-shell">
         <div class="flex flex-wrap items-end justify-between gap-4">
-          <SectionHeader eyebrow="Stories &amp; guides" title={$t('ui.from_the_journal')} description="Travel inspiration, tips and stories from the field." />
+          <SectionHeader eyebrow={$t('ui.stories_amp_guides')} title={$t('ui.from_the_journal')} description={$t('pg_blog_slug.more_posts_description')} />
           <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-forest transition hover:text-heading" href="/blog">{$t('ui.read_the_blog')}<ArrowRight size={16} />
           </a>
         </div>
@@ -899,7 +911,7 @@
     <div class="flex items-center gap-3">
       <div class="min-w-0 flex-1">
         <div class="truncate text-[13px] font-semibold text-heading">{priceFromLabel}</div>
-        <div class="truncate text-[11.5px] text-ink/65">{durationLabel || 'Tailored trip'}{#if destinationLabel} / {destinationLabel}{/if}</div>
+        <div class="truncate text-[11.5px] text-ink/65">{durationLabel || $t('ui.tailored_trip')}{#if destinationLabel} / {destinationLabel}{/if}</div>
       </div>
       <button
         type="button"
@@ -929,7 +941,7 @@
   {/if}
 
   {#if specialistOpen && tourSpecialist}
-    <div class="fixed inset-0 z-[200] grid place-items-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={`Specialist ${tourSpecialist.name}`}>
+    <div class="fixed inset-0 z-[200] grid place-items-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={`${$t('ui.your_tour_specialist')}: ${tourSpecialist.name}`}>
       <button class="absolute inset-0 cursor-default" type="button" aria-label={$t('ui.close_specialist')} on:click={() => (specialistOpen = false)}></button>
       <div class="relative z-10 w-full max-w-md">
         <button
@@ -940,7 +952,7 @@
         >
           <X size={18} />
         </button>
-        <SpecialistCard specialist={tourSpecialist} heading="Your tour specialist" />
+        <SpecialistCard specialist={tourSpecialist} heading={$t('ui.your_tour_specialist')} />
       </div>
     </div>
   {/if}

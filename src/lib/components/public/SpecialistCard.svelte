@@ -3,9 +3,11 @@
   import { publicSettings, settingText } from '$lib/settings';
   import Img from '$lib/components/public/Img.svelte';
   import type { Specialist } from '$lib/types';
+  import { t } from '$lib/i18n/ui';
 
   export let specialist: Specialist;
-  export let heading = 'Your trip specialist';
+  /** Left out: "Your trip specialist" in the page's language. An empty string hides it. */
+  export let heading: string | undefined = undefined;
   /** Where this card sits, for the site-wide WhatsApp click listener. */
   export let trackLocation = 'specialist_card';
 
@@ -21,10 +23,11 @@
       .map((p) => p[0]?.toUpperCase())
       .join('') || '?';
   $: firstName = specialist.name.split(' ')[0];
+  $: headingText = heading ?? $t('ui.your_trip_specialist');
 </script>
 
 <div class="rounded-2xl border border-ink/10 bg-surface p-5 shadow-soft">
-  {#if heading}<p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">{heading}</p>{/if}
+  {#if headingText}<p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">{headingText}</p>{/if}
   <div class="mt-3 flex items-center gap-3">
     {#if photo}
       <Img record={specialist} fields={['photo_url', 'photo']} src={photo} alt={specialist.name} width={112} height={112} className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-white shadow-sm" />
@@ -54,6 +57,6 @@
     rel="noopener noreferrer"
     data-track-location={trackLocation}
   >
-    <MessageCircle size={16} /> Message {firstName}
+    <MessageCircle size={16} /> {$t('ui.message_name').replace('{name}', firstName)}
   </a>
 </div>

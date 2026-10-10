@@ -24,7 +24,7 @@
 </script>
 
 <script lang="ts">
-  import { t } from '$lib/i18n/ui';
+  import { locale, t } from '$lib/i18n/ui';
   /**
    * The trip request form — one form, used everywhere.
    *
@@ -54,7 +54,7 @@
     User,
     Users
   } from '@lucide/svelte';
-  import { api, ApiRequestError } from '$lib/api/client';
+  import { api, ApiRequestError, submitErrorKey } from '$lib/api/client';
   import { campaignTags, getAttribution, lastCtaClicked, pushDataLayerEvent } from '$lib/analytics';
   import type { Tour } from '$lib/types';
 
@@ -131,10 +131,12 @@
   const LANGUAGES = [
     { code: 'en', label: 'English' },
     { code: 'sw', label: 'Kiswahili' },
-    { code: 'de', label: 'Deutsch (German)' },
-    { code: 'fr', label: 'Français (French)' },
-    { code: 'es', label: 'Español (Spanish)' }
+    { code: 'de', label: 'Deutsch' },
+    { code: 'fr', label: 'Français' },
+    { code: 'es', label: 'Español' }
   ];
+  // Start on the page's language when we reply in it, as the planner does.
+  if (LANGUAGES.some((l) => l.code === $locale)) language = $locale;
 
   const DIAL_CODES = [
     { code: '+255', label: '🇹🇿 +255' },
@@ -356,7 +358,7 @@
       }
     } catch (error) {
       tracker?.failed(error instanceof ApiRequestError && error.status === 422 ? 'server_validation' : 'submit_failed');
-      errorMessage = error instanceof Error && error.message ? error.message : $t('form.err_generic');
+      errorMessage = $t(submitErrorKey(error));
     } finally {
       submitting = false;
     }
@@ -508,7 +510,7 @@
           <span class={labelCls}>{$t('form.email')}<span class="gf-req">*</span></span>
           <span class="relative block">
             <Mail size={16} class={iconCls} />
-            <input class={fieldCls} type="email" autocomplete="email" bind:value={email} on:input={() => clearErr('email')} placeholder="you@example.com" />
+            <input class={fieldCls} type="email" autocomplete="email" bind:value={email} on:input={() => clearErr('email')} placeholder={$t('form.email_placeholder')} />
           </span>
           {#if errors.email}<span class={errCls}>{errors.email}</span>{/if}
         </label>

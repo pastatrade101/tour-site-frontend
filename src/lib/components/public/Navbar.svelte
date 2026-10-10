@@ -15,7 +15,8 @@
   import CurrencySelector from './CurrencySelector.svelte';
   import LanguageSwitcher from './LanguageSwitcher.svelte';
   import UtilityBar from './UtilityBar.svelte';
-  import { t } from '$lib/i18n/ui';
+  import { locale, t } from '$lib/i18n/ui';
+  import { localizeUrl } from '$lib/i18n';
   import Img from './Img.svelte';
 
   type NavLink = { href: string; label: string; image?: string; description?: string; record?: Record<string, any>; fields?: string[] };
@@ -124,7 +125,7 @@
 
   const submitSearch = () => {
     const query = searchQuery.trim();
-    void goto(query ? `/tours?search=${encodeURIComponent(query)}` : '/tours');
+    void goto(localizeUrl(query ? `/tours?search=${encodeURIComponent(query)}` : '/tours', $locale));
     menuOpen = false;
     openDropdown = '';
   };

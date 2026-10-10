@@ -12,7 +12,7 @@
    * booking and trip-request forms.
    */
   import { Check, Loader2, Lock, Mail, MessageSquare, Phone, Tag, User } from '@lucide/svelte';
-  import { api } from '$lib/api/client';
+  import { api, submitErrorKey } from '$lib/api/client';
   import { trackEvent } from '$lib/analytics';
 
   /** Off where the surrounding section already states the heading. */
@@ -85,7 +85,7 @@
       sent = true;
       trackEvent('form_submitted', { metadata: { form: 'contact' } });
     } catch (error) {
-      errorMessage = error instanceof Error && error.message ? error.message : $t('ui.unable_to_send_your_message');
+      errorMessage = $t(submitErrorKey(error, 'ui.unable_to_send_your_message'));
     } finally {
       submitting = false;
     }
@@ -152,7 +152,7 @@
               autocomplete="email"
               autocapitalize="off"
               spellcheck="false"
-              placeholder="you@example.com"
+              placeholder={$t('form.email_placeholder')}
               bind:value={email}
               on:input={() => clearErr('email')}
               aria-invalid={Boolean(errors.email)}

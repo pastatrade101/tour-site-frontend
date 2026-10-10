@@ -22,6 +22,21 @@ export class ApiRequestError extends Error {
   }
 }
 
+/**
+ * The dictionary key a form shows when a submit fails. Server and browser
+ * messages are English (and sometimes technical), so a visitor on /de would
+ * read "Too many submissions…" in a German form: forms show the translated
+ * text for the kind of failure instead, and keep error.message for logs.
+ */
+export const submitErrorKey = (error: unknown, fallback = 'form.err_generic'): string => {
+  if (error instanceof ApiRequestError) {
+    // 429: rate limited. 428: the repeat-submission check wants a captcha.
+    return error.status === 429 || error.status === 428 ? 'form.err_too_many' : fallback;
+  }
+  // fetch() rejects with a TypeError when the connection drops.
+  return error instanceof TypeError ? 'form.err_network' : fallback;
+};
+
 const authToken = () => {
   if (!browser) return null;
   return localStorage.getItem('admin_token');

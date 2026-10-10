@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { t } from '$lib/i18n/ui';
+  import { locale, t } from '$lib/i18n/ui';
+  import { localizeUrl } from '$lib/i18n';
   import { onMount, onDestroy } from 'svelte';
   import { ArrowRight, ChevronDown, MapPin, Star } from '@lucide/svelte';
   import { goto } from '$app/navigation';
@@ -65,7 +66,7 @@
     if (typeof window !== 'undefined') window.removeEventListener('resize', syncVisibleCount);
   });
 
-  const bookNow = () => goto(dest ? `/plan-my-trip?destination=${dest}` : '/plan-my-trip');
+  const bookNow = () => goto(localizeUrl(dest ? `/plan-my-trip?destination=${dest}` : '/plan-my-trip', $locale));
 
   onMount(async () => {
     try {

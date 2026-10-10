@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { t } from '$lib/i18n/ui';
+  import { locale, t } from '$lib/i18n/ui';
+  import { localizeUrl } from '$lib/i18n';
   import { onDestroy, onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { ChevronDown } from '@lucide/svelte';
@@ -185,14 +186,14 @@
     // The default action carries the planner answers into the full form. A
     // slide editor can deliberately set a different destination instead.
     if (visiblePrimaryCta.href && visiblePrimaryCta.href !== '/plan-my-trip') {
-      void goto(visiblePrimaryCta.href);
+      void goto(localizeUrl(visiblePrimaryCta.href, $locale));
       return;
     }
     const params = new URLSearchParams();
     if (traveller) params.set('persona', traveller);
     if (focus) params.set('experience', focus);
     if (travelDate) params.set('date', travelDate);
-    void goto(params.toString() ? `/plan-my-trip?${params}` : '/plan-my-trip');
+    void goto(localizeUrl(params.toString() ? `/plan-my-trip?${params}` : '/plan-my-trip', $locale));
   };
   export let note: string | undefined = undefined;
 

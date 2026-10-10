@@ -211,7 +211,7 @@
   const withParams = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams($page.url.searchParams);
     for (const [k, v] of Object.entries(changes)) v ? next.set(k, v) : next.delete(k);
-    return `/tours${next.toString() ? `?${next}` : ''}`;
+    return `${$page.url.pathname}${next.toString() ? `?${next}` : ''}`;
   };
 
   const writeUrl = (changes: Record<string, string | null>) => {
@@ -248,7 +248,7 @@
     priceLo = priceMin;
     priceHi = priceMax;
     sort = 'recommended';
-    void goto('/tours', { replaceState: true, noScroll: true });
+    void goto($page.url.pathname, { replaceState: true, noScroll: true });
   };
 
   $: moneyFormatter = (n: number) => formatUsd(n, $currency);

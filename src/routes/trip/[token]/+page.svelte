@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { t } from '$lib/i18n/ui';
+  import { locale, t } from '$lib/i18n/ui';
+  import { localizeUrl } from '$lib/i18n';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
@@ -14,7 +15,7 @@
     } catch {
       /* invalid/expired — /trip will show the "link not working" state */
     }
-    await goto('/trip', { replaceState: true });
+    await goto(localizeUrl('/trip', $locale), { replaceState: true });
   });
 </script>
 

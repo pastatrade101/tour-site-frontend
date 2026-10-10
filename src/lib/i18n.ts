@@ -68,6 +68,20 @@ export const localizeHref = (pathname: string, locale: string): string => {
 };
 
 /**
+ * localizeHref for a whole in-site address, keeping its ?query and #hash.
+ *
+ * For goto() and new-tab links: the layout's keepLocale only rewrites plain
+ * link clicks, so a German visitor sent to '/plan-my-trip' by code would land
+ * on the English page. External and protocol-relative addresses pass through.
+ */
+export const localizeUrl = (href: string, locale: string): string => {
+  if (!href.startsWith('/') || href.startsWith('//')) return href;
+  const cut = href.search(/[?#]/);
+  const path = cut === -1 ? href : href.slice(0, cut);
+  return localizeHref(path, locale) + (cut === -1 ? '' : href.slice(cut));
+};
+
+/**
  * The flag for a locale, from the region in the locale itself.
  *
  * Every language row stores one — en-US, sw-TZ, de-DE — so the flag is read

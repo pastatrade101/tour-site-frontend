@@ -43,3 +43,19 @@ export const t = derived(locale, ($locale) => (key: string): string => {
   const dictionary = DICTIONARIES[$locale] ?? DICTIONARIES[DEFAULT_LOCALE];
   return dictionary[key] ?? DICTIONARIES[DEFAULT_LOCALE][key] ?? key;
 });
+
+/**
+ * `$tp('Zanzibar beach')` — the trip planner's option texts. They are written
+ * in English in tripPlanner.ts (staff read them in that language) and each is
+ * looked up by its English text under `tp.<slug>`. A text with no translation
+ * stays English rather than breaking.
+ */
+export const plannerKey = (english: string): string =>
+  'tp.' + english.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 80);
+
+export const tp = derived(t, ($t) => (english: string): string => {
+  if (!english) return english;
+  const key = plannerKey(english);
+  const out = $t(key);
+  return out === key ? english : out;
+});

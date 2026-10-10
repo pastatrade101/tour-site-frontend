@@ -21,7 +21,17 @@
 
   $: destination = tour ? rel((tour as Record<string, unknown>).destinations, 'name') : '';
   $: heroImage = tour ? tour.main_image_url || tour.banner_image_url || '' : '';
-  $: durationLabel = tour?.duration_days ? `${tour.duration_days} days${tour.duration_nights ? ` / ${tour.duration_nights} nights` : ''}` : '';
+  $: durationLabel = tour?.duration_days
+    ? `${tour.duration_days} ${$t(tour.duration_days === 1 ? 'label.day' : 'label.days')}${tour.duration_nights ? ` / ${tour.duration_nights} ${$t(tour.duration_nights === 1 ? 'label.night' : 'label.nights')}` : ''}`
+    : '';
+  // As on the tour page: built from the numbers where we have them, the free text otherwise.
+  $: groupSizeLabel = !tour
+    ? ''
+    : tour.group_size_min && tour.group_size_max
+      ? `${tour.group_size_min}-${tour.group_size_max} ${$t('ui.people')}`
+      : tour.group_size_max
+        ? `${$t('ui.up_to')} ${tour.group_size_max} ${$t('ui.people')}`
+        : tour.group_size ?? '';
   $: priceLabel = tour?.price_from ? formatUsd(tour.price_from, $currency) : '';
 
   onMount(async () => {
@@ -68,8 +78,8 @@
           {#if durationLabel}
             <span class="inline-flex items-center gap-1.5 rounded-full bg-canvas px-3 py-1"><CalendarClock size={14} class="text-forest" />{durationLabel}</span>
           {/if}
-          {#if tour.group_size}
-            <span class="inline-flex items-center gap-1.5 rounded-full bg-canvas px-3 py-1"><Users size={14} class="text-forest" />{tour.group_size}</span>
+          {#if groupSizeLabel}
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-canvas px-3 py-1"><Users size={14} class="text-forest" />{groupSizeLabel}</span>
           {/if}
         </div>
 
@@ -87,7 +97,7 @@
     </div>
 
     <p class="mt-4 text-xs leading-5 text-ink/70">
-      Submitting a request does not charge you. A Goldfinch specialist confirms availability, finalises your itinerary, and shares secure payment options separately.
+      {$t('ui.booking_no_charge_note')}
     </p>
   </aside>
 

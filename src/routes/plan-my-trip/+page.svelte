@@ -44,12 +44,13 @@
     Users,
     Wallet
   } from '@lucide/svelte';
-  import { api, ApiRequestError } from '$lib/api/client';
+  import { api, ApiRequestError, submitErrorKey } from '$lib/api/client';
   import { campaignTags, createFormTracker, getAttribution, lastCtaClicked, pushDataLayerEvent } from '$lib/analytics';
   import { afterNavigate } from '$app/navigation';
   import { currency, formatUsd } from '$lib/currency';
   import { brand } from '$lib/brand';
-  import { locale, t } from '$lib/i18n/ui';
+  import { locale, t, tp as plannerText } from '$lib/i18n/ui';
+  import { localizeUrl } from '$lib/i18n';
   import type { ReviewSummary } from '$lib/types';
   import Img from '$lib/components/public/Img.svelte';
   import {
@@ -186,13 +187,15 @@
   const firstError = () => Object.keys(errors)[0] ?? 'unknown';
 
   // Contact — only asked on the last step.
+  // `name` is what the traveller reads (each language in its own words);
+  // `label` is what staff read in the enquiry.
   const LANGUAGES = [
-    { code: 'en', label: 'English' },
-    { code: 'sw', label: 'Kiswahili' },
-    { code: 'de', label: 'Deutsch (German)' },
-    { code: 'fr', label: 'Français (French)' },
-    { code: 'es', label: 'Español (Spanish)' },
-    { code: 'it', label: 'Italiano (Italian)' }
+    { code: 'en', name: 'English', label: 'English' },
+    { code: 'sw', name: 'Kiswahili', label: 'Kiswahili' },
+    { code: 'de', name: 'Deutsch', label: 'Deutsch (German)' },
+    { code: 'fr', name: 'Français', label: 'Français (French)' },
+    { code: 'es', name: 'Español', label: 'Español (Spanish)' },
+    { code: 'it', name: 'Italiano', label: 'Italiano (Italian)' }
   ];
   const DIAL_CODES = ['+255', '+254', '+256', '+250', '+44', '+1', '+49', '+33', '+34', '+39', '+31', '+41', '+61', '+27', '+971'];
   const CONTACTS = ['WhatsApp', 'Email', 'Phone call'] as const;
@@ -258,14 +261,7 @@
   // The planner's lists and sentences are English (what the specialist reads);
   // each is looked up here by its English text. A text with no translation
   // stays English rather than breaking.
-  const keyOf = (english: string) =>
-    'tp.' + english.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 80);
-  $: tp = (english: string): string => {
-    if (!english) return english;
-    const key = keyOf(english);
-    const out = $t(key);
-    return out === key ? english : out;
-  };
+  $: tp = $plannerText;
   $: monthName = (index: number) => new Intl.DateTimeFormat($locale, { month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, index, 1)));
   $: monthShort = (index: number) => new Intl.DateTimeFormat($locale, { month: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, index, 1)));
   $: speak = {
@@ -712,7 +708,7 @@
       if (fields.some((f) => (f.path ?? []).includes('email'))) {
         errors = { email: $t('pg_plan_my_trip.err_email') };
         showFirstError();
-      } else errorMessage = error instanceof Error && error.message ? error.message : $t('form.err_generic');
+      } else errorMessage = $t(submitErrorKey(error));
     } finally {
       submitting = false;
     }
@@ -1063,7 +1059,7 @@
             </label>
             <label class="grid gap-1.5">
               <span class="gf-label">{$t('form.email')}<span class="gf-req">*</span></span>
-              <input class="gf-input" type="email" autocomplete="email" aria-invalid={!!errors.email} bind:value={email} placeholder="you@example.com" />
+              <input class="gf-input" type="email" autocomplete="email" aria-invalid={!!errors.email} bind:value={email} placeholder={$t('form.email_placeholder')} />
               {#if errors.email}<span role="alert" class="text-xs font-medium text-clay" in:fly={{ y: -6, duration: ms(240), easing: cubicOut }}>{errors.email}</span>{/if}
             </label>
             <div class="grid gap-1.5">
@@ -1079,7 +1075,7 @@
             <label class="grid gap-1.5">
               <span class="gf-label">{$t('pg_plan_my_trip.reply_in')}</span>
               <select class="gf-input" bind:value={language}>
-                {#each LANGUAGES as option}<option value={option.code}>{option.label}</option>{/each}
+                {#each LANGUAGES as option}<option value={option.code}>{option.name}</option>{/each}
               </select>
             </label>
             <div class="grid gap-1.5 sm:col-span-2">
@@ -1207,7 +1203,7 @@
                 {#each recs as rec, i (rec.tour.id)}
                   {@const delay = 240 + i * 130}
                   <li animate:flip={{ duration: ms(420), easing: cubicOut }} in:fly|global={{ x: 22, duration: ms(560), delay: ms(delay), easing: quintOut }} style={`--d: ${delay}ms`}>
-                    <a href={`/tours/${rec.tour.slug}`} target="_blank" rel="noopener" class="group flex gap-3 rounded-[10px] transition-transform duration-300 hover:-translate-y-0.5">
+                    <a href={localizeUrl(`/tours/${rec.tour.slug}`, $locale)} target="_blank" rel="noopener" class="group flex gap-3 rounded-[10px] transition-transform duration-300 hover:-translate-y-0.5">
                       {#if rec.tour.main_image_url_thumbnail || rec.tour.main_image_url}
                         <span class="pm-thumb block h-14 w-16 shrink-0 overflow-hidden rounded-[8px]">
                           <Img src={rec.tour.main_image_url_thumbnail || rec.tour.main_image_url || ''} alt="" width={160} sizes="64px" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />

@@ -2,7 +2,7 @@
   import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
   import { CalendarDays, CheckCircle2, LogOut, MapPin, MessageCircle, Send, Users, Wallet } from '@lucide/svelte';
-  import { api } from '$lib/api/client';
+  import { api, submitErrorKey } from '$lib/api/client';
   import Img from '$lib/components/public/Img.svelte';
   import RichText from '$lib/components/public/RichText.svelte';
 
@@ -89,7 +89,7 @@
       messageSent = true;
       messageText = '';
     } catch (e) {
-      messageError = e instanceof Error ? e.message : 'Could not send your message.';
+      messageError = $t(submitErrorKey(e, 'ui.unable_to_send_your_message'));
     } finally {
       sending = false;
     }
@@ -148,7 +148,7 @@
             autocapitalize="off"
             spellcheck="false"
             bind:value={requestEmail}
-            placeholder="you@example.com"
+            placeholder={$t('form.email_placeholder')}
             class="h-11 flex-1 rounded-xl border border-ink/15 bg-surface px-3.5 text-sm text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
           />
           <button

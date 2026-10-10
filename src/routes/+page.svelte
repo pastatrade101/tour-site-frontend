@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '$lib/i18n/ui';
+  import { t, tp } from '$lib/i18n/ui';
   import enStrings from '$lib/locales/en.json';
   import { page } from '$app/stores';
   import { localeParam } from '$lib/faqEntities';
@@ -585,7 +585,7 @@
          question here, so a click carries the answer straight into it. -->
     <div class="rounded-[14px] border border-white/15 bg-white/[0.06] p-5 text-white md:p-7">
       <p class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{$t('cta.plan_my_trip')}</p>
-      <p class="mt-2 font-serif text-2xl leading-snug text-white md:text-[28px]">What kind of trip are you dreaming of?</p>
+      <p class="mt-2 font-serif text-2xl leading-snug text-white md:text-[28px]">{$t('pg_plan_my_trip.trip_type_heading')}</p>
       <div class="mt-5 grid gap-3 sm:grid-cols-2">
         {#each TRIP_TYPES as type (type.id)}
           <a
@@ -594,10 +594,10 @@
             class="group rounded-[10px] border border-white/15 bg-white/[0.04] p-4 transition hover:border-goldfinch-gold hover:bg-white/[0.08]"
           >
             <span class="flex items-center justify-between gap-3 text-[15px] font-semibold text-white">
-              {type.label}
+              {$tp(type.label)}
               <ArrowRight size={16} class="shrink-0 text-goldfinch-gold transition group-hover:translate-x-0.5" />
             </span>
-            <span class="mt-1 block text-[13px] leading-5 text-white/65">{type.desc}</span>
+            <span class="mt-1 block text-[13px] leading-5 text-white/65">{$tp(type.desc)}</span>
           </a>
         {/each}
       </div>

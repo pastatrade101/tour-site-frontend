@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { t } from '$lib/i18n/ui';
+  import { locale, t } from '$lib/i18n/ui';
+  import { localizeUrl } from '$lib/i18n';
   /**
    * The inline planner on a safari-style or safari-package page.
    *
@@ -221,7 +222,7 @@
       url.searchParams.set('date', travelDate);
       url.searchParams.set('days', days);
       trackEvent('cta_click', { cta_name: 'Continue', cta_location: 'style_planner' });
-      await goto(`${url.pathname}${url.search}`);
+      await goto(localizeUrl(`${url.pathname}${url.search}`, $locale));
       return;
     }
     if (step < TOTAL) {
