@@ -33,8 +33,11 @@
     phone = cleaned.phone;
     if (field.value !== phone) field.value = phone;
   }
+  // As in TripDatePicker: focus going to nothing (iPhone taps, a dismissed
+  // keyboard) is not leaving; a tap outside closes through pointerdown.
   function focusOut(event: FocusEvent) {
-    if (open && !root?.contains(event.relatedTarget as Node | null)) open = false;
+    const next = event.relatedTarget as Node | null;
+    if (open && next && !root?.contains(next)) open = false;
   }
   function keydown(event: KeyboardEvent) {
     if (!open) return;

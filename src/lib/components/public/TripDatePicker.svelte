@@ -61,8 +61,15 @@
   function escape(event: KeyboardEvent) {
     if (open && event.key === 'Escape') { event.stopPropagation(); event.preventDefault(); close(); }
   }
+  /**
+   * Close when focus moves to something outside. Focus going to nothing is not
+   * leaving: a phone's own month/year picker blurs the select when it closes,
+   * and iPhone Safari never focuses a tapped button. A tap outside is handled
+   * by the pointerdown listener below.
+   */
   function focusOut(event: FocusEvent) {
-    if (open && !root?.contains(event.relatedTarget as Node | null)) open = false;
+    const next = event.relatedTarget as Node | null;
+    if (open && next && !root?.contains(next)) open = false;
   }
 </script>
 
