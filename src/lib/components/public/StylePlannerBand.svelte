@@ -270,9 +270,13 @@
   .check { display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; cursor: pointer; font-size: 12px; line-height: 1.5; color: #ffffffeb; }
   .check input { flex-shrink: 0; width: 18px; height: 18px; margin-top: 0; accent-color: rgb(var(--c-goldfinch-gold)); }
   .preferences, .requests { margin-top: 18px; }
-  .choices { display: flex; min-height: 46px; border: 1px solid rgb(var(--c-goldfinch-gold) / .45); border-radius: 5px; background: #fff; color: rgb(var(--c-deep-green)); overflow: hidden; }
-  .choices label { display: flex; flex: 1; align-items: center; justify-content: center; min-width: 0; gap: 7px; padding: 10px 7px; border-right: 1px solid #dedbd2; font-size: 11px; line-height: 1.3; cursor: pointer; }
-  .choices label:last-child { border-right: 0; }
+  /* Choices wrap instead of overflowing: long words (German, a larger default
+     font) break inside their box, and a choice that no longer fits moves to a
+     full-width row. The 1px gap over the grey background draws the dividers
+     wherever the choices land. */
+  .choices { display: flex; flex-wrap: wrap; gap: 1px; min-height: 46px; border: 1px solid rgb(var(--c-goldfinch-gold) / .45); border-radius: 5px; background: #dedbd2; color: rgb(var(--c-deep-green)); overflow: hidden; }
+  .choices label { display: flex; flex: 1 1 7rem; align-items: center; justify-content: center; min-width: 0; gap: 7px; padding: 10px 8px; background: #fff; font-size: 11px; line-height: 1.3; cursor: pointer; }
+  .choices label span { min-width: 0; overflow-wrap: anywhere; hyphens: auto; }
   .choices input { flex-shrink: 0; width: 16px; height: 16px; accent-color: rgb(var(--c-goldfinch-gold)); }
   .choices .chosen { background: #fff0ce; }
   .choices label:focus-within { box-shadow: inset 0 0 0 2px rgb(var(--c-goldfinch-gold)); }
