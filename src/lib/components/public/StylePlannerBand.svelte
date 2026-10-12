@@ -28,7 +28,7 @@
   const STEP_KEYS = ['style_form.your_trip', 'style_form.travellers_preferences', 'style_form.your_details'];
   const COMFORT = [
     { value: 'Mid-range', key: 'tier.mid_range' }, { value: 'Luxury', key: 'tier.luxury' },
-    { value: 'Not sure yet', key: 'style_form.help_choose' }
+    { value: 'Budget', key: 'tier.budget' }
   ];
   const BEACH = [
     { value: 'Yes', key: 'style_form.yes' }, { value: 'No', key: 'style_form.safari_only' },
