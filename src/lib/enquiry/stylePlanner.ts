@@ -3,7 +3,8 @@ import { isEnquiryEmail, isEnquiryPhoneFor } from './validation';
 export type PlannerField = 'route' | 'days' | 'travelDate' | 'adults' | 'children' | 'language' | 'fullName' | 'email' | 'phone';
 export type PlannerValues = {
   days: number | undefined; daysUnsure: boolean; travelDate: string; dateUnsure: boolean;
-  adults: number | undefined; children: number | undefined; language: string;
+  // null when a number box is cleared (Svelte's bind:value), undefined before it is touched.
+  adults: number | null | undefined; children: number | null | undefined; language: string;
   comfort: string; beach: string; fullName: string; email: string; phone: string;
   dialCode: string; specialRequests: string; whatsappOptIn: boolean; route: string; hp: string;
 };
@@ -19,7 +20,7 @@ export function plannerProblems(values: PlannerValues, step: number, today: stri
     }
   } else if (step === 2) {
     if (!Number.isSafeInteger(values.adults) || Number(values.adults) < 1) errors.adults = 'form.err_adult_count';
-    if (values.children !== undefined && (!Number.isSafeInteger(values.children) || values.children < 0)) errors.children = 'form.err_child_count';
+    if (values.children != null && (!Number.isSafeInteger(values.children) || values.children < 0)) errors.children = 'form.err_child_count';
     if (!['en', 'sw', 'de', 'fr', 'es', 'it'].includes(values.language)) errors.language = 'style_form.err_language';
   } else {
     if (values.fullName.trim().length < 2) errors.fullName = 'ui.please_enter_your_full_name';

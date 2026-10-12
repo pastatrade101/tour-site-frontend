@@ -85,8 +85,9 @@
   let step = 0;
 
   let travel_date = '';
-  let adults = '1';
-  let children = '0';
+  // Empty until the visitor fills them: a pre-filled count reads as their answer.
+  let adults = '';
+  let children = '';
   let language = '';
   let full_name = '';
   let email = '';

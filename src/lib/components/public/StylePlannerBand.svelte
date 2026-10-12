@@ -49,7 +49,7 @@
   let idempotencyKey = '';
   let values: PlannerValues = {
     days: undefined, daysUnsure: false, travelDate: '', dateUnsure: false,
-    adults: 2, children: 0, language: $locale, comfort: '', beach: '',
+    adults: undefined, children: undefined, language: $locale, comfort: '', beach: '',
     fullName: '', email: '', phone: '', dialCode: '+255', specialRequests: '',
     whatsappOptIn: false, route: '', hp: ''
   };
@@ -77,7 +77,7 @@
     { label: $t('style_form.safari_days'), value: values.daysUnsure ? $t('ui.not_sure_yet') : String(values.days ?? '') },
     { label: $t('form.preferred_start_date'), value: values.dateUnsure ? $t('style_form.dates_undecided') : values.travelDate ? new Intl.DateTimeFormat($locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${values.travelDate}T00:00:00Z`)) : '' },
     { label: $t('form.adults'), value: String(values.adults ?? '') },
-    { label: $t('style_form.children'), value: String(values.children ?? 0) },
+    { label: $t('style_form.children'), value: values.children == null ? '' : String(values.children) },
     { label: $t('form.preferred_language'), value: LANGUAGES.find((language) => language.code === values.language)?.label ?? '' },
     { label: $t('style_form.accommodation'), value: values.comfort ? $t(COMFORT.find((option) => option.value === values.comfort)?.key ?? '') : '' },
     { label: $t('style_form.beach_stay'), value: values.beach ? $t(BEACH.find((option) => option.value === values.beach)?.key ?? '') : '' },
