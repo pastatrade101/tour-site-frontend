@@ -1,4 +1,4 @@
-import { isEnquiryEmail, isEnquiryPhone } from './validation';
+import { isEnquiryEmail, isEnquiryPhoneFor } from './validation';
 /** Data shared by the inline category/package enquiry; delivery stays on /bookings. */
 export type PlannerField = 'route' | 'days' | 'travelDate' | 'adults' | 'children' | 'language' | 'fullName' | 'email' | 'phone';
 export type PlannerValues = {
@@ -24,7 +24,7 @@ export function plannerProblems(values: PlannerValues, step: number, today: stri
   } else {
     if (values.fullName.trim().length < 2) errors.fullName = 'ui.please_enter_your_full_name';
     if (!isEnquiryEmail(values.email)) errors.email = 'ui.that_email_address_does_not';
-    if (values.phone.trim() && !isEnquiryPhone(values.phone)) errors.phone = 'ui.add_a_number_we_can';
+    if (values.phone.trim() && !isEnquiryPhoneFor(values.dialCode, values.phone)) errors.phone = 'ui.add_a_number_we_can';
   }
   return errors;
 }

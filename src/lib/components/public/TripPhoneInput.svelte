@@ -2,6 +2,7 @@
   import { tick } from 'svelte';
   import { ChevronDown, Search } from '@lucide/svelte';
   import { locale, t } from '$lib/i18n/ui';
+  import { cleanPhoneInput } from '$lib/enquiry/validation';
   export let dialCode = '+255';
   export let phone = '';
   export let invalid = false;
@@ -24,6 +25,14 @@
   $: filtered = options.filter((country) => `${country.name} ${country.iso} ${country.code}`.toLocaleLowerCase($locale).includes(query.trim().toLocaleLowerCase($locale)));
   async function toggle() { open = !open; query = ''; if (open) { await tick(); searchInput?.focus({ preventScroll: true }); } }
   function close() { open = false; trigger?.focus({ preventScroll: true }); }
+  /** Letters and symbols never reach the number, nor more digits than the country uses. */
+  function typed(event: Event) {
+    const field = event.currentTarget as HTMLInputElement;
+    const cleaned = cleanPhoneInput(field.value, dialCode, countries.map(([, code]) => code));
+    dialCode = cleaned.dialCode;
+    phone = cleaned.phone;
+    if (field.value !== phone) field.value = phone;
+  }
   function focusOut(event: FocusEvent) {
     if (open && !root?.contains(event.relatedTarget as Node | null)) open = false;
   }
@@ -46,7 +55,7 @@
     <button bind:this={trigger} class="gf-input dial-trigger" type="button" aria-label={`${$t('form.country_code')}: ${selected.name} ${dialCode}`} aria-haspopup="dialog" aria-expanded={open} on:click={toggle}>
       <span aria-hidden="true">{selected.flag}</span><span>{dialCode}</span><ChevronDown size={15} />
     </button>
-    <input class="gf-input phone-number" type="tel" on:input aria-invalid={invalid} aria-describedby={describedBy} autocomplete="tel-national" aria-label={$t('form.phone')} bind:value={phone} placeholder={$t('form.phone')} />
+    <input class="gf-input phone-number" type="tel" inputmode="tel" value={phone} on:input={typed} on:input aria-invalid={invalid} aria-describedby={describedBy} autocomplete="tel-national" aria-label={$t('form.phone')} placeholder={$t('form.phone')} />
   </div>
   {#if open}
     <div class="country-menu" role="dialog" tabindex="-1" aria-label={$t('form.country_code')} on:keydown={keydown}>

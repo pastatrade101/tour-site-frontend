@@ -45,7 +45,7 @@
     Wallet
   } from '@lucide/svelte';
   import { api, ApiRequestError, submitErrorKey } from '$lib/api/client';
-  import { isEnquiryEmail, isEnquiryPhone, savedEnquiryReference } from '$lib/enquiry/validation';
+  import { cleanPhoneInput, isEnquiryEmail, isEnquiryPhoneFor, savedEnquiryReference } from '$lib/enquiry/validation';
   import { campaignTags, createFormTracker, getAttribution, lastCtaClicked, pushDataLayerEvent } from '$lib/analytics';
   import { afterNavigate } from '$app/navigation';
   import { currency, formatUsd } from '$lib/currency';
@@ -529,7 +529,7 @@
     if (index === LAST) {
       if (full_name.trim().length < 2) e.full_name = $t('pg_plan_my_trip.err_name');
       if (!isEnquiryEmail(email)) e.email = $t('pg_plan_my_trip.err_email');
-      if (contact !== 'Email' && !isEnquiryPhone(phone)) e.phone = $t('pg_plan_my_trip.err_phone');
+      if (contact !== 'Email' && !isEnquiryPhoneFor(dialCode, phone)) e.phone = $t('pg_plan_my_trip.err_phone');
     }
     errors = e;
     return !Object.keys(e).length;
@@ -1113,7 +1113,8 @@
                 <select class="gf-input" bind:value={dialCode} aria-label={$t('pg_plan_my_trip.country_code')}>
                   {#each DIAL_CODES as code}<option value={code}>{code}</option>{/each}
                 </select>
-                <input class="gf-input" type="tel" inputmode="tel" autocomplete="tel-national" aria-invalid={!!errors.phone} bind:value={phone} aria-label={$t('form.phone')} />
+                <input class="gf-input" type="tel" inputmode="tel" autocomplete="tel-national" aria-invalid={!!errors.phone} value={phone} aria-label={$t('form.phone')}
+                  on:input={(event) => { const cleaned = cleanPhoneInput(event.currentTarget.value, dialCode, DIAL_CODES); dialCode = cleaned.dialCode; phone = cleaned.phone; if (event.currentTarget.value !== phone) event.currentTarget.value = phone; clear('phone'); }} />
               </div>
               {#if errors.phone}<span role="alert" class="text-xs font-medium text-clay" in:fly={{ y: -6, duration: ms(240), easing: cubicOut }}>{errors.phone}</span>{/if}
             </div>

@@ -40,7 +40,7 @@
     User,
     Users
   } from '@lucide/svelte';
-  import { isEnquiryEmail, isEnquiryPhone, newEnquiryKey, savedEnquiryReference } from '$lib/enquiry/validation';
+  import { isEnquiryEmail, isEnquiryPhoneFor, newEnquiryKey, savedEnquiryReference } from '$lib/enquiry/validation';
   import { api, ApiRequestError, submitErrorKey } from '$lib/api/client';
   import { campaignTags, getAttribution, lastCtaClicked, pushDataLayerEvent } from '$lib/analytics';
   import type { Tour } from '$lib/types';
@@ -271,7 +271,7 @@
       if (full_name.trim().length < 2) e.full_name = $t('form.err_name');
       if (!email.trim()) e.email = $t('form.err_email_required');
       else if (!isEnquiryEmail(email)) e.email = $t('form.err_email_invalid');
-      if (phone.trim() && !isEnquiryPhone(phone)) e.phone = $t('ui.add_a_number_we_can');
+      if (phone.trim() && !isEnquiryPhoneFor(dialCode, phone)) e.phone = $t('ui.add_a_number_we_can');
     }
     errors = e;
     return Object.keys(e).length === 0;
