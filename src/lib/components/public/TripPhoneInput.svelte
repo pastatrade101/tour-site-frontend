@@ -68,8 +68,9 @@
 <style>
   .phone-field { position: relative; min-width: 0; }
   .phone-row { display: flex; min-width: 0; }
-  .phone-row .dial-trigger { display: flex; gap: 7px; align-items: center; justify-content: center; width: auto; flex-shrink: 0; padding-inline: 10px; border-radius: 8px 0 0 8px; }
-  .phone-row .phone-number { min-width: 0; border-left: 0; border-radius: 0 8px 8px 0; }
+  /* Keep split-field sizing and joined borders above parent form input styles. */
+  .phone-field .phone-row .dial-trigger { display: flex; gap: 7px; align-items: center; justify-content: center; width: auto; flex: 0 0 auto; white-space: nowrap; padding-inline: 10px; border-radius: 8px 0 0 8px; }
+  .phone-field .phone-row .phone-number { flex: 1 1 0; width: 0; min-width: 0; border-left: 0; border-radius: 0 8px 8px 0; }
   .country-menu { position: absolute; z-index: 30; top: calc(100% + 5px); inset-inline: 0; padding: 8px; background: white; color: #393d32; border: 1px solid #d6ceb6; border-radius: 8px; box-shadow: 0 12px 32px #0003; }
   .search-field { position: relative; }
   .search-field :global(svg) { position: absolute; top: 14px; left: 10px; z-index: 1; }
