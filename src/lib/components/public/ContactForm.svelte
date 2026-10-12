@@ -13,7 +13,9 @@
    */
   import { Check, Loader2, Lock, Mail, MessageSquare, Phone, Tag, User } from '@lucide/svelte';
   import { api, submitErrorKey } from '$lib/api/client';
-  import { trackEvent } from '$lib/analytics';
+  import { createFormTracker, pushDataLayerEvent, campaignTags } from '$lib/analytics';
+  import { onMount, tick } from 'svelte';
+  import { isEnquiryEmail, savedEnquiryReference } from '$lib/enquiry/validation';
 
   /** Off where the surrounding section already states the heading. */
   export let showHeader = true;
@@ -34,7 +36,20 @@
   let errorMessage = '';
   let errors: Record<string, string> = {};
 
-  const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  let root: HTMLDivElement;
+  let tracker = createFormTracker({ form_name: 'contact', form_type: 'contact', lead_type: 'contact' });
+  let stopTracking: (() => void) | undefined;
+  onMount(() => {
+    stopTracking = tracker.watchLeave();
+    const observer = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting)) { tracker.opened(); observer.disconnect(); } });
+    observer.observe(root);
+    return () => { observer.disconnect(); stopTracking?.(); };
+  });
+  const another = () => {
+    stopTracking?.();
+    tracker = createFormTracker({ form_name: 'contact', form_type: 'contact', lead_type: 'contact' });
+    stopTracking = tracker.watchLeave(); tracker.opened(); sent = false;
+  };
 
   const clearErr = (key: string) => {
     if (errors[key]) {
@@ -46,18 +61,21 @@
   const validate = (): boolean => {
     const found: Record<string, string> = {};
     if (full_name.trim().length < 2) found.full_name = $t('ui.please_enter_your_full_name');
-    if (!isEmail(email.trim())) found.email = $t('ui.that_email_address_does_not');
+    if (!isEnquiryEmail(email)) found.email = $t('ui.that_email_address_does_not');
     if (message.trim().length < 10) found.message = $t('ui.please_tell_us_a_little');
     errors = found;
     return Object.keys(found).length === 0;
   };
 
   const submit = async () => {
-    if (submitting) return;
+    if (submitting || sent) return;
     errorMessage = '';
 
     if (!validate()) {
-      trackEvent('form_validation_error', { metadata: { form: 'contact' } });
+      tracker.invalid('contact', Object.keys(errors)[0]);
+      await tick();
+      const field = root.querySelector<HTMLElement>('[aria-invalid="true"]');
+      field?.scrollIntoView({ block: 'center' }); field?.focus({ preventScroll: true });
       return;
     }
 
@@ -70,7 +88,7 @@
 
     submitting = true;
     try {
-      await api.contact.create({
+      const result = await api.contact.create({
         full_name: full_name.trim(),
         email: email.trim(),
         phone: phone.trim() || null,
@@ -79,14 +97,17 @@
         // The page's language, so the sender's confirmation email is written in it.
         locale: $locale
       });
+      const reference = savedEnquiryReference(result.data, false);
       full_name = '';
       email = '';
       phone = '';
       subject = '';
       message = '';
       sent = true;
-      trackEvent('form_submitted', { metadata: { form: 'contact' } });
+      tracker.submitted({ transaction_id: reference });
+      pushDataLayerEvent('trip_request_submitted', { form_name: 'contact', form_type: 'Contact Form', reference_id: reference, transaction_id: reference, source_page: location.pathname, ...campaignTags() });
     } catch (error) {
+      tracker.failed();
       errorMessage = $t(submitErrorKey(error, 'ui.unable_to_send_your_message'));
     } finally {
       submitting = false;
@@ -99,7 +120,7 @@
   const errCls = 'text-[11.5px] font-semibold text-red-600';
 </script>
 
-<div class={panel ? 'rounded-[10px] border border-ink/10 bg-surface p-5 shadow-sm sm:p-6' : ''}>
+<div bind:this={root} class={panel ? 'rounded-[10px] border border-ink/10 bg-surface p-5 shadow-sm sm:p-6' : ''}>
   {#if sent}
     <div class="grid justify-items-center gap-3 py-8 text-center">
       <span class="grid h-12 w-12 place-items-center rounded-full bg-forest/10 text-forest">
@@ -107,7 +128,7 @@
       </span>
       <h2 class="text-xl font-bold text-heading">{$t('ui.message_sent')}</h2>
       <p class="max-w-sm text-sm leading-6 text-ink/65">{$t('ui.thanks_for_reaching_out_your')}</p>
-      <button type="button" class="gf-btn-ghost mt-1" on:click={() => (sent = false)}>{$t('ui.send_another')}</button>
+      <button type="button" class="gf-btn-ghost mt-1" on:click={another}>{$t('ui.send_another')}</button>
     </div>
   {:else}
     {#if showHeader}
@@ -117,7 +138,7 @@
       </div>
     {/if}
 
-    <form class="grid gap-4" on:submit|preventDefault={submit} novalidate>
+    <form on:input={() => tracker.started()} class="grid gap-4" on:submit|preventDefault={submit} novalidate>
       <!-- Named as nothing, so autofill has nothing to match. A honeypot
            labelled "Company" eats real enquiries. -->
       <div class="absolute left-[-9999px] top-0 h-0 w-0 overflow-hidden" aria-hidden="true">

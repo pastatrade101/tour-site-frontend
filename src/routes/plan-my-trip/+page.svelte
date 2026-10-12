@@ -45,6 +45,7 @@
     Wallet
   } from '@lucide/svelte';
   import { api, ApiRequestError, submitErrorKey } from '$lib/api/client';
+  import { isEnquiryEmail, isEnquiryPhone, savedEnquiryReference } from '$lib/enquiry/validation';
   import { campaignTags, createFormTracker, getAttribution, lastCtaClicked, pushDataLayerEvent } from '$lib/analytics';
   import { afterNavigate } from '$app/navigation';
   import { currency, formatUsd } from '$lib/currency';
@@ -210,7 +211,7 @@
   let email = '';
   let dialCode = '+44';
   let phone = '';
-  let contact: (typeof CONTACTS)[number] = 'WhatsApp';
+  let contact: (typeof CONTACTS)[number] = 'Email';
   let whatsappConsent = false;
   let language = LANGUAGES.some((l) => l.code === $locale) ? String($locale) : 'en';
   let hp_company = '';
@@ -233,7 +234,6 @@
 
   // Mobile: the sidebar panels fold away under the form.
   let openSummary = false;
-  let openMatches = false;
 
   // ── Motion ─────────────────────────────────────────────────────────────────
   // Every transition honours the visitor's "reduce motion" setting: ms() turns
@@ -291,7 +291,6 @@
   $: whole = (usd: number) => price(usd).replace(/[.,]00(?!\d)/, '');
   $: recs = recommend(d, data.tours, incoming.context, whole, speak);
   // Changes whenever a different set of trips is suggested — replays the highlight.
-  $: recKey = recs.map((rec) => rec.tour.id).join('|');
   $: tips = [...catalogueTips(d, data.tours, data.categories, whole, speak).map((tip) => tip.text), ...insights(d, speak)].slice(0, 4);
   $: chosenTypes = d.types.filter((type) => type !== 'unsure');
   // The trips the budget count is measured against: those of the chosen kinds.
@@ -525,23 +524,16 @@
     }
     if (index === 3) {
       for (const type of d.types) if (!d.lengths[type]) e[`len_${type}`] = $t('pg_plan_my_trip.err_length');
-      if (!d.pace) e.pace = $t('pg_plan_my_trip.err_pace');
     }
-    if (index === 4 && !d.comfort) e.comfort = $t('ui.choose_a_comfort_level');
     if (index === 5 && !d.stage) e.stage = $t('pg_plan_my_trip.err_stage');
     if (index === LAST) {
       if (full_name.trim().length < 2) e.full_name = $t('pg_plan_my_trip.err_name');
-      if (!EMAIL.test(email.trim())) e.email = $t('pg_plan_my_trip.err_email');
-      const digits = phone.replace(/[\s-]/g, '');
-      // A number is only required when that is how they asked to be reached.
-      if ((contact !== 'Email' || digits) && !/^\d{6,14}$/.test(digits)) e.phone = $t('pg_plan_my_trip.err_phone');
+      if (!isEnquiryEmail(email)) e.email = $t('pg_plan_my_trip.err_email');
+      if (contact !== 'Email' && !isEnquiryPhone(phone)) e.phone = $t('pg_plan_my_trip.err_phone');
     }
     errors = e;
     return !Object.keys(e).length;
   };
-
-  // The server's own email rule (zod), so an address the form accepts is never refused on Send.
-  const EMAIL = /^(?!\.)(?!.*\.\.)([A-Z0-9_'+\-.]*)[A-Z0-9_+-]@([A-Z0-9][A-Z0-9-]*\.)+[A-Z]{2,}$/i;
 
   let stepHeading: HTMLElement | undefined;
   let sentHeading: HTMLElement | undefined;
@@ -561,8 +553,8 @@
     step = index;
     errorMessage = '';
     await tick();
-    // Only scroll when the top of the card is out of sight; a short step should not jump.
-    if (card && card.getBoundingClientRect().top < 0) card.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+    // The new question and its first choices must be visible, including under the sticky header.
+    stepHeading?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
     // Screen readers and keyboards land on the new step's question.
     stepHeading?.focus({ preventScroll: true });
   };
@@ -616,11 +608,14 @@
   const nationalNumber = () => phone.trim().replace(/^0+/, '');
 
   const submit = async () => {
-    if (submitting) return;
-    if (!validate(LAST)) {
-      tracker.invalid(STEP_KEYS[LAST], firstError());
-      nudge();
-      return void showFirstError();
+    if (submitting || submitted) return;
+    for (let index = 0; index <= LAST; index += 1) {
+      if (!validate(index)) {
+        tracker.invalid(STEP_KEYS[index], firstError());
+        await goTo(index);
+        nudge();
+        return void showFirstError();
+      }
     }
     submitting = true;
     errorMessage = '';
@@ -630,14 +625,14 @@
         tour_id: null,
         full_name: full_name.trim(),
         email: email.trim(),
-        phone: nationalNumber() ? `${dialCode} ${nationalNumber()}` : null,
+        phone: contact !== 'Email' && nationalNumber() ? `${dialCode} ${nationalNumber()}` : null,
         // A real date only when they gave one — a made-up day would read as a booking date in the CMS.
         travel_date: exact && d.startDate ? d.startDate : null,
         number_of_adults: people.adults,
         number_of_children: people.children,
         special_requests: d.notes.trim() || null,
         source: 'plan_my_trip',
-        whatsapp_opt_in: whatsappConsent,
+        whatsapp_opt_in: contact === 'WhatsApp' && whatsappConsent,
         idempotency_key: idempotencyKey,
         lead_context: {
           v: 1,
@@ -670,7 +665,7 @@
             trip_duration: lengthSummary(),
             travel_pace: d.pace,
             travel_priorities: d.priorities,
-            accommodation_preference: d.comfort === NOT_SURE ? NOT_SURE : tierLabel(d.comfort),
+            accommodation_preference: d.comfort ? (d.comfort === NOT_SURE ? NOT_SURE : tierLabel(d.comfort)) : undefined,
             budget_per_person: budgetSummary(),
             planning_stage: d.stage,
             destination_interest: interestForStaff() || undefined,
@@ -682,12 +677,13 @@
         },
         hp_company
       });
-      bookingCode = String((res.data as Record<string, unknown>)?.booking_code ?? '');
+      bookingCode = savedEnquiryReference(res.data);
       submitted = true;
       // The lead: plan_my_trip_submitted here, generate_lead in GA4 with
       // lead_source plan_my_trip. The trip's shape as ids and bands — who,
       // how long, what budget, what kind, where — for the CMS to count by.
       tracker.submitted({
+        transaction_id: bookingCode,
         traveller_type: d.party || undefined,
         duration_days: days || undefined,
         budget_range: d.budgetUnsure ? 'not_sure' : d.budget !== null ? `up_to_${d.budget}` : undefined,
@@ -716,10 +712,11 @@
         pushDataLayerEvent('trip_request_submitted', {
           form_type: 'Goldfinch Guided Trip Planner',
           reference_id: bookingCode,
+          transaction_id: bookingCode,
           trip_type: d.types.map((type) => typeOf(type).label).join(', '),
           travel_date: exact ? d.startDate : travelMonth(),
           travellers: `${partyLabel ? `${partyLabel} · ` : ''}${people.adults} ${people.adults === 1 ? 'adult' : 'adults'}${children}`,
-          comfort_level: d.comfort === NOT_SURE ? NOT_SURE : tierLabel(d.comfort),
+          comfort_level: d.comfort ? (d.comfort === NOT_SURE ? NOT_SURE : tierLabel(d.comfort)) : undefined,
           priorities: d.priorities.join(', '),
           source_page: incoming.context.tourSlug ? `/tours/${incoming.context.tourSlug}` : incoming.from || cameFromPath || referrerPath || '(direct)',
           cta_clicked: lastCtaClicked(),
@@ -778,6 +775,19 @@
           </div>
         {/each}
       </dl>
+      {#if recs.length}
+        <div class="mt-7 border-t border-ink/10 pt-6 text-left">
+          <h3 class="font-semibold text-heading">{$t('pg_plan_my_trip.trips_that_match')}</h3>
+          <ul class="mt-3 grid gap-3">
+            {#each recs as rec (rec.tour.id)}
+              <li><a class="flex gap-3 rounded-[8px] border border-ink/10 p-3 hover:border-goldfinch-gold" href={localizeUrl(`/tours/${rec.tour.slug}`, $locale)}>
+                {#if rec.tour.main_image_url_thumbnail || rec.tour.main_image_url}<Img src={rec.tour.main_image_url_thumbnail || rec.tour.main_image_url || ''} alt="" width={160} sizes="64px" className="h-14 w-16 rounded-[6px] object-cover" />{/if}
+                <span class="min-w-0"><span class="block text-sm font-semibold text-heading">{rec.tour.title}</span>{#each rec.reasons.slice(0, 2) as reason}<span class="mt-1 block text-xs text-ink/65">{reason}</span>{/each}</span>
+              </a></li>
+            {/each}
+          </ul>
+        </div>
+      {/if}
       <div class="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center" in:fly={{ y: 12, duration: ms(460), delay: ms(520 + recap.length * 80), easing: cubicOut }}>
         <a href="/" class="inline-flex h-12 items-center justify-center rounded-[10px] bg-goldfinch-gold px-6 text-sm font-semibold text-heading transition hover:brightness-105">{$t('pg_plan_my_trip.back_to_website')}</a>
         <a href="/safari-styles" class="inline-flex h-12 items-center justify-center rounded-[10px] border border-ink/20 px-6 text-sm font-semibold text-heading transition hover:bg-canvas">{$t('pg_plan_my_trip.explore_safari_ideas')}</a>
@@ -810,7 +820,7 @@
         {#key step}
         <div in:fly={{ x: 40 * dir, duration: ms(460), easing: cubicOut }}>
         {#if step === 0}
-          <h2 bind:this={stepHeading} tabindex="-1" class="mt-2 font-serif text-xl font-semibold text-heading outline-none md:text-2xl">{$t('pg_plan_my_trip.trip_type_heading')}</h2>
+          <h2 bind:this={stepHeading} tabindex="-1" class="scroll-mt-28 mt-2 font-serif text-xl font-semibold text-heading outline-none md:text-2xl">{$t('pg_plan_my_trip.trip_type_heading')} <span class="gf-req">*</span></h2>
           <p class="gf-hint mt-1.5 text-[13px]">{$t('pg_plan_my_trip.trip_type_hint')}{#if baseNote}{' '}{$t('pg_plan_my_trip.base_types_note')}{/if}</p>
           {#if errors.types}<p class="mt-2 text-sm font-medium text-clay" role="alert" in:fly={{ y: -6, duration: ms(240), easing: cubicOut }}>{errors.types}</p>{/if}
           <div class="mt-5 grid gap-3 sm:grid-cols-2">
@@ -824,7 +834,7 @@
             {/each}
           </div>
         {:else if step === 1}
-          <h2 bind:this={stepHeading} tabindex="-1" class="mt-2 font-serif text-xl font-semibold text-heading outline-none md:text-2xl">{$t('pg_plan_my_trip.whos_travelling')}</h2>
+          <h2 bind:this={stepHeading} tabindex="-1" class="scroll-mt-28 mt-2 font-serif text-xl font-semibold text-heading outline-none md:text-2xl">{$t('pg_plan_my_trip.whos_travelling')} <span class="gf-req">*</span></h2>
           {#if errors.party}<p class="mt-2 text-sm font-medium text-clay" role="alert" in:fly={{ y: -6, duration: ms(240), easing: cubicOut }}>{errors.party}</p>{/if}
           <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {#each PARTIES as option, i (option.id)}
@@ -863,7 +873,7 @@
             </div>
           {/if}
         {:else if step === 2}
-          <h2 bind:this={stepHeading} tabindex="-1" class="mt-2 font-serif text-xl font-semibold text-heading outline-none md:text-2xl">{$t('pg_plan_my_trip.when_heading')}</h2>
+          <h2 bind:this={stepHeading} tabindex="-1" class="scroll-mt-28 mt-2 font-serif text-xl font-semibold text-heading outline-none md:text-2xl">{$t('pg_plan_my_trip.when_heading')} <span class="gf-req">*</span></h2>
           <p class="gf-hint mt-1.5 text-[13px]">{$t('pg_plan_my_trip.when_hint')}</p>
           <div class="relative mt-5 inline-grid grid-cols-2 rounded-[10px] bg-canvas p-1" role="group">
             <span class="pm-seg absolute bottom-1 left-1 top-1 w-[calc(50%-4px)] rounded-[8px] bg-surface shadow-sm" style={`transform: translateX(${d.dateMode === 'exact' ? '100%' : '0'})`} aria-hidden="true"></span>
@@ -921,7 +931,7 @@
             {/key}
           {/if}
         {:else if step === 3}
-          <h2 bind:this={stepHeading} tabindex="-1" class="mt-2 font-serif text-xl font-semibold text-heading outline-none md:text-2xl">{$t('pg_plan_my_trip.length_pace_heading')}</h2>
+          <h2 bind:this={stepHeading} tabindex="-1" class="scroll-mt-28 mt-2 font-serif text-xl font-semibold text-heading outline-none md:text-2xl">{$t('pg_plan_my_trip.length_pace_heading')} <span class="gf-req">*</span></h2>
           <p class="gf-hint mt-1.5 text-[13px]">{$t('pg_plan_my_trip.length_pace_hint')}</p>
           <div class="mt-5 grid gap-5">
             {#each d.types as type (type)}
@@ -942,7 +952,7 @@
             {#if days > 0}<p class="text-sm text-ink/65" in:fade={{ duration: ms(260) }}>{$t('pg_plan_my_trip.estimated_total')} <b class="text-heading">{$t('pg_plan_my_trip.about_n_days').replace('{n}', String(days))}</b></p>{/if}
           </div>
           <div class="mt-6 border-t border-ink/10 pt-6">
-            <h3 class="text-[15px] font-semibold text-heading">{$t('pg_plan_my_trip.pace_heading')}</h3>
+            <h3 class="text-[15px] font-semibold text-heading">{$t('pg_plan_my_trip.pace_heading')} <span class="font-normal text-ink/55">{$t('pg_plan_my_trip.optional_paren')}</span></h3>
             {#if errors.pace}<p class="mt-2 text-sm font-medium text-clay" role="alert" in:fly={{ y: -6, duration: ms(240), easing: cubicOut }}>{errors.pace}</p>{/if}
             <div class="mt-3 grid gap-3 sm:grid-cols-2">
               {#each PACES as option, i (option.id)}
@@ -956,7 +966,7 @@
             </div>
           </div>
         {:else if step === 4}
-          <h2 bind:this={stepHeading} tabindex="-1" class="mt-2 font-serif text-xl font-semibold text-heading outline-none md:text-2xl">{$t('pg_plan_my_trip.prefs_heading')}</h2>
+          <h2 bind:this={stepHeading} tabindex="-1" class="scroll-mt-28 mt-2 font-serif text-xl font-semibold text-heading outline-none md:text-2xl">{$t('pg_plan_my_trip.prefs_heading')}</h2>
           <p class="gf-hint mt-1.5 text-[13px]">{$t('pg_plan_my_trip.prefs_hint')}</p>
 
           <h3 class="mt-5 text-[15px] font-semibold text-heading">
@@ -978,7 +988,7 @@
           <p class="mt-2 text-xs text-ink/55">{$t('pg_plan_my_trip.priorities_note')}</p>
 
           <div class="mt-6 border-t border-ink/10 pt-6">
-            <h3 class="text-[15px] font-semibold text-heading">{$t('pg_plan_my_trip.comfort_heading')}</h3>
+            <h3 class="text-[15px] font-semibold text-heading">{$t('pg_plan_my_trip.comfort_heading')} <span class="font-normal text-ink/55">{$t('pg_plan_my_trip.optional_paren')}</span></h3>
             {#if errors.comfort}<p class="mt-2 text-sm font-medium text-clay" role="alert" in:fly={{ y: -6, duration: ms(240), easing: cubicOut }}>{errors.comfort}</p>{/if}
             <div class="mt-3 grid gap-3 sm:grid-cols-2">
               {#each [...comfortChoices, { id: NOT_SURE, label: $t('ui.not_sure_yet'), desc: $t('pg_plan_my_trip.comfort_unsure_desc'), count: 0, min: 0, max: 0 }] as option, i (option.id)}
@@ -1045,7 +1055,7 @@
             </div>
           {/if}
         {:else if step === 5}
-          <h2 bind:this={stepHeading} tabindex="-1" class="mt-2 font-serif text-xl font-semibold text-heading outline-none md:text-2xl">{$t('pg_plan_my_trip.stage_heading')}</h2>
+          <h2 bind:this={stepHeading} tabindex="-1" class="scroll-mt-28 mt-2 font-serif text-xl font-semibold text-heading outline-none md:text-2xl">{$t('pg_plan_my_trip.stage_heading')} <span class="gf-req">*</span></h2>
           {#if errors.stage}<p class="mt-2 text-sm font-medium text-clay" role="alert" in:fly={{ y: -6, duration: ms(240), easing: cubicOut }}>{errors.stage}</p>{/if}
           <div class="mt-5 grid gap-3">
             {#each STAGES as option, i (option.id)}
@@ -1058,7 +1068,7 @@
             {/each}
           </div>
         {:else}
-          <h2 bind:this={stepHeading} tabindex="-1" class="mt-2 font-serif text-xl font-semibold text-heading outline-none md:text-2xl">{$t('pg_plan_my_trip.review_heading')}</h2>
+          <h2 bind:this={stepHeading} tabindex="-1" class="scroll-mt-28 mt-2 font-serif text-xl font-semibold text-heading outline-none md:text-2xl">{$t('pg_plan_my_trip.review_heading')}</h2>
           <dl class="mt-5 divide-y divide-ink/10 rounded-[10px] border border-ink/12">
             {#each review as row, i (row.at)}
               <div class="pm-rise flex items-start justify-between gap-3 px-4 py-3" style={`--i: ${i * 0.7}`}>
@@ -1086,8 +1096,19 @@
               <input class="gf-input" type="email" autocomplete="email" aria-invalid={!!errors.email} bind:value={email} placeholder={$t('form.email_placeholder')} />
               {#if errors.email}<span role="alert" class="text-xs font-medium text-clay" in:fly={{ y: -6, duration: ms(240), easing: cubicOut }}>{errors.email}</span>{/if}
             </label>
+            <div class="grid gap-1.5 sm:col-span-2">
+              <span class="gf-label">{$t('pg_plan_my_trip.preferred_contact')}</span>
+              <div class="grid grid-cols-3 gap-2">
+                {#each CONTACTS as option}
+                  <button type="button" aria-pressed={contact === option}
+                    class={`h-11 rounded-[8px] border px-2 text-sm font-semibold text-heading ${contact === option ? 'border-goldfinch-gold bg-goldfinch-gold/10' : 'border-ink/20'}`}
+                    on:click={() => { contact = option; clear('phone'); }}>{$t(CONTACT_LABELS[option])}</button>
+                {/each}
+              </div>
+            </div>
+            {#if contact !== 'Email'}
             <div class="grid gap-1.5">
-              <span class="gf-label">{$t('form.phone')}{#if contact !== 'Email'}<span class="gf-req">*</span>{:else}<span class="gf-hint">{' '}{$t('pg_plan_my_trip.optional_paren')}</span>{/if}</span>
+              <span class="gf-label">{$t('form.phone')}<span class="gf-req">*</span></span>
               <div class="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-2">
                 <select class="gf-input" bind:value={dialCode} aria-label={$t('pg_plan_my_trip.country_code')}>
                   {#each DIAL_CODES as code}<option value={code}>{code}</option>{/each}
@@ -1096,30 +1117,23 @@
               </div>
               {#if errors.phone}<span role="alert" class="text-xs font-medium text-clay" in:fly={{ y: -6, duration: ms(240), easing: cubicOut }}>{errors.phone}</span>{/if}
             </div>
+            {/if}
             <label class="grid gap-1.5">
               <span class="gf-label">{$t('pg_plan_my_trip.reply_in')}</span>
               <select class="gf-input" bind:value={language}>
                 {#each LANGUAGES as option}<option value={option.code}>{option.name}</option>{/each}
               </select>
             </label>
-            <div class="grid gap-1.5 sm:col-span-2">
-              <span class="gf-label">{$t('pg_plan_my_trip.preferred_contact')}</span>
-              <div class="grid grid-cols-3 gap-2">
-                {#each CONTACTS as option}
-                  <button type="button" aria-pressed={contact === option}
-                    class={`h-11 rounded-[8px] border px-2 text-sm font-semibold text-heading ${contact === option ? 'border-goldfinch-gold bg-goldfinch-gold/10' : 'border-ink/20'}`}
-                    on:click={() => (contact = option)}>{$t(CONTACT_LABELS[option])}</button>
-                {/each}
-              </div>
-            </div>
             <label class="grid gap-1.5 sm:col-span-2">
               <span class="gf-label">{$t('pg_plan_my_trip.anything_else')} <span class="gf-hint">{$t('pg_plan_my_trip.optional_paren')}</span></span>
               <textarea class="gf-textarea" rows="3" bind:value={d.notes} placeholder={$t('pg_plan_my_trip.notes_placeholder_long')}></textarea>
             </label>
+            {#if contact === 'WhatsApp'}
             <label class="flex items-start gap-2 text-xs text-ink/65 sm:col-span-2">
               <input type="checkbox" class="mt-0.5 h-4 w-4" bind:checked={whatsappConsent} />
               {$t('pg_plan_my_trip.whatsapp_consent').replace('{brand}', brand.name)}
             </label>
+            {/if}
             {#if errorMessage}
               <p class="rounded-[8px] bg-clay/10 px-3 py-2.5 text-sm text-clay sm:col-span-2" role="alert">{errorMessage}</p>
             {/if}
@@ -1204,61 +1218,6 @@
           </div>
         {/if}
 
-        {#if mounted && recs.length}
-          <div class="relative rounded-[12px] border border-ink/10 bg-surface" in:fly={{ y: 28, duration: ms(620), easing: quintOut }}>
-            {#key recKey}<span class="pm-glow pointer-events-none absolute inset-0 rounded-[12px]" aria-hidden="true"></span>{/key}
-            <button type="button" class="flex h-12 w-full items-center justify-between px-5 lg:hidden" aria-expanded={openMatches} on:click={() => (openMatches = !openMatches)}>
-              <span class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-clay">
-                {#key recKey}<span class="pm-ping relative flex h-2 w-2" aria-hidden="true"><span class="absolute inset-0 rounded-full bg-clay"></span></span>{/key}
-                {$t('pg_plan_my_trip.trips_that_match')}
-                {#key recs.length}<span class="inline-block" in:pop={{ start: 0.5, duration: ms(320), easing: backOut }}>({recs.length})</span>{/key}
-              </span>
-              <ChevronDown size={16} class={`transition ${openMatches ? 'rotate-180' : ''}`} />
-            </button>
-            <div class={`${openMatches ? 'block' : 'hidden'} px-5 pb-5 lg:block lg:pt-5`}>
-              <p class="hidden items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-clay lg:flex" in:fade|global={{ duration: ms(360), delay: ms(140) }}>
-                {#key recKey}<span class="pm-ping relative flex h-2 w-2" aria-hidden="true"><span class="absolute inset-0 rounded-full bg-clay"></span></span>{/key}
-                {$t('pg_plan_my_trip.trips_that_match')}
-              </p>
-              <!-- Compact on purpose: a sidebar that outgrows the form it sits
-                   beside reads as the main thing on the page. Titles held to two
-                   lines, and the strongest reasons only. -->
-              <ul class="grid gap-3 lg:mt-3">
-                {#each recs as rec, i (rec.tour.id)}
-                  {@const delay = 240 + i * 130}
-                  <li animate:flip={{ duration: ms(420), easing: cubicOut }} in:fly|global={{ x: 22, duration: ms(560), delay: ms(delay), easing: quintOut }} style={`--d: ${delay}ms`}>
-                    <a href={localizeUrl(`/tours/${rec.tour.slug}`, $locale)} target="_blank" rel="noopener" class="group flex gap-3 rounded-[10px] transition-transform duration-300 hover:-translate-y-0.5">
-                      {#if rec.tour.main_image_url_thumbnail || rec.tour.main_image_url}
-                        <span class="pm-thumb block h-14 w-16 shrink-0 overflow-hidden rounded-[8px]">
-                          <Img src={rec.tour.main_image_url_thumbnail || rec.tour.main_image_url || ''} alt="" width={160} sizes="64px" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                        </span>
-                      {/if}
-                      <span class="min-w-0">
-                        <span class="line-clamp-2 text-[13px] font-semibold leading-tight text-heading group-hover:text-clay">{rec.tour.title}</span>
-                        <span class="mt-0.5 block text-[11px] text-ink/60">
-                          {[
-                            rec.tour.duration_days ? $t('pg_plan_my_trip.n_days').replace('{n}', String(rec.tour.duration_days)) : '',
-                            rec.tour.price_from ? $t('pg_plan_my_trip.from_price').replace('{price}', () => whole(Number(rec.tour.price_from))) : '',
-                            people.children && rec.tour.minimum_age ? $t('pg_plan_my_trip.kids_age_plus').replace('{age}', String(rec.tour.minimum_age)) : ''
-                          ].filter(Boolean).join(' · ')}
-                        </span>
-                        {#each rec.reasons.slice(0, 2) as reason, r (reason)}
-                          <span class="pm-reason mt-0.5 flex items-start gap-1 text-[11px] leading-snug text-forest" style={`--r: ${r}`}><Check size={11} class="mt-0.5 shrink-0" /><span class="line-clamp-1">{reason}</span></span>
-                        {/each}
-                      </span>
-                    </a>
-                  </li>
-                {/each}
-              </ul>
-              <p class="mt-3 text-xs text-ink/60" in:fade|global={{ duration: ms(400), delay: ms(300 + recs.length * 130) }}>{$t('pg_plan_my_trip.tailor_one_of_these')}</p>
-            </div>
-          </div>
-        {:else if mounted && d.types.length}
-          <div class="rounded-[12px] border border-ink/10 bg-surface p-5" in:fly={{ y: 18, duration: ms(480), easing: quintOut }}>
-            <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-clay">{$t('pg_plan_my_trip.made_for_you')}</p>
-            <p class="mt-2 text-sm text-heading">{$t('pg_plan_my_trip.no_ready_made_trip')}</p>
-          </div>
-        {/if}
 
         <p class="px-1 text-xs text-ink/60">{$t('pg_plan_my_trip.prefer_to_talk')} <a href="/contact" class="font-semibold text-heading underline">{$t('pg_plan_my_trip.contact_our_team')}</a></p>
       </aside>

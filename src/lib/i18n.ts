@@ -120,3 +120,17 @@ export const rememberedLocale = (): KnownLocale | null => {
   const value = match ? decodeURIComponent(match[1]) : '';
   return isKnownLocale(value) ? value : null;
 };
+
+/** Preserve the page language in public navigation, including CMS absolute links and new tabs. */
+export function localeNavigationHref(href: string, pageUrl: string, locale: string, canonicalOrigin?: string): string {
+  if (!href || href.startsWith('#') || locale === DEFAULT_LOCALE || !isKnownLocale(locale)) return href;
+  try {
+    const page = new URL(pageUrl);
+    const target = new URL(href, page);
+    if (!['http:', 'https:'].includes(target.protocol)) return href;
+    if (target.origin !== page.origin && target.origin !== canonicalOrigin) return href;
+    if (/^\/(?:admin|api|_app|uploads|images|files)(?:\/|$)/.test(target.pathname) || /\.[a-z0-9]{2,8}$/i.test(target.pathname)) return href;
+    if (localeFromPath(target.pathname) !== DEFAULT_LOCALE) return href;
+    return localizeHref(target.pathname, locale) + target.search + target.hash;
+  } catch { return href; }
+}

@@ -826,7 +826,7 @@
 
       <aside id="plan-this-trip" class="hidden self-stretch transition lg:block">
         <div class="tour-planner-sticky">
-          <TripRequestForm {tour} />
+          {#key tour.id}<TripRequestForm {tour} />{/key}
           {#if tourSpecialist}
             <button
               type="button"
@@ -921,8 +921,8 @@
     </div>
   </div>
 
-  {#if sheetOpen}
-    <div class="fixed inset-0 z-[80] lg:hidden" role="dialog" aria-modal="true">
+  {#key tour.id}
+    <div class:hidden={!sheetOpen} class="fixed inset-0 z-[120] lg:hidden" role="dialog" aria-modal="true">
       <button class="absolute inset-0 cursor-default bg-black/60" type="button" aria-label={$t('ui.close_planner')} on:click={closeSheet}></button>
       <div class="tour-planner-sheet absolute inset-x-0 bottom-0 flex max-h-[92dvh] flex-col overflow-hidden rounded-t-[16px] bg-deep-green">
         <button
@@ -933,12 +933,12 @@
         >
           <X class="h-4 w-4" />
         </button>
-        <div class="flex-1 overflow-hidden">
+        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <TripRequestForm {tour} />
         </div>
       </div>
     </div>
-  {/if}
+  {/key}
 
   {#if specialistOpen && tourSpecialist}
     <div class="fixed inset-0 z-[200] grid place-items-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={`${$t('ui.your_tour_specialist')}: ${tourSpecialist.name}`}>

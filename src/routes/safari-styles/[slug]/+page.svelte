@@ -211,10 +211,11 @@
     visibleCount = 6;
   };
 
-  // Planning starts on the six-step planner page, already knowing this style.
-  $: planHref = planTripHref({ name: category?.name, slug: category?.slug, from: `safari style: ${category?.slug ?? ''}` });
+  // Page CTAs stay with this enquiry; the global planner keeps its own context.
+  const planHref = '#lead-form';
+  $: fullPlannerHref = planTripHref({ name: category?.name, slug: category?.slug, from: `safari style: ${category?.slug ?? ''}` });
   // The top bar's and footer's "Plan My Trip" open the planner for this style too.
-  $: plannerHref.set(planHref);
+  $: plannerHref.set(fullPlannerHref);
   onDestroy(resetPlannerHref);
 
   // Every way into the planner from this page records which button it was, so
@@ -345,18 +346,15 @@
     the left, the form lays its fields across one row on the right, and the
     stacked card layout is left for the pages that have room for it.
   -->
-  <!-- The band's own three-step planner: copy on the left, one row of three
-       fields on the right. The page CTAs open the full planner in a popup. -->
+  <div id="lead-form" class="scroll-mt-24">
   <StylePlannerBand
     eyebrow={landing.planner.label}
     title={landing.planner.headline}
     description={landing.planner.intro}
-    startPoints={data.startPoints ?? []}
-    interests={[{ name: category.name, slug: category.slug }, ...otherStyles.map((style) => ({ name: style.name, slug: style.slug }))]}
     categoryName={category.name}
     categorySlug={category.slug}
-    handoffHref={planHref}
   />
+  </div>
 
   <!-- 6 · Tour collection / itinerary fallback -->
   <section id="trip-ideas" class="scroll-mt-24 bg-surface py-14 md:py-16">
@@ -476,7 +474,7 @@
   {/if}
 
   <!-- 12 · Final CTA -->
-  <section id="lead-form" class="scroll-mt-20 bg-deep-green py-14 text-white md:py-20">
+  <section id="start-planning" class="scroll-mt-20 bg-deep-green py-14 text-white md:py-20">
     <div class="mx-auto max-w-4xl px-4 text-center md:px-6">
       <div class="inline-flex items-center gap-2"><span class="h-px w-6 bg-goldfinch-gold"></span><span class="text-xs font-semibold uppercase tracking-[0.15em] text-goldfinch-gold">{landing.finalCta.label}</span></div>
       <h2 class="mt-3 font-serif text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl md:text-5xl">{landing.finalCta.headline}</h2>

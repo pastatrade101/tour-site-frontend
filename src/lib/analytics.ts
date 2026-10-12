@@ -511,8 +511,8 @@ export type FormTrackerContext = {
   form_name: string;
   form_type?: string;
   /** Which of the main leads a sent form counts as. */
-  lead_type: LeadChannel;
-} & Pick<EventMeta, 'tour_id' | 'tour_title' | 'tour_slug' | 'destination' | 'price_from' | 'duration_days' | 'currency'>;
+  lead_type: LeadChannel | 'category_enquiry' | 'contact';
+} & Pick<EventMeta, 'tour_id' | 'tour_title' | 'tour_slug' | 'destination' | 'price_from' | 'duration_days' | 'currency' | 'category_name'>;
 
 /**
  * One tracker per form on the page. It records the form's whole path — seen,
@@ -592,6 +592,7 @@ export const createFormTracker = (context: FormTrackerContext, submitEvent: Anal
     },
     /** The lead was saved. */
     submitted(extra: EventMeta = {}) {
+      if (sent) return;
       sent = true;
       emit(submitEvent, { ...base(), ...extra });
     },

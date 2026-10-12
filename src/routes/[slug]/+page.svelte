@@ -131,4 +131,4 @@
 {#if crumbs}<JsonLd data={crumbs} />{/if}
 
 <SafariPackageContent {record} {related} {moduleFaqs} {homeSections}
-  relatedLodges={data.relatedLodges ?? []} interests={data.interests ?? []} startPoints={data.startPoints ?? []} />
+  relatedLodges={data.relatedLodges ?? []} />

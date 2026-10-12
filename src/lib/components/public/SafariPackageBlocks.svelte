@@ -35,10 +35,6 @@
   export let lodges: Lodge[] = [];
   /** FAQs attached to this package, used only when a `faq` block has none of its own. */
   export let moduleFaqs: FAQ[] = [];
-  /** Published categories, offered as "main interest" in the planner band. */
-  export let interests: { name: string; slug: string }[] = [];
-  /** Real gateways, offered as "starting point". Empty hides that field. */
-  export let startPoints: Array<Record<string, unknown>> = [];
   /** This package, so a lead from the planner records where it came from. */
   export let packageName = '';
   export let packageSlug = '';
@@ -499,8 +495,6 @@
         eyebrow={eyebrow || $t('ui.plan_this_safari')}
         title={title || $t('ui.plan_this_trip_with_a')}
         description={intro}
-        {startPoints}
-        {interests}
         {packageName}
         {packageSlug}
         {routeOptions}

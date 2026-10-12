@@ -13,8 +13,6 @@
   export let related: Tour[] = [];
   export let moduleFaqs: FAQ[] = [];
   export let relatedLodges: Lodge[] = [];
-  export let interests: { name: string; slug: string }[] = [];
-  export let startPoints: Record<string, unknown>[] = [];
   export let homeSections: Record<string, AdvisorNoteSection | undefined> = {};
   export let preview = false;
 
@@ -84,8 +82,6 @@
       {moduleFaqs}
       tours={related}
       lodges={relatedLodges}
-      {interests}
-      {startPoints}
       packageName={record.name ?? ''}
       packageSlug={record.slug ?? ''}
       {homeSections}

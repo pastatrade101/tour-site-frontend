@@ -1,681 +1,321 @@
 <script lang="ts">
+  import { onMount, tick } from 'svelte';
+  import { ArrowLeft, ArrowRight, ChevronDown, Loader2, MessageCircle } from '@lucide/svelte';
   import { locale, t } from '$lib/i18n/ui';
-  import { localizeUrl } from '$lib/i18n';
-  /**
-   * The inline planner on a safari-style or safari-package page.
-   *
-   * Three short steps rather than one long form: the band sits between
-   * sections, so asking nine questions at once would either dominate the page
-   * or shrink the fields past usability. Each step is one row.
-   *
-   * It writes the same booking_request every other form does — same endpoint,
-   * same honeypot, same idempotency key — so a lead from here reaches the
-   * inbox looking like every other lead, tagged with the page it came from.
-   *
-   * Every word a traveller reads goes through the dictionary, the way the other
-   * forms' do. The values it submits stay in English on purpose: they are read
-   * by the team in the inbox, not by the traveller, and "Mittelklasse" in one
-   * enquiry and "Mid-range" in the next would be two answers to one question.
-   */
-  import { tick } from 'svelte';
-  import { goto } from '$app/navigation';
-  import { ChevronDown, ChevronLeft, ChevronRight, Loader2, Lock } from '@lucide/svelte';
-  import { getAttribution, trackEvent } from '$lib/analytics';
-  import { api } from '$lib/api/client';
-  import { ACCOMMODATION, NOT_SURE } from '$lib/enquiry/fields';
+  import { createFormTracker, getAttribution, campaignTags, lastCtaClicked, pushDataLayerEvent } from '$lib/analytics';
+  import { newEnquiryKey, savedEnquiryReference } from '$lib/enquiry/validation';
+  import { api, submitErrorKey } from '$lib/api/client';
+  import { publicSettings, settingText } from '$lib/settings';
+  import TripDatePicker from './TripDatePicker.svelte';
+  import TripPhoneInput from './TripPhoneInput.svelte';
+  import { plannerProblems, plannerPayload, type PlannerValues, type PlannerField } from '$lib/enquiry/stylePlanner';
 
-  /** Empty uses the translated default. */
   export let eyebrow = '';
   export let title: string;
   export let description = '';
-  /** Real gateways from the CMS. An empty list hides the field rather than inventing one. */
-  export let startPoints: Array<Record<string, unknown>> = [];
-  /** Real categories, used for "main interest". */
-  export let interests: Array<{ name: string; slug: string }> = [];
   export let categoryName = '';
   export let categorySlug = '';
-  /**
-   * The safari-package page this band is closing, when it is not a safari
-   * style. Recorded under its own key rather than as `safari_style`: a package
-   * is not a style, and an admin reading the lead should not be told it was.
-   * Empty on a style page, where the two keys above carry the answer.
-   */
   export let packageName = '';
   export let packageSlug = '';
-  /**
-   * The package's route options, labelled exactly as its route tabs are. Two
-   * or more turn on a "Route option" field in the first step; one or none
-   * leaves the step as it was, since a choice of one is not a question.
-   */
   export let routeOptions: Array<{ label: string; tourTitle: string; tourSlug: string; tourDays?: number | null }> = [];
-  /**
-   * The route a traveller was last looking at in the tabs above. It fills the
-   * field until they choose for themselves, so "Check this price for my date"
-   * arrives at a form that already knows which option they meant.
-   */
   export let suggestedRoute = '';
-  /**
-   * Hand the trip over to the Plan My Trip planner after the first step, so
-   * every lead from this page is captured on the one form. The planner opens
-   * already knowing the style, date, travellers and days answered here.
-   * Empty keeps the full three-step form (safari package pages).
-   */
-  export let handoffHref = '';
 
-  type Field =
-    | 'route'
-    | 'travellers'
-    | 'travelDate'
-    | 'days'
-    | 'startPoint'
-    | 'comfort'
-    | 'interest'
-    | 'fullName'
-    | 'email'
-    | 'phone';
+  const LANGUAGES = [
+    { code: 'en', label: 'English' }, { code: 'sw', label: 'Kiswahili' },
+    { code: 'de', label: 'Deutsch' }, { code: 'fr', label: 'Français' },
+    { code: 'es', label: 'Español' }, { code: 'it', label: 'Italiano' }
+  ];
+  const STEP_KEYS = ['style_form.your_trip', 'style_form.travellers_preferences', 'style_form.your_details'];
+  const COMFORT = [
+    { value: 'Mid-range', key: 'tier.mid_range' }, { value: 'Luxury', key: 'tier.luxury' },
+    { value: 'Not sure yet', key: 'style_form.help_choose' }
+  ];
+  const BEACH = [
+    { value: 'Yes', key: 'style_form.yes' }, { value: 'No', key: 'style_form.safari_only' },
+    { value: 'Not sure yet', key: 'ui.not_sure_yet' }
+  ];
 
-  const TOTAL = 3;
   let step = 1;
   let submitting = false;
   let submitted = false;
   let bookingCode = '';
   let formError = '';
-  let errors: Partial<Record<Field, string>> = {};
-
-  let stepFields: HTMLElement;
-  let confirmation: HTMLElement;
-
-  let travellers = '2';
-  let travelDate = '';
-  let days = '';
+  let errors: Partial<Record<PlannerField, string>> = {};
+  let stepHeading: HTMLParagraphElement;
+  let stepFields: HTMLDivElement;
+  let confirmation: HTMLDivElement;
   let daysTouched = false;
-  let routeChoice = '';
   let routeTouched = false;
-  let startPoint = '';
-  let comfort = '';
-  let interest = '';
-  let fullName = '';
-  let email = '';
-  let phone = '';
-  let whatsappOptIn = false;
-  let hp = '';
-
-  const todayStr = new Date().toISOString().slice(0, 10);
-  /** The lengths we actually sell — a free-text box invited "a couple of weeks". */
-  const DAY_OPTIONS = Array.from({ length: 21 }, (_, index) => String(index + 1));
-
-  /**
-   * What the traveller reads for each comfort level. The value underneath
-   * stays the shared English one, so this form's answers match every other
-   * form's in the inbox.
-   */
-  const COMFORT_LABEL_KEYS: Record<string, string> = {
-    Value: 'ui.comfort_value',
-    'Mid-range': 'tier.mid_range',
-    Luxury: 'tier.luxury'
+  let idempotencyKey = '';
+  let values: PlannerValues = {
+    days: undefined, daysUnsure: false, travelDate: '', dateUnsure: false,
+    adults: 2, children: 0, language: $locale, comfort: '', beach: '',
+    fullName: '', email: '', phone: '', dialCode: '+255', specialRequests: '',
+    whatsappOptIn: false, route: '', hp: ''
   };
-  // "Not sure yet" is added once below, translated — ACCOMMODATION carries its
-  // own, and rendering both printed the option twice.
-  const COMFORT_OPTIONS = ACCOMMODATION.filter((option) => option.value !== NOT_SURE);
+  let root: HTMLElement;
+  const tracker = createFormTracker({ form_name: 'style_planner', form_type: 'category_enquiry', lead_type: 'category_enquiry', category_name: (packageName || categoryName).slice(0, 128) }, 'request_trip_submitted');
+  $: tracker.at(step - 1, STEP_KEYS[step - 1]);
+  onMount(() => {
+    const stop = tracker.watchLeave();
+    const observer = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting)) { tracker.opened(); observer.disconnect(); } });
+    observer.observe(root);
+    return () => { observer.disconnect(); stop(); };
+  });
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const uid = `enquiry-${packageSlug || categorySlug || 'safari'}`;
 
   $: hasRouteOptions = routeOptions.length > 1;
-  // No fallback list. The loader already filters to points whose role is start
-  // or both, so an empty array means the CMS genuinely has none — and offering
-  // a gateway this operator may not run from would put a preference in the
-  // inbox that nobody can honour.
-  $: hasStartPoints = startPoints.length > 0;
-  $: if (!routeTouched && suggestedRoute && routeOptions.some((option) => option.label === suggestedRoute)) {
-    routeChoice = suggestedRoute;
-  }
-  $: chosenRoute = routeOptions.find((option) => option.label === routeChoice);
-  /**
-   * A route's own length is the most likely answer to "how many days", so it
-   * is filled in — until the traveller sets the number themselves.
-   */
-  $: if (!daysTouched && chosenRoute?.tourDays && DAY_OPTIONS.includes(String(chosenRoute.tourDays))) {
-    days = String(chosenRoute.tourDays);
-    // Filled in for them, so a "how many days?" left over from an earlier
-    // attempt is no longer true and must not stay on screen.
-    clearError('days');
-  }
+  $: if (!routeTouched && suggestedRoute && routeOptions.some((option) => option.label === suggestedRoute)) values.route = suggestedRoute;
+  $: chosenRoute = routeOptions.find((option) => option.label === values.route);
+  $: if (!daysTouched && chosenRoute?.tourDays && chosenRoute.tourDays > 0) values.days = chosenRoute.tourDays;
+  $: waDigits = (settingText($publicSettings, 'whatsapp_number') || settingText($publicSettings, 'contact_phone')).replace(/\D/g, '');
+  $: whatsappHref = `https://wa.me/${waDigits}?text=${encodeURIComponent($t('style_form.whatsapp_message').replace('{trip}', packageName || categoryName || title))}`;
+  $: recap = [
+    { label: $t('ui.route_option'), value: hasRouteOptions ? (values.route === 'Not sure yet' ? $t('ui.not_sure_yet') : values.route) : '' },
+    { label: $t('style_form.safari_days'), value: values.daysUnsure ? $t('ui.not_sure_yet') : String(values.days ?? '') },
+    { label: $t('form.preferred_start_date'), value: values.dateUnsure ? $t('style_form.dates_undecided') : values.travelDate ? new Intl.DateTimeFormat($locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${values.travelDate}T00:00:00Z`)) : '' },
+    { label: $t('form.adults'), value: String(values.adults ?? '') },
+    { label: $t('style_form.children'), value: String(values.children ?? 0) },
+    { label: $t('form.preferred_language'), value: LANGUAGES.find((language) => language.code === values.language)?.label ?? '' },
+    { label: $t('style_form.accommodation'), value: values.comfort ? $t(COMFORT.find((option) => option.value === values.comfort)?.key ?? '') : '' },
+    { label: $t('style_form.beach_stay'), value: values.beach ? $t(BEACH.find((option) => option.value === values.beach)?.key ?? '') : '' },
+    { label: $t('form.special_requests'), value: values.specialRequests }
+  ].filter((row) => row.value).map((row) => ({ label: row.label.slice(0, 300), value: row.value.trim().slice(0, 300) }));
 
-  /** Rows as the confirmation email takes them: trimmed, held to 300 characters, none empty, at most 12. */
-  const recapRows = (rows: Array<{ label: string; value: string }>) =>
-    rows
-      .map((row) => ({ label: row.label.trim().slice(0, 300).trim(), value: row.value.trim().slice(0, 300).trim() }))
-      .filter((row) => row.label && row.value)
-      .slice(0, 12);
-
-  /*
-   * The traveller's own confirmation email is written in the page's language,
-   * so it repeats their answers the way the fields above showed them —
-   * "Not sure yet" and the comfort levels translated, the date in their own
-   * format. Never their name, email or phone: the email does not repeat
-   * contact details. The English values staff read are unchanged.
-   */
-  $: shown = (value: string) => (value === NOT_SURE ? $t('ui.not_sure_yet') : value);
-  $: travellerRecap = recapRows([
-    { label: $t('ui.route_option'), value: hasRouteOptions ? shown(routeChoice) : '' },
-    { label: $t('ui.travellers'), value: String(Number(travellers)) },
-    {
-      label: $t('ui.travel_date'),
-      value: /^\d{4}-\d{2}-\d{2}$/.test(travelDate)
-        ? new Intl.DateTimeFormat($locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${travelDate}T00:00:00Z`))
-        : ''
-    },
-    { label: $t('ui.number_of_days'), value: days ? `${days} ${days === '1' ? $t('label.day') : $t('label.days')}` : '' },
-    { label: $t('ui.starting_point'), value: hasStartPoints ? shown(startPoint) : '' },
-    { label: $t('ui.comfort_level'), value: COMFORT_LABEL_KEYS[comfort] ? $t(COMFORT_LABEL_KEYS[comfort]) : shown(comfort) },
-    { label: $t('ui.main_interest'), value: shown(interest) }
-  ]);
-
-  $: stepLabel = $t('ui.step_x_of_y').replace('{step}', String(step)).replace('{total}', String(TOTAL));
-  $: submitLabel = step === TOTAL ? $t('ui.start_my_trip_plan') : $t('ui.continue');
-
-  const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-  const digitsIn = (value: string) => value.replace(/\D/g, '').length;
-
-  /** The questions on each step, in the order a keyboard reaches them. */
-  const fieldsFor = (index: number): Field[] =>
-    index === 1
-      ? [...(hasRouteOptions ? (['route'] as Field[]) : []), 'travellers', 'travelDate', 'days']
-      : index === 2
-        ? [...(hasStartPoints ? (['startPoint'] as Field[]) : []), 'comfort', 'interest']
-        : ['fullName', 'email', 'phone'];
-
-  const problemWith = (field: Field): string => {
-    switch (field) {
-      case 'route':
-        return routeChoice ? '' : $t('ui.choose_the_route_option_you');
-      case 'travellers': {
-        const count = Number(travellers);
-        return Number.isInteger(count) && count >= 1 ? '' : $t('ui.how_many_people_are_travelling');
-      }
-      case 'travelDate':
-        if (!travelDate) return $t('ui.choose_the_date_you_would');
-        return travelDate < todayStr ? $t('ui.that_date_has_already_passed') : '';
-      case 'days':
-        return days ? '' : $t('ui.how_many_days_would_you');
-      case 'startPoint':
-        return startPoint ? '' : $t('ui.where_would_you_like_to_start');
-      case 'comfort':
-        return comfort ? '' : $t('ui.choose_a_comfort_level');
-      case 'interest':
-        return interest ? '' : $t('ui.choose_what_interests_you_most');
-      case 'fullName':
-        return fullName.trim().length > 1 ? '' : $t('ui.please_enter_your_full_name');
-      case 'email':
-        return isEmail(email.trim()) ? '' : $t('ui.that_email_address_does_not');
-      case 'phone':
-        return digitsIn(phone) >= 6 ? '' : $t('ui.add_a_number_we_can');
-    }
-  };
-
-  /** Checks one step and puts the keyboard on the first field that needs attention. */
-  const validate = async (index: number): Promise<boolean> => {
-    const found: Partial<Record<Field, string>> = {};
-    for (const field of fieldsFor(index)) {
-      const problem = problemWith(field);
-      if (problem) found[field] = problem;
-    }
-    errors = found;
-    const first = fieldsFor(index).find((field) => found[field]);
-    if (!first) return true;
+  const clearError = (field: PlannerField) => { if (errors[field]) { delete errors[field]; errors = { ...errors }; } };
+  const errorId = (field: PlannerField) => `${uid}-${field}-error`;
+  async function validate(index: number) {
+    errors = plannerProblems(values, index, today, hasRouteOptions);
+    const field = Object.keys(errors)[0];
+    if (!field) return true;
     await tick();
-    stepFields?.querySelector<HTMLElement>(`[data-field="${first}"]`)?.focus();
-    trackEvent('form_validation_error', { metadata: { form: 'style_planner', step: index, field: first } });
+    stepFields?.querySelector<HTMLElement>(`[data-field="${field}"]`)?.querySelector<HTMLElement>('input, select, button')?.focus();
+    tracker.invalid(STEP_KEYS[index - 1], field);
     return false;
-  };
-
-  const clearError = (field: Field) => {
-    if (!errors[field]) return;
-    const { [field]: _drop, ...rest } = errors;
-    errors = rest;
-  };
-
-  /**
-   * Moving between steps puts the keyboard on the new step's first question,
-   * so a keyboard or screen-reader user is not left on a button that has just
-   * changed its meaning.
-   */
-  const focusStep = async () => {
-    await tick();
-    stepFields?.querySelector<HTMLElement>('[data-field]')?.focus();
-  };
-
-  const next = async () => {
+  }
+  async function focusStep() { await tick(); stepHeading?.scrollIntoView({ block: 'start' }); stepHeading?.focus({ preventScroll: true }); }
+  async function next() { if (submitting || !(await validate(step))) return; formError = ''; tracker.step(step - 1, STEP_KEYS[step - 1]); step += 1; await focusStep(); }
+  async function back() { formError = ''; errors = {}; step -= 1; await focusStep(); }
+  async function submit() {
+    if (submitting || submitted) return;
     formError = '';
-    if (!(await validate(step))) return;
-    if (handoffHref && step === 1) {
-      const url = new URL(handoffHref, window.location.origin);
-      url.searchParams.set('adults', String(Number(travellers)));
-      url.searchParams.set('date', travelDate);
-      url.searchParams.set('days', days);
-      trackEvent('cta_click', { cta_name: 'Continue', cta_location: 'style_planner' });
-      await goto(localizeUrl(`${url.pathname}${url.search}`, $locale));
-      return;
+    // Recheck the whole enquiry so going back cannot leave an invalid earlier answer.
+    for (const index of [1, 2, 3]) {
+      const problems = plannerProblems(values, index, today, hasRouteOptions);
+      if (Object.keys(problems).length) { step = index; await tick(); await validate(index); return; }
     }
-    if (step < TOTAL) {
-      step += 1;
-      void focusStep();
-    }
-  };
-
-  const back = () => {
-    formError = '';
-    errors = {};
-    if (step > 1) {
-      step -= 1;
-      void focusStep();
-    }
-  };
-
-  const submit = async () => {
-    if (submitting) return;
-    formError = '';
-    if (!(await validate(TOTAL))) return;
-
     submitting = true;
+    idempotencyKey ||= newEnquiryKey();
     try {
-      const res = await api.bookings.create({
-        full_name: fullName.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
-        number_of_adults: Number(travellers) || 1,
-        number_of_children: 0,
-        // A real date from the picker, so the column gets one every time
-        // rather than only when somebody happened to type one.
-        travel_date: travelDate || null,
-        source: 'category_enquiry',
-        whatsapp_opt_in: whatsappOptIn,
-        lead_context: {
-          v: 1,
-          form_type: 'style_planner',
-          safari_style: categoryName || undefined,
-          safari_style_slug: categorySlug || undefined,
-          safari_package: packageName || undefined,
-          safari_package_slug: packageSlug || undefined,
-          // The tab name as the traveller saw it, plus the tour behind it —
-          // "Option 2" alone means nothing to whoever opens the enquiry.
-          route_option: hasRouteOptions ? routeChoice || undefined : undefined,
-          route_option_tour: chosenRoute?.tourTitle || undefined,
-          route_option_tour_slug: chosenRoute?.tourSlug || undefined,
-          trip_days: days || undefined,
-          starting_point: startPoint || undefined,
-          comfort_level: comfort || undefined,
-          main_interest: interest || undefined,
-          // For the traveller's confirmation email: the page's language, and
-          // their answers as they read them (see travellerRecap).
-          page_locale: $locale,
-          traveller_recap: travellerRecap,
-          attribution: getAttribution()
-        },
-        hp_company: hp
-      });
-      bookingCode = String((res.data as Record<string, unknown>)?.booking_code ?? '');
+      const result = await api.bookings.create(plannerPayload(values, {
+        categoryName, categorySlug, packageName, packageSlug,
+        route: chosenRoute, hasRouteOptions, pageLocale: $locale,
+        recap, attribution: getAttribution(), pageUrl: window.location.href, idempotencyKey
+      }));
+      bookingCode = savedEnquiryReference(result.data);
       submitted = true;
-      trackEvent('request_trip_submitted', {
-        metadata: { form: 'style_planner', safari_style_slug: categorySlug, safari_package_slug: packageSlug }
-      });
-      await tick();
-      confirmation?.focus();
-    } catch {
-      // The API's own wording is written for developers and in English. The
-      // fields were checked above, so what is left is a network or server
-      // fault, and the traveller needs to know only that it did not go.
-      formError = $t('ui.unable_to_send_your_message');
-    } finally {
-      submitting = false;
-    }
-  };
-
-  const fieldBase =
-    'h-11 w-full min-w-0 rounded-[10px] border bg-white px-3.5 text-[15px] text-heading outline-none transition placeholder:text-ink/45 focus:border-goldfinch-gold focus:ring-2 focus:ring-goldfinch-gold/25';
-  // Light terracotta on the dark panel — the site's red reads as mud on olive.
-  const fieldClass = (field: Field, extra = '') =>
-    `${fieldBase} ${errors[field] ? 'border-[#F2B8A6] ring-2 ring-[#F2B8A6]/40' : 'border-white/20'} ${extra}`;
-  const selectClass = (field: Field) => fieldClass(field, 'appearance-none pr-10');
-  const labelClass = 'mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.10em] text-white/70';
-  const hintClass = 'text-[11.5px] leading-5 text-white/55';
-  const errorClass = 'text-[12px] font-semibold leading-5 text-[#F2B8A6]';
-  const errorId = (field: Field) => `${packageSlug || categorySlug || 'planner'}-${field}-error`;
+      tracker.submitted({ transaction_id: bookingCode, metadata: { safari_style_slug: categorySlug, safari_package_slug: packageSlug } });
+      pushDataLayerEvent('trip_request_submitted', { form_type: 'Category Enquiry Form', form_name: 'style_planner', reference_id: bookingCode, transaction_id: bookingCode, source_page: location.pathname, cta_clicked: lastCtaClicked(), ...campaignTags() });
+      await tick(); confirmation?.focus();
+    } catch (error) { tracker.failed(); formError = $t(submitErrorKey(error, 'ui.unable_to_send_your_message')); }
+    finally { submitting = false; }
+  }
 </script>
 
-<section class="bg-surface py-10 md:py-14" class:package-planner={Boolean(packageSlug)}>
+<section bind:this={root} class="enquiry-band bg-surface" aria-label={title}>
   <div class="container-shell">
-    <div class="planner-panel relative overflow-hidden rounded-[12px] bg-deep-green p-6 text-white md:p-8">
-      <div class="grid gap-6 lg:grid-cols-12 lg:items-center lg:gap-10">
-    <div class="min-w-0 lg:col-span-4">
-      <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{eyebrow || $t('ui.plan_this_experience')}</p>
-      <h2 class="mt-2 font-serif text-2xl font-semibold leading-[1.15] md:text-[30px]">{title}</h2>
-      {#if description}
-        <p class="mt-2 text-[14px] leading-relaxed text-white/70">{description}</p>
-      {/if}
-
-      {#if !submitted && !handoffHref}
-        <!-- Progress reads as bars rather than numbered circles: three steps do
-             not need the ceremony, and it keeps the left column short. -->
-        <div class="mt-4 flex items-center gap-2">
-          <span class="flex items-center gap-2" aria-hidden="true">
-            {#each Array(TOTAL) as _, index}
-              <span
-                class="h-1.5 rounded-full transition-all duration-300 {index + 1 === step
-                  ? 'w-8 bg-goldfinch-gold'
-                  : index + 1 < step
-                    ? 'w-4 bg-clay'
-                    : 'w-4 bg-white/25'}"
-              ></span>
-            {/each}
-          </span>
-          <span aria-live="polite" class="ml-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">{stepLabel}</span>
-        </div>
-      {/if}
-    </div>
-
-    <div class="min-w-0 lg:col-span-8">
-      {#if submitted}
-        <div
-          bind:this={confirmation}
-          class="rounded-2xl border border-goldfinch-gold/30 bg-white/[0.06] p-6 outline-none"
-          role="status"
-          tabindex="-1"
-        >
-          <p class="font-serif text-2xl font-semibold">{$t('form.thank_you')}</p>
-          {#if bookingCode}
-            <p class="mt-2 text-sm text-white/75">{$t('form.your_reference_is')}<span class="font-bold text-goldfinch-gold">{bookingCode}</span>.</p>
-          {/if}
-          <p class="mt-2 text-sm leading-6 text-white/70">{$t('ui.a_local_specialist_will_shape')}</p>
-        </div>
-      {:else}
-        <form novalidate on:submit|preventDefault={step === TOTAL ? submit : next}>
-          <!-- Honeypot: named as nothing, so autofill has nothing to match. -->
-          <div class="absolute left-[-9999px] top-0 h-0 w-0 overflow-hidden" aria-hidden="true">
-            <input type="text" name="gf-x1" tabindex="-1" autocomplete="off" hidden bind:value={hp} />
+    <div class="planner-panel">
+      <div class="planner-intro">
+        <p class="eyebrow">{eyebrow || $t('ui.plan_this_safari')}</p>
+        <h2>{title}</h2>
+        {#if description}<p class="intro-copy">{description}</p>{/if}
+      </div>
+      <div class="planner-form">
+        {#if submitted}
+          <div bind:this={confirmation} class="confirmation" role="status" tabindex="-1">
+            <h3>{$t('form.thank_you')}</h3>
+            {#if bookingCode}<p>{$t('form.your_reference_is')} <strong>{bookingCode}</strong>.</p>{/if}
+            <p>{$t('ui.a_local_specialist_will_shape')}</p>
           </div>
-
-          <div bind:this={stepFields}>
-          {#if step === 1}
-            <!-- With a route field the row holds four, so Travellers — a one-
-                 or two-digit number — gives up the width the other three need.
-                 Between the phone and wide-desktop layouts it wraps two by two
-                 rather than squeezing a date picker below its own text. -->
-            <div class="grid items-start gap-4 {hasRouteOptions ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}" class:planner-row-four={hasRouteOptions}>
-              {#if hasRouteOptions}
-                <label class="grid gap-1.5">
-                  <span class={labelClass}>{$t('ui.route_option')}</span>
-                  <span class="relative block">
-                    <select
-                      class={selectClass('route')}
-                      data-field="route"
-                      bind:value={routeChoice}
-                      on:change={() => { routeTouched = true; clearError('route'); }}
-                      aria-invalid={Boolean(errors.route)}
-                      aria-describedby={errors.route ? errorId('route') : undefined}
-                    >
+        {:else}
+          <form novalidate on:input={() => tracker.started()} on:change={() => tracker.started()} on:submit|preventDefault={step === 3 ? submit : next}>
+            <input type="text" hidden tabindex="-1" autocomplete="off" aria-hidden="true" name="gf-x1" bind:value={values.hp} />
+            <p class="step-heading" bind:this={stepHeading} tabindex="-1" aria-live="polite"><span>{step} / 3</span> · {$t(STEP_KEYS[step - 1])}</p>
+            <div bind:this={stepFields}>
+              {#if step === 1}
+                {#if hasRouteOptions}
+                  <div class="field route-field" data-field="route">
+                    <label for={`${uid}-route`}>{$t('ui.route_option')} <span class="required">*</span></label>
+                    <span class="select-wrap"><select id={`${uid}-route`} class="control" bind:value={values.route} on:change={() => { routeTouched = true; clearError('route'); }} aria-invalid={Boolean(errors.route)} aria-describedby={errors.route ? errorId('route') : undefined}>
                       <option value="">{$t('ui.select')}</option>
-                      {#each routeOptions as option (option.label)}
-                        <option value={option.label}>{option.label}</option>
-                      {/each}
-                      <option value={NOT_SURE}>{$t('ui.not_sure_yet')}</option>
-                    </select>
-                    <ChevronDown class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/65" size={18} />
-                  </span>
-                  {#if errors.route}<span id={errorId('route')} class={errorClass}>{errors.route}</span>{/if}
-                </label>
-              {/if}
-              <label class="grid gap-1.5">
-                <span class={labelClass}>{$t('ui.travellers')}</span>
-                <input
-                  class={fieldClass('travellers')}
-                  data-field="travellers"
-                  type="number"
-                  min="1"
-                  max="60"
-                  step="1"
-                  inputmode="numeric"
-                  bind:value={travellers}
-                  on:input={() => clearError('travellers')}
-                  aria-invalid={Boolean(errors.travellers)}
-                  aria-describedby={errors.travellers ? errorId('travellers') : undefined}
-                />
-                {#if errors.travellers}<span id={errorId('travellers')} class={errorClass}>{errors.travellers}</span>{/if}
-              </label>
-              <label class="grid gap-1.5">
-                <span class={labelClass}>{$t('ui.travel_date')}</span>
-                <!-- A picker rather than free text. Nothing in the past, since
-                     a trip cannot start before today. -->
-                <input
-                  class={fieldClass('travelDate')}
-                  data-field="travelDate"
-                  type="date"
-                  min={todayStr}
-                  bind:value={travelDate}
-                  on:input={() => clearError('travelDate')}
-                  aria-invalid={Boolean(errors.travelDate)}
-                  aria-describedby={errors.travelDate ? errorId('travelDate') : undefined}
-                />
-                {#if errors.travelDate}<span id={errorId('travelDate')} class={errorClass}>{errors.travelDate}</span>{/if}
-              </label>
-              <label class="grid gap-1.5">
-                <span class={labelClass}>{$t('ui.number_of_days')}</span>
-                <span class="relative block">
-                  <select
-                    class={selectClass('days')}
-                    data-field="days"
-                    bind:value={days}
-                    on:change={() => { daysTouched = true; clearError('days'); }}
-                    aria-invalid={Boolean(errors.days)}
-                    aria-describedby={errors.days ? errorId('days') : undefined}
-                  >
-                    <option value="">{$t('ui.select')}</option>
-                    {#each DAY_OPTIONS as option (option)}
-                      <option value={option}>{option} {option === '1' ? $t('label.day') : $t('label.days')}</option>
-                    {/each}
-                  </select>
-                  <ChevronDown class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/65" size={18} />
-                </span>
-                {#if errors.days}<span id={errorId('days')} class={errorClass}>{errors.days}</span>{/if}
-              </label>
-            </div>
-          {:else if step === 2}
-            <div class="grid items-start gap-4 {hasStartPoints ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}">
-              {#if hasStartPoints}
-                <label class="grid gap-1.5">
-                  <span class={labelClass}>{$t('ui.starting_point')}</span>
-                  <span class="relative block">
-                    <select
-                      class={selectClass('startPoint')}
-                      data-field="startPoint"
-                      bind:value={startPoint}
-                      on:change={() => clearError('startPoint')}
-                      aria-invalid={Boolean(errors.startPoint)}
-                      aria-describedby={errors.startPoint ? errorId('startPoint') : undefined}
-                    >
-                      <option value="">{$t('ui.select')}</option>
-                      {#each startPoints as point}
-                        <option value={String(point.name)}>{point.name}</option>
-                      {/each}
-                      <option value={NOT_SURE}>{$t('ui.not_sure_yet')}</option>
-                    </select>
-                    <ChevronDown class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/65" size={18} />
-                  </span>
-                  {#if errors.startPoint}<span id={errorId('startPoint')} class={errorClass}>{errors.startPoint}</span>{/if}
-                </label>
-              {/if}
-              <label class="grid gap-1.5">
-                <span class={labelClass}>{$t('ui.comfort_level')}</span>
-                <span class="relative block">
-                  <select
-                    class={selectClass('comfort')}
-                    data-field="comfort"
-                    bind:value={comfort}
-                    on:change={() => clearError('comfort')}
-                    aria-invalid={Boolean(errors.comfort)}
-                    aria-describedby={errors.comfort ? errorId('comfort') : undefined}
-                  >
-                    <option value="">{$t('ui.select')}</option>
-                    {#each COMFORT_OPTIONS as option (option.value)}
-                      <option value={option.value}>{COMFORT_LABEL_KEYS[option.value] ? $t(COMFORT_LABEL_KEYS[option.value]) : option.label}</option>
-                    {/each}
-                    <option value={NOT_SURE}>{$t('ui.not_sure_yet')}</option>
-                  </select>
-                  <ChevronDown class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/65" size={18} />
-                </span>
-                {#if errors.comfort}<span id={errorId('comfort')} class={errorClass}>{errors.comfort}</span>{/if}
-              </label>
-              <label class="grid gap-1.5">
-                <span class={labelClass}>{$t('ui.main_interest')}</span>
-                <span class="relative block">
-                  <select
-                    class={selectClass('interest')}
-                    data-field="interest"
-                    bind:value={interest}
-                    on:change={() => clearError('interest')}
-                    aria-invalid={Boolean(errors.interest)}
-                    aria-describedby={errors.interest ? errorId('interest') : undefined}
-                  >
-                    <option value="">{$t('ui.select')}</option>
-                    {#each interests as option}
-                      <option value={option.name}>{option.name}</option>
-                    {/each}
-                    <option value={NOT_SURE}>{$t('ui.not_sure_yet')}</option>
-                  </select>
-                  <ChevronDown class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/65" size={18} />
-                </span>
-                {#if errors.interest}<span id={errorId('interest')} class={errorClass}>{errors.interest}</span>{/if}
-              </label>
-            </div>
-          {:else}
-            <div class="grid items-start gap-4 sm:grid-cols-3">
-              <label class="grid gap-1.5">
-                <span class={labelClass}>{$t('ui.name')}</span>
-                <input
-                  class={fieldClass('fullName')}
-                  data-field="fullName"
-                  type="text"
-                  autocomplete="name"
-                  autocapitalize="words"
-                  bind:value={fullName}
-                  on:input={() => clearError('fullName')}
-                  aria-invalid={Boolean(errors.fullName)}
-                  aria-describedby={errors.fullName ? errorId('fullName') : undefined}
-                />
-                {#if errors.fullName}<span id={errorId('fullName')} class={errorClass}>{errors.fullName}</span>{/if}
-              </label>
-              <label class="grid gap-1.5">
-                <span class={labelClass}>{$t('form.email')}</span>
-                <input
-                  class={fieldClass('email')}
-                  data-field="email"
-                  type="email"
-                  inputmode="email"
-                  autocomplete="email"
-                  autocapitalize="off"
-                  spellcheck="false"
-                  placeholder="you@example.com"
-                  bind:value={email}
-                  on:input={() => clearError('email')}
-                  aria-invalid={Boolean(errors.email)}
-                  aria-describedby={errors.email ? errorId('email') : undefined}
-                />
-                {#if errors.email}<span id={errorId('email')} class={errorClass}>{errors.email}</span>{/if}
-              </label>
-              <label class="grid gap-1.5">
-                <span class={labelClass}>{$t('ui.whatsapp_number')}</span>
-                <input
-                  class={fieldClass('phone')}
-                  data-field="phone"
-                  type="tel"
-                  inputmode="tel"
-                  autocomplete="tel"
-                  placeholder="+255 …"
-                  bind:value={phone}
-                  on:input={() => clearError('phone')}
-                  aria-invalid={Boolean(errors.phone)}
-                  aria-describedby={errors.phone ? errorId('phone') : `${errorId('phone')}-hint`}
-                />
-                {#if errors.phone}
-                  <span id={errorId('phone')} class={errorClass}>{errors.phone}</span>
-                {:else}
-                  <span id={`${errorId('phone')}-hint`} class={hintClass}>{$t('ui.include_your_country_code')}</span>
+                      {#each routeOptions as option}<option value={option.label}>{option.label}</option>{/each}
+                      <option value="Not sure yet">{$t('ui.not_sure_yet')}</option>
+                    </select><ChevronDown size={16} aria-hidden="true" /></span>
+                    {#if errors.route}<p class="field-error" id={errorId('route')}>{$t(errors.route)}</p>{/if}
+                  </div>
                 {/if}
-              </label>
-            </div>
-
-            <!-- A WhatsApp number is not permission to use it, so it is asked
-                 for separately here as it is on every other form. -->
-            <label class="mt-3 flex cursor-pointer items-start gap-2.5">
-              <input type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 accent-[#25D366]" bind:checked={whatsappOptIn} />
-              <span class="text-xs leading-5 text-white/70">{$t('ui.contact_me_on_whatsapp_about')}<span class="text-white/45">{$t('ui.optional_we_reply_by_email')}</span>
-              </span>
-            </label>
-          {/if}
-          </div>
-
-          {#if formError}
-            <p class="mt-3 rounded-lg bg-clay/25 px-3 py-2 text-xs text-white" role="alert">{formError}</p>
-          {/if}
-
-          {#if step === TOTAL}
-            <!-- On a phone the buttons fill the row, so the reassurance sits on
-                 its own line above them instead of beside them. -->
-            <p class="mt-4 flex items-center gap-1.5 text-[11.5px] text-white/55 sm:hidden">
-              <Lock size={12} />{$t('form.never_shared')}
-            </p>
-          {/if}
-
-          <div class="planner-actions mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-            {#if step === TOTAL}
-              <span class="mr-auto hidden items-center gap-1.5 text-[11.5px] text-white/55 sm:inline-flex">
-                <Lock size={12} />{$t('form.never_shared')}
-              </span>
-            {/if}
-            {#if step > 1}
-              <button
-                class="inline-flex h-11 items-center justify-center gap-1.5 rounded-[10px] border border-white/25 px-5 text-[13px] font-semibold text-white transition hover:bg-white/10 disabled:opacity-50"
-                type="button"
-                disabled={submitting}
-                on:click={back}
-              ><ChevronLeft size={16} />{$t('form.back')}</button>
-            {/if}
-            <button
-              class="inline-flex h-11 items-center justify-center gap-1.5 rounded-[10px] bg-goldfinch-gold px-6 text-[13px] font-bold uppercase tracking-[0.08em] text-heading transition hover:bg-gold-hover disabled:opacity-60"
-              type="submit"
-              disabled={submitting}
-              aria-busy={submitting}
-            >
-              {#if submitting}
-                <Loader2 size={16} class="animate-spin" /> {$t('ui.sending')}
+                <div class="fields two-columns">
+                  <div class="field" data-field="days">
+                    <label for={`${uid}-days`}>{$t('style_form.safari_days')} <span class="required">*</span></label>
+                    <input id={`${uid}-days`} class="control" type="number" min="1" step="1" inputmode="numeric" bind:value={values.days} disabled={values.daysUnsure} on:input={() => { daysTouched = true; clearError('days'); }} aria-invalid={Boolean(errors.days)} aria-describedby={errors.days ? errorId('days') : undefined} />
+                    <label class="check"><input type="checkbox" bind:checked={values.daysUnsure} on:change={() => clearError('days')} /><span>{$t('ui.not_sure_yet')}</span></label>
+                    {#if errors.days}<p class="field-error" id={errorId('days')}>{$t(errors.days)}</p>{/if}
+                  </div>
+                  <div class="field" data-field="travelDate">
+                    <span class="field-label">{$t('form.preferred_start_date')} <span class="required">*</span></span>
+                    <TripDatePicker bind:value={values.travelDate} min={today} label={$t('form.preferred_start_date')} disabled={values.dateUnsure} invalid={Boolean(errors.travelDate)} describedBy={errors.travelDate ? errorId('travelDate') : undefined} on:change={() => { clearError('travelDate'); tracker.started(); }} />
+                    <label class="check"><input type="checkbox" bind:checked={values.dateUnsure} on:change={() => { clearError('travelDate'); tracker.started(); }} /><span>{$t('style_form.dates_undecided')}</span></label>
+                    {#if errors.travelDate}<p class="field-error" id={errorId('travelDate')}>{$t(errors.travelDate)}</p>{/if}
+                  </div>
+                </div>
+              {:else if step === 2}
+                <div class="fields three-columns">
+                  <div class="field" data-field="adults">
+                    <label for={`${uid}-adults`}>{$t('form.adults')} <span class="required">*</span></label>
+                    <input id={`${uid}-adults`} class="control" type="number" min="1" step="1" inputmode="numeric" required bind:value={values.adults} on:input={() => clearError('adults')} aria-invalid={Boolean(errors.adults)} aria-describedby={errors.adults ? errorId('adults') : undefined} />
+                    {#if errors.adults}<p class="field-error" id={errorId('adults')}>{$t(errors.adults)}</p>{/if}
+                  </div>
+                  <div class="field" data-field="children">
+                    <label for={`${uid}-children`}>{$t('style_form.children')} <span class="optional">({$t('ui.optional').toLowerCase()})</span></label>
+                    <input id={`${uid}-children`} class="control" type="number" min="0" step="1" inputmode="numeric" bind:value={values.children} on:input={() => clearError('children')} aria-invalid={Boolean(errors.children)} aria-describedby={errors.children ? errorId('children') : undefined} />
+                    {#if errors.children}<p class="field-error" id={errorId('children')}>{$t(errors.children)}</p>{/if}
+                  </div>
+                  <div class="field" data-field="language">
+                    <label for={`${uid}-language`}>{$t('form.preferred_language')} <span class="required">*</span></label>
+                    <span class="select-wrap"><select id={`${uid}-language`} class="control" aria-invalid={Boolean(errors.language)} aria-describedby={errors.language ? errorId('language') : undefined} bind:value={values.language} on:change={() => clearError('language')}>
+                      {#each LANGUAGES as language}<option value={language.code}>{language.label}</option>{/each}
+                    </select><ChevronDown size={16} aria-hidden="true" /></span>
+                    {#if errors.language}<p class="field-error" id={errorId('language')}>{$t(errors.language)}</p>{/if}
+                  </div>
+                </div>
+                <div class="fields two-columns preferences">
+                  <fieldset><legend>{$t('style_form.accommodation')} <span class="optional">({$t('ui.optional').toLowerCase()})</span></legend>
+                    <div class="choices">{#each COMFORT as option}<label class:chosen={values.comfort === option.value}><input type="radio" name={`${uid}-comfort`} value={option.value} bind:group={values.comfort} /><span>{$t(option.key)}</span></label>{/each}</div>
+                  </fieldset>
+                  <fieldset><legend>{$t('style_form.beach_stay')} <span class="optional">({$t('ui.optional').toLowerCase()})</span></legend>
+                    <div class="choices">{#each BEACH as option}<label class:chosen={values.beach === option.value}><input type="radio" name={`${uid}-beach`} value={option.value} bind:group={values.beach} /><span>{$t(option.key)}</span></label>{/each}</div>
+                  </fieldset>
+                </div>
               {:else}
-                {submitLabel} <ChevronRight size={16} />
+                <div class="fields three-columns contact-fields">
+                  <div class="field" data-field="fullName">
+                    <label for={`${uid}-name`}>{$t('form.full_name')} <span class="required">*</span></label>
+                    <input id={`${uid}-name`} class="control" type="text" autocomplete="name" required bind:value={values.fullName} placeholder={$t('style_form.name_placeholder')} on:input={() => clearError('fullName')} aria-invalid={Boolean(errors.fullName)} aria-describedby={errors.fullName ? errorId('fullName') : undefined} />
+                    {#if errors.fullName}<p class="field-error" id={errorId('fullName')}>{$t(errors.fullName)}</p>{/if}
+                  </div>
+                  <div class="field" data-field="email">
+                    <label for={`${uid}-email`}>{$t('form.email')} <span class="required">*</span></label>
+                    <input id={`${uid}-email`} class="control" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" required bind:value={values.email} placeholder="you@example.com" on:input={() => clearError('email')} aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? errorId('email') : undefined} />
+                    {#if errors.email}<p class="field-error" id={errorId('email')}>{$t(errors.email)}</p>{/if}
+                  </div>
+                  <div class="field" data-field="phone">
+                    <span class="field-label">WhatsApp <span class="optional">({$t('ui.optional').toLowerCase()})</span></span>
+                    <TripPhoneInput bind:dialCode={values.dialCode} bind:phone={values.phone} invalid={Boolean(errors.phone)} describedBy={errors.phone ? errorId('phone') : undefined} on:input={() => clearError('phone')} />
+                    {#if errors.phone}<p class="field-error" id={errorId('phone')}>{$t(errors.phone)}</p>{/if}
+                  </div>
+                </div>
+                <div class="field requests"><label for={`${uid}-requests`}>{$t('form.special_requests')} <span class="optional">({$t('ui.optional').toLowerCase()})</span></label>
+                  <textarea id={`${uid}-requests`} class="control" rows="2" bind:value={values.specialRequests} placeholder={$t('style_form.requests_placeholder')}></textarea>
+                </div>
+                {#if values.phone.trim()}
+                  <label class="check consent"><input type="checkbox" bind:checked={values.whatsappOptIn} /><span>{$t('ui.contact_me_on_whatsapp_about')} {$t('ui.optional_we_reply_by_email')}</span></label>
+                {/if}
               {/if}
-            </button>
-          </div>
-        </form>
-      {/if}
-    </div>
+            </div>
+            {#if formError}<p class="form-error" role="alert">{formError}</p>{/if}
+            <div class="actions">
+              {#if step > 1}<button class="back" type="button" disabled={submitting} on:click={back}><ArrowLeft size={18} />{$t('form.back')}</button>{/if}
+              <button class="next" type="submit" disabled={submitting} aria-busy={submitting}>
+                {#if submitting}<Loader2 size={18} class="animate-spin" />{$t('ui.sending')}{:else}{step === 3 ? $t('style_form.send_enquiry') : $t('form.next_step')}<ArrowRight size={18} />{/if}
+              </button>
+            </div>
+          </form>
+        {/if}
+        {#if waDigits}<a class="whatsapp" href={whatsappHref} target="_blank" rel="noopener noreferrer" data-track-location="style_planner"><MessageCircle size={23} strokeWidth={1.6} />{$t('style_form.chat_whatsapp')}</a>{/if}
       </div>
     </div>
   </div>
 </section>
 
 <style>
-  /* Route, travellers, date, days. Travellers holds a small number, so it
-     takes the narrow track; the date picker keeps room for dd/mm/yyyy. */
-  @media (min-width: 1280px) {
-    .planner-row-four {
-      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.7fr) minmax(0, 1.15fr) minmax(0, 0.95fr);
-    }
+  .step-heading { scroll-margin-top: 7rem; }
+  .enquiry-band { padding-block: 40px; }
+  .planner-panel { position: relative; z-index: 2; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); align-items: center; gap: 44px; padding: 32px 36px; border-radius: 16px; background: rgb(var(--c-deep-green)); color: #fff; }
+  .planner-intro, .planner-form { min-width: 0; }
+  .eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: rgb(var(--c-goldfinch-gold)); }
+  h2 { margin-top: 12px; font-family: "Source Serif 4", Georgia, serif; font-size: clamp(28px, 2.5vw, 40px); line-height: 1.12; font-weight: 400; }
+  .intro-copy { margin-top: 16px; font-size: 16px; line-height: 1.55; color: #ffffffd9; }
+  .step-heading { margin-bottom: 18px; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; outline: none; }
+  .step-heading span { font-weight: 600; }
+  .fields { display: grid; gap: 16px; align-items: start; }
+  .two-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .three-columns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .field, fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+  .field > label:not(.check), .field-label, legend { display: block; margin-bottom: 7px; font-size: 10.5px; letter-spacing: .07em; line-height: 1.4; text-transform: uppercase; color: #fffffff0; }
+  .optional { text-transform: none; letter-spacing: 0; }
+  .required { color: rgb(var(--c-goldfinch-gold)); }
+  .control, .planner-form :global(.gf-input) { width: 100%; min-width: 0; border: 1px solid rgb(var(--c-goldfinch-gold) / .45); border-radius: 5px; background-color: #fff; color: rgb(var(--c-deep-green)); font-size: 14px; }
+  .control { height: 46px; padding: 10px 14px; outline: none; }
+  .planner-form :global(.date-trigger), .planner-form :global(.phone-row .gf-input) { height: 46px; }
+  .planner-form :global(.date-trigger) { background: #fcfaf4; padding-inline: 14px; }
+  .control::placeholder, .planner-form :global(input::placeholder) { color: #74776e; opacity: 1; }
+  .control:focus, .planner-form :global(.gf-input:focus-visible) { outline: 2px solid rgb(var(--c-goldfinch-gold)); outline-offset: 2px; }
+  .control:disabled, .planner-form :global(.date-trigger:disabled) { background: #e6e6df; opacity: .65; cursor: default; }
+  .planner-form :global(.date-trigger[data-invalid='true']), .control[aria-invalid='true'], .planner-form :global(.gf-input[aria-invalid='true']) { border-color: #f2b8a6; outline: 2px solid #f2b8a6; }
+  .select-wrap { position: relative; display: block; }
+  .select-wrap select { appearance: none; padding-right: 32px; background-image: none; }
+  .select-wrap :global(svg) { position: absolute; right: 12px; top: 15px; pointer-events: none; color: rgb(var(--c-deep-green)); }
+  .check { display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; cursor: pointer; font-size: 12px; line-height: 1.5; color: #ffffffeb; }
+  .check input { flex-shrink: 0; width: 18px; height: 18px; margin-top: 0; accent-color: rgb(var(--c-goldfinch-gold)); }
+  .preferences, .requests { margin-top: 18px; }
+  .choices { display: flex; min-height: 46px; border: 1px solid rgb(var(--c-goldfinch-gold) / .45); border-radius: 5px; background: #fff; color: rgb(var(--c-deep-green)); overflow: hidden; }
+  .choices label { display: flex; flex: 1; align-items: center; justify-content: center; min-width: 0; gap: 7px; padding: 10px 7px; border-right: 1px solid #dedbd2; font-size: 11px; line-height: 1.3; cursor: pointer; }
+  .choices label:last-child { border-right: 0; }
+  .choices input { flex-shrink: 0; width: 16px; height: 16px; accent-color: rgb(var(--c-goldfinch-gold)); }
+  .choices .chosen { background: #fff0ce; }
+  .choices label:focus-within { box-shadow: inset 0 0 0 2px rgb(var(--c-goldfinch-gold)); }
+  .requests textarea { height: 62px; min-height: 46px; resize: vertical; }
+  .route-field { margin-bottom: 16px; }
+  .actions { display: flex; justify-content: flex-end; align-items: center; gap: 24px; margin-top: 16px; }
+  .actions button { display: inline-flex; justify-content: center; align-items: center; gap: 12px; min-height: 44px; font-size: 12px; }
+  .back { padding: 8px 0; color: #fff; }
+  .next { padding: 12px 23px; background: rgb(var(--c-goldfinch-gold)); border: 1px solid rgb(var(--c-goldfinch-gold)); border-radius: 6px; color: rgb(var(--c-deep-green)); font-weight: 600; letter-spacing: .07em; text-transform: uppercase; }
+  .next:hover { background: rgb(var(--c-gold-hover)); }
+  button:disabled { opacity: .6; cursor: wait; }
+  button:focus-visible, a:focus-visible { outline: 2px solid rgb(var(--c-goldfinch-gold)); outline-offset: 4px; }
+  .whatsapp { display: flex; justify-content: flex-end; align-items: center; gap: 9px; margin-top: 13px; font-size: 12px; line-height: 1.4; color: #fffffff0; }
+  .whatsapp:hover { color: rgb(var(--c-gold-hover)); }
+  .field-error { margin-top: 7px; font-size: 12px; line-height: 1.45; color: #ffd0c0; }
+  .form-error { margin-top: 16px; padding: 12px; border: 1px solid #f2b8a6; border-radius: 6px; font-size: 14px; }
+  .confirmation { padding: 24px; border: 1px solid rgb(var(--c-goldfinch-gold) / .4); border-radius: 10px; outline: none; }
+  .confirmation h3 { font-family: Georgia, serif; font-size: 28px; }
+  .confirmation p { margin-top: 12px; line-height: 1.6; }
+  .confirmation strong { color: rgb(var(--c-goldfinch-gold)); }
+  @media (max-width: 1100px) {
+    .planner-panel { grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr); gap: 28px; padding: 28px; }
+    .contact-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .contact-fields .field:last-child { grid-column: 1 / -1; }
   }
-
-  @media (max-width: 767px) {
-    .package-planner { padding-block: 28px; }
-    .package-planner .container-shell { width: calc(100% - 32px); }
-    .package-planner .planner-panel { padding: 24px 16px; border-radius: 20px; }
-    .package-planner input:not([type='checkbox']), .package-planner select { height: 50px; font-size: 16px; color: rgb(var(--c-forest)); }
-    .package-planner .planner-actions { display: flex; flex-direction: row; }
-    .package-planner .planner-actions button { min-height: 50px; height: auto; }
-    .package-planner .planner-actions button[type='submit'] { flex: 1; padding-inline: 12px; color: rgb(var(--c-forest)); }
-    .package-planner .planner-actions button[type='button'] { padding-inline: 14px; }
+  @media (max-width: 800px) {
+    .planner-panel { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+    h2 { max-width: 560px; font-size: 32px; }
+    .intro-copy { max-width: 540px; font-size: 15px; margin-top: 12px; }
+  }
+  @media (max-width: 540px) {
+    .enquiry-band { padding-block: 28px; }
+    .enquiry-band .container-shell { width: calc(100% - 32px); }
+    .planner-panel { padding: 24px 20px; border-radius: 14px; }
+    h2 { font-size: 29px; }
+    .two-columns, .three-columns { grid-template-columns: minmax(0, 1fr); }
+    .fields { gap: 18px; }
+    .control, .planner-form :global(.phone-row .gf-input), .planner-form :global(.date-trigger) { font-size: 16px; height: 48px; }
+    .choices label { font-size: 12px; padding-block: 13px; }
+    .step-heading { font-size: 12px; letter-spacing: .065em; }
+    .actions { gap: 20px; }
+    .next { flex: 1; }
+    .whatsapp { justify-content: center; text-align: center; }
+    .consent { font-size: 11px; }
   }
 </style>
