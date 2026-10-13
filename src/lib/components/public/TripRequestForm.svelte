@@ -41,6 +41,7 @@
     Users
   } from '@lucide/svelte';
   import { isEnquiryEmail, isEnquiryPhoneFor, newEnquiryKey, savedEnquiryReference } from '$lib/enquiry/validation';
+  import { clearDraft, loadDraft, saveDraft } from '$lib/enquiry/draft';
   import { api, ApiRequestError, submitErrorKey } from '$lib/api/client';
   import { campaignTags, getAttribution, lastCtaClicked, pushDataLayerEvent } from '$lib/analytics';
   import type { Tour } from '$lib/types';
@@ -128,6 +129,92 @@
   ];
   // Start on the page's language when we reply in it, as the planner does.
   if (LANGUAGES.some((l) => l.code === $locale)) language = $locale;
+
+  // ── Draft ──────────────────────────────────────────────────────────────────
+  /*
+   * A half-filled request survives opening another page (a related tour, a
+   * suggested trip) and coming back: it is kept in the visitor's own browser
+   * by $lib/enquiry/draft and never sent anywhere. One draft for every tour,
+   * on purpose: the dates, the party, the reply language and the contact
+   * details carry over to the next tour the visitor opens. Cleared once a
+   * request is sent; kept when a send fails.
+   *
+   * A tour page holds two copies of this form (sidebar and phone sheet, one
+   * of them hidden). Both restore the same draft, and each saves only after
+   * the visitor changes something in it, so the copy nobody is using never
+   * writes its untouched state over what the other one saved.
+   */
+  const DRAFT_KEY = 'trip_request';
+  /** The dial codes TripPhoneInput offers: a stored code outside them is not restored, nor its number. */
+  const DIAL_CODES = ['+255', '+254', '+256', '+250', '+44', '+1', '+49', '+33', '+34', '+39', '+31', '+61', '+43', '+41'];
+  type TripDraft = { travel_date: string; adults: string; children: string; language: string; step: number };
+  type ContactDraft = { full_name: string; email: string; dialCode: string; phone: string; special_requests: string };
+  /**
+   * The visitor picked the reply language (here, or in the draft). Until then
+   * it is only the page's language, and is not carried to a page in another.
+   */
+  let languageChosen = false;
+  let draftRestored = false;
+  let draftSaved = '';
+
+  const draftParts = (): [TripDraft, ContactDraft] => [
+    { travel_date, adults, children, language: languageChosen ? language : '', step },
+    { full_name, email, dialCode, phone, special_requests }
+  ];
+  const draftText = (value: unknown, max: number): value is string => typeof value === 'string' && value.length <= max;
+  const draftCount = (value: unknown): value is string => typeof value === 'string' && /^\d{1,4}$/.test(value);
+  /** A real calendar day, from today up to the last year the date picker offers. */
+  const draftDate = (value: unknown): value is string => {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const date = new Date(`${value}T00:00:00Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value && value >= localToday() && date.getUTCFullYear() <= new Date().getFullYear() + 10;
+  };
+
+  /** Fill the form from a saved draft. Anything stale, unknown or tampered with is left at its default. */
+  const restoreDraft = () => {
+    const { trip, contact } = loadDraft<TripDraft, ContactDraft>(DRAFT_KEY);
+    if (trip) {
+      // Never a date already gone: the visitor picks a new one.
+      if (draftDate(trip.travel_date)) travel_date = trip.travel_date;
+      if (draftCount(trip.adults)) adults = trip.adults;
+      if (draftCount(trip.children)) children = trip.children;
+      const chosen = LANGUAGES.find((l) => l.code === trip.language);
+      if (chosen) {
+        language = chosen.code;
+        languageChosen = true;
+      }
+    }
+    if (contact) {
+      if (draftText(contact.full_name, 300)) full_name = contact.full_name;
+      if (draftText(contact.email, 320)) email = contact.email;
+      if (typeof contact.dialCode === 'string' && DIAL_CODES.includes(contact.dialCode)) {
+        dialCode = contact.dialCode;
+        if (typeof contact.phone === 'string' && /^[\d ]{0,32}$/.test(contact.phone)) phone = contact.phone;
+      }
+      if (draftText(contact.special_requests, 10000)) special_requests = contact.special_requests;
+    }
+    // Back on the details step only when the trip step is complete; otherwise
+    // the visitor starts on the trip step, where something is missing.
+    if (trip?.step === 1 && validateStep(0)) step = 1;
+    errors = {};
+  };
+
+  /** Save after a change the visitor made in this copy, never the state it was restored to. */
+  const persistDraft = (..._changed: unknown[]) => {
+    if (!draftRestored || submitted) return;
+    const parts = draftParts();
+    const snapshot = JSON.stringify(parts);
+    if (snapshot === draftSaved) return;
+    draftSaved = snapshot;
+    saveDraft(DRAFT_KEY, ...parts);
+  };
+  $: persistDraft(travel_date, adults, children, language, languageChosen, step, full_name, email, dialCode, phone, special_requests);
+
+  onMount(() => {
+    restoreDraft();
+    draftSaved = JSON.stringify(draftParts());
+    draftRestored = true;
+  });
 
   const clearErr = (key: string) => {
     if (errors[key]) {
@@ -360,6 +447,8 @@
       });
       bookingCode = savedEnquiryReference(res.data);
       submitted = true;
+      // Sent and stored: the next tour starts on an empty form.
+      clearDraft(DRAFT_KEY);
       // The lead: request_trip_submitted here, generate_lead in GA4 with
       // lead_source itinerary_form. The reply language is a preference, not
       // personal, so it rides along for the in-house record.
@@ -505,7 +594,7 @@
           <span class={labelCls}>{inline ? $t('label.language') : $t('form.preferred_language')} <span class="gf-req">*</span></span>
           <span class="relative block">
             <Globe size={16} class={iconCls} />
-            <select required aria-invalid={Boolean(errors.language)} class={`${fieldCls} appearance-none`} bind:value={language} on:change={() => clearErr('language')}>
+            <select required aria-invalid={Boolean(errors.language)} class={`${fieldCls} appearance-none`} bind:value={language} on:change={() => { languageChosen = true; clearErr('language'); }}>
               <option value="" disabled>{inline ? $t('ui.select') : $t('form.select_language')}</option>
               {#each LANGUAGES as l}<option value={l.code}>{l.label}</option>{/each}
             </select>

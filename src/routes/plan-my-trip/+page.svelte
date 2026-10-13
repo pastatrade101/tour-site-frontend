@@ -46,6 +46,7 @@
   } from '@lucide/svelte';
   import { api, ApiRequestError, submitErrorKey } from '$lib/api/client';
   import { cleanPhoneInput, isEnquiryEmail, isEnquiryPhoneFor, savedEnquiryReference } from '$lib/enquiry/validation';
+  import { clearDraft, loadDraft, saveDraft } from '$lib/enquiry/draft';
   import { campaignTags, createFormTracker, getAttribution, lastCtaClicked, pushDataLayerEvent } from '$lib/analytics';
   import { afterNavigate } from '$app/navigation';
   import { currency, formatUsd } from '$lib/currency';
@@ -174,8 +175,9 @@
   const tracker = createFormTracker({ form_name: 'plan_my_trip', form_type: 'trip_planner', lead_type: 'plan_my_trip' }, 'plan_my_trip_submitted');
   // Every answer replaces the draft with a new object, so the first time it is
   // not the one built above, the visitor has answered something themselves.
-  // What a link prefilled (a trip type, a month, who is travelling) is not a start.
-  const prefilled = d;
+  // What a link prefilled (a trip type, a month, who is travelling) is not a start,
+  // and neither is a saved draft put back (see restoreDraft, which moves this mark).
+  let prefilled = d;
   $: if (d !== prefilled) tracker.started();
   // Where the visitor is, for the abandon event.
   $: tracker.at(step, STEP_KEYS[step]);
@@ -571,6 +573,193 @@
   /** Jump back to edit — only to steps already passed, so nothing is skipped unvalidated. */
   const edit = (index: number) => index < step && goTo(index);
 
+  // ── Keeping a half-filled plan ─────────────────────────────────────────────
+  // Opening a suggested trip (or any link) and coming back must not start the
+  // planner over. The answers are kept in the visitor's own browser
+  // (lib/enquiry/draft: trip answers for two weeks, contact details and notes
+  // for this tab only) and put back after mount, so the server-rendered page
+  // is unchanged. Everything read back is checked against what the page
+  // offers today; anything stale, unknown or past is left out.
+  const DRAFT_KEY = 'plan_my_trip';
+  let draftReady = false;
+
+  /*
+   * The link that opened this visit, as a short fingerprint (never its values).
+   * A new link that answers something (a trip type, a month, who is
+   * travelling) wins over the draft for those answers and starts at step 1.
+   * Coming back on the same link — the back button after a suggested trip —
+   * is not a new one: the draft already holds it, and what was changed since.
+   */
+  const entryText = Object.keys(incoming.entry)
+    .sort()
+    .map((key) => `${key}=${incoming.entry[key]}`)
+    .join('&');
+  const entryMark = (() => {
+    if (!entryText) return '';
+    let hash = 5381;
+    for (let i = 0; i < entryText.length; i += 1) hash = ((hash * 33) ^ entryText.charCodeAt(i)) >>> 0;
+    return hash.toString(36);
+  })();
+
+  function oneOf<T>(value: unknown, allowed: readonly T[]): T | undefined {
+    return allowed.includes(value as T) ? (value as T) : undefined;
+  }
+  const countIn = (value: unknown, min: number, max: number) =>
+    typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max ? value : undefined;
+  const flag = (value: unknown) => (typeof value === 'boolean' ? value : undefined);
+  const words = (value: unknown) => (typeof value === 'string' ? value : undefined);
+  /** A real YYYY-MM-DD from today on, or '' — a past date is never put back. */
+  const futureDate = (value: unknown) => {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || value < today) return '';
+    const parsed = new Date(`${value}T00:00:00Z`);
+    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value ? value : '';
+  };
+
+  const restoreDraft = () => {
+    const saved = loadDraft<Record<string, unknown>, Record<string, unknown>>(DRAFT_KEY);
+    let next = d;
+    let at = 0;
+    if (saved.trip) {
+      const t = saved.trip;
+      // Still the draft built from the link (nothing has been answered before mount).
+      const link = d;
+      const fresh = entryMark !== '' && t.entry !== entryMark;
+
+      // Trip types on offer only, with toggleType's rules: "Not sure yet" alone, one way to start a safari.
+      const savedTypes = Array.isArray(t.types) ? [...new Set(t.types)].filter((id): id is TypeId => offered.some((o) => o.id === id)) : link.types;
+      const draftTypes = savedTypes.includes('unsure')
+        ? (['unsure'] as TypeId[])
+        : savedTypes.filter((id, i) => !typeOf(id).base || !savedTypes.slice(0, i).some((other) => typeOf(other).base));
+      const types = fresh && link.types.length ? link.types : draftTypes;
+      const savedLengths = t.lengths && typeof t.lengths === 'object' ? (t.lengths as Record<string, unknown>) : {};
+      const lengths: Draft['lengths'] = {};
+      for (const type of types) {
+        const band = fresh && link.lengths[type] ? link.lengths[type] : savedLengths[type];
+        if (typeof band === 'string' && (band === NOT_SURE || LENGTHS[type].includes(band))) lengths[type] = band;
+      }
+
+      const party = fresh && incoming.party ? link.party : oneOf<Party | ''>(t.party, ['', ...PARTIES.map((p) => p.id)]) ?? link.party;
+      const adults = fresh && incoming.adults !== undefined ? link.adults : countIn(t.adults, 1, 30) ?? link.adults;
+      let children = fresh && incoming.children !== undefined ? link.children : countIn(t.children, 0, 20) ?? link.children;
+      // A family named by a new link with no head count has a child to start from, as pickParty does.
+      if (fresh && incoming.party === 'family' && incoming.adults === undefined && incoming.children === undefined && children === 0) children = 1;
+      const savedAges = Array.isArray(t.childAges) ? t.childAges.map((age) => (typeof age === 'string' && /^(?:\d|1[0-7])?$/.test(age) ? age : '')) : [];
+
+      // Dates: a stale year or month, or a past day, is dropped rather than moved.
+      let dateMode = oneOf<Draft['dateMode']>(t.dateMode, ['flexible', 'exact']) ?? 'flexible';
+      const savedYear = oneOf(t.year, years);
+      let year = savedYear ?? thisYear;
+      const savedMonth = savedYear === undefined ? undefined : countIn(t.month, 0, 11);
+      let month: number | null = savedMonth !== undefined && !monthPast(year, savedMonth) ? savedMonth : null;
+      let dateUnsure = flag(t.dateUnsure) ?? false;
+      if (dateUnsure) month = null;
+      let start = futureDate(t.startDate);
+      let end = futureDate(t.endDate);
+      if (end && start && end < start) end = '';
+      // A date the new link carries wins (an end date before it is no longer an answer, as in setStart).
+      if (fresh && (startDate || startMonth !== null)) {
+        dateMode = link.dateMode;
+        year = link.year;
+        month = link.month;
+        dateUnsure = false;
+        if (link.startDate) {
+          start = link.startDate;
+          if (end && end < start) end = '';
+        }
+      }
+
+      const savedPriorities = Array.isArray(t.priorities)
+        ? [...new Set(t.priorities)].filter((p): p is string => typeof p === 'string' && priorityOptions.includes(p))
+        : link.priorities;
+      const draftPriorities = savedPriorities.includes(NOT_SURE) ? [NOT_SURE] : savedPriorities.slice(0, MAX_PRIORITIES);
+      const savedBudget = t.budget;
+
+      next = {
+        types,
+        party,
+        adults,
+        children,
+        childAges: resize(savedAges, children),
+        dateMode,
+        year,
+        month,
+        dateUnsure,
+        startDate: start,
+        endDate: end,
+        lengths,
+        pace: oneOf<string>(t.pace, ['', ...PACES.map((p) => p.id)]) ?? link.pace,
+        priorities: fresh && link.priorities.length ? link.priorities : draftPriorities,
+        comfort: oneOf<string>(t.comfort, ['', NOT_SURE, ...comfortChoices.map((c) => c.id)]) ?? link.comfort,
+        budget:
+          scale && typeof savedBudget === 'number' && Number.isFinite(savedBudget) && savedBudget >= scale.min && savedBudget <= scale.max ? savedBudget : null,
+        budgetUnsure: flag(t.budgetUnsure) ?? false,
+        stage: oneOf<string>(t.stage, ['', ...STAGES.map((s) => s.id)]) ?? link.stage,
+        notes: d.notes
+      };
+      // A new link that answers something starts at step 1, so its answers are seen;
+      // one that only names a tour, a place or where it came from keeps the visitor's step.
+      const linkAnswers =
+        link.types.length > 0 ||
+        !!incoming.party ||
+        incoming.adults !== undefined ||
+        incoming.children !== undefined ||
+        !!startDate ||
+        startMonth !== null ||
+        Object.keys(link.lengths).length > 0 ||
+        link.priorities.length > 0;
+      at = fresh && linkAnswers ? 0 : countIn(t.step, 0, LAST) ?? 0;
+    }
+
+    const who = saved.contact;
+    if (who) {
+      full_name = words(who.full_name) ?? full_name;
+      email = words(who.email) ?? email;
+      dialCode = oneOf(who.dialCode, DIAL_CODES) ?? dialCode;
+      const savedPhone = who.phone;
+      if (typeof savedPhone === 'string') {
+        const cleaned = cleanPhoneInput(savedPhone, dialCode, DIAL_CODES);
+        dialCode = cleaned.dialCode;
+        phone = cleaned.phone;
+      }
+      contact = oneOf(who.contact, CONTACTS) ?? contact;
+      language = oneOf(who.language, LANGUAGES.map((l) => l.code)) ?? language;
+      whatsappConsent = flag(who.whatsappConsent) ?? whatsappConsent;
+      const notes = words(who.notes);
+      if (notes !== undefined) next = { ...next, notes };
+    }
+
+    if (next !== d) {
+      d = next;
+      // Answers put back are not a new start: form_started still means answering on this visit.
+      prefilled = d;
+    }
+    if (at > 0) {
+      // Never past the first step the restored answers do not pass — checked quietly, no errors shown.
+      let reachable = 0;
+      while (reachable < at && validate(reachable)) reachable += 1;
+      errors = {};
+      step = reachable;
+    }
+  };
+
+  onMount(() => {
+    try {
+      restoreDraft();
+    } catch {
+      /* a draft that cannot be read is no draft — the planner starts as it always has */
+    }
+    draftReady = true;
+  });
+
+  // Every change is kept, once the draft has been read back (so the empty start
+  // never overwrites it). Notes are free text: they go with the contact details.
+  $: if (draftReady && !submitted)
+    saveDraft(
+      DRAFT_KEY,
+      { ...d, notes: undefined, step, entry: entryMark },
+      { full_name, email, phone, dialCode, contact, language, notes: d.notes, whatsappConsent }
+    );
+
   // ── Sending ────────────────────────────────────────────────────────────────
   // Staff read in English and in USD, whatever the visitor browsed in.
   const usd = (n: number) => `$${n.toLocaleString('en-US')}`;
@@ -679,6 +868,8 @@
       });
       bookingCode = savedEnquiryReference(res.data);
       submitted = true;
+      // Sent and stored: the half-filled copy is no longer needed (a failed send keeps it).
+      clearDraft(DRAFT_KEY);
       // The lead: plan_my_trip_submitted here, generate_lead in GA4 with
       // lead_source plan_my_trip. The trip's shape as ids and bands — who,
       // how long, what budget, what kind, where — for the CMS to count by.

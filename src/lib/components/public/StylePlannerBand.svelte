@@ -9,6 +9,7 @@
   import TripDatePicker from './TripDatePicker.svelte';
   import TripPhoneInput from './TripPhoneInput.svelte';
   import { plannerProblems, plannerPayload, type PlannerValues, type PlannerField } from '$lib/enquiry/stylePlanner';
+  import { loadDraft, saveDraft, clearDraft } from '$lib/enquiry/draft';
 
   export let eyebrow = '';
   export let title: string;
@@ -66,6 +67,94 @@
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const uid = `enquiry-${packageSlug || categorySlug || 'safari'}`;
 
+  /*
+   * The half-filled band is kept in the visitor's own browser (see draft.ts),
+   * so opening a suggested trip and coming back finds it where they left it.
+   * Trip answers and the step go in the trip half; name, email, phone and notes
+   * in the tab-only contact half. The honeypot, idempotency key and send state
+   * are never kept. Everything read back is checked, and anything that no
+   * longer fits (a passed date, a route from another page) is left empty.
+   */
+  const DRAFT_KEY = 'style_planner';
+  let draftReady = false;
+  let draftSnapshot: string | null = null;
+  const asBool = (value: unknown) => (typeof value === 'boolean' ? value : undefined);
+  const asCount = (value: unknown, min: number) => (typeof value === 'number' && Number.isSafeInteger(value) && value >= min ? value : undefined);
+  const asText = (value: unknown, max: number) => (typeof value === 'string' && value.length <= max ? value : undefined);
+  const asChoice = (value: unknown, allowed: string[]) => (typeof value === 'string' && allowed.includes(value) ? value : undefined);
+  const asFutureDate = (value: unknown) => {
+    const date = asText(value, 10);
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return undefined;
+    const parsed = new Date(`${date}T00:00:00Z`);
+    return !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === date && date >= today ? date : undefined;
+  };
+  async function restoreDraft() {
+    const { trip, contact } = loadDraft<Record<string, unknown>, Record<string, unknown>>(DRAFT_KEY);
+    if (!trip && !contact) { draftReady = true; return; }
+    const next: PlannerValues = { ...values };
+    let resume = 1;
+    if (trip) {
+      const samePage = trip.categorySlug === categorySlug && trip.packageSlug === packageSlug;
+      const typedDays = trip.daysTouched === true;
+      // Days a route filled in belong to that route's page; days the visitor typed go with them.
+      const days = asCount(trip.days, 1);
+      if (days !== undefined && (samePage || typedDays)) { next.days = days; daysTouched = typedDays; }
+      next.daysUnsure = asBool(trip.daysUnsure) ?? next.daysUnsure;
+      next.travelDate = asFutureDate(trip.travelDate) ?? next.travelDate;
+      next.dateUnsure = asBool(trip.dateUnsure) ?? next.dateUnsure;
+      next.adults = asCount(trip.adults, 1) ?? next.adults;
+      next.children = asCount(trip.children, 0) ?? next.children;
+      // Left at the page's own language the answer follows the page; picked, it goes with the visitor.
+      const language = asChoice(trip.language, LANGUAGES.map((option) => option.code));
+      if (language && typeof trip.locale === 'string' && (trip.locale === $locale || language !== trip.locale)) next.language = language;
+      next.comfort = asChoice(trip.comfort, ['', ...COMFORT.map((option) => option.value)]) ?? next.comfort;
+      next.beach = asChoice(trip.beach, ['', ...BEACH.map((option) => option.value)]) ?? next.beach;
+      // A route only means something on the page it was chosen on, and one the page itself suggests wins —
+      // now or later: it comes back untouched, so a route the visitor picks on the page (a tab, a "request" button) still replaces it.
+      const pageRoute = Boolean(suggestedRoute) && routeOptions.some((option) => option.label === suggestedRoute);
+      const route = asChoice(trip.route, [...routeOptions.map((option) => option.label), 'Not sure yet']);
+      if (samePage && !pageRoute && route) next.route = route;
+      const savedStep = asCount(trip.step, 1);
+      if (savedStep && savedStep <= STEP_KEYS.length) resume = savedStep;
+    }
+    if (contact) {
+      next.fullName = asText(contact.fullName, 200) ?? next.fullName;
+      next.email = asText(contact.email, 254) ?? next.email;
+      // The number is only kept together with the country code it was typed for.
+      const dialCode = asText(contact.dialCode, 5);
+      const phone = asText(contact.phone, 32);
+      if (dialCode && /^\+\d{1,4}$/.test(dialCode) && phone !== undefined && /^[\d\s().-]*$/.test(phone)) { next.dialCode = dialCode; next.phone = phone; }
+      next.specialRequests = asText(contact.specialRequests, 5000) ?? next.specialRequests;
+      next.whatsappOptIn = asBool(contact.whatsappOptIn) ?? next.whatsappOptIn;
+    }
+    values = next;
+    await tick(); // a restored route fills in its days before the steps are checked
+    // Reopen on the saved step, but never past one whose answers no longer hold.
+    for (let index = 1; index < resume; index += 1) {
+      if (Object.keys(plannerProblems(values, index, today, hasRouteOptions)).length) { resume = index; break; }
+    }
+    step = resume;
+    draftReady = true;
+  }
+  /** Save on every change the visitor makes — never the page as it first opened, so that cannot overwrite a draft. */
+  function keepDraft(current: PlannerValues, currentStep: number, typedDays: boolean) {
+    const trip = {
+      days: current.days, daysUnsure: current.daysUnsure, travelDate: current.travelDate, dateUnsure: current.dateUnsure,
+      adults: current.adults, children: current.children, language: current.language, comfort: current.comfort,
+      beach: current.beach, route: current.route, step: currentStep, daysTouched: typedDays,
+      locale: $locale, categorySlug, packageSlug
+    };
+    const contact = {
+      fullName: current.fullName, email: current.email, phone: current.phone, dialCode: current.dialCode,
+      specialRequests: current.specialRequests, whatsappOptIn: current.whatsappOptIn
+    };
+    const snapshot = JSON.stringify([trip, contact]);
+    if (draftSnapshot === null || snapshot === draftSnapshot) { draftSnapshot = snapshot; return; }
+    draftSnapshot = snapshot;
+    saveDraft(DRAFT_KEY, trip, contact);
+  }
+  onMount(() => { void restoreDraft(); });
+
   $: hasRouteOptions = routeOptions.length > 1;
   $: if (!routeTouched && suggestedRoute && routeOptions.some((option) => option.label === suggestedRoute)) values.route = suggestedRoute;
   $: chosenRoute = routeOptions.find((option) => option.label === values.route);
@@ -116,12 +205,15 @@
       }));
       bookingCode = savedEnquiryReference(result.data);
       submitted = true;
+      clearDraft(DRAFT_KEY);
       tracker.submitted({ transaction_id: bookingCode, metadata: { safari_style_slug: categorySlug, safari_package_slug: packageSlug } });
       pushDataLayerEvent('trip_request_submitted', { form_type: 'Category Enquiry Form', form_name: 'style_planner', reference_id: bookingCode, transaction_id: bookingCode, source_page: location.pathname, cta_clicked: lastCtaClicked(), ...campaignTags() });
       await tick(); confirmation?.focus();
     } catch (error) { tracker.failed(); formError = $t(submitErrorKey(error, 'ui.unable_to_send_your_message')); }
     finally { submitting = false; }
   }
+  // Only once the saved draft has been read back; a failed send keeps it, a sent one clears it above.
+  $: if (draftReady && !submitted) keepDraft(values, step, daysTouched);
 </script>
 
 <section bind:this={root} class="enquiry-band bg-surface" aria-label={title}>

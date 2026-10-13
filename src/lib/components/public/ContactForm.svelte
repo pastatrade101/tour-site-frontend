@@ -16,6 +16,7 @@
   import { createFormTracker, pushDataLayerEvent, campaignTags } from '$lib/analytics';
   import { onMount, tick } from 'svelte';
   import { isEnquiryEmail, savedEnquiryReference } from '$lib/enquiry/validation';
+  import { clearDraft, loadDraft, saveDraft } from '$lib/enquiry/draft';
 
   /** Off where the surrounding section already states the heading. */
   export let showHeader = true;
@@ -36,10 +37,37 @@
   let errorMessage = '';
   let errors: Record<string, string> = {};
 
+  /*
+   * A half-written message survives a visit to another page and back. Every
+   * field here is contact data, so it all lives in the tab's session storage
+   * (the "contact" half of the draft); the trip half is always empty. Restored
+   * only after mount, so the server-rendered form is unchanged, and saved only
+   * once that restore has run, so the empty start never overwrites a draft.
+   */
+  const DRAFT_KEY = 'contact';
+  /** A generous ceiling: anything longer than this did not come from this form. */
+  const DRAFT_MAX = 20000;
+  let draftReady = false;
+  const draftText = (value: unknown): string | null =>
+    typeof value === 'string' && value.length <= DRAFT_MAX ? value : null;
+  const restoreDraft = () => {
+    const { contact } = loadDraft<Record<string, never>, Record<string, unknown>>(DRAFT_KEY);
+    if (contact && typeof contact === 'object' && !Array.isArray(contact)) {
+      full_name = draftText(contact.full_name) ?? full_name;
+      email = draftText(contact.email) ?? email;
+      phone = draftText(contact.phone) ?? phone;
+      subject = draftText(contact.subject) ?? subject;
+      message = draftText(contact.message) ?? message;
+    }
+    draftReady = true;
+  };
+  $: if (draftReady && !sent) saveDraft(DRAFT_KEY, {}, { full_name, email, phone, subject, message });
+
   let root: HTMLDivElement;
   let tracker = createFormTracker({ form_name: 'contact', form_type: 'contact', lead_type: 'contact' });
   let stopTracking: (() => void) | undefined;
   onMount(() => {
+    restoreDraft();
     stopTracking = tracker.watchLeave();
     const observer = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting)) { tracker.opened(); observer.disconnect(); } });
     observer.observe(root);
@@ -104,6 +132,7 @@
       subject = '';
       message = '';
       sent = true;
+      clearDraft(DRAFT_KEY);
       tracker.submitted({ transaction_id: reference });
       pushDataLayerEvent('trip_request_submitted', { form_name: 'contact', form_type: 'Contact Form', reference_id: reference, transaction_id: reference, source_page: location.pathname, ...campaignTags() });
     } catch (error) {
