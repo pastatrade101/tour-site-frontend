@@ -1,6 +1,8 @@
 <script lang="ts">
   import { t } from '$lib/i18n/ui';
   import { ArrowRight, Heart, Palmtree, PawPrint, ShieldCheck, Users } from '@lucide/svelte';
+  import { onMount } from 'svelte';
+  import { api } from '$lib/api/client';
   import type { Tour } from '$lib/types';
   import TourCard from '../TourCard.svelte';
 
@@ -32,14 +34,61 @@
     return definition.match.test(searchable);
   };
 
-  $: list = (tours ?? []).filter(Boolean);
+  /*
+   * The homepage loads only a handful of tours, and a chip filters what is
+   * loaded: with six tours, Family or Honeymoon could match none and read as
+   * "nothing assigned" while the catalogue has several. So the whole published
+   * list is fetched once — when the section comes near the screen, or at the
+   * latest when a chip is clicked — and the chips filter that. The tours
+   * already loaded keep their prepared images; the rest are added after them.
+   * Visitors who never scroll this far never pay for the larger list.
+   */
+  let root: HTMLElement;
+  let allTours: Tour[] | null = null;
+  let loadingAll = false;
+  const loadAll = async () => {
+    if (allTours || loadingAll) return;
+    loadingAll = true;
+    try {
+      const response = await api.tours.list({ status: 'published', limit: 100 });
+      const items = (response.data?.items ?? []).filter(Boolean);
+      if (items.length) {
+        const known = new Map((tours ?? []).filter(Boolean).map((tour) => [tour.id, tour]));
+        allTours = [...(tours ?? []).filter(Boolean), ...items.filter((tour) => !known.has(tour.id))];
+      }
+    } catch {
+      /* keep the tours already loaded */
+    } finally {
+      loadingAll = false;
+    }
+  };
+  const choose = (key: string) => {
+    activeFilter = key;
+    void loadAll();
+  };
+  onMount(() => {
+    if (typeof IntersectionObserver === 'undefined') return void loadAll();
+    const near = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        near.disconnect();
+        void loadAll();
+      }
+    }, { rootMargin: '400px 0px' });
+    if (root) near.observe(root);
+    return () => near.disconnect();
+  });
+
+  $: list = (allTours ?? tours ?? []).filter(Boolean);
+  // Once the whole list is in, a chip with nothing to show is left out.
+  $: shownFilters = allTours ? filters.filter((filter) => list.some((tour) => matchesFilter(tour, filter.key))) : filters;
+  $: if (shownFilters.length && !shownFilters.some((filter) => filter.key === activeFilter)) activeFilter = shownFilters[0].key;
   $: filteredTours = list.filter((tour) => matchesFilter(tour, activeFilter));
   $: visibleTours = filteredTours.slice(0, 6);
 
 </script>
 
 {#if list.length}
-  <section id="featured-itineraries" class="home-itineraries scroll-mt-20 bg-surface py-14 md:py-20 lg:py-24">
+  <section bind:this={root} id="featured-itineraries" class="home-itineraries scroll-mt-20 bg-surface py-14 md:py-20 lg:py-24">
     <div class="container-shell">
       <div class="flex items-end justify-between gap-8">
         <div class="min-w-0 max-w-3xl">
@@ -59,10 +108,10 @@
         </a>
       </div>
 
-      {#if filters.length}
+      {#if shownFilters.length}
         <div class="filter-rail mt-8 lg:mt-11" aria-label={$t('ui.filter_featured_itineraries')}>
-          {#each filters as filter}
-            <button type="button" aria-pressed={activeFilter === filter.key} class:active={activeFilter === filter.key} class="package-tab" on:click={() => (activeFilter = filter.key)}>
+          {#each shownFilters as filter}
+            <button type="button" aria-pressed={activeFilter === filter.key} class:active={activeFilter === filter.key} class="package-tab" on:click={() => choose(filter.key)}>
               <svelte:component this={filter.icon} size={15} strokeWidth={2.2} class="chip-icon" aria-hidden="true" />{$t(filter.label)}
             </button>
           {/each}
@@ -71,6 +120,7 @@
 
       {#key activeFilter}
         {#if visibleTours.length}<div class="package-grid mt-8 grid gap-5 lg:grid-cols-3 lg:gap-6">{#each visibleTours as tour (tour.slug)}<div class="package-card min-w-0"><TourCard {tour} showShortlist={false} /></div>{/each}</div>
+        {:else if loadingAll}<div class="mt-8 border-y border-ink/10 py-10 text-sm text-ink/55" aria-live="polite">{$t('ui.loading_featured_itineraries')}…</div>
         {:else}<div class="mt-8 border-y border-ink/10 py-10 text-sm text-ink/55">{$t('ui.no_featured_itineraries_are_assigned')}</div>{/if}
       {/key}
 
