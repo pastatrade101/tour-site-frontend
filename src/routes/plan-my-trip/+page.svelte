@@ -13,6 +13,10 @@
    * summary. The logic lives in lib/tripPlanner.ts; the request goes through
    * the same bookings endpoint as every other form, so the CMS inbox, the staff
    * and traveller emails, HubSpot and the WhatsApp opt-in all work unchanged.
+   *
+   * A visitor can also have the plan so far emailed to themselves as a link
+   * that reopens it ("Email me this plan to finish later", /plan-drafts). That
+   * is not an enquiry: no booking, no lead event, no Ads conversion.
    */
   import { onMount, tick } from 'svelte';
   import { fade, fly, scale as pop, slide } from 'svelte/transition';
@@ -35,6 +39,7 @@
     Lightbulb,
     Loader2,
     Lock,
+    Mail,
     MapPin,
     Minus,
     Pencil,
@@ -44,7 +49,7 @@
     Users,
     Wallet
   } from '@lucide/svelte';
-  import { api, ApiRequestError, submitErrorKey } from '$lib/api/client';
+  import { api, ApiRequestError, submitErrorKey, type PlanDraftRow } from '$lib/api/client';
   import { cleanPhoneInput, isEnquiryEmail, isEnquiryPhoneFor, savedEnquiryReference } from '$lib/enquiry/validation';
   import { clearDraft, loadDraft, saveDraft } from '$lib/enquiry/draft';
   import { campaignTags, createFormTracker, getAttribution, lastCtaClicked, pushDataLayerEvent } from '$lib/analytics';
@@ -554,6 +559,10 @@
     dir = index >= step ? 1 : -1;
     step = index;
     errorMessage = '';
+    // A "welcome back" or "link expired" line has been read once the visitor moves on,
+    // and a link that failed to open is no longer retried over what they answer next.
+    if (resumeNotice === 'failed') holdResume(null);
+    resumeNotice = '';
     await tick();
     // The new question and its first choices must be visible, including under the sticky header.
     stepHeading?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
@@ -615,8 +624,14 @@
     return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value ? value : '';
   };
 
-  const restoreDraft = () => {
-    const saved = loadDraft<Record<string, unknown>, Record<string, unknown>>(DRAFT_KEY);
+  type SavedHalves = { trip?: Record<string, unknown> | null; contact?: Record<string, unknown> | null };
+
+  /**
+   * Put a saved plan back: by default the browser's own draft, or the halves a
+   * "finish later" email link brought back (see resumeFrom). Both go through
+   * the same checks, so neither can put back anything the page does not offer.
+   */
+  const restoreDraft = (saved: SavedHalves = loadDraft<Record<string, unknown>, Record<string, unknown>>(DRAFT_KEY)) => {
     let next = d;
     let at = 0;
     if (saved.trip) {
@@ -742,23 +757,112 @@
     }
   };
 
-  onMount(() => {
+  const restoreLocal = () => {
     try {
       restoreDraft();
     } catch {
       /* a draft that cannot be read is no draft — the planner starts as it always has */
     }
+  };
+
+  // ── Coming back from a "finish later" email ────────────────────────────────
+  // The link carries ?resume=<token>. The plan it opens replaces the browser's
+  // own draft; a link that has expired leaves that draft as it was. The token
+  // stays in memory only, so the request sent later can say which saved plan
+  // it came from. Putting answers back is not answering: no form_started, and
+  // nothing reaches the dataLayer.
+  const RESUME_TOKEN = /^[A-Za-z0-9_-]{43}$/;
+  // Where a link that could not be opened just now waits for a reload: this
+  // history entry's own state, never the address bar or storage.
+  const RESUME_HELD = 'gf_plan_resume';
+  let resumeToken = '';
+  let resumeNotice: '' | 'resumed' | 'expired' | 'failed' = '';
+
+  const isRecord = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
+
+  /**
+   * Take ?resume= out of the address bar, keeping every other parameter. The
+   * token opens the visitor's plan (their email, name and phone), and the
+   * Google tags the layout loads read the page address, so it goes before
+   * anything else runs. `held` keeps it with this history entry only, so a
+   * reload after a passing failure (offline, too many tries) tries again.
+   */
+  const holdResume = (held: string | null) => {
+    try {
+      const url = new URL(location.href);
+      const state: Record<string, unknown> = { ...(isRecord(history.state) ? history.state : {}) };
+      if (!url.searchParams.has('resume') && (state[RESUME_HELD] ?? null) === held) return;
+      url.searchParams.delete('resume');
+      if (held) state[RESUME_HELD] = held;
+      else delete state[RESUME_HELD];
+      const query = url.searchParams.toString();
+      history.replaceState(state, '', `${url.pathname}${query ? `?${query}` : ''}${url.hash}`);
+    } catch {
+      /* the address cannot be changed — the plan still opens */
+    }
+  };
+  const heldResume = () => {
+    try {
+      const held = isRecord(history.state) ? history.state[RESUME_HELD] : undefined;
+      return typeof held === 'string' ? held : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const resumeFrom = async (token: string) => {
+    holdResume(token);
+    let resumed: SavedHalves | null = null;
+    let who: { email: unknown; full_name: unknown } = { email: '', full_name: '' };
+    try {
+      // Anything but a real token is an unknown link: not worth a request.
+      if (!RESUME_TOKEN.test(token)) throw new ApiRequestError('Not found', 404);
+      const res = await api.planDrafts.get(token);
+      const saved: unknown = res.data?.draft;
+      if (!isRecord(saved) || saved.v !== 1 || !isRecord(saved.trip)) throw new ApiRequestError('Not found', 404);
+      resumed = { trip: saved.trip, contact: isRecord(saved.contact) ? saved.contact : null };
+      who = { email: res.data.email, full_name: res.data.full_name };
+    } catch (error) {
+      const gone = error instanceof ApiRequestError && error.status === 404;
+      // Expired or unknown: say so, and forget the dead link. Anything else
+      // (offline, too many tries) is kept for a reload to try again.
+      resumeNotice = gone ? 'expired' : 'failed';
+    }
+    if (resumed) {
+      try {
+        restoreDraft(resumed);
+        // The address the link was sent to is the one they are reading it in.
+        const sentTo = words(who.email)?.trim() ?? '';
+        if (isEnquiryEmail(sentTo)) email = sentTo;
+        const name = words(who.full_name)?.trim() ?? '';
+        if (name && !full_name.trim()) full_name = name.slice(0, 120);
+        resumeToken = token;
+        resumeNotice = 'resumed';
+      } catch {
+        resumed = null;
+        resumeNotice = 'expired';
+      }
+    }
+    holdResume(resumeNotice === 'failed' ? token : null);
+    if (!resumed) restoreLocal();
+    // From here every change is kept, so the reopened plan becomes this browser's draft.
+    draftReady = true;
+  };
+
+  onMount(() => {
+    // From the email link, or held here by a try that failed before a reload.
+    const token = new URL(location.href).searchParams.get('resume') ?? heldResume();
+    if (token !== null) return void resumeFrom(token);
+    restoreLocal();
     draftReady = true;
   });
 
   // Every change is kept, once the draft has been read back (so the empty start
   // never overwrites it). Notes are free text: they go with the contact details.
-  $: if (draftReady && !submitted)
-    saveDraft(
-      DRAFT_KEY,
-      { ...d, notes: undefined, step, entry: entryMark },
-      { full_name, email, phone, dialCode, contact, language, notes: d.notes, whatsappConsent }
-    );
+  // The same two halves are what "Email me this plan" saves (see planDraftBody).
+  $: tripHalf = { ...d, notes: undefined, step, entry: entryMark };
+  $: contactHalf = { full_name, email, phone, dialCode, contact, language, notes: d.notes, whatsappConsent };
+  $: if (draftReady && !submitted) saveDraft(DRAFT_KEY, tripHalf, contactHalf);
 
   // ── Sending ────────────────────────────────────────────────────────────────
   // Staff read in English and in USD, whatever the visitor browsed in.
@@ -795,6 +899,186 @@
 
   /** The number as dialled from abroad: "07700 900123" after +44 becomes "7700 900123". */
   const nationalNumber = () => phone.trim().replace(/^0+/, '');
+
+  /**
+   * The answers staff read, in English. Named keys are the ones the staff email
+   * and HubSpot print as their own lines (notification.service
+   * buildLeadFromBooking); the rest are listed under them as they are.
+   */
+  const staffAnswers = () => {
+    const exact = d.dateMode === 'exact';
+    return {
+      travel_interests: d.types.map((type) => typeOf(type).label),
+      // An exact start date reaches staff as the booking's travel date (and
+      // "Dates: start → end" with an end date), not as a month.
+      travel_month: exact ? undefined : travelMonth(),
+      date_flexibility: exact ? 'Exact dates' : d.dateUnsure ? NOT_SURE : 'Flexible — month only',
+      traveller_type: partyLabel,
+      children_ages: ages.length ? ages.join(', ') : undefined,
+      trip_duration: lengthSummary(),
+      travel_pace: d.pace,
+      travel_priorities: d.priorities,
+      accommodation_preference: d.comfort ? (d.comfort === NOT_SURE ? NOT_SURE : tierLabel(d.comfort)) : undefined,
+      budget_per_person: budgetSummary(),
+      planning_stage: d.stage,
+      destination_interest: interestForStaff() || undefined,
+      preferred_contact: contact,
+      reply_language: LANGUAGES.find((l) => l.code === language)?.label ?? language,
+      suggested_trips: recs.map((r) => data.englishNames.tours[String(r.tour.id)] ?? r.tour.title),
+      came_from: incoming.context.tourSlug ? `tour: ${incoming.context.tourSlug}` : incoming.from
+    };
+  };
+
+  // ── "Email me this plan to finish later" ───────────────────────────────────
+  // From the second step on, the visitor can have the plan so far emailed to
+  // themselves as a link that reopens the planner with their answers. It is
+  // not an enquiry: no booking is created, no lead or conversion is tracked,
+  // and the team hears about it only if the visitor ticks the box asking a
+  // specialist to get in touch.
+  const DRAFT_MAX = 20000;
+  const NOTES_KEPT = 4000;
+  // English row names for the team, by answer key.
+  const STAFF_LABELS: Record<string, string> = {
+    travel_interests: 'Trip types',
+    travel_month: 'Travel month',
+    date_flexibility: 'Date flexibility',
+    traveller_type: 'Traveller type',
+    children_ages: 'Children ages',
+    trip_duration: 'Duration',
+    travel_pace: 'Pace',
+    travel_priorities: 'Priorities',
+    accommodation_preference: 'Accommodation',
+    budget_per_person: 'Budget',
+    planning_stage: 'Planning stage',
+    destination_interest: 'Destination interest',
+    preferred_contact: 'Preferred contact',
+    reply_language: 'Reply language',
+    suggested_trips: 'Suggested trips',
+    came_from: 'Came from'
+  };
+
+  let saveOpen = false;
+  let saveEmail = '';
+  let saveName = '';
+  let saveConsent = false;
+  let saveHp = '';
+  let saveSending = false;
+  let saveSent = false;
+  let saveError = '';
+  let saveEmailError = '';
+  let saveButton: HTMLButtonElement | undefined;
+  let saveEmailInput: HTMLInputElement | undefined;
+  let saveDone: HTMLElement | undefined;
+  let savePanel: HTMLElement | undefined;
+  // Once the first step has an answer, and until the plan is sent.
+  $: canSave = step > 0 && d.types.length > 0 && !submitted;
+
+  const rows = (list: PlanDraftRow[], max: number, length: number) =>
+    list
+      .map((row) => ({ label: row.label.trim().slice(0, length).trim(), value: row.value.trim().slice(0, length).trim() }))
+      .filter((row) => row.label && row.value)
+      .slice(0, max);
+
+  /** The same English answers as the request would send, as rows for the team. */
+  const staffSummary = () => {
+    const exact = d.dateMode === 'exact';
+    const answers: Record<string, unknown> = staffAnswers();
+    // Not asked until the last step: before it, the choice is only the page's default.
+    if (step < LAST) delete answers.preferred_contact;
+    return rows(
+      [
+        { label: 'Dates', value: exact && d.startDate ? (d.endDate ? `${d.startDate} → ${d.endDate}` : `From ${d.startDate}`) : '' },
+        {
+          label: 'Travellers',
+          value: d.party ? `${people.adults} ${people.adults === 1 ? 'adult' : 'adults'}, ${people.children} ${people.children === 1 ? 'child' : 'children'}` : ''
+        },
+        ...Object.entries(answers).map(([key, value]) => ({
+          label: STAFF_LABELS[key] ?? key,
+          value: Array.isArray(value) ? value.map(String).join(', ') : value === undefined || value === null ? '' : String(value)
+        })),
+        { label: 'Notes', value: d.notes },
+        { label: 'Saved at step', value: `${step + 1} of ${STEPS.length}` }
+      ],
+      25,
+      500
+    );
+  };
+
+  /** What is saved: the two halves the browser keeps, less the WhatsApp consent (asked afresh when sending). */
+  const planDraftBody = () => {
+    const kept = { ...contactHalf, whatsappConsent: undefined, notes: d.notes.slice(0, NOTES_KEPT) };
+    const draft = JSON.stringify({ v: 1, trip: tripHalf, contact: kept }).length <= DRAFT_MAX ? { v: 1 as const, trip: tripHalf, contact: kept } : { v: 1 as const, trip: tripHalf };
+    const pageUrl = new URL(location.href);
+    pageUrl.searchParams.delete('resume');
+    return {
+      email: saveEmail.trim(),
+      full_name: saveName.trim().slice(0, 120) || null,
+      locale: LANGUAGES.some((l) => l.code === $locale) ? String($locale) : 'en',
+      follow_up_consent: saveConsent,
+      draft,
+      // As in staffSummary: before the last step, how to be contacted is only the page's default.
+      traveller_recap: step < LAST ? travellerRecap.filter((row) => row.label !== $t('pg_plan_my_trip.preferred_contact').trim()) : travellerRecap,
+      staff_summary: staffSummary(),
+      page_url: pageUrl.toString().slice(0, 500),
+      hp_company: saveHp
+    };
+  };
+
+  const openSave = async () => {
+    saveOpen = true;
+    saveSent = false;
+    saveError = '';
+    saveEmailError = '';
+    // Whatever they already typed on the last step.
+    if (!saveEmail.trim()) saveEmail = email.trim();
+    if (!saveName.trim()) saveName = full_name.trim().split(/\s+/)[0] ?? '';
+    await tick();
+    saveEmailInput?.focus();
+  };
+  const closeSave = async () => {
+    saveOpen = false;
+    saveError = '';
+    saveEmailError = '';
+    await tick();
+    saveButton?.focus();
+  };
+  /** Escape closes the panel, like Cancel, from anywhere inside it (not while sending). */
+  const saveKeydown = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape' || !saveOpen || saveSending || !savePanel?.contains(document.activeElement)) return;
+    event.preventDefault();
+    void closeSave();
+  };
+
+  const sendPlan = async () => {
+    if (saveSending || saveSent) return;
+    saveError = '';
+    if (!isEnquiryEmail(saveEmail)) {
+      saveEmailError = $t('pg_plan_my_trip.err_email');
+      await tick();
+      saveEmailInput?.focus();
+      return;
+    }
+    saveEmailError = '';
+    saveSending = true;
+    try {
+      await api.planDrafts.save(planDraftBody());
+      saveSent = true;
+      // The planner's own contact step starts from what they just gave.
+      if (!email.trim()) email = saveEmail.trim();
+      if (!full_name.trim() && saveName.trim()) full_name = saveName.trim().slice(0, 120);
+      await tick();
+      saveDone?.focus();
+    } catch (error) {
+      const fields = error instanceof ApiRequestError ? error.errors : [];
+      if (fields.some((f) => (f.path ?? []).includes('email'))) {
+        saveEmailError = $t('pg_plan_my_trip.err_email');
+        await tick();
+        saveEmailInput?.focus();
+      } else saveError = $t(submitErrorKey(error));
+    } finally {
+      saveSending = false;
+    }
+  };
 
   const submit = async () => {
     if (submitting || submitted) return;
@@ -840,29 +1124,10 @@
           // Read by the staff email as a "Dates: start → end" line.
           exact_start_date: exact ? d.startDate || undefined : undefined,
           exact_end_date: exact ? d.endDate || undefined : undefined,
-          // Named keys are the ones the staff email and HubSpot print as their
-          // own lines (notification.service buildLeadFromBooking); the rest
-          // are listed under them as they are.
-          answers: {
-            travel_interests: d.types.map((type) => typeOf(type).label),
-            // An exact start date reaches staff as the booking's travel date (and
-            // "Dates: start → end" with an end date), not as a month.
-            travel_month: exact ? undefined : travelMonth(),
-            date_flexibility: exact ? 'Exact dates' : d.dateUnsure ? NOT_SURE : 'Flexible — month only',
-            traveller_type: partyLabel,
-            children_ages: ages.length ? ages.join(', ') : undefined,
-            trip_duration: lengthSummary(),
-            travel_pace: d.pace,
-            travel_priorities: d.priorities,
-            accommodation_preference: d.comfort ? (d.comfort === NOT_SURE ? NOT_SURE : tierLabel(d.comfort)) : undefined,
-            budget_per_person: budgetSummary(),
-            planning_stage: d.stage,
-            destination_interest: interestForStaff() || undefined,
-            preferred_contact: contact,
-            reply_language: LANGUAGES.find((l) => l.code === language)?.label ?? language,
-            suggested_trips: recs.map((r) => data.englishNames.tours[String(r.tour.id)] ?? r.tour.title),
-            came_from: incoming.context.tourSlug ? `tour: ${incoming.context.tourSlug}` : incoming.from
-          }
+          answers: staffAnswers(),
+          // Reopened from a "finish later" email: the saved plan this request
+          // came from, so it can be marked as converted.
+          plan_draft_token: resumeToken || undefined
         },
         hp_company
       });
@@ -936,6 +1201,8 @@
     }`;
 </script>
 
+<svelte:window on:keydown={saveKeydown} />
+
 <svelte:head>
   <title>{$t('cta.plan_my_trip')} — {$t('pg_plan_my_trip.meta_title')} | {brand.name}</title>
   <meta name="description" content={$t('pg_plan_my_trip.meta_description')} />
@@ -1007,6 +1274,18 @@
         <p class="text-xs text-ink/55">
           {$t('ui.step_x_of_y').replace('{step}', String(step + 1)).replace('{total}', String(STEPS.length))}<span class="lg:hidden">{' · '}{$t(STEPS[step])}</span>
         </p>
+        {#if resumeNotice}
+          <!-- Coming back from a "finish later" email: whether the saved plan opened. -->
+          <p class={`mt-3 flex items-start gap-2 rounded-[10px] px-4 py-3 text-sm ${resumeNotice === 'resumed' ? 'bg-forest/10 text-heading' : 'bg-clay/10 text-clay'}`} role="status" transition:slide={{ duration: ms(260), easing: cubicOut }}>
+            {#if resumeNotice === 'resumed'}
+              <Check size={16} class="mt-0.5 shrink-0 text-forest" /><span>{$t('pg_plan_my_trip.save_resumed')}</span>
+            {:else if resumeNotice === 'expired'}
+              <Mail size={16} class="mt-0.5 shrink-0" /><span>{$t('pg_plan_my_trip.save_expired')} <a href={localizeUrl('/contact', $locale)} class="font-semibold underline">{$t('pg_plan_my_trip.contact_our_team')}</a></span>
+            {:else}
+              <Mail size={16} class="mt-0.5 shrink-0" /><span>{$t('pg_plan_my_trip.save_resume_failed')}</span>
+            {/if}
+          </p>
+        {/if}
 
         {#key step}
         <div in:fly={{ x: 40 * dir, duration: ms(460), easing: cubicOut }}>
@@ -1335,6 +1614,65 @@
         {/if}
         </div>
         {/key}
+
+        {#if canSave}
+          <!-- "Email me this plan to finish later": a quiet way out that keeps
+               the answers. Not an enquiry — nothing here is a lead. -->
+          <div class="mt-6 border-t border-ink/10 pt-4">
+            {#if !saveOpen}
+              <button bind:this={saveButton} type="button" class="inline-flex min-h-[44px] items-center gap-2 text-sm font-semibold text-heading underline decoration-ink/25 underline-offset-4 transition hover:text-clay hover:decoration-clay" on:click={openSave}>
+                <Mail size={16} class="shrink-0 text-clay" />{$t('pg_plan_my_trip.save_open')}
+              </button>
+            {:else}
+              <div bind:this={savePanel} id="pm-save-plan" class="rounded-[10px] border border-ink/12 bg-canvas p-4 md:p-5" transition:slide={{ duration: ms(300), easing: cubicOut }}>
+                {#if saveSent}
+                  <div class="flex items-start gap-3">
+                    <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-goldfinch-gold/15 text-clay" in:pop={{ start: 0.4, duration: ms(320), easing: backOut }}><Check size={16} strokeWidth={2.4} /></span>
+                    <div class="min-w-0">
+                      <p bind:this={saveDone} tabindex="-1" class="text-sm font-semibold text-heading outline-none" role="status">{$t('pg_plan_my_trip.save_sent')}</p>
+                      <button type="button" class="mt-3 inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-clay hover:underline" on:click={closeSave}>{$t('pg_plan_my_trip.save_continue')} <ArrowRight size={15} /></button>
+                    </div>
+                  </div>
+                {:else}
+                  <form class="relative grid gap-4 sm:grid-cols-2" on:submit|preventDefault={sendPlan} novalidate>
+                    <!-- Honeypot, hidden and named like the contact step's: never "company",
+                         which browsers autofill for real people (and a filled one sends nothing). -->
+                    <div class="absolute left-[-9999px] top-0 h-0 w-0 overflow-hidden" aria-hidden="true">
+                      <input type="text" name="gf-x1" tabindex="-1" autocomplete="off" hidden bind:value={saveHp} />
+                    </div>
+                    <div class="sm:col-span-2">
+                      <h3 class="flex items-center gap-2 text-[15px] font-semibold text-heading"><Mail size={16} class="shrink-0 text-clay" />{$t('pg_plan_my_trip.save_heading')}</h3>
+                      <p class="mt-1 text-sm text-ink/65">{$t('pg_plan_my_trip.save_intro')}</p>
+                    </div>
+                    <label class="grid gap-1.5">
+                      <span class="gf-label">{$t('form.email')}<span class="gf-req">*</span></span>
+                      <input bind:this={saveEmailInput} class="gf-input" type="email" autocomplete="email" aria-invalid={!!saveEmailError} bind:value={saveEmail} placeholder={$t('form.email_placeholder')} on:input={() => (saveEmailError = '')} />
+                      {#if saveEmailError}<span role="alert" class="text-xs font-medium text-clay" in:fly={{ y: -6, duration: ms(240), easing: cubicOut }}>{saveEmailError}</span>{/if}
+                    </label>
+                    <label class="grid gap-1.5">
+                      <span class="gf-label">{$t('pg_plan_my_trip.save_first_name')} <span class="gf-hint">{$t('pg_plan_my_trip.optional_paren')}</span></span>
+                      <input class="gf-input" autocomplete="given-name" maxlength="120" bind:value={saveName} />
+                    </label>
+                    <label class="flex items-start gap-2 text-sm text-ink/75 sm:col-span-2">
+                      <input type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 accent-clay" bind:checked={saveConsent} />
+                      <span>{$t('pg_plan_my_trip.save_consent').replace('{brand}', brand.name)}</span>
+                    </label>
+                    <p class="gf-hint flex items-start gap-1.5 text-xs sm:col-span-2"><Lock size={12} class="mt-0.5 shrink-0" />{$t('pg_plan_my_trip.save_privacy')}</p>
+                    {#if saveError}
+                      <p class="rounded-[8px] bg-clay/10 px-3 py-2.5 text-sm text-clay sm:col-span-2" role="alert">{saveError}</p>
+                    {/if}
+                    <div class="flex flex-wrap items-center gap-3 sm:col-span-2">
+                      <button type="submit" class="gf-btn-primary px-5" disabled={saveSending}>
+                        {#if saveSending}<Loader2 size={16} class="shrink-0 animate-spin" /> {$t('form.sending')}{:else}{$t('pg_plan_my_trip.save_send')}{/if}
+                      </button>
+                      <button type="button" class="gf-btn-ghost px-4" disabled={saveSending} on:click={closeSave}>{$t('ui.cancel')}</button>
+                    </div>
+                  </form>
+                {/if}
+              </div>
+            {/if}
+          </div>
+        {/if}
 
         <!-- Back / Next. On phones it stays in reach at the bottom of the screen
              while the form is in view; on wide screens it sits under the step. -->

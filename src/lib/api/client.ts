@@ -80,7 +80,8 @@ export const apiRequest = async <T>(requestPath: string, options: RequestOptions
   const token = authToken();
   const method = (options.method ?? 'GET').toUpperCase();
   const path = method === 'GET' ? withPageLocale(requestPath) : requestPath;
-  const cacheable = browser && !token && method === 'GET' && path !== '/currencies';
+  // A saved plan is personal and opened once by its link: never kept in memory.
+  const cacheable = browser && !token && method === 'GET' && path !== '/currencies' && !path.startsWith('/plan-drafts/');
 
   if (cacheable) {
     const hit = getCache.get(path);
@@ -121,6 +122,32 @@ export const apiRequest = async <T>(requestPath: string, options: RequestOptions
   if (browser && method !== 'GET') getCache.clear();
 
   return result;
+};
+
+// ── Plan My Trip: "Email me this plan to finish later" ──────────────────────
+// A saved plan is not an enquiry: no booking row, no lead, no conversion. The
+// link token only ever travels in the email, never in a response.
+export type PlanDraftRow = { label: string; value: string };
+export type PlanDraftData = { v: 1; trip: Record<string, unknown>; contact?: Record<string, unknown> };
+export type PlanDraftSaveBody = {
+  email: string;
+  full_name?: string | null;
+  locale: string;
+  follow_up_consent: boolean;
+  draft: PlanDraftData;
+  /** The visitor's own answers, in their language, for their email. */
+  traveller_recap?: PlanDraftRow[];
+  /** The same answers in English, for the team (only alerted with consent). */
+  staff_summary?: PlanDraftRow[];
+  page_url?: string;
+  hp_company?: string;
+};
+export type PlanDraftResumed = {
+  draft: PlanDraftData;
+  email: string;
+  full_name: string | null;
+  locale: string;
+  expires_at: string;
 };
 
 // ── Goldfinch AI Travel Advisor — SSE streaming (§3.5) ───────────────────────
@@ -537,6 +564,12 @@ export const api = {
       remove: (bookingId: string, amendmentId: string) =>
         apiRequest(`/bookings/${bookingId}/amendments/${amendmentId}`, { method: 'DELETE' })
     }
+  },
+  planDrafts: {
+    // Public. Emails the visitor a link that reopens Plan My Trip with their answers.
+    save: (body: PlanDraftSaveBody) => apiRequest<{ expires_at: string }>('/plan-drafts', { method: 'POST', body }),
+    // Public. The token comes from that link; an unknown or expired one is a 404.
+    get: (token: string) => apiRequest<PlanDraftResumed>(`/plan-drafts/${encodeURIComponent(token)}`)
   },
   trip: {
     // Public magic-link portal (cookie session; apiRequest already sends credentials).
