@@ -1747,5 +1747,6 @@
   "style_form.chat_whatsapp": "Ungependa kuzungumza? Tuandikie WhatsApp",
   "style_form.whatsapp_message": "Habari, ningependa msaada wa kupanga {trip}.",
   "style_form.err_days": "Weka idadi kamili ya siku au chagua “Bado sina uhakika”.",
-  "style_form.err_language": "Tafadhali chagua lugha unayopendelea."
+  "style_form.err_language": "Tafadhali chagua lugha unayopendelea.",
+  "hero.choose_date": "Chagua tarehe"
 }

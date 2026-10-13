@@ -1,4 +1,5 @@
 <script lang="ts">
+  import TripDatePicker from '../TripDatePicker.svelte';
   import { locale, t } from '$lib/i18n/ui';
   import { localizeUrl } from '$lib/i18n';
   import { onDestroy, onMount } from 'svelte';
@@ -318,15 +319,21 @@
               </select>
             </label>
 
-            <label class="hero-planner-field hero-planner-field-duration block">
-              <span class="hero-planner-label mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">{$t('hero.when')}</span>
-              <input
+            <!-- A div, not a label: a click on a calendar day inside a <label> would
+                 also "click" the date button and shut the calendar again. -->
+            <div class="hero-planner-field hero-planner-field-duration block">
+              <span class="hero-planner-label mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-white/70" aria-hidden="true">{$t('hero.when')}</span>
+              <!-- The same calendar as the trip forms; it opens upwards because the
+                   hero crops anything that spills out below it. -->
+              <TripDatePicker
                 bind:value={travelDate}
-                type="date"
                 min={today}
-                class="hero-planner-select h-11 w-full rounded-[8px] border border-white/20 bg-surface/95 px-3 text-[14px] text-heading focus:outline-none focus:ring-2 focus:ring-goldfinch-gold"
+                label={$t('hero.when')}
+                placeholder={$t('hero.choose_date')}
+                placement="above"
+                triggerClass="hero-planner-select hero-date h-11 w-full rounded-[8px] border border-white/20 bg-surface/95 px-3 text-[14px] text-heading focus:outline-none focus:ring-2 focus:ring-goldfinch-gold"
               />
-            </label>
+            </div>
 
             <button
               type="button"
@@ -379,6 +386,8 @@
   .hero-copy p { text-wrap:pretty; line-height:1.7; }
   .hero-planner-card { box-shadow:0 12px 32px rgb(0 0 0/.12); }
   .hero-planner-select { transition:border-color 180ms ease, box-shadow 180ms ease; }
+  .hero-planner-field :global(.hero-date) { transition:border-color 180ms ease, box-shadow 180ms ease; }
+  .hero-planner-field :global(.hero-date:hover) { border-color:rgb(var(--c-goldfinch-gold)/.65); }
   .hero-planner-select:hover { border-color:rgb(var(--c-goldfinch-gold)/.65); }
 
   .home-hero {
@@ -560,7 +569,8 @@
       letter-spacing: 0.11em;
     }
 
-    .hero-planner-select {
+    .hero-planner-select,
+    .hero-planner-field :global(.hero-date) {
       display: block;
       width: 100%;
       min-width: 0;
@@ -573,17 +583,14 @@
       line-height: 1.1;
     }
 
-    input.hero-planner-select[type='date'] {
-      -webkit-appearance: none;
-      appearance: none;
+    /* The date button keeps its icon and date on one line. */
+    .hero-planner-field :global(.hero-date) {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding-inline: 0.65rem;
+      white-space: nowrap;
       overflow: hidden;
-      padding-right: 0.45rem;
-      color-scheme: light;
-    }
-
-    input.hero-planner-select[type='date']::-webkit-date-and-time-value {
-      min-width: 0;
-      text-align: left;
     }
 
     .hero-planner-submit {
@@ -665,6 +672,7 @@
     }
 
     .hero-planner-select,
+    .hero-planner-field :global(.hero-date),
     .hero-planner-submit {
       height: 2.5rem;
       font-size: 0.8125rem;

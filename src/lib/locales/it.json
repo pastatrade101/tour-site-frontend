@@ -1747,5 +1747,6 @@
   "style_form.chat_whatsapp": "Preferisci chattare? Scrivici su WhatsApp",
   "style_form.whatsapp_message": "Buongiorno, vorrei aiuto per organizzare {trip}.",
   "style_form.err_days": "Inserisci un numero intero di giorni oppure seleziona « Non sono ancora sicuro ».",
-  "style_form.err_language": "Scegli la tua lingua preferita."
+  "style_form.err_language": "Scegli la tua lingua preferita.",
+  "hero.choose_date": "Scegli una data"
 }

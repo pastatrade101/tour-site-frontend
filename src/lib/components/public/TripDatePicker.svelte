@@ -9,6 +9,12 @@
   export let invalid = false;
   export let disabled = false;
   export let describedBy: string | undefined = undefined;
+  /** The trigger's look; forms keep the default, the homepage hero passes its own field styles. */
+  export let triggerClass = 'gf-input';
+  /** Muted text shown while no date is chosen. */
+  export let placeholder = '';
+  /** 'above' where the space below is cut off (the hero crops what spills out of it). */
+  export let placement: 'below' | 'above' = 'below';
 
   const dispatch = createEventDispatcher<{ change: void }>();
   let root: HTMLDivElement;
@@ -76,12 +82,12 @@
 <svelte:window on:pointerdown={(event) => { if (open && !root?.contains(event.target as Node)) open = false; }} />
 
 <div class="date-field" bind:this={root} on:focusout={focusOut} role="group" aria-label={label}>
-  <button bind:this={trigger} type="button" {disabled} data-invalid={invalid} aria-describedby={describedBy} class="gf-input date-trigger" data-trip-field title={invalid ? $t('form.err_start_date') : undefined} aria-label={display ? `${label}: ${display}` : label} aria-haspopup="dialog" aria-expanded={open} on:keydown={escape} on:click={toggle}>
+  <button bind:this={trigger} type="button" {disabled} data-invalid={invalid} aria-describedby={describedBy} class={`${triggerClass} date-trigger`} data-trip-field title={invalid ? $t('form.err_start_date') : undefined} aria-label={display ? `${label}: ${display}` : label} aria-haspopup="dialog" aria-expanded={open} on:keydown={escape} on:click={toggle}>
     <Calendar size={18} strokeWidth={1.7} aria-hidden="true" />
-    {#if display}<span>{display}</span>{/if}
+    {#if display}<span>{display}</span>{:else if placeholder}<span class="placeholder">{placeholder}</span>{/if}
   </button>
   {#if open}
-    <div class="calendar" role="dialog" tabindex="-1" aria-label={label} on:keydown={escape}>
+    <div class="calendar" class:above={placement === 'above'} role="dialog" tabindex="-1" aria-label={label} on:keydown={escape}>
       <div class="calendar-nav">
         <button class="month-arrow" type="button" aria-label={$t('form.previous_month')} disabled={firstMonth} on:click={() => moveMonth(-1)}><ChevronLeft size={18} /></button>
         <select class="gf-input month-select" aria-label={$t('form.month')} bind:value={month}>
@@ -105,7 +111,9 @@
 <style>
   .date-field { position: relative; min-width: 0; }
   .date-trigger { display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer; }
-  .calendar { position: absolute; z-index: 30; top: calc(100% + 6px); inset-inline: 0; padding: 10px; border: 1px solid #d6ceb6; border-radius: 8px; background: white; color: #393d32; box-shadow: 0 12px 32px #0003; }
+  .placeholder { color: rgb(57 61 50 / .55); }
+  .calendar.above { top: auto; bottom: calc(100% + 6px); }
+  .calendar { position: absolute; z-index: 30; top: calc(100% + 6px); inset-inline: 0; min-width: 17rem; padding: 10px; border: 1px solid #d6ceb6; border-radius: 8px; background: white; color: #393d32; box-shadow: 0 12px 32px #0003; }
   .calendar-nav { display: grid; grid-template-columns: 20px minmax(0, 1fr) 75px 20px; gap: 2px; align-items: center; margin-bottom: 8px; }
   .calendar-nav .gf-input { height: 38px; font-size: 14px; padding-left: 8px; padding-right: 24px; background-position: right 5px center; appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23393D32' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
