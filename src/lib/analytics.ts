@@ -544,6 +544,23 @@ export const createFormTracker = (context: FormTrackerContext, submitEvent: Anal
   let place: EventPlace | null = null;
   const passed = new Set<number>();
   const base = (): EventMeta => ({ ...context });
+  /**
+   * The same funnel for GTM: each stage is also pushed to the dataLayer as a
+   * lead_form_* event (view, start, step, error, submit_error, abandon,
+   * submit), so a visitor who stops half-way is visible there too — which
+   * step they reached and where they left. Only the form's own descriptors
+   * travel; never a typed answer or contact detail.
+   */
+  const plainStep = (key?: string) => (key ? key.replace(/^.*\./, '') : key); // 'style_form.your_trip' -> 'your_trip'
+  const toGtm = (event: string, extra: Record<string, string | number | undefined> = {}) =>
+    pushDataLayerEvent(event, {
+      form_name: context.form_name,
+      form_type: context.form_type,
+      lead_type: context.lead_type,
+      tour_slug: context.tour_slug,
+      category_name: context.category_name,
+      ...extra
+    });
   const remember = () => {
     if (browser) place = here();
   };
@@ -552,6 +569,7 @@ export const createFormTracker = (context: FormTrackerContext, submitEvent: Anal
     if (!started || sent || abandoned) return;
     abandoned = true;
     emit('form_abandoned', { ...base(), step_index: lastStep?.index ?? 0, step_key: lastStep?.key ?? 'start' }, place ?? undefined);
+    toGtm('lead_form_abandon', { last_step_number: (lastStep?.index ?? 0) + 1, last_step_name: plainStep(lastStep?.key) ?? 'start' });
   };
 
   return {
@@ -561,6 +579,7 @@ export const createFormTracker = (context: FormTrackerContext, submitEvent: Anal
       opened = true;
       remember();
       emit('form_opened', base());
+      toGtm('lead_form_view');
     },
     /** The first answer — the visitor has begun. */
     started() {
@@ -569,6 +588,7 @@ export const createFormTracker = (context: FormTrackerContext, submitEvent: Anal
       abandoned = false;
       if (!opened) this.opened();
       emit('form_started', base());
+      toGtm('lead_form_start');
     },
     /** Remember where the visitor is, for the abandon event. */
     at(index: number, key: string) {
@@ -585,20 +605,24 @@ export const createFormTracker = (context: FormTrackerContext, submitEvent: Anal
       if (passed.has(index)) return;
       passed.add(index);
       emit('form_step_completed', { ...base(), step_index: index, step_key: key });
+      toGtm('lead_form_step', { step_number: index + 1, step_name: plainStep(key) });
     },
     /** A step refused to move on; the first field at fault. */
     invalid(stepKey: string, field: string) {
       emit('form_validation_error', { ...base(), step_key: stepKey, field_name: field, error_type: 'required_or_invalid' });
+      toGtm('lead_form_error', { step_name: plainStep(stepKey), field_name: field });
     },
     /** The lead was saved. */
     submitted(extra: EventMeta = {}) {
       if (sent) return;
       sent = true;
       emit(submitEvent, { ...base(), ...extra });
+      toGtm('lead_form_submit');
     },
     /** The request failed on its way to us. */
     failed(errorType = 'submit_failed') {
       emit('form_submit_error', { ...base(), error_type: errorType });
+      toGtm('lead_form_submit_error', { error_type: errorType });
     },
     /**
      * Report an unfinished form when the visitor leaves (closing the tab,
