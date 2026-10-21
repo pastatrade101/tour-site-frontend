@@ -1,4 +1,6 @@
 <script lang="ts">
+  import TripPhoneInput from '$lib/components/public/TripPhoneInput.svelte';
+  import { DIAL_CODES } from '$lib/enquiry/dialCodes';
   /**
    * Plan My Trip — a seven-step planner that suggests real trips as it goes.
    *
@@ -205,7 +207,7 @@
     { code: 'es', name: 'Español', label: 'Español (Spanish)' },
     { code: 'it', name: 'Italiano', label: 'Italiano (Italian)' }
   ];
-  const DIAL_CODES = ['+255', '+254', '+256', '+250', '+44', '+1', '+49', '+33', '+34', '+39', '+31', '+41', '+61', '+27', '+971'];
+  // Every country's code; the picker below is the same one the tour form uses.
   const CONTACTS = ['WhatsApp', 'Email', 'Phone call'] as const;
   // The values above go to staff as they are; only the button text is translated.
   const CONTACT_LABELS: Record<(typeof CONTACTS)[number], string> = {
@@ -1579,12 +1581,8 @@
             {#if contact !== 'Email'}
             <div class="grid gap-1.5">
               <span class="gf-label">{$t('form.phone')}<span class="gf-req">*</span></span>
-              <div class="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-2">
-                <select class="gf-input" bind:value={dialCode} aria-label={$t('pg_plan_my_trip.country_code')}>
-                  {#each DIAL_CODES as code}<option value={code}>{code}</option>{/each}
-                </select>
-                <input class="gf-input" type="tel" inputmode="tel" autocomplete="tel-national" aria-invalid={!!errors.phone} value={phone} aria-label={$t('form.phone')}
-                  on:input={(event) => { const cleaned = cleanPhoneInput(event.currentTarget.value, dialCode, DIAL_CODES); dialCode = cleaned.dialCode; phone = cleaned.phone; if (event.currentTarget.value !== phone) event.currentTarget.value = phone; clear('phone'); }} />
+              <div>
+                <TripPhoneInput bind:dialCode bind:phone invalid={!!errors.phone} on:input={() => clear('phone')} />
               </div>
               {#if errors.phone}<span role="alert" class="text-xs font-medium text-clay" in:fly={{ y: -6, duration: ms(240), easing: cubicOut }}>{errors.phone}</span>{/if}
             </div>

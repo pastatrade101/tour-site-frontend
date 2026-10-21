@@ -1,6 +1,7 @@
 <script lang="ts">
+  import WhatsAppIcon from './WhatsAppIcon.svelte';
   import { onMount, tick } from 'svelte';
-  import { ArrowLeft, ArrowRight, ChevronDown, Loader2, MessageCircle } from '@lucide/svelte';
+  import { ArrowLeft, ArrowRight, ChevronDown, Loader2 } from '@lucide/svelte';
   import { locale, t } from '$lib/i18n/ui';
   import { createFormTracker, getAttribution, campaignTags, lastCtaClicked, pushDataLayerEvent } from '$lib/analytics';
   import { newEnquiryKey, savedEnquiryReference } from '$lib/enquiry/validation';
@@ -325,7 +326,7 @@
             </div>
           </form>
         {/if}
-        {#if waDigits}<a class="whatsapp" href={whatsappHref} target="_blank" rel="noopener noreferrer" data-track-location="style_planner"><MessageCircle size={23} strokeWidth={1.6} />{$t('style_form.chat_whatsapp')}</a>{/if}
+        {#if waDigits}<a class="whatsapp" href={whatsappHref} target="_blank" rel="noopener noreferrer" data-track-location="style_planner"><WhatsAppIcon size={22} brand />{$t('style_form.chat_whatsapp')}</a>{/if}
       </div>
     </div>
   </div>
@@ -352,7 +353,7 @@
   .control { height: 46px; padding: 10px 14px; outline: none; }
   .planner-form :global(.date-trigger), .planner-form :global(.phone-row .gf-input) { height: 46px; }
   .planner-form :global(.date-trigger) { background: #fcfaf4; padding-inline: 14px; }
-  .control::placeholder, .planner-form :global(input::placeholder) { color: #74776e; opacity: 1; }
+  .control::placeholder, .planner-form :global(input::placeholder) { color: rgb(57 61 50 / 0.42); opacity: 1; }
   .control:focus, .planner-form :global(.gf-input:focus-visible) { outline: 2px solid rgb(var(--c-goldfinch-gold)); outline-offset: 2px; }
   .control:disabled, .planner-form :global(.date-trigger:disabled) { background: #e6e6df; opacity: .65; cursor: default; }
   .planner-form :global(.date-trigger[data-invalid='true']), .control[aria-invalid='true'], .planner-form :global(.gf-input[aria-invalid='true']) { border-color: #f2b8a6; outline: 2px solid #f2b8a6; }

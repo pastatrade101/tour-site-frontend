@@ -1,4 +1,5 @@
 <script lang="ts">
+  import WhatsAppIcon from '$lib/components/public/WhatsAppIcon.svelte';
   import { t } from '$lib/i18n/ui';
   import {
     ArrowRight,
@@ -6,7 +7,6 @@
     Check,
     MapPinned,
     Route,
-    ShieldCheck,
     Wallet
   } from '@lucide/svelte';
   import { page } from '$app/stores';
@@ -480,7 +480,7 @@
       <h2 class="mt-3 font-serif text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl md:text-5xl">{landing.finalCta.headline}</h2>
       <p class="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-white/70">{landing.finalCta.subheadline}</p>
       <ul class="mx-auto mt-7 grid max-w-2xl gap-3 sm:grid-cols-2">{#each landing.finalCta.proofs as proof}<li class="flex items-start gap-3 text-left text-sm text-white/90"><span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-goldfinch-gold text-heading"><Check size={12} /></span>{proof}</li>{/each}</ul>
-      <div class="mt-8 flex flex-col items-center gap-4"><a href={planHref} on:click={() => planClick('style_final_cta', landing.finalCta.buttonLabel)} class="inline-flex items-center justify-center rounded-md bg-goldfinch-gold px-6 py-3 text-sm font-semibold text-heading hover:brightness-95">{landing.finalCta.buttonLabel}</a><a href={whatsappHref} target="_blank" rel="noopener noreferrer" data-track-location="safari_style_page" class="inline-flex items-center gap-2 text-sm text-white/70 underline decoration-white/25 underline-offset-4 hover:text-white"><ShieldCheck size={14} />{landing.finalCta.whatsappLabel}</a></div>
+      <div class="mt-8 flex flex-col items-center gap-4"><a href={planHref} on:click={() => planClick('style_final_cta', landing.finalCta.buttonLabel)} class="inline-flex items-center justify-center rounded-md bg-goldfinch-gold px-6 py-3 text-sm font-semibold text-heading hover:brightness-95">{landing.finalCta.buttonLabel}</a><a href={whatsappHref} target="_blank" rel="noopener noreferrer" data-track-location="safari_style_page" class="inline-flex items-center gap-2 text-sm text-white/70 underline decoration-white/25 underline-offset-4 hover:text-white"><WhatsAppIcon size={15} brand />{landing.finalCta.whatsappLabel}</a></div>
     </div>
   </section>
 

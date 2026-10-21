@@ -1,10 +1,11 @@
 <script lang="ts">
+  import WhatsAppIcon from './WhatsAppIcon.svelte';
   import { plannerHref } from '$lib/plannerContext';
   import { trackCta } from '$lib/analytics';
   import { onMount } from 'svelte';
   import { afterNavigate, goto, preloadData } from '$app/navigation';
   import { page } from '$app/stores';
-  import { ArrowDownToLine, ArrowRight, ChevronDown, ChevronRight, Compass, Globe, MapPin, Menu, MessageCircle, Search, TicketsPlane, X, BedDouble } from '@lucide/svelte';
+  import { ArrowDownToLine, ArrowRight, ChevronDown, ChevronRight, Compass, Globe, MapPin, Menu, Search, TicketsPlane, X, BedDouble } from '@lucide/svelte';
   import { fade, fly } from 'svelte/transition';
   import { api } from '$lib/api/client';
   import { navbarEntrance } from '$lib/animations';
@@ -788,7 +789,7 @@
               <ArrowDownToLine size={18} strokeWidth={2.6} />{$t('ui.install_app')}</button>
           {/if}
           <a class="flex items-center gap-3 rounded-2xl bg-[#25D366]/10 px-4 py-3" href={waHref} target="_blank" rel="noopener noreferrer" data-track-location="navbar_menu" on:click={() => (menuOpen = false)}>
-            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#25D366] text-white"><MessageCircle size={20} strokeWidth={2.6} /></span>
+            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#25D366] text-white"><WhatsAppIcon size={22} /></span>
             <span class="grid leading-tight">
               <span class="text-xs font-medium text-ink/70">{waButtonText}</span>
               <span class="text-[15px] font-bold text-ink">{waNumber}</span>

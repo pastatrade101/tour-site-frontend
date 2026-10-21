@@ -1,4 +1,5 @@
 <script lang="ts">
+  import WhatsAppIcon from '$lib/components/public/WhatsAppIcon.svelte';
   import { locale, t } from '$lib/i18n/ui';
   /**
    * The quotation as the traveller sees it.
@@ -427,7 +428,7 @@
           rel="noopener noreferrer"
           data-track-location="quote_page"
         >
-          <MessageCircle size={19} />
+          <WhatsAppIcon size={19} />
           {#if expired}{$t('pg_quote.wa_request_updated_price')}{:else if accepted}{$t('pg_quote.wa_message_booking')}{:else}{$t('pg_quote.wa_about_quote')}{/if}
         </a>
       {/if}

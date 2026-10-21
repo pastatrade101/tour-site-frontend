@@ -3,6 +3,7 @@
   import { ChevronDown, Search } from '@lucide/svelte';
   import { locale, t } from '$lib/i18n/ui';
   import { cleanPhoneInput } from '$lib/enquiry/validation';
+  import { COUNTRY_DIAL_CODES, DIAL_CODES, PRIMARY_COUNTRY } from '$lib/enquiry/dialCodes';
   export let dialCode = '+255';
   export let phone = '';
   export let invalid = false;
@@ -12,23 +13,23 @@
   let searchInput: HTMLInputElement;
   let open = false;
   let query = '';
-  const countries = [
-    ['TZ', '+255'], ['KE', '+254'], ['UG', '+256'], ['RW', '+250'],
-    ['GB', '+44'], ['US', '+1'], ['DE', '+49'], ['FR', '+33'],
-    ['ES', '+34'], ['IT', '+39'], ['NL', '+31'], ['AU', '+61'],
-    ['AT', '+43'], ['CH', '+41']
-  ];
+  // Every country; a shared code (+1, +44 …) shows the country picked, else its main one.
+  let pickedIso = '';
   const flag = (iso: string) => String.fromCodePoint(...Array.from(iso, (char) => 127397 + char.charCodeAt(0)));
   $: names = new Intl.DisplayNames([$locale], { type: 'region' });
-  $: options = countries.map(([iso, code]) => ({ iso, code, flag: flag(iso), name: names.of(iso) || iso })).sort((a, b) => a.name.localeCompare(b.name, $locale));
-  $: selected = options.find((country) => country.code === dialCode) || options[0];
+  $: options = COUNTRY_DIAL_CODES.map(([iso, code]) => ({ iso, code, flag: flag(iso), name: names.of(iso) || iso })).sort((a, b) => a.name.localeCompare(b.name, $locale));
+  $: selected =
+    options.find((country) => country.iso === pickedIso && country.code === dialCode) ||
+    options.find((country) => country.iso === PRIMARY_COUNTRY[dialCode]) ||
+    options.find((country) => country.code === dialCode) ||
+    options[0];
   $: filtered = options.filter((country) => `${country.name} ${country.iso} ${country.code}`.toLocaleLowerCase($locale).includes(query.trim().toLocaleLowerCase($locale)));
   async function toggle() { open = !open; query = ''; if (open) { await tick(); searchInput?.focus({ preventScroll: true }); } }
   function close() { open = false; trigger?.focus({ preventScroll: true }); }
   /** Letters and symbols never reach the number, nor more digits than the country uses. */
   function typed(event: Event) {
     const field = event.currentTarget as HTMLInputElement;
-    const cleaned = cleanPhoneInput(field.value, dialCode, countries.map(([, code]) => code));
+    const cleaned = cleanPhoneInput(field.value, dialCode, DIAL_CODES);
     dialCode = cleaned.dialCode;
     phone = cleaned.phone;
     if (field.value !== phone) field.value = phone;
@@ -68,7 +69,7 @@
       </div>
       <div class="country-list">
         {#each filtered as country}
-          <button type="button" data-country class:chosen={country.code === dialCode} aria-pressed={country.code === dialCode} on:click={() => { dialCode = country.code; close(); }}>
+          <button type="button" data-country class:chosen={country.iso === selected.iso} aria-pressed={country.iso === selected.iso} on:click={() => { dialCode = country.code; pickedIso = country.iso; close(); }}>
             <span aria-hidden="true">{country.flag}</span><span class="country-name">{country.name}</span><span>{country.code}</span>
           </button>
         {:else}<p class="empty">{$t('form.no_countries')}</p>{/each}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import WhatsAppIcon from './WhatsAppIcon.svelte';
   import { t } from '$lib/i18n/ui';
   import { onMount, tick } from 'svelte';
   import { AlertCircle, ArrowLeft, ArrowRight, BedDouble, CalendarCheck, CalendarDays, CheckCircle2, ClipboardList, Clock, Copy, Download, FileText, Hash, Mail, MapPin, MessageCircle, MessageSquare, ShieldCheck, Sparkles, Star, User, Users, Wallet } from '@lucide/svelte';
@@ -419,7 +420,7 @@
          sticky panel, where a column split wraps both labels. -->
     <div class="grid gap-2.5">
       <a href={waHref} target="_blank" rel="noopener noreferrer" data-track-location="tour_booking_form_success" class="inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#25D366] px-5 text-sm font-bold text-white shadow-sm transition hover:brightness-105">
-        <MessageCircle size={17} />{$t('ui.continue_on_whatsapp')}</a>
+        <WhatsAppIcon size={17} />{$t('ui.continue_on_whatsapp')}</a>
       <button type="button" class="inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border border-ink/15 bg-surface px-5 text-sm font-bold text-heading shadow-sm transition hover:border-goldfinch-gold/50 hover:bg-canvas" on:click={downloadQuotation}>
         <Download size={17} />{$t('ui.download_quotation_pdf')}</button>
     </div>
@@ -628,7 +629,7 @@
           -->
           <div class="grid gap-2.5">
             <a href={waHref} target="_blank" rel="noopener noreferrer" data-track-location="tour_booking_form" class="inline-flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#25D366] px-4 text-sm font-bold text-white shadow-sm transition hover:brightness-105">
-              <MessageCircle size={16} />{$t('ui.send_on_whatsapp')}</a>
+              <WhatsAppIcon size={16} />{$t('ui.send_on_whatsapp')}</a>
             <button type="button" class="inline-flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white/20 bg-white/[0.06] px-4 text-sm font-bold text-white transition hover:border-goldfinch-gold/50 hover:bg-white/[0.12]" on:click={downloadQuotation}>
               <Download size={16} />{$t('ui.download_quotation_pdf')}</button>
           </div>

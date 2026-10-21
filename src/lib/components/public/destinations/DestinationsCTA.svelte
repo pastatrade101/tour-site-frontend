@@ -1,4 +1,5 @@
 <script lang="ts">
+  import WhatsAppIcon from '../WhatsAppIcon.svelte';
   import { t } from '$lib/i18n/ui';
   /**
    * Closing conversion band for the destinations index.
@@ -12,7 +13,7 @@
    * band falls back to the brand green plus the house dot texture and a warm
    * gold glow, which is a deliberate treatment rather than an empty frame.
    */
-  import { ArrowRight, MapPin, MessageCircle, PenLine, ShieldCheck, Users } from '@lucide/svelte';
+  import { ArrowRight, MapPin, PenLine, ShieldCheck, Users } from '@lucide/svelte';
   import { trackEvent } from '$lib/analytics';
   import { fadeUpOnScroll } from '$lib/animations';
   import Img from '../Img.svelte';
@@ -116,7 +117,7 @@
             rel="noopener noreferrer"
             data-track-location="destinations_cta"
           >
-            <MessageCircle size={17} strokeWidth={2.4} aria-hidden="true" />{$t('ui.talk_on_whatsapp')}</a>
+            <WhatsAppIcon size={17} />{$t('ui.talk_on_whatsapp')}</a>
         {/if}
       </div>
 

@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ExternalLink, MessageCircle } from '@lucide/svelte';
+  import WhatsAppIcon from './WhatsAppIcon.svelte';
+  import { ExternalLink } from '@lucide/svelte';
   import { publicSettings, settingText } from '$lib/settings';
   import Img from '$lib/components/public/Img.svelte';
   import type { Specialist } from '$lib/types';
@@ -57,6 +58,6 @@
     rel="noopener noreferrer"
     data-track-location={trackLocation}
   >
-    <MessageCircle size={16} /> {$t('ui.message_name').replace('{name}', firstName)}
+    <WhatsAppIcon size={16} /> {$t('ui.message_name').replace('{name}', firstName)}
   </a>
 </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import WhatsAppIcon from '../WhatsAppIcon.svelte';
   import { t } from '$lib/i18n/ui';
   /**
    * The one enquiry form. Everything contextual arrives as config — this
@@ -6,7 +7,7 @@
    */
   import { createEventDispatcher, tick } from 'svelte';
   import { afterNavigate } from '$app/navigation';
-  import { ArrowLeft, ArrowRight, Check, Loader2, MessageCircle, Send } from '@lucide/svelte';
+  import { ArrowLeft, ArrowRight, Check, Loader2, Send } from '@lucide/svelte';
   import { currency, formatUsd } from '$lib/currency';
   import { brand } from '$lib/brand';
   import { publicSettings, settingText } from '$lib/settings';
@@ -379,7 +380,7 @@
             rel="noopener noreferrer"
             data-track-location="enquiry_form_success"
           >
-            <MessageCircle size={17} />{$t('ui.continue_on_whatsapp')}</a>
+            <WhatsAppIcon size={17} />{$t('ui.continue_on_whatsapp')}</a>
         {/if}
         <!-- Nothing to close when the form is part of the page. -->
         {#if !inline}

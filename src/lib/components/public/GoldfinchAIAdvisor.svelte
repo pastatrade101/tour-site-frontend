@@ -1,8 +1,9 @@
 <script lang="ts">
+  import WhatsAppIcon from './WhatsAppIcon.svelte';
   import { t } from '$lib/i18n/ui';
   import { afterUpdate, onMount } from 'svelte';
   import { fade, fly } from 'svelte/transition';
-  import { ArrowUpRight, MapPin, MessageCircle, Send, Sparkles, Star, X } from '@lucide/svelte';
+  import { ArrowUpRight, MapPin, Send, Sparkles, Star, X } from '@lucide/svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { env as publicEnv } from '$env/dynamic/public';
@@ -329,7 +330,7 @@
                       target={action.type === 'whatsapp' ? '_blank' : undefined}
                       rel={action.type === 'whatsapp' ? 'noopener noreferrer' : undefined}
                     >
-                      {#if action.type === 'whatsapp'}<MessageCircle size={13} />{:else}<Sparkles size={13} />{/if}
+                      {#if action.type === 'whatsapp'}<WhatsAppIcon size={13} />{:else}<Sparkles size={13} />{/if}
                       {action.label}
                     </a>
                   {:else}

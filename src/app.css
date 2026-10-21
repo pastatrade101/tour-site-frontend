@@ -372,6 +372,12 @@ input[type='date']::-webkit-date-and-time-value {
     @apply border-goldfinch-gold/35 bg-white/[0.05] text-white;
     color-scheme: dark;
   }
+  /* Placeholders are hints, not answers: kept light so a filled field reads as different from an empty one. */
+  .gf-input::placeholder,
+  .gf-textarea::placeholder {
+    color: rgb(57 61 50 / 0.42);
+    opacity: 1;
+  }
   .gf-panel-dark .gf-input::placeholder,
   .gf-panel-dark .gf-textarea::placeholder {
     @apply text-white/40;

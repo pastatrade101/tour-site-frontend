@@ -1,4 +1,5 @@
 <script lang="ts">
+  import WhatsAppIcon from './WhatsAppIcon.svelte';
   import { locale, t } from '$lib/i18n/ui';
   /**
    * The strip above the header: proof in the middle, switches on the right.
@@ -10,7 +11,7 @@
    * arrives (or stays absent if there are no reviews at all).
    */
   import { onMount } from 'svelte';
-  import { ArrowDownToLine, CircleHelp, MessageCircle, Star } from '@lucide/svelte';
+  import { ArrowDownToLine, CircleHelp, Star } from '@lucide/svelte';
   import { page } from '$app/stores';
   import { api } from '$lib/api/client';
   import { canInstall, promptInstall } from '$lib/pwa';
@@ -104,7 +105,7 @@
           aria-label={waLabel}
           data-track-location="utility_bar"
         >
-          <MessageCircle size={13} />{$t('cta.whatsapp')}</a>
+          <WhatsAppIcon size={13} brand />{$t('cta.whatsapp')}</a>
       {/if}
 
       {#if $canInstall}

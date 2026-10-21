@@ -1,9 +1,10 @@
 <script lang="ts">
+  import WhatsAppIcon from './WhatsAppIcon.svelte';
   import { plannerHref } from '$lib/plannerContext';
   import { openConsentSettings } from '$lib/consent';
   import { t } from '$lib/i18n/ui';
   import { onMount } from 'svelte';
-  import { ArrowRight, Mail, MapPin, MessageCircle, Phone } from '@lucide/svelte';
+  import { ArrowRight, Mail, MapPin, Phone } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import { trackEvent, trackCta } from '$lib/analytics';
   import { brand, brandKeys } from '$lib/brand';
@@ -203,7 +204,7 @@
                     rel="noopener noreferrer"
                     data-track-location="footer"
                   >
-                    <MessageCircle size={16} class="footer-contact-icon" />
+                    <WhatsAppIcon size={16} brand class="footer-contact-icon" />
                     <span class="break-all">{$t('cta.whatsapp')}<span class="ml-1 text-white/55">{waNumber}</span></span>
                   </a>
                 </li>

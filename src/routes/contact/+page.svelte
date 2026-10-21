@@ -1,4 +1,5 @@
 <script lang="ts">
+  import WhatsAppIcon from '$lib/components/public/WhatsAppIcon.svelte';
   import { t } from '$lib/i18n/ui';
   /**
    * /contact
@@ -12,7 +13,7 @@
    * Each channel below self-hides when its setting is empty, so the panel is
    * short and true rather than padded with placeholders.
    */
-  import { ArrowUpRight, Clock, Mail, MapPin, MessageCircle, Phone } from '@lucide/svelte';
+  import { ArrowUpRight, Clock, Mail, MapPin, Phone } from '@lucide/svelte';
   import { brand } from '$lib/brand';
   import { trackEvent } from '$lib/analytics';
   import { publicSettings, settingBool, settingText } from '$lib/settings';
@@ -119,7 +120,7 @@
             data-track-location="contact_page"
           >
             <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/10 text-goldfinch-gold">
-              <MessageCircle size={16} />
+              <WhatsAppIcon size={18} brand />
             </span>
             <span class="min-w-0">
               <span class="block text-[10px] font-bold uppercase tracking-[0.14em] text-white/50">{$t('cta.whatsapp')}</span>

@@ -41,6 +41,7 @@
     Users
   } from '@lucide/svelte';
   import { isEnquiryEmail, isEnquiryPhoneFor, newEnquiryKey, savedEnquiryReference } from '$lib/enquiry/validation';
+  import { DIAL_CODES } from '$lib/enquiry/dialCodes';
   import { clearDraft, loadDraft, saveDraft } from '$lib/enquiry/draft';
   import { api, ApiRequestError, submitErrorKey } from '$lib/api/client';
   import { campaignTags, getAttribution, lastCtaClicked, pushDataLayerEvent } from '$lib/analytics';
@@ -146,7 +147,7 @@
    */
   const DRAFT_KEY = 'trip_request';
   /** The dial codes TripPhoneInput offers: a stored code outside them is not restored, nor its number. */
-  const DIAL_CODES = ['+255', '+254', '+256', '+250', '+44', '+1', '+49', '+33', '+34', '+39', '+31', '+61', '+43', '+41'];
+  // A stored code is restored only if it is a real dial code.
   type TripDraft = { travel_date: string; adults: string; children: string; language: string; step: number };
   type ContactDraft = { full_name: string; email: string; dialCode: string; phone: string; special_requests: string };
   /**
@@ -713,7 +714,7 @@
   .trip-request :global(.date-trigger:focus) { background-color: #fcfaf4; border-color: #c9b77d; }
   .trip-request :global(.date-trigger svg) { color: #656b59; flex-shrink: 0; }
   .trip-request :global(.gf-input::placeholder),
-  .trip-request :global(.gf-textarea::placeholder) { color: #777b71; opacity: 1; }
+  .trip-request :global(.gf-textarea::placeholder) { color: rgb(57 61 50 / 0.42); opacity: 1; }
   .trip-request :global(.gf-input option) { background: #fff; color: #393d32; }
   .trip-request :global(.trip-icon) { color: #393d32; }
   .trip-request.gf-panel-dark :global(.gf-label) { color: rgb(255 255 255 / .85); }

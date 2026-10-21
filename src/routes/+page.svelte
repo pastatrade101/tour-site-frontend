@@ -1,4 +1,5 @@
 <script lang="ts">
+  import WhatsAppIcon from '$lib/components/public/WhatsAppIcon.svelte';
   import { t, tp } from '$lib/i18n/ui';
   import enStrings from '$lib/locales/en.json';
   import { page } from '$app/stores';
@@ -565,7 +566,7 @@
   <div class="container-shell grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
     <div>
       <SectionHeader eyebrow={cmsExtra('faq', 'eyebrow', $t('ui.good_to_know'))} title={cms('faq', 'title', $t('home.faq_title'))} description={cms('faq', 'subtitle', $t('home.faq_subtitle'))} />
-      <a class="mt-6 inline-flex h-12 items-center gap-2 rounded-[8px] bg-[#25D366] px-6 font-bold text-white shadow-sm transition hover:brightness-105" href={cms('faq', 'button_url', '/contact')}><MessageCircle size={18} /> {cms('faq', 'button_text', $t('home.faq_button_text'))}</a>
+      <a class="mt-6 inline-flex h-12 items-center gap-2 rounded-[8px] bg-[#25D366] px-6 font-bold text-white shadow-sm transition hover:brightness-105" href={cms('faq', 'button_url', '/contact')}>{#if /wa\.me|whatsapp/i.test(cms('faq', 'button_url', ''))}<WhatsAppIcon size={18} />{:else}<MessageCircle size={18} />{/if} {cms('faq', 'button_text', $t('home.faq_button_text'))}</a>
     </div>
     <FAQAccordion faqs={homepageFaqs} />
   </div>
