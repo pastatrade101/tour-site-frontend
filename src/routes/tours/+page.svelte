@@ -1,6 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n/ui';
-  import { goto } from '$app/navigation';
+  import { replaceState } from '$app/navigation';
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
   import { ArrowLeft, ArrowRight, CalendarDays, Check, Compass, MapPin, X } from '@lucide/svelte';
@@ -51,7 +51,7 @@
   $: homeByKey = Object.fromEntries(
     ((data.homeSections ?? []) as Array<Record<string, unknown>>).map((section) => [String(section.section_key), section])
   ) as Record<string, AdvisorNoteSection | undefined>;
-  let allTours: Tour[] = data.tours ?? [];
+  $: allTours = (data.tours ?? []) as Tour[];
   let heroIndex = 0;
   $: heroSlides = allTours
     .filter((tour) => (tour.is_featured || tour.is_popular) && (tour.banner_image_url || tour.main_image_url))
@@ -96,7 +96,10 @@
   let rangesReady = false;
   let sort = 'recommended';
 
-  $: params = $page.url.searchParams;
+  // Shallow history updates keep URL filters shareable without waiting for a
+  // navigation. Page state also restores the selected filters on Back/Forward.
+  type TourFilterState = App.PageState & { tourFilters?: string };
+  $: params = new URLSearchParams(($page.state as TourFilterState).tourFilters ?? $page.url.search);
   $: searchTerm = params.get('search')?.trim() ?? '';
   $: destSlug = params.get('destination')?.trim() ?? '';
   $: persona = params.get('persona')?.trim() ?? '';
@@ -173,7 +176,8 @@
       (selectedTiers.length === 0 || selectedTiers.includes(normTier(t.budget_tier))) &&
       (t.duration_days == null || (t.duration_days >= lengthLo && t.duration_days <= lengthHi)) &&
       ((t.price_from ?? 0) >= priceLo && (t.price_from ?? 0) <= priceHi) &&
-      (!popularOnly || Boolean(t.is_popular))
+      (!popularOnly || Boolean(t.is_popular)) &&
+      (!persona || (t.persona_tags ?? []).some((tag) => personaKey(tag) === persona))
   );
 
   const personaTags = (t: Tour) => t.persona_tags ?? [];
@@ -181,7 +185,7 @@
   const PER_PAGE = 12;
   let pageNum = 1;
   // Any change to the filters/sort collapses back to the first page.
-  $: filterSignature = `${searchTerm}|${destSlug}|${[...urlCategories].join(',')}|${selectedTiers.join(',')}|${popularOnly}|${lengthLo}-${lengthHi}|${priceLo}-${priceHi}|${sort}`;
+  $: filterSignature = `${searchTerm}|${destSlug}|${persona}|${[...urlCategories].join(',')}|${selectedTiers.join(',')}|${popularOnly}|${lengthLo}-${lengthHi}|${priceLo}-${priceHi}|${sort}`;
   $: if (filterSignature) pageNum = 1;
   $: totalPages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
   $: safePage = Math.min(pageNum, totalPages);
@@ -209,14 +213,18 @@
   })();
 
   const withParams = (changes: Record<string, string | null>) => {
-    const next = new URLSearchParams($page.url.searchParams);
+    const next = new URLSearchParams(params);
     for (const [k, v] of Object.entries(changes)) v ? next.set(k, v) : next.delete(k);
-    return `${$page.url.pathname}${next.toString() ? `?${next}` : ''}`;
+    return next;
   };
 
   const writeUrl = (changes: Record<string, string | null>) => {
     trackEvent('tour_filter_used', { metadata: { filters: Object.keys(changes) } });
-    void goto(withParams(changes), { replaceState: true, noScroll: true, keepFocus: true });
+    const next = withParams(changes).toString();
+    replaceState(`${$page.url.pathname}${next ? `?${next}` : ''}${$page.url.hash}`, {
+      ...$page.state,
+      tourFilters: next
+    });
   };
 
   const toggleCategory = (slug: string) => {
@@ -236,6 +244,7 @@
     selectedTiers.length +
     (destSlug ? 1 : 0) +
     (searchTerm ? 1 : 0) +
+    (persona ? 1 : 0) +
     (popularOnly ? 1 : 0) +
     (lengthActive ? 1 : 0) +
     (priceActive ? 1 : 0);
@@ -248,7 +257,7 @@
     priceLo = priceMin;
     priceHi = priceMax;
     sort = 'recommended';
-    void goto($page.url.pathname, { replaceState: true, noScroll: true });
+    replaceState($page.url.pathname, { ...$page.state, tourFilters: '' });
   };
 
   $: moneyFormatter = (n: number) => formatUsd(n, $currency);
@@ -395,7 +404,7 @@
                 on:length={(e) => { lengthLo = e.detail.lo; lengthHi = e.detail.hi; }}
                 on:price={(e) => { priceLo = e.detail.lo; priceHi = e.detail.hi; }}
                 on:clear={clearAll}
-                on:apply={() => document.querySelector('[data-results-top]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                on:viewResults={() => document.querySelector('[data-results-top]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
               />
         </div>
         <div class="results-summary flex flex-wrap items-center justify-between gap-3">
@@ -409,7 +418,7 @@
                 {$t('tours.best_matching')}
               {/if}
             </p>
-            <p class="mt-1 text-xs text-ink/60">
+            <p class="mt-1 text-xs text-ink/60" role="status" aria-live="polite" aria-atomic="true">
               {sorted.length} {$t('tours.of')} {allTours.length} {$t('tours.packages_shown')}{#if featuredVisible} · {featuredVisible} {$t('tours.recommended_picks')}{/if}
             </p>
           </div>

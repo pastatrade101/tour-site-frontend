@@ -49,7 +49,7 @@
     length: { lo: number; hi: number };
     price: { lo: number; hi: number };
     clear: void;
-    apply: void;
+    viewResults: void;
   }>();
 
   let open: '' | 'dest' | 'len' | 'price' | 'comfort' | 'type' | 'more' = '';
@@ -205,7 +205,7 @@
 
       <footer class="grid shrink-0 grid-cols-[auto_minmax(0,1fr)] gap-3 border-t border-ink/10 bg-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <button type="button" class="h-12 px-3 text-sm font-bold text-forest disabled:opacity-40" disabled={!activeCount} on:click={() => dispatch('clear')}>{$t('filter.clear')}</button>
-        <button type="button" class="h-12 rounded-[9px] bg-deep-green px-5 text-sm font-bold text-white" on:click={() => { closeMobile(); dispatch('apply'); }}>{$t('filter.apply_filters')}</button>
+        <button type="button" aria-live="polite" aria-atomic="true" class="h-12 rounded-[9px] bg-deep-green px-5 text-sm font-bold text-white" on:click={() => { closeMobile(); dispatch('viewResults'); }}>{$t('filter.view_results')} {resultCount} {resultCount === 1 ? $t('label.tour_one') : $t('label.tour_many')} →</button>
       </footer>
     </div>
   {/if}
@@ -362,7 +362,7 @@
         {#if activeCount}
           <button type="button" class="whitespace-nowrap px-2 text-sm font-bold text-forest underline-offset-2 hover:underline" on:click={() => dispatch('clear')}>{$t('filter.clear_all')}</button>
         {/if}
-        <button type="button" class="gf-btn-primary whitespace-nowrap px-5" on:click={() => { close(); dispatch('apply'); }}>
+        <button type="button" class="gf-btn-primary whitespace-nowrap px-5" on:click={() => { close(); dispatch('viewResults'); }}>
           {$t('filter.view_results')} {resultCount} {resultCount === 1 ? $t('label.tour_one') : $t('label.tour_many')} →
         </button>
       </div>
