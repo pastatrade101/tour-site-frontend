@@ -15,7 +15,7 @@
 
 <section class="rounded-[10px] border border-ink/10 bg-surface p-5 shadow-card sm:p-6">
   <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-    <div class="max-w-3xl">
+    <div class="min-w-0 max-w-3xl">
       <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">{eyebrow}</p>
       <h1 class="mt-2 text-2xl font-bold tracking-normal text-ink sm:text-3xl">{title}</h1>
       {#if description}
@@ -24,12 +24,13 @@
     </div>
 
     {#if actionLabel || secondaryLabel}
-      <div class="flex flex-wrap gap-3">
+      <!-- Never squeezed by a long description: the labels stay on one line. -->
+      <div class="flex shrink-0 flex-wrap gap-3">
         {#if secondaryLabel}
-          <AdminButton variant="secondary" on:click={() => dispatch('secondary')}>{secondaryLabel}</AdminButton>
+          <AdminButton variant="secondary" className="whitespace-nowrap" on:click={() => dispatch('secondary')}>{secondaryLabel}</AdminButton>
         {/if}
         {#if actionLabel}
-          <AdminButton on:click={() => dispatch('action')}>
+          <AdminButton className="whitespace-nowrap" on:click={() => dispatch('action')}>
             {#if actionIcon}
               <svelte:component this={actionIcon} size={17} />
             {/if}

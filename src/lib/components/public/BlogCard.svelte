@@ -4,6 +4,7 @@
   import { tilt } from '$lib/animations';
   import Img from './Img.svelte';
   import { toMetaText } from '$lib/richText';
+  import { postHref } from '$lib/journal';
   import type { BlogPost } from '$lib/types';
 
   export let post: BlogPost;
@@ -12,7 +13,7 @@
 </script>
 
 <article class="group flex h-full flex-col overflow-hidden rounded-[8px] border border-ink/10 bg-surface shadow-card transition duration-300 hover:-translate-y-0.5 hover:border-forest/25 hover:shadow-card-hover" use:tilt={{ max: 3 }}>
-  <a href={`/blog/${post.slug}`} class="flex h-full flex-col">
+  <a href={postHref(post)} class="flex h-full flex-col">
     <div class="relative aspect-[16/10] overflow-hidden bg-skywash">
       {#if post.featured_image_url}
         <Img record={post} fields={['featured_image_url']} alt={post.title} width={760} sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 380px" className="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-105" />

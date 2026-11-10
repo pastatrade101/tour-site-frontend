@@ -17,8 +17,10 @@ export const isPrivateOrUtilityPath = (path: string): boolean =>
 
 // These detail components currently read only the default-language content.
 // Do not advertise translated copies just because their navigation is translated.
+// (Travel Journal pages read their translations, so they advertise the locales
+// their records are published in, like tours and destinations.)
 export const defaultPageLocales = (path: string): string[] | null =>
-  /^\/(blog|experiences|compare|travel-styles)\/[^/]+\/?$/.test(stripLocale(path)) ? [DEFAULT_LOCALE] : null;
+  /^\/(experiences|compare|travel-styles)\/[^/]+\/?$/.test(stripLocale(path)) ? [DEFAULT_LOCALE] : null;
 
 export const disallowsIndexing = (robots?: string | null): boolean =>
   /(?:^|[\s,;])(noindex|none)(?=$|[\s,;])/i.test(robots ?? '');

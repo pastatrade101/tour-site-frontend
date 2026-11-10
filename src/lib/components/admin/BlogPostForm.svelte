@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { ArrowLeft, Save } from '@lucide/svelte';
+  import { ArrowLeft, ExternalLink, FileText, LayoutList, Save } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from './AdminButton.svelte';
   import AdminFormInput from './AdminFormInput.svelte';
@@ -11,6 +11,11 @@
   import AdminRichText from './AdminRichText.svelte';
   import AdminTextArea from './AdminTextArea.svelte';
   import ToastStack from './ToastStack.svelte';
+  import AdminTranslationTabs from './AdminTranslationTabs.svelte';
+  import BlogGuideEditor from './BlogGuideEditor.svelte';
+  import { emptyGuide, normaliseGuide, type EditableGuide } from '$lib/blogBlocks';
+  import { internalLinks, type LinkGroup } from '$lib/internalLinks';
+  import type { BlogPost } from '$lib/types';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
 
@@ -37,6 +42,16 @@
 
   let categoryOptions: Option[] = [{ label: 'No category', value: '' }];
   let mediaItems: MediaItem[] = [];
+  let topicOptions: Option[] = [{ label: 'No topic', value: '' }];
+  let topicsFor = '';
+  let publishedPosts: BlogPost[] = [];
+  let linkGroups: LinkGroup[] = [];
+  let linksLoading = true;
+  let categorySlugs: Record<string, string> = {};
+
+  /** "simple" = one rich-text body; "guide" = sections of blocks (the Travel Journal template). */
+  let layout: 'simple' | 'guide' = 'simple';
+  let guide: EditableGuide = emptyGuide();
 
   let form = {
     author_name: '',
@@ -50,7 +65,36 @@
     published_at: '',
     slug: '',
     status: 'draft' as PublishStatus,
-    title: ''
+    title: '',
+    topic_group_id: '',
+    featured: false,
+    featured_image_alt: '',
+    image_credit: '',
+    related_post_ids: [] as string[]
+  };
+
+  // Topic groups belong to a category, so the list follows the chosen category.
+  const loadTopics = async (categoryId: string) => {
+    topicsFor = categoryId;
+    if (!categoryId) { topicOptions = [{ label: 'No topic', value: '' }]; return; }
+    try {
+      const res = await api.blogTopicGroups.list({ category_id: categoryId, limit: 100 });
+      if (topicsFor !== categoryId) return;
+      topicOptions = [{ label: 'No topic', value: '' }, ...(res.data.items ?? []).map((group) => ({ label: group.title, value: group.id }))];
+      if (form.topic_group_id && !topicOptions.some((option) => option.value === form.topic_group_id)) form.topic_group_id = '';
+    } catch {
+      topicOptions = [{ label: 'No topic', value: '' }];
+    }
+  };
+  $: if (!loading && form.category_id !== topicsFor) void loadTopics(form.category_id);
+
+  // Where this article is read once published: under its category.
+  $: liveHref = form.slug ? (categorySlugs[form.category_id] ? `/blog/${categorySlugs[form.category_id]}/${form.slug}` : `/blog/${form.slug}`) : '';
+  $: relatedChoices = publishedPosts.filter((post) => post.id !== postId);
+  const toggleRelated = (id: string) => {
+    form.related_post_ids = form.related_post_ids.includes(id)
+      ? form.related_post_ids.filter((item) => item !== id)
+      : [...form.related_post_ids, id].slice(0, 3);
   };
 
   // ─── helpers ──────────────────────────────────────────────────────────────
@@ -79,11 +123,15 @@
   const loadOptions = async () => {
     loadingOptions = true;
     try {
-      const [cats, media] = await Promise.all([
+      const [cats, media, posts] = await Promise.all([
         api.blogCategories.list({ status: 'all', limit: 100 }),
-        api.media.list({ file_type: 'image', limit: 200 })
+        api.media.list({ file_type: 'image', limit: 200 }),
+        api.blog.list({ status: 'published', view: 'card', limit: 200 })
       ]);
+      publishedPosts = posts.data.items ?? [];
+      internalLinks().then((groups) => { linkGroups = groups; }).catch(() => {}).finally(() => { linksLoading = false; });
 
+      categorySlugs = Object.fromEntries(cats.data.items.map((c) => [String(c.id), String(c.slug ?? '')]));
       categoryOptions = [
         { label: 'No category', value: '' },
         ...cats.data.items.map((c) => ({ label: String(c.name ?? c.slug ?? 'Untitled'), value: String(c.id) }))
@@ -117,8 +165,15 @@
         published_at: post.published_at ? String(post.published_at).slice(0, 16) : '',
         slug: String(post.slug ?? ''),
         status: (post.status ?? 'draft') as PublishStatus,
-        title: String(post.title ?? '')
+        title: String(post.title ?? ''),
+        topic_group_id: String(post.topic_group_id ?? ''),
+        featured: post.featured === true,
+        featured_image_alt: String(post.featured_image_alt ?? ''),
+        image_credit: String(post.image_credit ?? ''),
+        related_post_ids: Array.isArray(post.related_post_ids) ? post.related_post_ids.map(String) : []
       };
+      guide = normaliseGuide(post.guide);
+      layout = guide.sections.length ? 'guide' : 'simple';
 
       slugManuallyEdited = true;
     } catch (err) {
@@ -148,8 +203,20 @@
       published_at: form.published_at ? new Date(form.published_at).toISOString() : null,
       slug: form.slug.trim(),
       status: form.status,
-      title: form.title.trim()
+      title: form.title.trim(),
+      topic_group_id: form.topic_group_id || null,
+      featured: form.featured,
+      featured_image_alt: form.featured_image_alt.trim() || null,
+      image_credit: form.image_credit.trim() || null,
+      related_post_ids: form.related_post_ids,
+      // A simple article keeps its opening and closing text but has no sections.
+      guide: { ...guide, sections: layout === 'guide' ? guide.sections : [] }
     };
+    if (layout === 'guide' && !guide.sections.some((section) => section.title.trim())) {
+      showToast('Give the guide at least one section with a heading.', 'error');
+      saving = false;
+      return;
+    }
 
     try {
       if (mode === 'edit' && postId) {
@@ -213,7 +280,27 @@
 
           <AdminTextArea label="Excerpt" name="excerpt" bind:value={form.excerpt} rows={3} placeholder="Short summary shown on blog listing pages and in search results (150–200 chars recommended)." />
 
-          <AdminRichText label="Content" name="content" bind:value={form.content} rows={20} headings="h2h3" placeholder="Write your full article here." />
+          <div class="grid gap-2">
+            <span class="text-sm font-medium text-ink">Layout</span>
+            <div class="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Article layout">
+              <button type="button" role="radio" aria-checked={layout === 'simple'} on:click={() => (layout = 'simple')}
+                class="flex items-start gap-3 rounded-[10px] border p-4 text-left transition {layout === 'simple' ? 'border-goldfinch-gold bg-goldfinch-gold/10' : 'border-ink/10 hover:bg-canvas'}">
+                <FileText size={18} class="mt-0.5 shrink-0 text-heading" />
+                <span><span class="block font-semibold text-heading">Simple article</span><span class="mt-0.5 block text-sm text-ink/60">One body of text. Its H2 headings become the "On this page" list.</span></span>
+              </button>
+              <button type="button" role="radio" aria-checked={layout === 'guide'} on:click={() => (layout = 'guide')}
+                class="flex items-start gap-3 rounded-[10px] border p-4 text-left transition {layout === 'guide' ? 'border-goldfinch-gold bg-goldfinch-gold/10' : 'border-ink/10 hover:bg-canvas'}">
+                <LayoutList size={18} class="mt-0.5 shrink-0 text-heading" />
+                <span><span class="block font-semibold text-heading">Structured guide</span><span class="mt-0.5 block text-sm text-ink/60">Quick answer, "At a glance", sections of tables, notes, steps, FAQs and a closing box.</span></span>
+              </button>
+            </div>
+          </div>
+
+          {#if layout === 'guide'}
+            <BlogGuideEditor bind:guide media={mediaItems} {linkGroups} {linksLoading} />
+          {:else}
+            <AdminRichText label="Content" name="content" bind:value={form.content} rows={20} headings="h2h3" placeholder="Write your full article here." />
+          {/if}
         </div>
       </div>
 
@@ -227,6 +314,8 @@
           </div>
 
           <MediaPicker label="Featured image" media={mediaItems} uploadFolder="blog" bind:value={form.featured_image_url} />
+          <AdminFormInput label="Describe the photo (alt text)" name="featured_image_alt" bind:value={form.featured_image_alt} placeholder="Elephants crossing a river in Tarangire National Park" />
+          <AdminFormInput label="Photo credit (optional)" name="image_credit" bind:value={form.image_credit} placeholder="Photo: name of photographer" />
         </div>
 
         <!-- publish settings -->
@@ -244,6 +333,11 @@
               bind:value={form.category_id}
               options={loadingOptions ? [{ label: 'Loading...', value: '' }] : categoryOptions}
             />
+            <AdminSelect label="Topic (list it falls under on the category page)" name="topic_group_id" bind:value={form.topic_group_id} options={topicOptions} />
+            <label class="flex items-start gap-3 rounded-lg border border-ink/10 bg-canvas px-3 py-3 text-sm">
+              <input type="checkbox" class="mt-0.5 size-4 accent-[rgb(var(--c-deep-green))]" bind:checked={form.featured} />
+              <span><span class="font-semibold text-ink">Featured guide</span><span class="block text-ink/55">Shown in the top row of its category page (the newest three featured).</span></span>
+            </label>
             <AdminFormInput label="Author name" name="author_name" bind:value={form.author_name} placeholder="e.g. Goldfinch Team" />
             <AdminFormInput label="Published at" name="published_at" type="datetime-local" bind:value={form.published_at} />
           </div>
@@ -275,12 +369,46 @@
         </div>
       </div>
 
+      <!-- related reading -->
+      <div class="grid gap-4 rounded-[10px] border border-ink/10 bg-surface p-6 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
+        <div>
+          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-forest/70">Continue exploring</p>
+          <h2 class="mt-1 text-lg font-bold text-ink">Related articles ({form.related_post_ids.length}/3)</h2>
+          <p class="mt-1 text-sm text-ink/55">Shown at the end of the article, in the order picked. With none picked, the newest articles from the same category are shown.</p>
+        </div>
+        {#if relatedChoices.length}
+          <div class="grid max-h-72 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-2">
+            {#each relatedChoices as item (item.id)}
+              {@const picked = form.related_post_ids.indexOf(item.id)}
+              <label class="flex cursor-pointer items-start gap-2.5 rounded-md border px-3 py-2 text-sm {picked >= 0 ? 'border-goldfinch-gold bg-goldfinch-gold/10' : 'border-ink/10'}">
+                <input type="checkbox" class="mt-0.5 size-4 shrink-0" checked={picked >= 0} disabled={picked < 0 && form.related_post_ids.length >= 3} on:change={() => toggleRelated(item.id)} />
+                <span class="min-w-0"><span class="block font-medium text-ink">{#if picked >= 0}<b class="mr-1 text-forest">{picked + 1}.</b>{/if}{item.title}</span>{#if item.blog_categories?.name}<span class="text-xs text-ink/50">{item.blog_categories.name}</span>{/if}</span>
+              </label>
+            {/each}
+          </div>
+        {:else}
+          <p class="text-sm text-ink/55">No other published articles yet.</p>
+        {/if}
+      </div>
+
+      {#if mode === 'edit' && postId}
+        <div class="rounded-[10px] border border-ink/10 bg-surface p-6 shadow-[0_18px_50px_rgba(57,61,50,0.06)]">
+          <AdminTranslationTabs entityType="blog_posts" entityId={postId} on:toast={(event) => showToast(event.detail.message, event.detail.type)} />
+        </div>
+      {/if}
+
       <!-- footer actions -->
       <div class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between rounded-[8px] border border-ink/10 bg-surface px-6 py-4 shadow-sm">
         <a class="inline-flex items-center gap-2 text-sm font-semibold text-ink/60 transition hover:text-ink" href="/admin/blog">
           <ArrowLeft size={16} />
           Back to blog posts
         </a>
+        {#if mode === 'edit' && postId}
+          <a class="inline-flex items-center gap-2 text-sm font-semibold text-forest hover:text-heading" href="/admin/blog/preview?id={postId}" target="_blank" rel="noopener" title="Shows the saved version, in any language it is translated into">Preview <ExternalLink size={14} /></a>
+        {/if}
+        {#if mode === 'edit' && form.status === 'published' && liveHref}
+          <a class="inline-flex items-center gap-2 text-sm font-semibold text-forest hover:text-heading" href={liveHref} target="_blank" rel="noopener">View on site <ExternalLink size={14} /></a>
+        {/if}
         <AdminButton type="submit" disabled={saving}>
           <Save size={16} />
           {saving ? 'Saving...' : mode === 'edit' ? 'Save Changes' : 'Create Post'}

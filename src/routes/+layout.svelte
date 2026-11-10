@@ -100,8 +100,9 @@
   $: seoOgImage = seoOgImageRaw.startsWith('/') ? `${siteOrigin}${seoOgImageRaw}` : seoOgImageRaw;
   $: seoOgImageAlt = pageSeo?.imageAlt || seoOgTitle;
   $: seoType = pageSeo?.type || (stripLocale($page.url.pathname).startsWith('/blog/') ? 'article' : 'website');
-  $: indexingData = $page.data as { package?: { indexable?: boolean }; lodge?: { indexable?: boolean } };
-  $: contentNoindex = (indexingData.package && indexingData.package.indexable !== true) || indexingData.lodge?.indexable === false;
+  $: indexingData = $page.data as { package?: { indexable?: boolean }; lodge?: { indexable?: boolean }; journal?: { noindex?: boolean } };
+  // A journal category with nothing published yet is a "coming soon" page: shown, never indexed.
+  $: contentNoindex = (indexingData.package && indexingData.package.indexable !== true) || indexingData.lodge?.indexable === false || indexingData.journal?.noindex === true;
   $: seoRobots = contentNoindex || isPrivateOrUtilityPath($page.url.pathname) ? 'noindex, nofollow' : seoOverride?.robots || '';
   $: seoStructured = seoOverride?.structured_data && !Array.isArray(seoOverride.structured_data) ? seoOverride.structured_data : null;
 

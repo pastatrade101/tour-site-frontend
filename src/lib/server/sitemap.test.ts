@@ -28,7 +28,7 @@ test('only publishes supported, enabled, actually served language variants with 
   const urls = entries.map((entry) => entry.loc);
   assert.ok(urls.includes(`${origin}/de/tours/tours-sample`));
   assert.ok(urls.includes(`${origin}/de/privacy`));
-  for (const path of ['/fr/tours/tours-sample', '/unknown', '/en', '/de/terms', '/de/blog/blog_posts-sample', '/de/experiences/tour_categories-sample', '/de/compare/comparisons-sample', '/de/travel-styles/travel_styles-sample']) assert.ok(!urls.includes(`${origin}${path}`), path);
+  for (const path of ['/fr/tours/tours-sample', '/unknown', '/en', '/de/terms', '/de/experiences/tour_categories-sample', '/de/compare/comparisons-sample', '/de/travel-styles/travel_styles-sample']) assert.ok(!urls.includes(`${origin}${path}`), path);
   for (const entry of entries) {
     for (const alternate of entry.alternates) {
       const target = entries.find((candidate) => candidate.loc === alternate.href);
@@ -82,4 +82,15 @@ test('shares URL and indexing policy with page metadata and robots', () => {
   assert.ok(!disallowsIndexing('index, follow'));
   for (const path of ['/admin', '/de/admin/tours', '/booking/test', '/quote/token', '/trip/token', '/shortlist', '/guides/test']) assert.ok(isPrivateOrUtilityPath(path));
   assert.ok(!isPrivateOrUtilityPath('/trip-finder'));
+});
+
+test('lists journal articles under their category and categories that have articles', () => {
+  const catalog = fixture();
+  catalog.collections.blog_posts = [{ slug: 'safari-cost', locales: ['en'], category: 'safaris' }];
+  catalog.collections.blog_categories = [{ slug: 'safaris', locales: ['en', 'de'] }];
+  const urls = new Set(buildSitemapEntries(catalog, origin).map((entry) => entry.loc));
+  assert.ok(urls.has(`${origin}/blog/safaris/safari-cost`));
+  assert.ok(!urls.has(`${origin}/blog/safari-cost`));
+  assert.ok(urls.has(`${origin}/blog/safaris`));
+  assert.ok(urls.has(`${origin}/de/blog/safaris`));
 });

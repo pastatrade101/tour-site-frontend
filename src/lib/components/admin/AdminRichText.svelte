@@ -32,6 +32,8 @@
     Undo2
   } from '@lucide/svelte';
   import { hasRichContent, looksLikeHtml, plainToHtml, sanitizeRichText } from '$lib/richText';
+  import { internalLinks, type LinkGroup } from '$lib/internalLinks';
+  import AdminLinkPicker from './AdminLinkPicker.svelte';
 
   export let label: string;
   export let name: string;
@@ -163,27 +165,74 @@
     syncState();
   }
 
-  const toggleLink = () => {
+  // ── Links: a page of this site from a list, or "Something else…" ─────────
+  // A typed path is how a CMS fills up with links to pages that never existed;
+  // the list holds only pages that do (see $lib/internalLinks).
+  let linkOpen = false;
+  let linkHref = '';
+  let linkEditing = false;
+  let linkSelection = { from: 0, to: 0 };
+  let linkGroups: LinkGroup[] = [];
+  let linksLoading = false;
+
+  const openLink = async () => {
     if (!editor) return;
-
-    if (editor.isActive('link')) {
-      editor.chain().focus().unsetLink().run();
-      return;
+    if (linkOpen) { linkOpen = false; return; }
+    const { from, to } = editor.state.selection;
+    linkSelection = { from, to };
+    linkEditing = editor.isActive('link');
+    linkHref = String(editor.getAttributes('link').href ?? '');
+    linkOpen = true;
+    if (!linkGroups.length) {
+      linksLoading = true;
+      try {
+        linkGroups = await internalLinks();
+      } catch {
+        linkGroups = [];
+      } finally {
+        linksLoading = false;
+      }
     }
+  };
 
-    const previous = String(editor.getAttributes('link').href ?? '');
-    const input = window.prompt('Link address (https://…, mailto:…, or /a-page)', previous);
-    if (input === null) return;
+  const closeLink = () => {
+    linkOpen = false;
+    editor?.chain().focus().setTextSelection(linkSelection).run();
+  };
 
-    const href = input.trim();
-    if (!href) {
-      editor.chain().focus().unsetLink().run();
-      return;
-    }
+  const labelFor = (href: string) =>
+    linkGroups.flatMap((group) => group.options).find((option) => option.value === href)?.label ?? '';
 
+  const applyLink = () => {
+    if (!editor) return;
+    const href = linkHref.trim();
+    if (!href) return;
     // A bare domain is almost always meant as a link, not a relative path.
     const normalised = /^(?:https?:|mailto:|tel:|[/#])/i.test(href) ? href : `https://${href}`;
-    editor.chain().focus().extendMarkRange('link').setLink({ href: normalised }).run();
+    // A page of this site opens in the same tab; another website in a new one.
+    const attrs = { href: normalised, target: /^[/#]/.test(normalised) ? null : '_blank' };
+    const chain = editor.chain().focus().setTextSelection(linkSelection);
+    if (linkSelection.from === linkSelection.to && !linkEditing) {
+      // Nothing selected: the page's name becomes the linked words.
+      chain
+        .insertContent({ type: 'text', text: labelFor(normalised) || normalised, marks: [{ type: 'link', attrs }] })
+        .unsetMark('link')
+        .run();
+    } else {
+      chain.extendMarkRange('link').setLink(attrs).run();
+    }
+    linkOpen = false;
+  };
+
+  const removeLink = () => {
+    editor?.chain().focus().setTextSelection(linkSelection).extendMarkRange('link').unsetLink().run();
+    linkOpen = false;
+  };
+
+  const onLinkKey = (event: KeyboardEvent) => {
+    // Enter inside an admin form would otherwise save the whole record.
+    if (event.key === 'Enter') { event.preventDefault(); applyLink(); }
+    if (event.key === 'Escape') { event.preventDefault(); closeLink(); }
   };
 
   const clearFormatting = () => {
@@ -244,10 +293,10 @@
         })),
         [
           {
-            label: state.link ? 'Remove link' : 'Add link',
-            icon: state.link ? Link2Off : Link2,
-            active: state.link,
-            action: toggleLink
+            label: state.link ? 'Edit link' : 'Add link',
+            icon: Link2,
+            active: state.link || linkOpen,
+            action: openLink
           },
           { label: 'Clear formatting', icon: Eraser, action: clearFormatting }
         ],
@@ -303,6 +352,28 @@
         {/each}
       {/each}
     </div>
+
+    {#if linkOpen}
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+      <div class="grid gap-2 border-b border-ink/10 bg-sand/40 px-3 py-3" role="group" aria-label="Link" on:keydown={onLinkKey}>
+        <span class="text-[12px] font-semibold text-ink/65">
+          {linkEditing ? 'Change where this link goes' : linkSelection.from === linkSelection.to ? 'Choose a page — its name is added as the link' : 'Link the selected words to'}
+        </span>
+        {#if linksLoading}
+          <p class="text-sm text-ink/55">Loading pages…</p>
+        {:else}
+          <AdminLinkPicker value={linkHref} groups={linkGroups} placeholder="https://… or mailto:…" on:change={(event) => (linkHref = event.detail)} />
+          <span class="text-[11.5px] text-ink/50">Another website or an email address: choose “Something else…” at the bottom of the list.</span>
+        {/if}
+        <div class="flex flex-wrap gap-2">
+          <button type="button" class="inline-flex h-9 items-center rounded-md bg-forest px-3 text-[13px] font-semibold text-white transition hover:bg-deep-green disabled:opacity-40" disabled={!linkHref.trim()} on:click={applyLink}>{linkEditing ? 'Update link' : 'Add link'}</button>
+          {#if linkEditing}
+            <button type="button" class="inline-flex h-9 items-center gap-1.5 rounded-md border border-ink/15 px-3 text-[13px] font-semibold text-ink transition hover:bg-surface" on:click={removeLink}><Link2Off size={14} /> Remove link</button>
+          {/if}
+          <button type="button" class="inline-flex h-9 items-center rounded-md px-3 text-[13px] font-semibold text-ink/60 transition hover:text-ink" on:click={closeLink}>Cancel</button>
+        </div>
+      </div>
+    {/if}
 
     <div class="admin-rich" style={`--rich-min-height: ${Math.max(rows, 3) * 1.6}rem`} bind:this={element}></div>
   </div>

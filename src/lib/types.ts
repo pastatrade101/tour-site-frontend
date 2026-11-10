@@ -492,6 +492,59 @@ export type BlogPost = {
   published_at?: string | null;
   updated_at?: string | null;
   available_locales?: string[];
+  category_id?: string | null;
+  topic_group_id?: string | null;
+  featured?: boolean | null;
+  featured_image_alt?: string | null;
+  image_credit?: string | null;
+  guide?: BlogGuide | null;
+  related_post_ids?: string[] | null;
+  /** Resolved by the API on a single article: the editor's picks, published only. */
+  related?: BlogPost[];
+  blog_categories?: { id: string; name: string; slug: string } | null;
+  blog_topic_groups?: { id: string; title: string; icon?: string | null; sort_order?: number | null } | null;
+};
+
+/** One block of a structured guide: `{ _id, type, ...fields }` (see $lib/blogBlocks). */
+export type BlogGuideBlock = Record<string, any> & { _id: string; type: string };
+export type BlogGuideSection = { _id: string; title: string; toc_label?: string | null; blocks: BlogGuideBlock[] };
+export type BlogGuide = {
+  quick_answer?: string | null;
+  intro?: string | null;
+  takeaways?: string[];
+  sections?: BlogGuideSection[];
+  final_cta?: {
+    heading?: string | null;
+    text?: string | null;
+    button?: string | null;
+    href?: string | null;
+    secondary_label?: string | null;
+    secondary_href?: string | null;
+  } | null;
+};
+
+export type BlogTopicGroup = { id: string; category_id?: string; title: string; icon?: string | null; sort_order?: number | null };
+
+export type BlogCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  heading?: string | null;
+  intro?: string | null;
+  featured_heading?: string | null;
+  image_url?: string | null;
+  image_alt?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  status?: string | null;
+  sort_order?: number | null;
+  /** From the API: published articles in this category; 0 means "coming soon". */
+  published_posts?: number;
+  /** The category photo, or its newest article's photo when it has none. */
+  cover_image_url?: string | null;
+  topic_groups?: BlogTopicGroup[];
+  available_locales?: string[];
 };
 
 export type Testimonial = {

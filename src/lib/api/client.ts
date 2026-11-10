@@ -3,7 +3,7 @@ import { API_URL } from '$lib/config/env';
 import { DEFAULT_LOCALE, localeFromPath } from '$lib/i18n';
 import type { EntityTranslations, Language, TranslationRecord } from '$lib/types';
 import type { LegalDefaults } from '$lib/legal';
-import type { Activity, AdvisorDonePayload, AdvisorMeta, AdvisorPageContext, AdvisorRecommendation, AiChatResponse, ApiResponse, BlogPost, Comparison, CurrencyApiState, Destination, FAQ, Lodge, MigrationEntry, PageSeo, Paginated, Review, ReviewSummary, SafariPackage, SafetyTopic, Specialist, Testimonial, Tour, TourCategory, TravelStyle, TripPoint } from '$lib/types';
+import type { Activity, AdvisorDonePayload, AdvisorMeta, AdvisorPageContext, AdvisorRecommendation, AiChatResponse, ApiResponse, BlogPost, BlogTopicGroup, Comparison, CurrencyApiState, Destination, FAQ, Lodge, MigrationEntry, PageSeo, Paginated, Review, ReviewSummary, SafariPackage, SafetyTopic, Specialist, Testimonial, Tour, TourCategory, TravelStyle, TripPoint } from '$lib/types';
 
 type QueryValue = string | number | boolean | undefined | null;
 type RequestOptions = Omit<RequestInit, 'body'> & {
@@ -634,6 +634,12 @@ export const api = {
     create: (body: Record<string, unknown>) => apiRequest('/blog-categories', { method: 'POST', body }),
     update: (id: string, body: Record<string, unknown>) => apiRequest(`/blog-categories/${id}`, { method: 'PUT', body }),
     remove: (id: string) => apiRequest(`/blog-categories/${id}`, { method: 'DELETE' })
+  },
+  blogTopicGroups: {
+    list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<BlogTopicGroup>>(`/blog-topic-groups${queryString(params)}`),
+    create: (body: Record<string, unknown>) => apiRequest<BlogTopicGroup>('/blog-topic-groups', { method: 'POST', body }),
+    update: (id: string, body: Record<string, unknown>) => apiRequest<BlogTopicGroup>(`/blog-topic-groups/${id}`, { method: 'PUT', body }),
+    remove: (id: string) => apiRequest(`/blog-topic-groups/${id}`, { method: 'DELETE' })
   },
   gallery: {
     list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Record<string, unknown>>>(`/gallery${queryString(params)}`),

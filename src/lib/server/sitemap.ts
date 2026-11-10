@@ -10,7 +10,8 @@ export const STATIC_SITEMAP_PATHS = [
   '/departures', '/safety', '/privacy', '/terms', '/cancellation-policy', '/data-retention'
 ] as const;
 
-export type SitemapRecord = { slug: string; locales: string[] };
+/** `category` is set on journal articles, which live at /blog/{category}/{slug}. */
+export type SitemapRecord = { slug: string; locales: string[]; category?: string };
 export type SitemapCatalog = {
   collections: Record<string, SitemapRecord[]>;
   languages: string[];
@@ -23,6 +24,8 @@ const collectionPaths: Record<string, string[]> = {
   lodges: ['/accommodation'], blog_posts: ['/blog'], comparisons: ['/compare'],
   travel_styles: ['/travel-styles'], safari_packages: ['']
 };
+/** Collections an older API may not send yet; missing means none. */
+const optionalCollections: Record<string, string[]> = { blog_categories: ['/blog'] };
 const legalDocuments: Record<string, string> = {
   '/privacy': 'privacy', '/terms': 'terms', '/cancellation-policy': 'cancellation', '/data-retention': 'data_retention'
 };
@@ -52,10 +55,13 @@ export const buildSitemapEntries = (catalog: SitemapCatalog, origin: string): Si
   // These routes have real built-in content when no CMS record is available.
   for (const item of COMPARISONS) candidates.set(`/compare/${item.slug}`, [DEFAULT_LOCALE]);
   for (const item of TRAVEL_STYLES) candidates.set(`/travel-styles/${item.slug}`, [DEFAULT_LOCALE]);
-  for (const [table, prefixes] of Object.entries(collectionPaths)) {
-    for (const row of catalog.collections[table]) {
+  const allPaths = { ...collectionPaths, ...optionalCollections };
+  for (const [table, basePrefixes] of Object.entries(allPaths)) {
+    for (const row of catalog.collections[table] ?? []) {
       const slug = slugSegment(row.slug);
       if (!slug || (table === 'safari_packages' && reservedRootSlugs.has(row.slug))) continue;
+      const category = table === 'blog_posts' && row.category ? slugSegment(row.category) : null;
+      const prefixes = category ? [`/blog/${category}`] : basePrefixes;
       for (const prefix of prefixes) {
         const path = `${prefix}/${slug}`;
         candidates.set(path, defaultPageLocales(path) ?? row.locales);

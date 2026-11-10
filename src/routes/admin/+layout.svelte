@@ -39,11 +39,12 @@
   $: path = $page.url.pathname;
   $: isLogin = path === '/admin/login';
   $: isPackagePreview = path === '/admin/safari-packages/preview';
+  $: isJournalPreview = path === '/admin/blog/preview';
   $: title = titles[path] ?? 'Admin';
   $: if (browser && !isLogin && !localStorage.getItem('admin_token')) goto('/admin/login');
 </script>
 
-{#if isLogin || isPackagePreview}
+{#if isLogin || isPackagePreview || isJournalPreview}
   <slot />
 {:else}
   <AdminLayout {title} currentPath={path}>

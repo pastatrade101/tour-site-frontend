@@ -1,4 +1,6 @@
 import { api } from '$lib/api/client';
+import { postHref } from '$lib/journal';
+import type { BlogPost } from '$lib/types';
 
 export type LinkOption = { label: string; value: string };
 export type LinkGroup = { label: string; options: LinkOption[] };
@@ -31,7 +33,7 @@ const STATIC_PAGES: LinkOption[] = [
   { label: 'Trip finder', value: '/trip-finder' },
   { label: 'Gallery', value: '/gallery' },
   { label: 'Guides', value: '/guides' },
-  { label: 'Blog', value: '/blog' },
+  { label: 'Travel Journal', value: '/blog' },
   { label: 'About us', value: '/about' },
   { label: 'Contact', value: '/contact' },
   { label: 'Health & safety', value: '/safety' },
@@ -61,14 +63,15 @@ const settled = <T>(result: PromiseSettledResult<{ data: { items?: T[] } }>): T[
 export const loadInternalLinks = async (): Promise<LinkGroup[]> => {
   const params = { status: 'published', limit: 200 } as const;
 
-  const [destinations, categories, tours, activities, lodges, packages, posts] = await Promise.allSettled([
+  const [destinations, categories, tours, activities, lodges, packages, posts, journalCategories] = await Promise.allSettled([
     api.destinations.list(params),
     api.categories.list(params),
     api.tours.list(params),
     api.activities.list(params),
     api.lodges.list(params),
     api.safariPackages.list(params),
-    api.blog.list(params)
+    api.blog.list({ ...params, view: 'card' }),
+    api.blogCategories.list(params)
   ]);
 
   const groups: LinkGroup[] = [
@@ -81,11 +84,42 @@ export const loadInternalLinks = async (): Promise<LinkGroup[]> => {
     { label: 'Accommodation', options: toOptions(settled<Row>(lodges), '/accommodation/', 'name') },
     // Safari packages are served from the root: /6-day-classic-safari.
     { label: 'Safari packages', options: toOptions(settled<Row>(packages), '/', 'name') },
-    { label: 'Blog posts', options: toOptions(settled<Row>(posts), '/blog/', 'title') }
+    // Journal articles live under their category: /blog/safaris/how-much-…
+    {
+      label: 'Travel Journal topics',
+      // A category page with nothing published is a "coming soon" page.
+      options: settled<Row>(journalCategories)
+        .filter((row) => typeof row.slug === 'string' && row.slug && Number(row.published_posts ?? 0) > 0)
+        .map((row) => ({ label: String(row.name ?? row.slug), value: `/blog/${row.slug}` }))
+        .sort((a, b) => a.label.localeCompare(b.label))
+    },
+    {
+      label: 'Travel Journal articles',
+      options: settled<BlogPost>(posts)
+        .filter((post) => post.slug)
+        .map((post) => ({ label: post.title, value: postHref(post) }))
+        .sort((a, b) => a.label.localeCompare(b.label))
+    }
   ];
 
   // A group with nothing published in it is noise in the dropdown.
   return groups.filter((group) => group.options.length > 0);
+};
+
+let shared: { at: number; links: Promise<LinkGroup[]> } | null = null;
+
+/**
+ * The same list, loaded once and shared by every field on the page (an
+ * article can have dozens of text fields). Refreshed after two minutes so a
+ * page published meanwhile shows up.
+ */
+export const internalLinks = (): Promise<LinkGroup[]> => {
+  if (!shared || Date.now() - shared.at > 120_000) {
+    const links = loadInternalLinks();
+    shared = { at: Date.now(), links };
+    links.catch(() => { shared = null; });
+  }
+  return shared.links;
 };
 
 /** True when `href` is one of the offered links, so we know to show the picker rather than the free-text box. */
