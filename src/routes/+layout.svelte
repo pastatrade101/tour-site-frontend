@@ -10,6 +10,7 @@
   import ConsentDialog from '$lib/components/public/ConsentDialog.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
   import BackToTop from '$lib/components/public/BackToTop.svelte';
+  import WhatsAppFab from '$lib/components/public/WhatsAppFab.svelte';
   import NavigationProgress from '$lib/components/public/NavigationProgress.svelte';
   import ShortlistFab from '$lib/components/public/ShortlistFab.svelte';
   import { consentChoice } from '$lib/consent';
@@ -329,5 +330,6 @@
   <Footer />
   <ShortlistFab />
   <BackToTop />
+  <WhatsAppFab />
   <ConsentDialog />
 {/if}

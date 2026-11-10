@@ -1,5 +1,4 @@
 <script lang="ts">
-  import WhatsAppIcon from './WhatsAppIcon.svelte';
   import { locale, t } from '$lib/i18n/ui';
   /**
    * The strip above the header: proof in the middle, switches on the right.
@@ -19,8 +18,6 @@
   import CurrencySelector from './CurrencySelector.svelte';
   import LanguageSwitcher from './LanguageSwitcher.svelte';
 
-  export let waHref = '';
-  export let waLabel = 'WhatsApp';
 
   type Summary = { count: number; average: number; by_platform?: { platform: string; count: number }[] };
 
@@ -94,19 +91,6 @@
       <span class="hidden h-3 w-px bg-white/25 md:inline-block" aria-hidden="true"></span>
       <a class="hidden items-center gap-1.5 transition hover:text-white md:inline-flex" href="/contact">
         <CircleHelp size={13} />{$t('ui.need_help')}</a>
-
-      {#if waHref}
-        <span class="hidden h-3 w-px bg-white/25 md:inline-block" aria-hidden="true"></span>
-        <a
-          class="hidden items-center gap-1.5 transition hover:text-white md:inline-flex"
-          href={waHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={waLabel}
-          data-track-location="utility_bar"
-        >
-          <WhatsAppIcon size={13} brand />{$t('cta.whatsapp')}</a>
-      {/if}
 
       {#if $canInstall}
         <span class="hidden h-3 w-px bg-white/25 lg:inline-block" aria-hidden="true"></span>

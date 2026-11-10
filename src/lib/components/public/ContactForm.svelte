@@ -48,6 +48,13 @@
   /** A generous ceiling: anything longer than this did not come from this form. */
   const DRAFT_MAX = 20000;
   let draftReady = false;
+  /*
+   * How long the form was open before it was sent, for the server's spam
+   * check (bots send within a second). Not sent when a saved draft was put
+   * back, because then a person can rightly send at once.
+   */
+  let openedAt = 0;
+  let restoredDraft = false;
   const draftText = (value: unknown): string | null =>
     typeof value === 'string' && value.length <= DRAFT_MAX ? value : null;
   const restoreDraft = () => {
@@ -58,6 +65,7 @@
       phone = draftText(contact.phone) ?? phone;
       subject = draftText(contact.subject) ?? subject;
       message = draftText(contact.message) ?? message;
+      restoredDraft = [full_name, email, phone, subject, message].some((value) => value.trim());
     }
     draftReady = true;
   };
@@ -67,6 +75,7 @@
   let tracker = createFormTracker({ form_name: 'contact', form_type: 'contact', lead_type: 'contact' });
   let stopTracking: (() => void) | undefined;
   onMount(() => {
+    openedAt = Date.now();
     restoreDraft();
     stopTracking = tracker.watchLeave();
     const observer = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting)) { tracker.opened(); observer.disconnect(); } });
@@ -77,6 +86,8 @@
     stopTracking?.();
     tracker = createFormTracker({ form_name: 'contact', form_type: 'contact', lead_type: 'contact' });
     stopTracking = tracker.watchLeave(); tracker.opened(); sent = false;
+    openedAt = Date.now();
+    restoredDraft = false;
   };
 
   const clearErr = (key: string) => {
@@ -123,7 +134,8 @@
         subject: subject.trim() || null,
         message: message.trim(),
         // The page's language, so the sender's confirmation email is written in it.
-        locale: $locale
+        locale: $locale,
+        form_ms: openedAt && !restoredDraft ? Date.now() - openedAt : null
       });
       const reference = savedEnquiryReference(result.data, false);
       full_name = '';

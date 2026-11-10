@@ -439,7 +439,7 @@
     class={`overflow-hidden bg-deep-green transition-[max-height,opacity] duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${scrolled ? 'max-h-0 opacity-0' : 'max-h-10 opacity-100'}`}
     aria-hidden={scrolled}
   >
-    <UtilityBar {waHref} waLabel={`${waButtonText} ${waNumber}`} />
+    <UtilityBar />
   </div>
 
   <!-- ── main row: logo · navigation · actions ───────────────────────────── -->
