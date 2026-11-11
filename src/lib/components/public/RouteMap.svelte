@@ -15,6 +15,7 @@
   import { onMount, untrack } from 'svelte';
   import { ArrowRight, BedDouble, Minus, Plus, X } from '@lucide/svelte';
   import TanzaniaMap from '$lib/geo/TanzaniaMap.svelte';
+  import SectionTitle from './SectionTitle.svelte';
   import { zoomProjection, type BasemapDoc, type MapMarker, type Zoom } from '$lib/geo/basemap';
   import type { ItineraryDay } from '$lib/types';
   import { t } from '$lib/i18n/ui';
@@ -330,9 +331,7 @@
 {#if stops.length && !failed}
   <section id="route" class="tour-section route scroll-mt-32" aria-labelledby="route-heading">
     <p class="route__eyebrow">{$t('ui.route_eyebrow')}</p>
-    <h2 id="route-heading" class="font-serif text-[26px] font-semibold leading-tight text-heading sm:text-[30px] md:text-[34px]">
-      {$t('ui.route_heading')}
-    </h2>
+    <SectionTitle id="route-heading" title={$t('ui.route_heading')} />
 
     <div class="route__grid">
       <div class="route__stage" bind:this={stage}>

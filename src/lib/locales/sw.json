@@ -1782,5 +1782,10 @@
   "journal.cta_enquiry": "Tuma maombi",
   "journal.cta_enquiry_text": "Pata pendekezo la safari lililoandaliwa kwa ajili yako",
   "journal.cta_call": "Piga simu kwa timu yetu",
-  "journal.cta_call_text": "Ongea moja kwa moja na mtaalamu wa ndani"
+  "journal.cta_call_text": "Ongea moja kwa moja na mtaalamu wa ndani",
+  "ui.want_to_change_this_day": "Ungependa kubadilisha siku hii?",
+  "ui.lowest_price": "Bei ya chini",
+  "form.free_to_ask": "Kuuliza ni bure. Hakuna malipo yanayohitajika.",
+  "ui.n_destinations": "Maeneo {n}",
+  "ui.final_day_no_overnight": "Siku ya mwisho ya safari. Hakuna malazi ya usiku."
 }

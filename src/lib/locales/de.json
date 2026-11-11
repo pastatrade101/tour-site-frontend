@@ -1782,5 +1782,10 @@
   "journal.cta_enquiry": "Anfrage senden",
   "journal.cta_enquiry_text": "Erhalten Sie einen persönlichen Reisevorschlag",
   "journal.cta_call": "Rufen Sie uns an",
-  "journal.cta_call_text": "Sprechen Sie direkt mit einem Experten vor Ort"
+  "journal.cta_call_text": "Sprechen Sie direkt mit einem Experten vor Ort",
+  "ui.want_to_change_this_day": "Möchten Sie diesen Tag ändern?",
+  "ui.lowest_price": "Bestpreis",
+  "form.free_to_ask": "Anfragen ist kostenlos. Keine Zahlung nötig.",
+  "ui.n_destinations": "{n} Reiseziele",
+  "ui.final_day_no_overnight": "Letzter Reisetag. Keine Übernachtung."
 }

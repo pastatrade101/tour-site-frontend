@@ -425,4 +425,11 @@ input[type='date']::-webkit-date-and-time-value {
   .gf-step-count {
     @apply text-[10px] font-bold uppercase tracking-[0.14em] text-ink/45;
   }
+  /* Small gold labels on a white card. The brand gold itself is 2:1 on white
+     and cannot carry 11px text, so this is the same gold taken deeper — mixed
+     from the token, so it still follows the Branding page. */
+  .gf-gold-text {
+    color: #8d691d;
+    color: color-mix(in srgb, rgb(var(--c-goldfinch-gold)) 62%, #000);
+  }
 }

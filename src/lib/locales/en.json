@@ -1661,5 +1661,10 @@
   "journal.cta_enquiry": "Send an enquiry",
   "journal.cta_enquiry_text": "Get a personalised travel proposal",
   "journal.cta_call": "Call our team",
-  "journal.cta_call_text": "Speak directly with a local expert"
+  "journal.cta_call_text": "Speak directly with a local expert",
+  "ui.want_to_change_this_day": "Want to change this day?",
+  "ui.lowest_price": "Lowest price",
+  "form.free_to_ask": "Free to ask. No payment needed.",
+  "ui.n_destinations": "{n} destinations",
+  "ui.final_day_no_overnight": "Final day of the trip. No overnight stay."
 }

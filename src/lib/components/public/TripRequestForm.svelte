@@ -496,14 +496,14 @@
   /* gf-input plus room for the leading icon. */
   const fieldCls = 'gf-input pl-10';
   const iconCls = 'trip-icon pointer-events-none absolute left-3 top-1/2 -translate-y-1/2';
-  const errCls = 'text-[11px] font-medium text-red-400';
+  $: errCls = `text-[11px] font-medium ${dark ? 'text-red-400' : 'text-red-600'}`;
 </script>
 
 <div
   bind:this={root}
-  class={`trip-request ${dark ? 'gf-panel-dark' : ''} ${
+  class={`trip-request ${inline ? '' : 'trip-stacked'} ${dark ? 'gf-panel-dark' : 'trip-light'} ${
     panel
-      ? `mx-auto w-full max-w-[540px] rounded-[10px] p-5 sm:p-6 ${dark ? 'shadow-[0_24px_70px_rgba(57,61,50,0.22)]' : 'border border-ink/10 bg-surface shadow-sm'}`
+      ? `mx-auto w-full max-w-[540px] p-5 ${dark ? 'rounded-[10px] shadow-[0_24px_70px_rgba(57,61,50,0.22)] sm:p-6' : 'rounded-[16px] border border-ink/10 bg-surface shadow-[0_16px_40px_-22px_rgba(39,43,34,0.45)]'}`
       : ''
   }`}
 >
@@ -527,16 +527,18 @@
 
     <!-- Two tabs, both always visible. A stepper that hides where you are
          going reads as a form of unknown length. -->
-    <div bind:this={stepTabs} class={`trip-steps grid grid-cols-2 gap-2.5 ${showHeader ? 'mt-4' : ''} ${inline ? 'max-w-md' : ''}`}>
+    <div bind:this={stepTabs} class={`trip-steps grid grid-cols-2 gap-2 ${showHeader ? 'mt-3.5' : ''} ${inline ? 'max-w-md' : ''}`}>
       {#each STEPS as label, index}
         <button
           type="button"
-          class={`flex h-11 items-center justify-center gap-2 rounded-[8px] text-[11px] font-bold uppercase tracking-[0.12em] transition ${
+          class={`trip-tab flex h-11 items-center justify-center gap-2 rounded-[10px] px-1.5 text-[11px] font-bold uppercase leading-tight tracking-[0.08em] transition ${
             step === index
-              ? 'bg-goldfinch-gold text-heading'
+              ? dark
+                ? 'bg-goldfinch-gold text-heading'
+                : 'bg-deep-green text-white'
               : dark
                 ? 'border border-white/20 text-white/60 hover:border-white/35'
-                : 'border border-ink/15 text-ink/55 hover:border-ink/30'
+                : 'bg-canvas text-ink/65 hover:text-heading'
           }`}
           aria-current={step === index ? 'step' : undefined}
           on:click={() => (index === 0 ? back() : next())}
@@ -547,7 +549,7 @@
       {/each}
     </div>
 
-    <form class="mt-5 grid gap-4" on:submit|preventDefault={step === 0 ? next : submit} on:focusin={begin} on:input={begin} novalidate>
+    <form class={`grid ${inline ? 'mt-5 gap-4' : 'mt-4 gap-3.5'}`} on:submit|preventDefault={step === 0 ? next : submit} on:focusin={begin} on:input={begin} novalidate>
       <!-- Named as nothing, so autofill has nothing to match. A honeypot
            labelled "Company" eats real enquiries. -->
       <div class="absolute left-[-9999px] top-0 h-0 w-0 overflow-hidden" aria-hidden="true">
@@ -555,7 +557,9 @@
       </div>
 
       <!--
-        One field per row in the card. In a band: proportioned columns rather
+        One field per row in the card, except the two traveller counts, which
+        share a row: they are a pair, and two short numbers do not need a
+        line each. In a band: proportioned columns rather
         than four equal ones — a date and a language need different room than a
         traveller count — aligned on the bottom edge so labels of different
         lengths cannot leave the controls stepped, with the action as the last
@@ -564,7 +568,7 @@
       <div
         class={inline
           ? 'grid items-end gap-x-3 gap-y-3 sm:grid-cols-2 lg:grid-cols-[1fr_.55fr_1fr_1.35fr_auto]'
-          : 'grid gap-4'}
+          : 'grid gap-3'}
       >
       {#if step === 0}
         <div class="grid gap-1.5">
@@ -573,6 +577,7 @@
           {#if errors.travel_date}<span class={errCls} role="alert">{errors.travel_date}</span>{/if}
         </div>
 
+        <div class={inline ? 'contents' : 'grid grid-cols-2 items-start gap-2.5'}>
         <label class="grid gap-1.5">
           <span class={labelCls}>{$t('form.adults')}<span class="gf-req">*</span></span>
           <span class="relative block">
@@ -590,6 +595,7 @@
           </span>
           {#if errors.children}<span class={errCls} role="alert">{errors.children}</span>{/if}
         </label>
+        </div>
 
         <label class="grid gap-1.5">
           <span class={labelCls}>{inline ? $t('label.language') : $t('form.preferred_language')} <span class="gf-req">*</span></span>
@@ -660,7 +666,7 @@
       </div>
 
       {#if errorMessage}
-        <p class="rounded-[8px] bg-red-500/15 px-3 py-2.5 text-sm text-red-300" role="alert">{errorMessage}</p>
+        <p class={`rounded-[8px] px-3 py-2.5 text-sm ${dark ? 'bg-red-500/15 text-red-300' : 'bg-red-50 text-red-700'}`} role="alert">{errorMessage}</p>
       {/if}
 
       {#if !inline}
@@ -687,6 +693,10 @@
       {:else if step === 1}
         <p class={`flex items-center justify-center gap-1.5 ${hintCls}`}>
           <Lock size={13} />{$t('form.secure_never_shared')}</p>
+      {:else if !inline}
+        <!-- What stops people at a form is the fear it commits them to
+             something. Sending this one costs nothing and books nothing. -->
+        <p class={`text-center ${hintCls}`}>{$t('form.free_to_ask')}</p>
       {/if}
     </form>
   {/if}
@@ -718,6 +728,22 @@
   .trip-request :global(.gf-input option) { background: #fff; color: #393d32; }
   .trip-request :global(.trip-icon) { color: #393d32; }
   .trip-request.gf-panel-dark :global(.gf-label) { color: rgb(255 255 255 / .85); }
+  /* The white card: hairline fields rather than gold-edged ones, so the form
+     sits beside the itinerary instead of competing with it. */
+  .trip-request.trip-light :global(.gf-input),
+  .trip-request.trip-light :global(.gf-textarea),
+  .trip-request.trip-light :global(.date-trigger) { background-color: #fff; border-color: rgb(57 61 50 / .22); }
+  .trip-request.trip-light :global(.gf-input:focus),
+  .trip-request.trip-light :global(.gf-textarea:focus),
+  .trip-request.trip-light :global(.date-trigger:focus) { border-color: #d8a22d; }
+  .trip-request.trip-light :global(.gf-label) { color: rgb(57 61 50 / .68); }
+  .trip-request.trip-light :global(.gf-hint) { color: rgb(57 61 50 / .6); }
+  /* The card is a sidebar on a wide screen, where a pointer does not need a
+     44px target; on a phone the controls keep their full height. */
+  @media (min-width: 1024px) {
+    .trip-request.trip-stacked :global(.gf-input) { height: 2.5rem; }
+    .trip-request.trip-stacked :global(.trip-tab) { height: 2.5rem; }
+  }
   .trip-request :global(label),
   .trip-request :global(label > span) { min-width: 0; }
   .trip-request :global(select) {

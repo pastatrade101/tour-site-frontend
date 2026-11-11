@@ -11,11 +11,14 @@
    * section belong to the page, because a tour page and a landing page
    * introduce the same days with different words.
    */
-  import { BedDouble, ChevronDown, Compass, MapPin, Utensils } from '@lucide/svelte';
+  import { createEventDispatcher } from 'svelte';
+  import { ArrowRight, BedDouble, ChevronDown, Compass, MapPin, Utensils } from '@lucide/svelte';
+  import DayBadge from './DayBadge.svelte';
   import Img from './Img.svelte';
   import RichText from './RichText.svelte';
   import StayCard from './StayCard.svelte';
   import { loadLodgeMedia, stayKey, type MediaImage } from '$lib/lodgeMedia';
+  import { placeOfDay, placesForDays, tidyList } from '$lib/itineraryDisplay';
   import type { ItineraryDay } from '$lib/types';
 
   // Same shape the tour page used: the constructor type, taken from a concrete
@@ -39,6 +42,14 @@
   export let autoloadMedia = false;
   /** Which day starts open. -1 opens none. */
   export let openIndex = 0;
+  /**
+   * "Want to change this day?" with a button, at the foot of an open day. Off
+   * unless the page has somewhere for the button to go: it only announces a
+   * `plan` event, and what that opens is the page's business.
+   */
+  export let planCta = false;
+
+  const dispatch = createEventDispatcher<{ plan: { day: number } }>();
 
   /** Galleries fetched here. A prop-supplied one always wins. */
   let fetched: Record<string, MediaImage[]> = {};
@@ -63,14 +74,23 @@
     return null;
   };
 
-  /** Only the facts a day actually carries. An absent one is left out, not filled in. */
+  const stayOf = (day: ItineraryDay): string => day.lodge?.name || day.accommodation || '';
+
+  /**
+   * Only the facts a day actually carries. An absent one is left out, not
+   * filled in. The main stop is the place the day is linked to; a day with no
+   * linked place falls back to its title, as it always did.
+   */
   $: detailsForDay = (day: ItineraryDay): FactCard[] => {
-    const stay = day.lodge?.name || day.accommodation || '';
+    const stay = stayOf(day);
+    const mainStop = day.destination?.name?.trim() || day.title;
+    const meals = tidyList(day.meals);
+    const activities = tidyList(day.activities);
     return [
-      day.title ? { icon: MapPin, label: $t('ui.main_stop'), value: day.title } : null,
+      mainStop ? { icon: MapPin, label: $t('ui.main_stop'), value: mainStop } : null,
       stay ? { icon: BedDouble, label: $t('nav.accommodation'), value: stay } : null,
-      day.meals ? { icon: Utensils, label: $t('ui.meals'), value: day.meals } : null,
-      day.activities ? { icon: Compass, label: $t('ui.activities'), value: day.activities } : null
+      meals ? { icon: Utensils, label: $t('ui.meals'), value: meals } : null,
+      activities ? { icon: Compass, label: $t('ui.activities'), value: activities } : null
     ].filter(Boolean) as FactCard[];
   };
 
@@ -112,44 +132,84 @@
   };
 
   $: sorted = [...(days ?? [])].sort((a, b) => (a.day_number ?? 0) - (b.day_number ?? 0));
+  /** One colour per place, so the days read as a journey through them. */
+  $: places = placesForDays(sorted);
 </script>
 
 {#if sorted.length}
-  <div class="tour-day-list space-y-2.5">
+  <!-- A key to the colours, only when there is more than one place to tell apart. -->
+  {#if places.length > 1}
+    <ul class="mb-4 flex flex-wrap gap-x-4 gap-y-1.5 text-[12.5px] text-ink/70">
+      {#each places as place (place.key)}
+        <li class="inline-flex items-center gap-1.5">
+          <span class="h-2.5 w-2.5 rounded-[3px]" style={`background:${place.colour}`} aria-hidden="true"></span>{place.name}
+        </li>
+      {/each}
+    </ul>
+  {/if}
+
+  <div class="tour-day-list grid gap-3">
     {#each sorted as day, index (day.day_number)}
       {@const image = dayImage(day)}
       {@const details = detailsForDay(day)}
-      <details id={`day-${day.day_number}`} class="tour-day-card group overflow-hidden rounded-[12px] border border-ink/10 bg-surface" open={index === openIndex}>
+      {@const place = placeOfDay(day, places)}
+      {@const stay = stayOf(day)}
+      {@const meals = tidyList(day.meals)}
+      <details
+        id={`day-${day.day_number}`}
+        class="tour-day-card group overflow-hidden rounded-[16px] border border-ink/10 bg-surface shadow-[0_10px_24px_-18px_rgba(57,61,50,0.6)]"
+        style={place ? `--day-colour:${place.colour}` : undefined}
+        open={index === openIndex}
+      >
         <summary
-          class="tour-day-toggle flex w-full cursor-pointer list-none items-center gap-4 px-4 py-4 text-left marker:content-none md:px-5 [&::-webkit-details-marker]:hidden"
+          class="tour-day-toggle flex w-full cursor-pointer list-none items-center gap-4 py-3 pl-3 pr-4 text-left marker:content-none md:pr-[18px] [&::-webkit-details-marker]:hidden"
           on:click={animateDayDisclosure}
         >
-          <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-deep-green text-[13px] font-bold text-white">
-            {day.day_number}
-          </span>
+          <DayBadge day={day.day_number} colour={place?.colour ?? ''} />
           <span class="min-w-0 flex-1">
-            <span class="block text-[10.5px] font-bold uppercase tracking-[0.14em] text-clay/80">{$t('ui.day')} {day.day_number}</span>
-            <span class="mt-0.5 block font-serif text-[16.5px] font-bold leading-snug text-heading md:text-[18px]">{day.title}</span>
-            <span class="mt-0.5 block text-[12.5px] text-ink/55">
-              {[day.lodge?.name || day.accommodation || '', day.meals || ''].filter(Boolean).join(' / ')}
-            </span>
+            {#if place}
+              <span class="tour-day-place flex items-center gap-1.5 text-[11px] font-bold uppercase leading-tight tracking-[0.1em]">
+                <span class="h-2 w-2 shrink-0 rounded-full" aria-hidden="true"></span>{place.name}
+              </span>
+            {/if}
+            <span class="mt-1 block font-serif text-[16.5px] font-bold leading-[1.2] text-heading md:text-[20px]">{day.title}</span>
+            {#if meals || stay}
+              <span class="mt-2 flex flex-wrap gap-1.5">
+                {#if meals}
+                  <span class="tour-day-chip"><Utensils size={13} strokeWidth={2} aria-hidden="true" />{meals}</span>
+                {/if}
+                {#if stay}
+                  <span class="tour-day-chip"><BedDouble size={13} strokeWidth={2} aria-hidden="true" />{stay}</span>
+                {/if}
+              </span>
+            {/if}
           </span>
-          <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full text-ink/60 transition-transform duration-200 group-open:rotate-180">
-            <ChevronDown class="h-5 w-5" />
+          <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-canvas text-heading transition-transform duration-200 group-open:rotate-180">
+            <ChevronDown class="h-4 w-4" strokeWidth={2.4} />
           </span>
         </summary>
 
-        <div class="tour-day-body border-t border-ink/10 px-4 pb-8 pt-6 md:px-8 md:pt-8">
+        <div class="tour-day-body border-t border-ink/10 px-4 pb-6 pt-5 md:px-6 md:pb-7 md:pt-6">
           {#if image}
-            <Img
-              src={image.record ? '' : image.src}
-              record={image.record}
-              fields={image.fields ?? []}
-              alt={image.caption}
-              width={1000}
-              sizes="(max-width: 768px) 92vw, 700px"
-              className="tour-day-image mb-6 h-[220px] w-full rounded-[12px] object-cover sm:h-[280px] md:mb-8 md:h-[380px]"
-            />
+            <!-- 3:2 is the shape the photographs are taken in, so the frame
+                 shows the picture rather than a band cut from its middle. -->
+            <div class="relative mb-5 overflow-hidden rounded-[16px] bg-canvas shadow-[0_14px_30px_-20px_rgba(57,61,50,0.7)] md:mb-6">
+              <Img
+                src={image.record ? '' : image.src}
+                record={image.record}
+                fields={image.fields ?? []}
+                alt={image.caption}
+                width={1000}
+                sizes="(max-width: 768px) 92vw, 840px"
+                pictureClass="block"
+                className="aspect-[3/2] w-full object-cover"
+              />
+              {#if place}
+                <span class="tour-day-photo-label absolute left-3 top-3 inline-flex max-w-[calc(100%-1.5rem)] items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[12px] font-bold leading-none text-[#393D32]">
+                  <MapPin size={14} strokeWidth={2} aria-hidden="true" /><span class="truncate">{place.name}</span>
+                </span>
+              {/if}
+            </div>
           {/if}
 
           {#if day.description}
@@ -157,13 +217,15 @@
           {/if}
 
           {#if details.length}
-            <ul class="tour-day-details mb-7 mt-6 rounded-[12px] border border-ink/10 bg-canvas p-5 md:p-[22px]">
-              {#each details as detail, detailIndex}
-                <li class={`flex items-start gap-3 text-[14.5px] leading-[1.55] md:text-[15px] ${detailIndex > 0 ? 'mt-2.5' : ''}`}>
-                  <svelte:component this={detail.icon} size={16} class="mt-[2px] shrink-0 text-clay" />
-                  <span class="min-w-0 flex-1">
-                    <span class="font-semibold text-heading">{detail.label}:</span>
-                    <span class="text-ink/70"> {detail.value}</span>
+            <ul class="tour-day-details mb-6 mt-5 grid gap-2.5 sm:grid-cols-2">
+              {#each details as detail}
+                <li class="flex min-w-0 items-center gap-3 rounded-[14px] border border-ink/10 bg-surface px-3.5 py-3">
+                  <span class="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-[11px] bg-goldfinch-gold text-deep-green">
+                    <svelte:component this={detail.icon} size={20} strokeWidth={2} />
+                  </span>
+                  <span class="min-w-0">
+                    <span class="gf-gold-text block text-[11px] font-bold uppercase tracking-[0.1em]">{detail.label}</span>
+                    <span class="block text-[14.5px] font-semibold leading-[1.3] text-heading">{detail.value}</span>
                   </span>
                 </li>
               {/each}
@@ -171,8 +233,19 @@
           {/if}
 
           {#if day.lodge}
-            {@const stay = day.lodge}
-            <StayCard {stay} extra={media[stayKey(stay)] ?? []} label={`${$t('nav.accommodation')} - ${stay.name}`} />
+            {@const lodge = day.lodge}
+            <StayCard stay={lodge} extra={media[stayKey(lodge)] ?? []} label={`${$t('nav.accommodation')} - ${lodge.name}`} />
+          {/if}
+
+          {#if planCta}
+            <div class="mt-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+              <p class="text-[14px] text-ink/70">{$t('ui.want_to_change_this_day')}</p>
+              <button
+                type="button"
+                class="inline-flex w-full items-center justify-center gap-2 rounded-[12px] bg-goldfinch-gold px-5 py-3 text-[14.5px] font-bold text-heading transition hover:brightness-105 sm:w-auto"
+                on:click={() => dispatch('plan', { day: day.day_number })}
+              >{$t('ui.plan_this_trip')}<ArrowRight size={16} strokeWidth={2.4} /></button>
+            </div>
           {/if}
         </div>
       </details>
@@ -181,45 +254,53 @@
 {/if}
 
 <style>
-  /* Carried over with the markup, so a day card reads the same on a landing
-     page as it does on the tour page it came from. */
-  @media (max-width: 767px) {
-    .tour-day-list {
-      display: grid;
-      gap: 0.75rem;
-    }
+  /* The place's colour, or the brand rust where a day has no place linked. */
+  .tour-day-card {
+    --day-colour: rgb(var(--c-clay));
+  }
 
+  .tour-day-place {
+    color: var(--day-colour);
+  }
+
+  .tour-day-place > span {
+    background: var(--day-colour);
+  }
+
+  .tour-day-chip {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    gap: 5px;
+    border-radius: 999px;
+    background: rgb(var(--c-canvas));
+    padding: 4px 10px;
+    color: rgb(var(--c-heading));
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .tour-day-chip :global(svg),
+  .tour-day-photo-label :global(svg) {
+    flex: none;
+    color: var(--day-colour);
+  }
+
+  /* Carried with the markup, so a day card reads the same on a landing page
+     as it does on the tour page it came from. */
+  @media (max-width: 767px) {
     .tour-day-card {
       border-radius: 14px;
     }
 
     .tour-day-toggle {
       gap: 0.75rem;
-      padding: 0.95rem;
-    }
-
-    .tour-day-toggle > span:first-child {
-      height: 2rem;
-      width: 2rem;
-      font-size: 0.78rem;
+      padding: 0.6rem 0.75rem 0.6rem 0.6rem;
     }
 
     .tour-day-body {
       padding: 0.9rem 0.9rem 1rem;
     }
-
-    :global(.tour-day-image) {
-      aspect-ratio: 16 / 10;
-      height: auto;
-      margin-bottom: 1rem;
-      border-radius: 12px;
-    }
-
-    .tour-day-details {
-      margin-block: 1rem 1.1rem;
-      border-radius: 12px;
-      padding: 0.9rem;
-    }
-
   }
 </style>

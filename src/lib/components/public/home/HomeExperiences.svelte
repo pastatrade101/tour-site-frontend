@@ -98,9 +98,9 @@
         </div>
       </div>
 
-      <div class="mt-9 grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,7fr)] lg:items-stretch">
+      <div class="mt-9 grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,7fr)] xl:items-stretch">
         {#if active}
-          <div class="flex min-w-0 flex-col rounded-[20px] border border-ink/15 bg-surface p-5 sm:p-6 lg:min-h-[430px]">
+          <div class="flex min-w-0 flex-col rounded-[20px] border border-ink/15 bg-surface p-5 sm:p-6">
             <h3 class="font-serif text-[26px] font-bold leading-tight text-heading sm:text-[30px] lg:text-[34px]">
               {active.name}
             </h3>
@@ -174,59 +174,70 @@
           </div>
         {/if}
 
-        <!-- Two rows that divide the column's height rather than fixing their
-             own, so the photographs finish level with the card instead of
-             leaving a band of empty space under them. -->
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-rows-2">
-          {#each primary as opt, i (opt.slug || i)}
-            <button
-              type="button"
-              on:click={() => (activeIndex = i)}
-              aria-pressed={activeIndex === i}
-              class="exp-tile group relative aspect-[4/3] overflow-hidden rounded-2xl transition-all duration-300 lg:aspect-auto lg:min-h-[190px] {activeIndex === i
-                ? 'exp-tile-active z-10 scale-[1.04] ring-4 ring-goldfinch-gold/70'
-                : ''}"
-            >
-              {#if opt.image}
-                <Img
-                  src={opt.image}
-                  variantsMap={imageVariants}
-                  alt={opt.name}
-                  width={520}
-                  sizes="(max-width: 639px) 45vw, (max-width: 1023px) 31vw, 22vw"
-                  pictureClass="block h-full w-full"
-                  className={`h-full w-full object-cover transition-all duration-300 ${
-                    activeIndex === i
-                      ? 'scale-105 opacity-100 saturate-100'
-                      : 'scale-100 opacity-55 saturate-[0.5] group-hover:opacity-80 group-hover:saturate-75'
-                  }`}
-                />
-              {:else}
-                <span class="block h-full w-full bg-canvas"></span>
-              {/if}
-              <span class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent"></span>
-              <span class="absolute inset-x-2.5 bottom-2.5 text-left text-[13px] font-semibold leading-tight text-white sm:text-sm md:text-base">
-                {opt.name}
-              </span>
-            </button>
-          {/each}
+        <!-- The tiles keep the 3:2 shape the photographs are taken in, so a
+             picture is shown whole. They used to stretch to the card's height,
+             which made each one nearly square and cut a third off its width —
+             a plane out of one frame, the cubs out of another.
+
+             What the card's extra height used to be filled with, cropping, it
+             is now filled with honestly: the remaining experiences sit under
+             the tiles and are pushed to the foot of the column, so the two
+             columns still finish level. -->
+        <div class="flex min-w-0 flex-col">
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+            {#each primary as opt, i (opt.slug || i)}
+              <button
+                type="button"
+                on:click={() => (activeIndex = i)}
+                aria-pressed={activeIndex === i}
+                class="exp-tile group relative aspect-[3/2] overflow-hidden rounded-2xl transition-all duration-300 {activeIndex === i
+                  ? 'exp-tile-active z-10 scale-[1.02] ring-4 ring-goldfinch-gold/70'
+                  : ''}"
+              >
+                {#if opt.image}
+                  <Img
+                    src={opt.image}
+                    variantsMap={imageVariants}
+                    alt={opt.name}
+                    width={520}
+                    sizes="(max-width: 639px) 45vw, (max-width: 1279px) 31vw, 22vw"
+                    pictureClass="block h-full w-full"
+                    className={`h-full w-full object-cover transition-all duration-300 ${
+                      activeIndex === i
+                        ? 'opacity-100 saturate-100'
+                        : 'opacity-55 saturate-[0.5] group-hover:opacity-80 group-hover:saturate-75'
+                    }`}
+                  />
+                {:else}
+                  <span class="block h-full w-full bg-canvas"></span>
+                {/if}
+                <span class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent"></span>
+                <span class="absolute inset-x-2.5 bottom-2.5 text-left text-[13px] font-semibold leading-tight text-white sm:text-sm md:text-base">
+                  {opt.name}
+                </span>
+              </button>
+            {/each}
+          </div>
+
+          {#if secondary.length}
+            <div class="exp-more mt-5 xl:mt-auto xl:pt-6">
+              <p class="exp-more-label text-[13px] leading-6 text-ink/50">{moreLabel}<span class="xl:hidden">:</span></p>
+              <div class="exp-more-list text-[13px] leading-6 text-ink/50">
+                {#each secondary as opt, i (opt.slug || i)}<span class="exp-more-item"
+                    ><button
+                      type="button"
+                      on:click={() => (activeIndex = i + visibleCount)}
+                      aria-pressed={activeIndex === i + visibleCount}
+                      class="exp-more-link underline-offset-2 hover:underline {activeIndex === i + visibleCount
+                        ? 'is-active font-semibold text-heading'
+                        : 'font-medium text-clay'}">{opt.name}</button
+                    >{#if i < secondary.length - 1}<span class="exp-more-dot px-2 text-ink/40" aria-hidden="true">·</span>{/if}</span
+                  >{/each}
+              </div>
+            </div>
+          {/if}
         </div>
       </div>
-
-      {#if secondary.length}
-        <p class="mt-5 text-center text-[13px] leading-6 text-ink/50">
-          {moreLabel}:
-          {#each secondary as opt, i (opt.slug || i)}<span
-              ><button
-                type="button"
-                on:click={() => (activeIndex = i + visibleCount)}
-                class="underline-offset-2 hover:underline {activeIndex === i + visibleCount
-                  ? 'font-semibold text-heading'
-                  : 'font-medium text-clay'}">{opt.name}</button
-              >{#if i < secondary.length - 1}<span class="px-2 text-ink/40">·</span>{/if}</span
-            >{/each}
-        </p>
-      {/if}
     </div>
   </section>
 {/if}
@@ -242,6 +253,71 @@
     display: none;
   }
 
+  /* The remaining experiences. A centred line of links under the tiles on a
+     phone or tablet; beside the card, a row of pills at the foot of the
+     column. One set of markup, so the two cannot disagree. */
+  .exp-more {
+    text-align: center;
+  }
+
+  .exp-more-label,
+  .exp-more-list {
+    display: inline;
+  }
+
+  @media (min-width: 1280px) {
+    .exp-more {
+      text-align: left;
+    }
+
+    .exp-more-label {
+      display: block;
+      margin-bottom: 0.6rem;
+      color: rgb(var(--c-goldfinch-gold));
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .exp-more-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .exp-more-dot {
+      display: none;
+    }
+
+    .exp-more-link {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid rgb(var(--c-ink) / 0.15);
+      border-radius: 999px;
+      padding: 0.4rem 0.9rem;
+      color: rgb(var(--c-heading));
+      font-weight: 500;
+      line-height: 1.4;
+      text-decoration: none;
+      transition:
+        border-color 0.2s ease,
+        background-color 0.2s ease;
+    }
+
+    .exp-more-link:hover {
+      border-color: rgb(var(--c-goldfinch-gold));
+      text-decoration: none;
+    }
+
+    .exp-more-link.is-active {
+      border-color: rgb(var(--c-heading));
+      background: rgb(var(--c-heading));
+      color: rgb(var(--c-goldfinch-gold));
+    }
+  }
+
   /* Brand-token glow: a Tailwind arbitrary value cannot carry the runtime
      colour variable the Branding page rewrites, so it lives here. */
   .exp-tile-active {
@@ -251,6 +327,7 @@
   /* The browser's default outline is a dark ring, which disappears against a
      photograph — and these tiles are all photograph. */
   .exp-tile:focus-visible,
+  .exp-more-link:focus-visible,
   .exp-tabs button:focus-visible {
     outline: 2px solid rgb(var(--c-goldfinch-gold));
     outline-offset: 2px;

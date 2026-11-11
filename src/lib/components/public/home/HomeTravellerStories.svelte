@@ -1,6 +1,7 @@
 <script lang="ts">
   import { locale, t } from '$lib/i18n/ui';
   import { Star } from '@lucide/svelte';
+  import { countryCodeFor } from '$lib/data/countries';
 
   // Traveller stories / verified reviews carousel. Renders ONLY from props:
   // if there are no usable reviews the whole section disappears. Star rows and
@@ -43,18 +44,18 @@
   const tourTitleOf = (r: StoryReview) => (r.tours?.title || r.tour_title || titleOf(r)).trim();
   const cardImageOf = (r: StoryReview) => r.author_photo_url || r.tours?.main_image_url || r.tours?.banner_image_url || '';
 
-  const countryCodes: Record<string, string> = {
-    australia: 'AU', austria: 'AT', belgium: 'BE', brazil: 'BR', canada: 'CA', china: 'CN',
-    denmark: 'DK', finland: 'FI', france: 'FR', germany: 'DE', india: 'IN', ireland: 'IE',
-    italy: 'IT', japan: 'JP', kenya: 'KE', netherlands: 'NL', 'new zealand': 'NZ', norway: 'NO',
-    portugal: 'PT', singapore: 'SG', 'south africa': 'ZA', spain: 'ES', sweden: 'SE',
-    switzerland: 'CH', tanzania: 'TZ', 'united arab emirates': 'AE', 'united kingdom': 'GB',
-    uk: 'GB', 'united states': 'US', 'united states of america': 'US', usa: 'US'
+  /**
+   * The reviewer's flag, as a picture from /flags (the open-source flag-icons
+   * set, square crops) — not an emoji, which Windows shows as two letters.
+   * Empty when the country is missing or not recognised: that reviewer keeps
+   * their initials rather than getting a flag we guessed.
+   */
+  const flagOf = (country: string): string => {
+    const code = countryCodeFor(country);
+    return code ? `/flags/${code.toLowerCase()}.svg` : '';
   };
-  const countryFlag = (country: string) => {
-    const code = countryCodes[country.trim().toLowerCase()];
-    return code ? [...code].map((letter) => String.fromCodePoint(127397 + letter.charCodeAt(0))).join('') : '';
-  };
+  /** A flag file that fails to load steps aside, and the initials under it show. */
+  const dropFlag = (event: Event) => (event.currentTarget as HTMLImageElement).remove();
 
   // Whole stars, only when a real numeric rating exists (never defaulted to 5).
   const starsOf = (rating: number | null | undefined) => {
@@ -155,6 +156,7 @@
           {@const quote = quoteOf(review)}
           {@const stars = starsOf(review.rating)}
           {@const platform = (review.platform ?? '').trim()}
+          {@const flag = flagOf(country)}
           <article data-review-card class="flex flex-col rounded-[14px] bg-canvas p-6">
             <span class="font-serif text-[34px] leading-none text-goldfinch-gold/45" aria-hidden="true">&rdquo;</span>
 
@@ -164,8 +166,13 @@
 
             {#if name}
               <div class="mt-5 flex items-center gap-3 border-b border-ink/10 pb-5">
-                <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-goldfinch-gold/85 text-[13px] font-bold text-heading">
+                <!-- The flag fills the same disc the initials sat in; the
+                     initials stay underneath for a reviewer with no country. -->
+                <span class="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-goldfinch-gold/85 text-[13px] font-bold text-heading ring-1 ring-ink/15">
                   {initialsOf(name)}
+                  {#if flag}
+                    <img src={flag} alt="" width="44" height="44" loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover" on:error={dropFlag} />
+                  {/if}
                 </span>
                 <span class="min-w-0">
                   <span class="block truncate text-[15px] font-bold text-heading">{name}</span>

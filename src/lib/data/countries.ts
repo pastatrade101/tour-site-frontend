@@ -209,3 +209,48 @@ export const countryFlag = (code: string): string =>
   code
     .toUpperCase()
     .replace(/[A-Z]/g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
+
+/**
+ * Names people write that the list above spells differently. Only unambiguous
+ * ones: "Georgia" the country is in the list already, and the US state is not
+ * something this can tell apart, so nothing here guesses at it.
+ */
+const COUNTRY_ALIASES: Record<string, string> = {
+  uk: 'GB',
+  'u.k.': 'GB',
+  'great britain': 'GB',
+  britain: 'GB',
+  england: 'GB',
+  scotland: 'GB',
+  wales: 'GB',
+  'northern ireland': 'GB',
+  usa: 'US',
+  'u.s.a.': 'US',
+  'u.s.': 'US',
+  us: 'US',
+  america: 'US',
+  'united states of america': 'US',
+  uae: 'AE',
+  holland: 'NL',
+  'the netherlands': 'NL',
+  'czech republic': 'CZ',
+  turkey: 'TR',
+  'ivory coast': 'CI',
+  drc: 'CD',
+  'democratic republic of the congo': 'CD',
+  'russian federation': 'RU'
+};
+
+const COUNTRY_CODES_BY_NAME = new Map(COUNTRIES.map((country) => [country.name.toLowerCase(), country.code]));
+
+/**
+ * The ISO code for a country as a person wrote it — "United Kingdom", "USA",
+ * or a place with its country last, "Doha, Qatar". Empty when it is not a
+ * country this recognises, so the caller shows no flag rather than a wrong one.
+ */
+export const countryCodeFor = (text: string | null | undefined): string => {
+  const whole = String(text ?? '').trim().toLowerCase();
+  if (!whole) return '';
+  const lookup = (value: string) => COUNTRY_CODES_BY_NAME.get(value) ?? COUNTRY_ALIASES[value] ?? '';
+  return lookup(whole) || lookup(whole.split(',').pop()?.trim() ?? '');
+};

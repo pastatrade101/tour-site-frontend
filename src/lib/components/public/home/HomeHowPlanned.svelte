@@ -39,8 +39,12 @@
         {/if}
       </div>
 
-      <div class="mt-10 grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-center">
-        <div class="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-canvas lg:aspect-auto lg:h-full lg:min-h-[440px]">
+      <!-- A square photograph beside the steps, and the steps spread over its
+           height: the first level with its top edge, the last with its bottom.
+           The photograph used to stretch to a tall 2:3 with the four steps
+           bunched in the middle of it. -->
+      <div class="mt-10 grid gap-8 lg:grid-cols-[minmax(0,480px)_minmax(0,1fr)] lg:items-stretch lg:gap-12">
+        <div class="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-canvas lg:aspect-square lg:self-start">
           {#if displayImage}
             <Img
               src={displayImage}
@@ -48,6 +52,7 @@
               width={900}
               sizes="(max-width: 1024px) 92vw, 42vw"
               className="h-full w-full object-cover"
+              imgStyle="object-position: 50% 35%"
             />
           {:else}
             <div class="h-full w-full bg-gradient-to-br from-forest to-deep-green"></div>
@@ -65,7 +70,7 @@
 
         <div class="relative">
           <div aria-hidden="true" class="absolute bottom-2 left-[19px] top-2 hidden w-px bg-[#E3DCCB] sm:block md:left-[21px]"></div>
-          <div class="flex flex-col gap-8">
+          <div class="flex flex-col gap-8 lg:h-full lg:justify-between lg:gap-6">
             {#each visibleSteps as step, index (step.title)}
               <article class="relative flex gap-5">
                 <div class="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-goldfinch-gold bg-white font-serif text-[15px] font-semibold text-clay sm:h-11 sm:w-11">

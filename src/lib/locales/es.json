@@ -1782,5 +1782,10 @@
   "journal.cta_enquiry": "Enviar una consulta",
   "journal.cta_enquiry_text": "Recibe una propuesta de viaje personalizada",
   "journal.cta_call": "Llama a nuestro equipo",
-  "journal.cta_call_text": "Habla directamente con un experto local"
+  "journal.cta_call_text": "Habla directamente con un experto local",
+  "ui.want_to_change_this_day": "¿Quiere cambiar este día?",
+  "ui.lowest_price": "Mejor precio",
+  "form.free_to_ask": "Consultar es gratis. No hace falta pagar.",
+  "ui.n_destinations": "{n} destinos",
+  "ui.final_day_no_overnight": "Último día del viaje. Sin noche de alojamiento."
 }
