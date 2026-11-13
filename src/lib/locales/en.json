@@ -1666,5 +1666,12 @@
   "ui.lowest_price": "Lowest price",
   "form.free_to_ask": "Free to ask. No payment needed.",
   "ui.n_destinations": "{n} destinations",
-  "ui.final_day_no_overnight": "Final day of the trip. No overnight stay."
+  "ui.final_day_no_overnight": "Final day of the trip. No overnight stay.",
+  "ui.route_whole": "Whole route",
+  "ui.route_leg_drive": "By road",
+  "ui.route_leg_fly": "Flight",
+  "ui.route_leg_boat": "Boat",
+  "ui.map_hint_ctrl": "Use Ctrl + scroll to zoom the map",
+  "ui.map_hint_cmd": "Use ⌘ + scroll to zoom the map",
+  "ui.map_hint_touch": "Use two fingers to move the map"
 }

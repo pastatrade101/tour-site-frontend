@@ -1787,5 +1787,12 @@
   "ui.lowest_price": "Mejor precio",
   "form.free_to_ask": "Consultar es gratis. No hace falta pagar.",
   "ui.n_destinations": "{n} destinos",
-  "ui.final_day_no_overnight": "Último día del viaje. Sin noche de alojamiento."
+  "ui.final_day_no_overnight": "Último día del viaje. Sin noche de alojamiento.",
+  "ui.route_whole": "Ruta completa",
+  "ui.route_leg_drive": "Por carretera",
+  "ui.route_leg_fly": "Vuelo",
+  "ui.route_leg_boat": "Barco",
+  "ui.map_hint_ctrl": "Use Ctrl + desplazamiento para ampliar el mapa",
+  "ui.map_hint_cmd": "Use ⌘ + desplazamiento para ampliar el mapa",
+  "ui.map_hint_touch": "Use dos dedos para mover el mapa"
 }

@@ -11,8 +11,18 @@ const sw = self as unknown as ServiceWorkerGlobalScope;
 const CACHE = `goldfinch-cache-${version}`;
 const ASSETS = [...build, ...files];
 
+/*
+ * Files only some pages ever ask for, and large as a set: the country flags
+ * (270 of them, 2.6 MB — a page shows five) and the live map's worker and
+ * stylesheet. Precaching downloads everything in the list for every visitor,
+ * so these are left to be fetched by the pages that use them; the browser's
+ * own cache keeps them after that.
+ */
+const onDemand = (path: string) => path.startsWith('/flags/') || path.includes('maplibre');
+const PRECACHE = ASSETS.filter((path) => !onDemand(path));
+
 sw.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)).then(() => sw.skipWaiting()));
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)).then(() => sw.skipWaiting()));
 });
 
 sw.addEventListener('activate', (event) => {

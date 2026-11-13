@@ -1787,5 +1787,12 @@
   "ui.lowest_price": "Bei ya chini",
   "form.free_to_ask": "Kuuliza ni bure. Hakuna malipo yanayohitajika.",
   "ui.n_destinations": "Maeneo {n}",
-  "ui.final_day_no_overnight": "Siku ya mwisho ya safari. Hakuna malazi ya usiku."
+  "ui.final_day_no_overnight": "Siku ya mwisho ya safari. Hakuna malazi ya usiku.",
+  "ui.route_whole": "Njia yote",
+  "ui.route_leg_drive": "Kwa barabara",
+  "ui.route_leg_fly": "Ndege",
+  "ui.route_leg_boat": "Boti",
+  "ui.map_hint_ctrl": "Tumia Ctrl + kusogeza ili kukuza ramani",
+  "ui.map_hint_cmd": "Tumia ⌘ + kusogeza ili kukuza ramani",
+  "ui.map_hint_touch": "Tumia vidole viwili kusogeza ramani"
 }

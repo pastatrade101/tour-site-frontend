@@ -1787,5 +1787,12 @@
   "ui.lowest_price": "Bestpreis",
   "form.free_to_ask": "Anfragen ist kostenlos. Keine Zahlung nötig.",
   "ui.n_destinations": "{n} Reiseziele",
-  "ui.final_day_no_overnight": "Letzter Reisetag. Keine Übernachtung."
+  "ui.final_day_no_overnight": "Letzter Reisetag. Keine Übernachtung.",
+  "ui.route_whole": "Ganze Route",
+  "ui.route_leg_drive": "Auf der Straße",
+  "ui.route_leg_fly": "Flug",
+  "ui.route_leg_boat": "Boot",
+  "ui.map_hint_ctrl": "Strg + Scrollen, um die Karte zu zoomen",
+  "ui.map_hint_cmd": "⌘ + Scrollen, um die Karte zu zoomen",
+  "ui.map_hint_touch": "Karte mit zwei Fingern bewegen"
 }
