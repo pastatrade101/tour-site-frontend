@@ -618,6 +618,7 @@
     <ErrorState message={error || $t('ui.tour_not_found')} />
   </section>
 {:else}
+  {@const heroTitleParts = tour.title.split(/\s*\|\s*/).filter(Boolean)}
   <section data-hero class="tour-detail-hero relative isolate overflow-hidden bg-deep-green">
     {#if heroImage}
       <Img
@@ -630,50 +631,48 @@
         className="tour-detail-hero-image absolute inset-0 h-full w-full object-cover"
       />
     {/if}
-    <div class="tour-detail-hero-overlay absolute inset-0 bg-deep-green/45" aria-hidden="true"></div>
-    <div class="absolute inset-0 bg-gradient-to-r from-deep-green/92 via-deep-green/68 to-deep-green/18" aria-hidden="true"></div>
-    <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-deep-green/65 to-transparent" aria-hidden="true"></div>
+    <div class="tour-detail-hero-overlay" aria-hidden="true"></div>
 
-    <div class="tour-detail-hero-shell container-shell relative flex min-h-[390px] flex-col justify-end pb-8 pt-16 md:min-h-[460px] md:pb-12 md:pt-20 lg:pb-14">
-      <a href="/tours" class="absolute left-0 top-6 hidden items-center gap-1.5 text-[13px] font-medium text-white/90 transition hover:text-goldfinch-gold md:top-8 md:inline-flex">
+    <div class="tour-detail-hero-shell container-shell">
+      <a href="/tours" class="tour-hero-back">
         <ArrowLeft class="h-3.5 w-3.5" />{$t('ui.back_to_tours')}</a>
 
-      <div class="tour-hero-copy relative w-full max-w-4xl [text-shadow:0_2px_18px_rgba(39,43,34,0.42)]">
+      <div class="tour-hero-copy">
         {#if categoryLabel}
-          <span class="text-[11px] font-bold uppercase tracking-[0.18em] text-goldfinch-gold drop-shadow">{categoryLabel}</span>
+          <span class="tour-hero-category">{categoryLabel}</span>
         {/if}
-        <h1 class="mt-3 w-full max-w-none font-serif text-3xl font-semibold leading-[1.05] tracking-normal text-white sm:text-4xl md:text-5xl lg:text-[54px]">
-          {tour.title}
+        <h1>
+          <span>{heroTitleParts[0] || tour.title}</span>
+          {#if heroTitleParts.length > 1}
+            {' '}<span class="tour-hero-subtitle">{heroTitleParts.slice(1).join(' · ')}</span>
+          {/if}
         </h1>
-        <div class="tour-hero-actions mt-6 flex">
+        <div class="tour-hero-actions">
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-[6px] bg-goldfinch-gold px-5 py-3 text-sm font-bold text-heading transition hover:brightness-105"
+            class="tour-hero-plan"
             on:click={() => openPlanner('hero')}
-          >{$t('ui.plan_this_trip')}</button>
+          >{$t('ui.plan_this_trip')}<ArrowRight size={18} strokeWidth={1.8} aria-hidden="true" /></button>
         </div>
         {#if heroFacts.length}
-          <!-- White cards, so the three facts a visitor skims first stand off
-               the photograph instead of sinking into it. The price is the
-               largest of the three and carries the gold outline. -->
-          <div class="tour-hero-facts mt-6 grid gap-2.5 md:grid-cols-3 md:gap-3.5 lg:grid-cols-[0.85fr_1.4fr_1fr]">
+          <div class="tour-hero-facts">
             {#each heroFacts as fact}
-              <div class={`hero-fact flex min-w-0 items-center gap-3.5 rounded-[18px] bg-surface px-4 py-3.5 [text-shadow:none] ${fact.kind === 'price' ? 'hero-fact-price' : ''}`}>
-                <span class="hero-fact-icon grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full bg-deep-green text-goldfinch-gold">
-                  <svelte:component this={fact.icon} size={26} strokeWidth={1.9} />
+              <div class="hero-fact" class:hero-fact-price={fact.kind === 'price'} class:hero-fact-places={fact.kind === 'places'}>
+                <span class="hero-fact-icon">
+                  <svelte:component this={fact.icon} size={23} strokeWidth={1.5} aria-hidden="true" />
                 </span>
-                <span class="grid min-w-0 gap-0.5">
-                  <span class="text-[11px] font-semibold uppercase leading-tight tracking-[0.12em] text-ink/65">{fact.label}</span>
+                <span class="hero-fact-copy">
+                  <span class="hero-fact-label">{fact.label}</span>
                   {#if fact.kind === 'places'}
-                    <span class="text-[15px] font-semibold leading-[1.3] text-heading">
+                    <span class="hero-fact-destinations">
                       <!-- Real spaces around each dot: without them the names
                            are one unbreakable word and run out of the card. -->
-                      {#each heroPlacesShown as name, index}{#if index}{' '}<span class="text-gold-hover" aria-hidden="true">·</span>{' '}{/if}<span class="whitespace-nowrap">{name}</span>{/each}{#if heroPlaces.length > heroPlacesShown.length}{' '}<span class="text-ink/60">+{heroPlaces.length - heroPlacesShown.length}</span>{/if}
+                      {#each heroPlacesShown as name, index}{#if index}{' '}<span class="hero-place-dot" aria-hidden="true">·</span>{' '}{/if}<span>{name}</span>{/each}{#if heroPlaces.length > heroPlacesShown.length}{' '}<span>+{heroPlaces.length - heroPlacesShown.length}</span>{/if}
                     </span>
                   {:else}
-                    <span class={`hero-fact-value font-serif font-bold leading-[1.05] text-heading ${fact.kind === 'price' ? 'text-[30px] md:text-[32px]' : 'text-[26px]'}`}>{fact.value}</span>
+                    <span class="hero-fact-value">{fact.value}</span>
                   {/if}
-                  {#if fact.sub}<span class="text-[13px] leading-tight text-ink/65">{fact.sub}</span>{/if}
+                  {#if fact.sub}<span class="hero-fact-sub">{fact.sub}</span>{/if}
                 </span>
               </div>
             {/each}
@@ -707,27 +706,29 @@
   <div class="tour-detail-content container-shell">
     <div class="tour-detail-layout grid gap-10 py-10 md:py-14 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-14">
       <main class="tour-detail-main min-w-0 space-y-10 md:space-y-16">
-        <section id="overview" class="tour-section scroll-mt-32">
+        <section id="overview" class="tour-section tour-overview scroll-mt-32">
           <div class="section-label">
             <span></span>
             <p>{$t('ui.overview')}</p>
           </div>
-          <h2 class="mt-3 font-serif text-[28px] font-semibold leading-tight text-heading sm:text-[32px] md:text-[38px]">{$t('ui.about_this_safari')}</h2>
+          <h2 class="overview-title">{$t('ui.about_this_safari')}</h2>
           {#if tourDescription}
-            <RichText value={tourDescription} className="mt-4 space-y-4 text-[15px] leading-relaxed text-ink/70" />
+            <div class="overview-copy">
+              <RichText value={tourDescription} />
+            </div>
           {/if}
 
           {#if tripFacts.length}
-            <div class={`tour-facts-grid mt-7 grid grid-cols-2 gap-3 ${compactFacts >= 4 ? 'md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4' : compactFacts === 3 ? 'md:grid-cols-3' : ''}`}>
+            <div class="tour-facts-grid" class:tour-facts-three={compactFacts === 3} class:tour-facts-four={compactFacts >= 4}>
               {#each tripFacts as fact}
                 {@const long = fact.value.length > 26}
-                <div class={`tour-fact flex min-w-0 items-center gap-3 rounded-[16px] border border-goldfinch-gold/35 bg-surface p-3.5 shadow-[0_8px_20px_-14px_rgba(57,61,50,0.5)] ${long ? 'col-span-full' : ''}`}>
-                  <span class="tour-fact-icon grid h-[42px] w-[42px] shrink-0 place-items-center rounded-[12px] bg-goldfinch-gold text-deep-green">
-                    <svelte:component this={fact.icon} size={22} strokeWidth={2} />
+                <div class="tour-fact" class:tour-fact-long={long}>
+                  <span class="tour-fact-icon">
+                    <svelte:component this={fact.icon} size={19} strokeWidth={1.8} aria-hidden="true" />
                   </span>
-                  <span class="grid min-w-0 gap-px">
-                    <span class="gf-gold-text text-[11px] font-bold uppercase leading-tight tracking-[0.1em]">{fact.label}</span>
-                    <span class={`font-serif font-bold leading-[1.15] text-heading ${long ? 'text-[16px]' : 'text-[17px] md:text-[19px]'}`}>{fact.value}</span>
+                  <span class="tour-fact-copy">
+                    <span class="tour-fact-label">{fact.label}</span>
+                    <span class="tour-fact-value">{fact.value}</span>
                   </span>
                 </div>
               {/each}
@@ -736,85 +737,96 @@
 
           <button
             type="button"
-            class="mt-5 inline-flex items-center gap-1 text-[14px] font-semibold text-clay transition hover:text-heading"
+            class="overview-customize"
             on:click={() => openPlanner('overview-customize')}
           >{$t('ui.customize_this_route')}<ArrowRight size={14} />
           </button>
         </section>
 
         {#if snapshotRows.length}
-          <section class="tour-section">
-            <SectionTitle title={$t('ui.safari_snapshot')} description={$t('ui.a_quick_look_at_the')} />
+          <section class="tour-section tour-snapshot" aria-labelledby="safari-snapshot-title">
+            <header class="snapshot-header">
+              <div class="snapshot-heading">
+                <h2 id="safari-snapshot-title">{$t('ui.safari_snapshot')}</h2>
+                <p>{$t('ui.a_quick_look_at_the')}</p>
+              </div>
+              {#if tour.duration_days || tour.duration_nights}
+                <dl class="snapshot-duration">
+                  {#if tour.duration_days}
+                    <div><dt>{$t(tour.duration_days === 1 ? 'label.day' : 'label.days')}</dt><dd>{tour.duration_days}</dd></div>
+                  {/if}
+                  {#if tour.duration_nights}
+                    <div><dt>{$t(tour.duration_nights === 1 ? 'label.night' : 'label.nights')}</dt><dd>{tour.duration_nights}</dd></div>
+                  {/if}
+                </dl>
+              {/if}
+            </header>
 
-            <!-- Rows, not a table: each is a card with the same calendar tile
-                 and place colour as its day card further down. -->
-            <div class="snapshot-head gf-gold-text mt-6 hidden text-[11px] font-bold uppercase tracking-[0.12em] md:grid">
-              <span></span>
-              <span>{$t('ui.place')}</span>
-              <span>{$t('label.highlights')}</span>
-              <span>{$t('ui.hotel_options')}</span>
-            </div>
-            <ul class="mt-6 grid gap-2.5 md:mt-2">
+            <ol class="snapshot-list">
               {#each snapshotRows as row (row.number)}
-                <li class="snapshot-row rounded-[14px] border border-ink/10 bg-surface shadow-[0_8px_18px_-16px_rgba(57,61,50,0.7)]" style={row.place ? `--day-colour:${row.place.colour}` : undefined}>
-                  <DayBadge day={row.number} colour={row.place?.colour ?? ''} size="md" />
-                  <div class="min-w-0">
-                    {#if row.place}<span class="snapshot-place mb-0.5 block text-[11px] font-bold uppercase leading-tight tracking-[0.1em]">{row.place.name}</span>{/if}
-                    <p class="font-serif text-[16px] font-bold leading-[1.2] text-heading md:text-[17px]">{row.title}</p>
+                <li class="snapshot-card">
+                  <div class="snapshot-day-band">
+                    <span class="snapshot-day-number"><span>{$t('label.day')}</span><strong>{String(row.number).padStart(2, '0')}</strong></span>
+                    <svelte:component this={row.tags[0]?.icon ?? Compass} size={18} strokeWidth={1.6} aria-hidden="true" />
                   </div>
-                  <div class="snapshot-detail min-w-0">
+                  <div class="snapshot-main">
+                    {#if row.place}<p class="snapshot-place">{row.place.name}</p>{/if}
+                    <h3>{row.title}</h3>
                     {#if row.tags.length}
-                      <span class="flex flex-wrap gap-1.5">
+                      <ul class="snapshot-highlights" aria-label={$t('label.highlights')}>
                         {#each row.tags as tag}
-                          <span class="snapshot-tag inline-flex max-w-full items-center gap-[5px] rounded-full bg-canvas px-2.5 py-1 text-[12px] font-semibold leading-[1.3] text-heading">
-                            <svelte:component this={tag.icon} size={13} strokeWidth={2} aria-hidden="true" />{tag.text}
-                          </span>
+                          <li><svelte:component this={tag.icon} size={16} strokeWidth={1.7} aria-hidden="true" /><span>{tag.text}</span></li>
                         {/each}
-                      </span>
+                      </ul>
                     {:else if row.summary}
-                      <p class="text-[13.5px] leading-relaxed text-ink/70">{row.summary}</p>
+                      <p class="snapshot-summary">{row.summary}</p>
                     {:else}
-                      <span class="text-[13px] text-ink/55">{$t('ui.details_on_request')}</span>
+                      <p class="snapshot-summary">{$t('ui.details_on_request')}</p>
                     {/if}
                   </div>
-                  <div class="snapshot-detail min-w-0">
-                    {#if row.hotel}
-                      <span class="inline-flex min-w-0 items-center gap-2 text-[13px] font-semibold leading-snug text-heading">
-                        <span class="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px] bg-goldfinch-gold text-deep-green"><BedDouble size={16} strokeWidth={2} aria-hidden="true" /></span>
-                        {row.hotel}
-                      </span>
-                    {:else if !endsWithoutStay(row.number)}
-                      <span class="text-[13px] text-ink/55">{$t('ui.confirmed_when_quoted')}</span>
+                  <div class="snapshot-stay" class:snapshot-stay-final={!row.hotel && endsWithoutStay(row.number)}>
+                    {#if !row.hotel && endsWithoutStay(row.number)}
+                      <span class="snapshot-stay-icon"><CircleCheck size={17} strokeWidth={1.7} aria-hidden="true" /></span>
+                      <p class="snapshot-stay-note">{$t('ui.final_day_no_overnight')}</p>
+                    {:else}
+                      <span class="snapshot-stay-icon"><BedDouble size={17} strokeWidth={1.7} aria-hidden="true" /></span>
+                      <div class="snapshot-stay-copy">
+                        <span class="snapshot-stay-label">{$t('ui.hotel_options')}</span>
+                        <p>{row.hotel || $t('ui.confirmed_when_quoted')}</p>
+                      </div>
                     {/if}
                   </div>
                 </li>
               {/each}
-            </ul>
+            </ol>
           </section>
         {/if}
 
         {#if tour.customization_options?.length}
-          <section class="tour-section">
-            <SectionTitle title={$t('ui.ways_to_customize_this_trip')} description={tour.customization_intro ?? ''} />
-            <!-- The points one under another, each with its icon, and the
-                 button beside them rather than under: one card, one action. -->
-            <div class="mt-6 grid items-center gap-5 rounded-[18px] border border-goldfinch-gold/35 bg-surface p-5 shadow-[0_10px_24px_-18px_rgba(57,61,50,0.6)] md:grid-cols-[minmax(0,1fr)_auto] md:px-[22px]">
-              <ul class="grid min-w-0 gap-3.5">
+          <section class="tour-section tour-customize" aria-labelledby="customize-heading">
+            <header class="customize-header">
+              <h2 id="customize-heading">{$t('ui.ways_to_customize_this_trip')}</h2>
+              {#if tour.customization_intro}<p>{tour.customization_intro}</p>{/if}
+            </header>
+            <div class="customize-panel">
+              <ul class="customize-options">
                 {#each tour.customization_options as item, index}
-                  <li class="flex items-center gap-3.5">
-                    <span class="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-goldfinch-gold text-deep-green">
-                      <svelte:component this={CUSTOMIZE_ICONS[index % CUSTOMIZE_ICONS.length]} size={21} strokeWidth={2} aria-hidden="true" />
+                  <li>
+                    <span class="customize-icon">
+                      <svelte:component this={CUSTOMIZE_ICONS[index % CUSTOMIZE_ICONS.length]} size={18} strokeWidth={1.6} aria-hidden="true" />
                     </span>
-                    <span class="min-w-0 text-[15px] font-semibold leading-snug text-heading">{item}</span>
+                    <span class="customize-option-copy">{item}</span>
                   </li>
                 {/each}
               </ul>
-              <button
-                type="button"
-                class="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-[12px] bg-goldfinch-gold px-[22px] py-3.5 text-[15px] font-bold text-heading shadow-[0_10px_20px_-12px_rgba(198,138,30,0.9)] transition hover:brightness-105 md:w-auto"
-                on:click={() => openPlanner('customize')}
-              >{$t('ui.customize_this_trip')}<ArrowRight size={16} strokeWidth={2.4} />
-              </button>
+              <div class="customize-action">
+                <button
+                  type="button"
+                  class="customize-button"
+                  on:click={() => openPlanner('customize')}
+                ><span>{$t('ui.customize_this_trip')}</span><ArrowRight size={16} strokeWidth={1.8} aria-hidden="true" />
+                </button>
+              </div>
             </div>
           </section>
         {/if}
@@ -836,7 +848,7 @@
             <!-- The same renderer the safari-package pages use, so a day card
                  cannot drift between the tour and the page selling it. -->
             <div class="mt-6">
-              <ItineraryDays days={itineraryDays} {lodgeMedia} planCta on:plan={() => openPlanner('day-by-day')} />
+              <ItineraryDays days={itineraryDays} {lodgeMedia} planCta refined on:plan={() => openPlanner('day-by-day')} />
             </div>
           {:else}
             <div class="mt-6 rounded-[12px] border border-ink/10 bg-canvas p-5 text-[14px] leading-6 text-ink/70">{$t('ui.the_daybyday_route_for_this')}</div>
@@ -847,9 +859,9 @@
           <section id="accommodation" class="tour-section scroll-mt-32">
             <SectionTitle title={$t('nav.accommodation')} description={$t('ui.where_you_stay_on_this')} />
 
-            <div class="tour-accommodation-grid mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div class="tour-accommodation-grid mt-6 grid gap-4 md:grid-cols-2">
               {#each accommodationBlocks as block (block.key)}
-                <article class="group relative aspect-[4/4.2] overflow-hidden rounded-[18px] border border-ink/10 bg-deep-green shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(39,43,34,0.18)] focus-within:-translate-y-0.5 focus-within:shadow-[0_18px_38px_rgba(39,43,34,0.18)]">
+                <article class="accommodation-stay group relative overflow-hidden border border-ink/10 bg-deep-green">
                   {#if block.gallery[0]}
                     <Img
                       src={block.gallery[0].record ? '' : block.gallery[0].src}
@@ -868,14 +880,14 @@
 
                   <div class="absolute inset-0 bg-gradient-to-b from-deep-green/22 via-deep-green/22 to-deep-green/96 transition duration-300 group-hover:from-deep-green/35 group-hover:via-deep-green/45 group-hover:to-deep-green/98 group-focus-within:from-deep-green/35 group-focus-within:via-deep-green/45 group-focus-within:to-deep-green/98" aria-hidden="true"></div>
                   <div class="absolute inset-x-0 bottom-0 h-[66%] bg-gradient-to-t from-deep-green via-deep-green/88 to-transparent" aria-hidden="true"></div>
-                  <div class="relative flex h-full flex-col justify-end p-4 text-white md:p-5">
+                  <div class="accommodation-stay-copy relative flex h-full flex-col justify-end p-4 text-white md:p-5">
                     <!-- One chip per day and the length of the stay, both solid:
                          a frosted tag fades into a bright photograph. -->
                     <div class="mb-auto flex items-start justify-between gap-2">
                       <div class="flex min-w-0 flex-wrap gap-1.5">
                         {#each block.days as dayNumber}<DayBadge day={dayNumber} size="sm" gold />{/each}
                       </div>
-                      <span class="shrink-0 whitespace-nowrap rounded-full bg-deep-green px-2.5 py-1.5 text-[11px] font-bold leading-none text-white shadow-[0_6px_14px_-6px_rgba(0,0,0,0.6)]">
+                      <span class="stay-night-count shrink-0 whitespace-nowrap rounded-full bg-deep-green/80 px-2.5 py-1.5 text-[11px] font-medium leading-none text-white backdrop-blur">
                         <b class="text-goldfinch-gold">{block.days.length}</b> {$t(block.days.length === 1 ? 'label.night' : 'label.nights')}
                       </span>
                     </div>
@@ -914,11 +926,11 @@
               {#if openDays.length}
                 <!-- The days no card above covers, so the row is full and a
                      day with no lodge is explained rather than missing. -->
-                <article class="accommodation-open flex flex-col items-center justify-center gap-3 rounded-[18px] border-2 border-dashed border-ink/20 bg-surface p-5 text-center">
+                <article class="accommodation-open">
                   <div class="flex flex-wrap justify-center gap-1.5">
                     {#each openDays as day}<DayBadge day={day.day_number} size="sm" gold />{/each}
                   </div>
-                  <p class="max-w-[22ch] text-[13.5px] font-medium leading-snug text-ink/70">{openDaysNote}</p>
+                  <p class="text-[13px] leading-relaxed text-ink/70">{openDaysNote}</p>
                 </article>
               {/if}
             </div>
@@ -932,7 +944,7 @@
             <button
               slot="action"
               type="button"
-              class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[12px] bg-goldfinch-gold px-[22px] py-3.5 text-[15px] font-bold text-heading shadow-[0_10px_20px_-12px_rgba(198,138,30,0.9)] transition hover:brightness-105"
+              class="tour-detail-action"
               on:click={() => openPlanner('prices')}
             >{$t('ui.get_my_exact_quote')}<ArrowRight size={16} strokeWidth={2.4} />
             </button>
@@ -942,8 +954,8 @@
         <section id="inclusions" class="tour-section scroll-mt-32">
           <SectionTitle title={$t('ui.whats_included')} />
           <div class="tour-two-col-grid mt-6 grid gap-4 md:grid-cols-2">
-            <div class="rounded-[12px] border border-ink/10 bg-surface p-5">
-              <h3 class="font-serif text-[18px] font-semibold text-heading">{$t('ui.included')}</h3>
+            <div class="inclusion-panel">
+              <h3><span class="inclusion-symbol"><Check size={17} strokeWidth={1.8} aria-hidden="true" /></span>{$t('ui.included')}</h3>
               {#if inclusions.length}
                 <ul class="mt-3 space-y-2">
                   {#each inclusions as item}
@@ -958,8 +970,8 @@
               {/if}
             </div>
 
-            <div class="rounded-[12px] border border-ink/10 bg-canvas p-5">
-              <h3 class="font-serif text-[18px] font-semibold text-heading">{$t('ui.not_included_2')}</h3>
+            <div class="inclusion-panel inclusion-panel-muted">
+              <h3><span class="inclusion-symbol"><Minus size={17} strokeWidth={1.8} aria-hidden="true" /></span>{$t('ui.not_included_2')}</h3>
               {#if exclusions.length}
                 <ul class="mt-3 space-y-2">
                   {#each exclusions as item}
@@ -976,7 +988,7 @@
           </div>
           <button
             type="button"
-            class="mt-6 inline-flex items-center justify-center rounded-[6px] bg-goldfinch-gold px-5 py-2.5 text-[14px] font-bold text-heading transition hover:brightness-105"
+            class="tour-detail-action mt-5"
             on:click={() => openPlanner('inclusions')}
           >{$t('ui.ask_whats_included')}<ArrowRight size={15} />
           </button>
@@ -1126,6 +1138,114 @@
 {#if breadcrumbLd}<JsonLd data={breadcrumbLd} />{/if}
 
 <style>
+  /* Photo-led hero with one trip summary; all values keep their existing bindings. */
+  .tour-detail-hero-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(0deg, rgb(var(--c-forest) / 0.8), transparent 65%),
+      linear-gradient(90deg, rgb(var(--c-forest) / 0.88), rgb(var(--c-forest) / 0.57) 49%, rgb(var(--c-forest) / 0.12) 100%);
+  }
+
+  .tour-detail-hero-shell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 590px;
+    padding-block: 6rem 2.5rem;
+  }
+
+  .tour-hero-back {
+    position: absolute;
+    top: 1.25rem;
+    inset-inline-start: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    color: rgb(255 255 255 / 0.85);
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  .tour-hero-back:hover { color: rgb(var(--c-goldfinch-gold)); }
+  .tour-hero-copy { width: 100%; min-width: 0; }
+  .tour-hero-category { display: inline-flex; align-items: center; gap: 0.75rem; color: rgb(var(--c-goldfinch-gold)); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; }
+  .tour-hero-category::before { content: ''; flex: 0 0 28px; height: 1px; background: currentColor; }
+  .tour-hero-copy h1 { max-width: 24ch; margin-top: 1rem; color: white; font-size: clamp(2.75rem, 4.2vw, 3.875rem); font-weight: 500; line-height: 1.06; letter-spacing: -0.025em; text-wrap: balance; }
+  .tour-hero-subtitle { display: block; margin-top: 1.125rem; color: rgb(var(--c-savanna) / 0.95); font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: clamp(1rem, 1.6vw, 1.25rem); font-weight: 400; line-height: 1.5; letter-spacing: 0.01em; }
+  .tour-hero-actions { display: flex; margin-top: 1.75rem; }
+  .tour-hero-plan { display: inline-flex; align-items: center; justify-content: space-between; gap: 1.75rem; min-height: 50px; padding: 0.875rem 1.125rem 0.875rem 1.25rem; border: 1px solid rgb(var(--c-goldfinch-gold)); border-radius: 10px; background: rgb(var(--c-goldfinch-gold)); color: rgb(var(--c-deep-green)); font-size: 0.875rem; font-weight: 700; }
+  .tour-hero-plan:hover { background: rgb(var(--c-gold-hover)); border-color: rgb(var(--c-gold-hover)); }
+  .tour-hero-plan:focus-visible, .tour-hero-back:focus-visible { outline: 2px solid white; outline-offset: 5px; }
+
+  .tour-hero-facts {
+    display: flex;
+    max-width: 920px;
+    margin-top: 1.5rem;
+    overflow: hidden;
+    border: 1px solid rgb(var(--c-savanna) / 0.32);
+    border-radius: 12px;
+    background:
+      linear-gradient(135deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.015) 55%),
+      rgb(var(--c-forest) / 0.48);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), 0 16px 40px -24px rgb(0 0 0 / 0.5);
+    -webkit-backdrop-filter: blur(18px) saturate(125%);
+    backdrop-filter: blur(18px) saturate(125%);
+  }
+
+  .hero-fact { display: flex; flex: 1 1 0; align-items: flex-start; gap: 0.625rem; min-width: 0; padding: 1rem 1.125rem; color: white; }
+  .hero-fact + .hero-fact { border-inline-start: 1px solid rgb(var(--c-savanna) / 0.2); }
+  .hero-fact-places { flex-grow: 1.65; }
+  .hero-fact-icon { display: grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; margin-top: 1rem; color: rgb(var(--c-goldfinch-gold)); }
+  .hero-fact-copy { display: grid; min-width: 0; gap: 0.1875rem; }
+  .hero-fact-label { color: rgb(var(--c-savanna) / 0.82); font-size: 0.6875rem; font-weight: 500; line-height: 1.4; }
+  .hero-fact-value { font-family: 'Source Serif 4', Georgia, serif; font-size: 1.75rem; font-weight: 500; line-height: 1.1; overflow-wrap: anywhere; }
+  .hero-fact-sub { color: rgb(255 255 255 / 0.72); font-size: 0.75rem; line-height: 1.5; }
+  .hero-fact-destinations { font-size: 0.9375rem; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
+  .hero-place-dot { color: rgb(var(--c-goldfinch-gold)); }
+  .hero-fact-price { position: relative; background: rgb(var(--c-savanna) / 0.84); color: rgb(var(--c-deep-green)); }
+  .hero-fact-price::before { content: ''; position: absolute; inset: 0 0 auto; height: 3px; background: rgb(var(--c-goldfinch-gold)); }
+  .hero-fact-price .hero-fact-label, .hero-fact-price .hero-fact-sub { color: rgb(var(--c-deep-green) / 0.76); }
+  .hero-fact-price .hero-fact-icon { color: rgb(var(--c-deep-green)); }
+  .hero-fact-price .hero-fact-value { font-size: 2rem; }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .tour-hero-facts { background: rgb(var(--c-forest) / 0.94); }
+    .hero-fact-price { background: rgb(var(--c-savanna)); }
+  }
+
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .hero-fact { gap: 0.5rem; padding: 1rem; }
+    .hero-fact-icon { flex-basis: 28px; width: 28px; }
+    .hero-fact-value { font-size: 1.625rem; }
+    .hero-fact-price .hero-fact-value { font-size: 1.875rem; }
+    .hero-fact-destinations { font-size: 0.9375rem; }
+  }
+
+  @media (max-width: 767px) {
+    .tour-detail-hero-shell { min-height: 0; padding-block: 5rem 1.75rem; }
+    .tour-detail-hero-overlay { background: linear-gradient(0deg, rgb(var(--c-forest) / 0.95), rgb(var(--c-forest) / 0.6) 58%, rgb(var(--c-forest) / 0.45)); }
+    .tour-hero-back { top: 0.75rem; }
+    .tour-hero-category { font-size: 0.6875rem; gap: 0.625rem; }
+    .tour-hero-copy h1 { max-width: 100%; font-size: clamp(2rem, 7.5vw, 3rem); line-height: 1.1; }
+    .tour-hero-actions { margin-top: 1.25rem; }
+    .tour-hero-facts { flex-wrap: wrap; margin-top: 1.5rem; }
+    .hero-fact { flex: 1 1 50%; gap: 0.5rem; padding: 0.75rem 0.875rem; }
+    .hero-fact-places { flex-basis: 100%; order: 1; border-inline-start: 0 !important; border-top: 1px solid rgb(var(--c-savanna) / 0.2); }
+    .hero-fact-icon { flex-basis: 27px; width: 27px; margin-top: 0.75rem; }
+    .hero-fact-value { font-size: 1.5rem; }
+    .hero-fact-price .hero-fact-value { font-size: 1.625rem; }
+    .hero-fact-destinations { font-size: 0.875rem; }
+  }
+
+  @media (max-width: 359px) {
+    .hero-fact { padding: 0.875rem 0.75rem; }
+    .hero-fact-icon { display: none; }
+  }
+
   .skeleton-shimmer {
     position: relative;
     overflow: hidden;
@@ -1175,10 +1295,6 @@
     }
   }
 
-  .tour-hero-copy {
-    isolation: isolate;
-  }
-
   @media (min-width: 1024px) {
     .tour-detail-tabs {
       z-index: 30;
@@ -1219,18 +1335,6 @@
       border-radius: 0;
       box-shadow: none;
     }
-  }
-
-  .tour-hero-copy::before {
-    content: '';
-    position: absolute;
-    inset: -1rem -1.1rem -1.15rem -1.1rem;
-    z-index: -1;
-    border-radius: 12px;
-    background:
-      linear-gradient(90deg, rgb(var(--c-deep-green) / 0.9), rgb(var(--c-forest) / 0.64) 64%, transparent),
-      linear-gradient(180deg, rgb(var(--c-deep-green) / 0.5), rgb(var(--c-deep-green) / 0.84));
-    box-shadow: 0 18px 48px rgb(15 23 42 / 0.2);
   }
 
   .section-label {
@@ -1347,92 +1451,6 @@
   }
 
   @media (max-width: 767px) {
-    .tour-detail-hero {
-      min-height: clamp(660px, calc(100svh - 70px), 880px);
-      max-width: 100vw;
-      overflow-x: clip;
-    }
-
-    .tour-detail-hero::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background:
-        linear-gradient(180deg, rgb(var(--c-deep-green) / 0.06) 0%, rgb(var(--c-deep-green) / 0.2) 36%, rgb(var(--c-deep-green) / 0.82) 100%),
-        linear-gradient(90deg, rgb(var(--c-deep-green) / 0.74) 0%, rgb(var(--c-deep-green) / 0.28) 56%, transparent 100%);
-      pointer-events: none;
-    }
-
-    :global(.tour-detail-hero-image) {
-      object-position: center center;
-    }
-
-    .tour-detail-hero-overlay {
-      background: linear-gradient(to top, rgb(var(--c-deep-green) / 0.42), transparent 58%, rgb(var(--c-deep-green) / 0.12));
-    }
-
-    .tour-detail-hero-shell {
-      min-height: clamp(660px, calc(100svh - 70px), 880px);
-      justify-content: end;
-      padding-top: 4.75rem;
-      padding-bottom: 2rem;
-      z-index: 1;
-    }
-
-    .tour-hero-copy {
-      max-width: 100%;
-      padding-bottom: 0;
-      text-shadow: 0 2px 18px rgb(0 0 0 / 0.45);
-    }
-
-    .tour-hero-copy::before {
-      inset: auto -0.75rem -0.95rem -0.75rem;
-      top: 4.25rem;
-      border-radius: 16px;
-      background:
-        linear-gradient(180deg, rgb(var(--c-deep-green) / 0.08), rgb(var(--c-deep-green) / 0.88)),
-        linear-gradient(90deg, rgb(var(--c-deep-green) / 0.76), rgb(var(--c-forest) / 0.56));
-      box-shadow: 0 18px 44px rgb(15 23 42 / 0.22);
-    }
-
-    .tour-hero-tags {
-      display: grid;
-      grid-auto-flow: column;
-      grid-auto-columns: max-content;
-      gap: 0.4rem;
-      margin-inline: -16px;
-      margin-bottom: 1rem;
-      overflow-x: auto;
-      padding-inline: 16px;
-      padding-bottom: 0.1rem;
-      scrollbar-width: none;
-    }
-
-    .tour-hero-tags::-webkit-scrollbar {
-      display: none;
-    }
-
-    .tour-hero-copy h1 {
-      max-width: 11.5ch;
-      font-size: clamp(2.25rem, 10.4vw, 3.35rem);
-      line-height: 0.98;
-      text-wrap: balance;
-    }
-
-    .tour-hero-actions {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.6rem;
-      margin-top: 1.15rem;
-    }
-
-    .tour-hero-actions :global(button) {
-      min-height: 2.75rem;
-      padding-inline: 0.75rem;
-      padding-block: 0.65rem;
-      font-size: 0.8125rem;
-      line-height: 1.15;
-    }
 
     .tour-detail-tablist {
       gap: 1rem;
@@ -1531,13 +1549,6 @@
   }
 
   @media (max-width: 479px) {
-    .tour-detail-hero-shell {
-      min-height: clamp(650px, calc(100svh - 70px), 850px);
-    }
-
-    .tour-hero-copy h1 {
-      max-width: 10.5ch;
-    }
 
     .tour-accommodation-grid {
       grid-template-columns: 1fr;
@@ -1545,30 +1556,6 @@
   }
 
   @media (min-width: 480px) and (max-width: 767px) {
-    .tour-detail-hero {
-      min-height: clamp(600px, 78svh, 780px);
-    }
-
-    .tour-detail-hero-shell {
-      width: calc(100vw - 48px);
-      max-width: none;
-      min-height: clamp(600px, 78svh, 780px);
-      padding-top: 5rem;
-      padding-bottom: 2.25rem;
-    }
-
-    .tour-hero-copy {
-      max-width: 620px;
-    }
-
-    .tour-hero-copy h1 {
-      max-width: 13ch;
-      font-size: clamp(3rem, 8vw, 4rem);
-    }
-
-    .tour-hero-actions {
-      max-width: 430px;
-    }
 
     .tour-detail-content {
       width: calc(100vw - 48px);
@@ -1588,169 +1575,292 @@
     }
   }
 
-  @media (min-width: 768px) {
-    .tour-hero-copy::before {
-      display: none;
-    }
+  /* These sections respond to their content column beside the existing planner. */
+  .tour-overview {
+    container: safari-overview / inline-size;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid rgb(var(--c-ink) / 0.12);
   }
 
-  .tour-hero-copy::before { display: none; }
-
-  @media (max-width: 767px) {
-    .tour-detail-hero,
-    .tour-detail-hero-shell {
-      min-height: 430px;
-    }
-
-    .tour-detail-hero { max-width: 100%; }
-    .tour-detail-hero::after { display: none; }
-
-    .tour-detail-hero-overlay {
-      background: rgb(var(--c-deep-green) / 0.45);
-    }
-
-    .tour-detail-hero-shell {
-      width: min(100% - 32px, 1180px);
-      max-width: none;
-      padding-top: 4.5rem;
-      padding-bottom: 1.75rem;
-    }
-
-    .tour-hero-copy,
-    .tour-hero-copy h1 {
-      width: 100%;
-      max-width: none;
-    }
-
-    .tour-hero-copy h1 {
-      font-size: clamp(2rem, 8.6vw, 3rem);
-      line-height: 1.04;
-      text-wrap: pretty;
-    }
-
-    .tour-hero-actions {
-      display: flex;
-      margin-top: 1rem;
-    }
-
-    .tour-hero-actions :global(button) {
-      width: auto;
-      min-height: 2.65rem;
-      padding: 0.65rem 1rem;
-    }
-
+  .overview-title {
+    margin-top: 0.75rem;
+    color: rgb(var(--c-heading));
+    font-size: clamp(2rem, 3vw, 2.5rem);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.025em;
   }
 
-  /* ── Hero facts ─────────────────────────────────────────────────────── */
-  .hero-fact {
-    box-shadow: 0 10px 28px -10px rgb(20 22 16 / 0.55);
+  .overview-copy {
+    max-width: 80ch;
+    margin-top: 1.25rem;
+    color: rgb(var(--c-ink) / 0.75);
+    font-size: 0.9375rem;
+    line-height: 1.8;
   }
 
-  .hero-fact-price {
-    box-shadow:
-      0 10px 28px -10px rgb(20 22 16 / 0.55),
-      0 0 0 2px rgb(var(--c-goldfinch-gold));
-  }
-
-  @media (max-width: 767px) {
-    .tour-hero-facts {
-      margin-top: 1rem;
-    }
-
-    .hero-fact {
-      gap: 0.75rem;
-      border-radius: 14px;
-      padding: 0.6rem 0.85rem;
-    }
-
-    .hero-fact-icon {
-      height: 2.5rem;
-      width: 2.5rem;
-    }
-
-    .hero-fact-icon :global(svg) {
-      height: 1.25rem;
-      width: 1.25rem;
-    }
-
-    .hero-fact-value {
-      font-size: 1.375rem;
-    }
-
-    .hero-fact-price .hero-fact-value {
-      font-size: 1.625rem;
-    }
-  }
-
-  /* ── Overview facts ─────────────────────────────────────────────────── */
-  @media (max-width: 479px) {
-    .tour-fact {
-      gap: 0.6rem;
-      padding: 0.7rem;
-    }
-
-    .tour-fact-icon {
-      height: 2.25rem;
-      width: 2.25rem;
-      border-radius: 10px;
-    }
-
-    .tour-fact-icon :global(svg) {
-      height: 1.15rem;
-      width: 1.15rem;
-    }
-  }
-
-  /* ── Safari snapshot ────────────────────────────────────────────────── */
-  .snapshot-head,
-  .snapshot-row {
-    grid-template-columns: 62px minmax(0, 1.3fr) minmax(0, 1.4fr) minmax(0, 0.9fr);
-    column-gap: 16px;
-  }
-
-  .snapshot-head {
-    padding: 0 16px 0 10px;
-  }
-
-  .snapshot-row {
-    --day-colour: rgb(var(--c-clay));
+  .tour-facts-grid {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-top: 1.75rem;
+  }
+
+  .tour-fact {
+    display: flex;
     align-items: center;
-    row-gap: 10px;
-    padding: 10px 16px 10px 10px;
+    min-width: 0;
+    gap: 0.75rem;
+    padding: 0.875rem;
+    border: 1px solid rgb(var(--c-goldfinch-gold) / 0.35);
+    border-radius: 12px;
+    background: rgb(var(--c-surface));
   }
 
-  .snapshot-place {
-    color: var(--day-colour);
+  .tour-fact-long { grid-column: 1 / -1; }
+
+  .tour-fact-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgb(var(--c-goldfinch-gold));
+    color: rgb(var(--c-deep-green));
   }
 
-  .snapshot-tag :global(svg) {
-    flex: none;
-    color: var(--day-colour);
+  .tour-fact-copy { display: grid; min-width: 0; gap: 3px; }
+  .tour-fact-label { color: rgb(var(--c-ink) / 0.72); font-size: 0.6875rem; line-height: 1.4; }
+  .tour-fact-value {
+    color: rgb(var(--c-heading));
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
   }
 
-  @media (max-width: 767px) {
-    .snapshot-row {
-      grid-template-columns: 54px minmax(0, 1fr);
-      column-gap: 12px;
-      align-items: start;
-      padding: 10px 12px 12px 10px;
-    }
+  .tour-fact-long .tour-fact-value { font-size: 1.125rem; }
 
-    /* Highlights and hotel sit under the place, in the text column. */
-    .snapshot-row > .snapshot-detail {
-      grid-column: 2;
-    }
-
-    .snapshot-row > .snapshot-detail:empty {
-      display: none;
-    }
+  .overview-customize {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    margin-top: 0.75rem;
+    color: rgb(var(--c-clay));
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: start;
   }
 
-  /* ── Accommodation ──────────────────────────────────────────────────── */
-  .accommodation-open {
-    min-height: 150px;
+  .overview-customize:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .overview-customize:focus-visible { outline: 2px solid rgb(var(--c-clay)); outline-offset: 4px; border-radius: 4px; }
+
+  @container safari-overview (min-width: 600px) {
+    .tour-facts-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
+
+  @container safari-overview (min-width: 850px) {
+    .tour-facts-four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+
+  @container safari-overview (max-width: 380px) {
+    .tour-fact { gap: 0.5rem; padding: 0.75rem 0.625rem; }
+    .tour-fact-icon { flex-basis: 29px; width: 29px; height: 29px; border-radius: 8px; }
+    .tour-fact-value { font-size: 1.0625rem; }
+  }
+
+  /* Compact route summary; the full itinerary keeps its existing presentation. */
+  .tour-snapshot { container: safari-snapshot / inline-size; }
+  .tour-overview + .tour-snapshot { margin-top: 2rem; }
+
+  .snapshot-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .snapshot-heading { min-width: 0; padding-inline-start: 1rem; border-inline-start: 4px solid rgb(var(--c-goldfinch-gold)); }
+  .snapshot-heading h2 { color: rgb(var(--c-heading)); font-size: 2rem; font-weight: 600; line-height: 1.1; letter-spacing: -0.025em; }
+  .snapshot-heading p { margin-top: 0.625rem; color: rgb(var(--c-ink) / 0.72); font-size: 0.8125rem; line-height: 1.6; }
+  .snapshot-duration { display: flex; flex: none; align-items: center; gap: 1rem; padding-top: 4px; }
+  .snapshot-duration > div { display: flex; flex-direction: row-reverse; align-items: baseline; gap: 5px; }
+  .snapshot-duration > div + div { padding-inline-start: 1rem; border-inline-start: 1px solid rgb(var(--c-ink) / 0.16); }
+  .snapshot-duration dt { color: rgb(var(--c-ink) / 0.72); font-size: 0.75rem; }
+  .snapshot-duration dd { color: rgb(var(--c-heading)); font-family: 'Source Serif 4', Georgia, serif; font-size: 1.75rem; font-weight: 600; line-height: 1; }
+
+  .snapshot-list { display: grid; gap: 0.875rem; list-style: none; padding: 0; }
+  .snapshot-card {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr) 160px;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid rgb(var(--c-ink) / 0.13);
+    border-radius: 14px;
+    background: rgb(var(--c-surface));
+    box-shadow: 0 6px 18px -14px rgb(var(--c-deep-green) / 0.3);
+  }
+
+  .snapshot-day-band {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1.125rem 0.375rem;
+    border-inline-end: 3px solid rgb(var(--c-goldfinch-gold));
+    background: rgb(var(--c-deep-green));
+    color: rgb(var(--c-savanna));
+  }
+
+  .snapshot-day-number { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .snapshot-day-number > span { font-size: 0.6875rem; font-weight: 500; text-transform: capitalize; }
+  .snapshot-day-number strong { color: #fff; font-family: 'Source Serif 4', Georgia, serif; font-size: 2rem; font-weight: 500; line-height: 1; }
+  .snapshot-main { min-width: 0; padding: 1.25rem; }
+  .snapshot-place { margin-bottom: 0.5rem; color: rgb(var(--c-ink) / 0.75); font-size: 0.6875rem; font-weight: 600; line-height: 1.5; letter-spacing: 0.07em; text-transform: uppercase; overflow-wrap: anywhere; }
+  .snapshot-main h3 { color: rgb(var(--c-heading)); font-size: 1.3125rem; font-weight: 600; line-height: 1.2; letter-spacing: -0.015em; overflow-wrap: anywhere; }
+  .snapshot-highlights { display: flex; flex-wrap: wrap; gap: 0.625rem 1rem; margin-top: 1rem; padding: 0; list-style: none; }
+  .snapshot-highlights li { display: flex; align-items: flex-start; gap: 0.5rem; min-width: 0; color: rgb(var(--c-ink) / 0.85); font-size: 0.75rem; line-height: 1.5; }
+  .snapshot-highlights li :global(svg) { flex: none; margin-top: 1px; color: rgb(var(--c-heading)); }
+  .snapshot-highlights li span { min-width: 0; overflow-wrap: anywhere; }
+  .snapshot-summary { margin-top: 1rem; color: rgb(var(--c-ink) / 0.72); font-size: 0.8125rem; line-height: 1.6; }
+
+  .snapshot-stay {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    min-width: 0;
+    gap: 0.625rem;
+    padding: 1rem;
+    border-inline-start: 1px solid rgb(var(--c-ink) / 0.1);
+    background: rgb(var(--c-canvas));
+  }
+
+  .snapshot-stay-icon { display: grid; place-items: center; flex: 0 0 34px; width: 34px; height: 34px; border-radius: 50%; background: rgb(var(--c-sand)); color: rgb(var(--c-heading)); }
+  .snapshot-stay-copy { min-width: 0; }
+  .snapshot-stay-label { display: block; margin-bottom: 3px; color: rgb(var(--c-ink) / 0.72); font-size: 0.6875rem; line-height: 1.5; }
+  .snapshot-stay p { color: rgb(var(--c-heading)); font-size: 0.8125rem; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
+  .snapshot-stay-final { background: rgb(var(--c-surface)); }
+  .snapshot-stay-final .snapshot-stay-icon { background: rgb(var(--c-canvas)); }
+  .snapshot-stay .snapshot-stay-note { color: rgb(var(--c-ink) / 0.72); font-size: 0.75rem; font-weight: 400; }
+
+  @container safari-snapshot (min-width: 850px) {
+    .snapshot-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+    .snapshot-card { display: flex; flex-direction: column; }
+    .snapshot-day-band { flex-direction: row; justify-content: space-between; padding: 1rem 1.25rem; border-inline-end: 0; border-bottom: 3px solid rgb(var(--c-goldfinch-gold)); }
+    .snapshot-day-number { flex-direction: row; align-items: baseline; gap: 0.625rem; }
+    .snapshot-main { flex: 1; padding: 1.375rem; }
+    .snapshot-main h3 { font-size: 1.5rem; }
+    .snapshot-highlights { display: grid; gap: 0.75rem; }
+    .snapshot-stay { flex-direction: row; align-items: center; justify-content: flex-start; min-height: 88px; padding: 1rem 1.25rem; border-inline-start: 0; border-top: 1px solid rgb(var(--c-ink) / 0.1); }
+  }
+
+  @container safari-snapshot (max-width: 560px) {
+    .snapshot-card { grid-template-columns: 50px minmax(0, 1fr); }
+    .snapshot-day-band { grid-row: 1 / 3; justify-content: flex-start; }
+    .snapshot-main { padding: 1.125rem; }
+    .snapshot-highlights { display: grid; gap: 0.625rem; }
+    .snapshot-stay { grid-column: 2; flex-direction: row; align-items: center; justify-content: flex-start; padding: 0.875rem 1.125rem; border-inline-start: 0; border-top: 1px solid rgb(var(--c-ink) / 0.1); }
+  }
+
+  @container safari-snapshot (max-width: 380px) {
+    .snapshot-card { grid-template-columns: 44px minmax(0, 1fr); }
+    .snapshot-day-number strong { font-size: 1.75rem; }
+    .snapshot-main { padding: 1rem; }
+    .snapshot-main h3 { font-size: 1.25rem; }
+    .snapshot-stay { padding: 0.875rem 1rem; }
+  }
+
+  .tour-customize { container: safari-customize / inline-size; }
+  .customize-header { padding-inline-start: 1rem; border-inline-start: 4px solid rgb(var(--c-goldfinch-gold)); }
+  .customize-header h2 { color: rgb(var(--c-heading)); font-size: 1.875rem; font-weight: 500; line-height: 1.15; letter-spacing: -0.02em; }
+  .customize-header p { margin-top: 0.625rem; color: rgb(var(--c-ink) / 0.72); font-size: 0.875rem; line-height: 1.65; }
+  .customize-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 1.25rem; margin-top: 1.375rem; padding: 1.25rem; border: 1px solid rgb(var(--c-ink) / 0.12); border-radius: 14px; background: linear-gradient(110deg, rgb(var(--c-sand) / 0.28), rgb(var(--c-surface)) 65%); }
+  .customize-options { display: grid; gap: 0.875rem; min-width: 0; list-style: none; padding: 0; }
+  .customize-options li { display: grid; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 0.75rem; min-width: 0; }
+  .customize-icon { display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px; border: 1px solid rgb(var(--c-goldfinch-gold) / 0.2); border-radius: 50%; background: rgb(var(--c-sand) / 0.6); color: rgb(var(--c-heading)); }
+  .customize-option-copy { min-width: 0; color: rgb(var(--c-heading)); font-size: 0.875rem; font-weight: 400; line-height: 1.6; overflow-wrap: anywhere; }
+  .customize-action { padding-inline-start: 1.25rem; border-inline-start: 1px solid rgb(var(--c-ink) / 0.12); }
+  .customize-button { display: inline-flex; align-items: center; justify-content: center; gap: 0.875rem; min-height: 44px; max-width: 220px; padding: 0.75rem 1rem; border: 1px solid rgb(var(--c-deep-green)); border-radius: 9px; background: rgb(var(--c-deep-green)); color: white; font-size: 0.8125rem; font-weight: 400; line-height: 1.4; }
+  .customize-button :global(svg) { flex: none; color: rgb(var(--c-goldfinch-gold)); }
+  .customize-button:hover { background: rgb(var(--c-forest)); }
+  .customize-button:focus-visible { outline: 2px solid rgb(var(--c-goldfinch-gold)); outline-offset: 4px; }
+
+  @container safari-customize (max-width: 680px) {
+    .customize-panel { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+    .customize-action { display: flex; justify-content: flex-end; padding-inline-start: 0; padding-top: 1rem; border-inline-start: 0; border-top: 1px solid rgb(var(--c-ink) / 0.1); }
+  }
+
+  @container safari-customize (max-width: 380px) {
+    .customize-header h2 { font-size: 1.625rem; }
+    .customize-panel { padding: 1rem; }
+    .customize-button { width: 100%; max-width: none; }
+  }
+
+  /* The remaining details share the quieter borders, type, and spacing above. */
+  #accommodation { container: itinerary-accommodation / inline-size; }
+  .tour-accommodation-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .accommodation-stay { min-height: 310px; border-radius: 14px; }
+  .accommodation-stay-copy { min-height: inherit; }
+  .accommodation-stay:focus-within { outline: 2px solid rgb(var(--c-goldfinch-gold)); outline-offset: 3px; }
+  .accommodation-stay :global(.day-badge) { width: 35px; border-radius: 7px; box-shadow: none; }
+  .accommodation-stay :global(.day-badge-top) { font-size: 9px; font-weight: 500; }
+  .accommodation-stay :global(.day-badge-num) { font-size: 18px; font-weight: 500; }
+  .accommodation-card-title { display: block; overflow: visible; font-size: 22px; line-clamp: none; -webkit-line-clamp: unset; }
+  .accommodation-card-summary { font-size: 12px; font-weight: 400; }
+  .accommodation-open { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 0.875rem; min-height: 0; padding: 0.875rem 1rem; border: 1px solid rgb(var(--c-ink) / 0.1); border-radius: 10px; background: rgb(var(--c-canvas) / 0.6); }
+  .accommodation-open :global(.day-badge) { width: 36px; border-radius: 6px; box-shadow: none; }
+  .accommodation-open :global(.day-badge-num) { font-size: 18px; }
+  .accommodation-open :global(.day-badge-top) { font-size: 9px; }
+  @container itinerary-accommodation (max-width: 520px) {
+    .tour-accommodation-grid { grid-template-columns: minmax(0, 1fr); }
+    .accommodation-stay { min-height: 300px; }
+  }
+
+  .tour-detail-action { display: inline-flex; align-items: center; justify-content: center; gap: 0.625rem; min-height: 44px; padding: 0.75rem 1rem; border: 1px solid rgb(var(--c-goldfinch-gold)); border-radius: 9px; background: rgb(var(--c-goldfinch-gold)); color: rgb(var(--c-deep-green)); font-size: 13px; font-weight: 600; line-height: 1.4; }
+  .tour-detail-action:hover { background: rgb(var(--c-gold-hover)); border-color: rgb(var(--c-gold-hover)); }
+  .tour-detail-action:focus-visible { outline: 2px solid rgb(var(--c-deep-green)); outline-offset: 4px; }
+  #prices { container: itinerary-rates / inline-size; }
+  #prices :global(.rate-card) { border-radius: 10px; box-shadow: none; padding: 1rem 0.625rem 0.875rem; }
+  #prices :global(.rate-who) { font-weight: 500; letter-spacing: 0; text-transform: none; }
+  #prices :global(.rate-amount) { font-weight: 600; font-variant-numeric: tabular-nums; }
+  #prices :global(.rate-flag) { border-radius: 5px; padding: 4px 7px; font-weight: 600; letter-spacing: 0.02em; }
+  #prices :global(.rate-ask) { border-style: solid; background: rgb(var(--c-canvas) / 0.6); }
+  #prices :global(.rate-foot) { padding-top: 1rem; border-top: 1px solid rgb(var(--c-ink) / 0.1); }
+  #prices :global(.tour-rates-table) { border-radius: 12px; }
+  @container itinerary-rates (max-width: 600px) {
+    #prices :global(.rate-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  #inclusions { container: itinerary-inclusions / inline-size; }
+  .inclusion-panel { padding: 1.25rem; border: 1px solid rgb(var(--c-ink) / 0.12); border-radius: 12px; background: rgb(var(--c-surface)); }
+  .inclusion-panel-muted { background: rgb(var(--c-canvas) / 0.55); }
+  .inclusion-panel h3 { display: flex; align-items: center; gap: 0.625rem; color: rgb(var(--c-heading)); font-size: 21px; font-weight: 600; line-height: 1.2; }
+  .inclusion-symbol { display: grid; place-items: center; flex: 0 0 30px; width: 30px; height: 30px; border-radius: 50%; background: rgb(var(--c-sand) / 0.7); }
+  .inclusion-panel p, .inclusion-panel li { font-size: 13px; line-height: 1.7; }
+  .inclusion-panel li { padding-block: 2px; }
+  @container itinerary-inclusions (max-width: 560px) {
+    .tour-two-col-grid { grid-template-columns: minmax(0, 1fr); gap: 0.75rem; }
+  }
+
+  .tour-detail-main :global(.route__map) { border-radius: 14px; }
+  .tour-detail-main :global(.route__legend) { padding: 0.25rem 1rem; border: 1px solid rgb(var(--c-ink) / 0.1); border-radius: 12px; background: rgb(var(--c-surface)); }
+  .tour-detail-main :global(.route__stop) { grid-template-columns: 12px minmax(0, 1fr); align-items: center; gap: 2px 10px; padding: 0.875rem 0; }
+  .tour-detail-main :global(.route__dot) { grid-column: 1; grid-row: 1 / 3; width: 8px; height: 8px; box-shadow: none; }
+  .tour-detail-main :global(.route__day) { grid-column: 2; color: rgb(var(--c-ink) / 0.65); font-size: 11px; font-weight: 400; line-height: 1.5; letter-spacing: 0; text-transform: none; }
+  .tour-detail-main :global(.route__place) { grid-column: 2; min-width: 0; font-size: 14px; font-weight: 400; line-height: 1.5; overflow-wrap: anywhere; }
+  .tour-detail-main :global(a.route__place:focus-visible) { outline: 2px solid rgb(var(--c-goldfinch-gold)); outline-offset: 3px; border-radius: 3px; }
+  #good-to-know .faq-timeline-item { padding-bottom: 2rem; }
+  #good-to-know .faq-timeline-item:last-child { padding-bottom: 0; }
+  #good-to-know .faq-timeline-item h3 { font-size: 21px; line-height: 1.35; }
+  #good-to-know :global(.rich) { font-size: 14px; line-height: 1.8; }
+  #good-to-know .faq-number { border-radius: 10px; }
 
   @media (prefers-reduced-motion: reduce) {
     .faq-number,
