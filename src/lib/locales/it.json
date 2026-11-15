@@ -1800,5 +1800,16 @@
   "ui.map_view_satellite": "Satellite",
   "ui.map_view_terrain": "Rilievo",
   "ui.route_show_on_map": "Mostra sulla mappa",
-  "ui.opens_new_tab": "si apre in una nuova scheda"
+  "ui.opens_new_tab": "si apre in una nuova scheda",
+  "ui.review_read_full": "Leggi la recensione completa",
+  "ui.review_by": "Recensione di {name}",
+  "ui.review_read_original": "Leggi la recensione originale",
+  "ui.review_on_platform": "Recensione pubblicata su {platform}",
+  "ui.review_stars": "{n} stelle su 5",
+  "ui.review_view_more": "Vedi altre recensioni",
+  "ui.review_loading": "Caricamento delle recensioni…",
+  "ui.review_try_again": "Riprova",
+  "ui.review_load_failed": "Non è stato possibile caricare altre recensioni in questo momento.",
+  "ui.review_show_n": "Mostra la recensione {n} di {total}",
+  "ui.review_choose": "Scegli una recensione"
 }

@@ -1,14 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
-  import { ExternalLink, Star } from '@lucide/svelte';
+  import { Star } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import { SITE_URL } from '$lib/config/env';
   import { aggregateRatingLd } from '$lib/seo';
-  import Img from './Img.svelte';
   import JsonLd from './JsonLd.svelte';
+  import ReviewCards from './ReviewCards.svelte';
   import HomeTravellerStories from './home/HomeTravellerStories.svelte';
-  import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
+  import { fadeUpOnScroll, sectionReveal } from '$lib/animations';
   import type { Review, ReviewSummary } from '$lib/types';
 
   // Platform-attributed reviews trust widget. Fully self-hiding: until at least
@@ -33,16 +33,6 @@
   $: siteUrl = SITE_URL || (browser ? window.location.origin : 'https://goldfinch.makutano.co.tz');
   $: hasReviews = Boolean(loaded && summary && summary.count > 0);
   $: rounded = summary ? Math.round(summary.average) : 5;
-
-  const initialsOf = (r: Review) =>
-    (r.author_initials && r.author_initials.trim()) ||
-    r.author_name
-      ?.split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((p) => p[0]?.toUpperCase())
-      .join('') ||
-    '?';
 
   onMount(async () => {
     if (loaded) return;
@@ -123,55 +113,8 @@
 
       <!-- review cards -->
       {#if reviews.length}
-        <div class="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3" use:staggeredCardReveal={{ y: 18, stagger: 0.07 }}>
-          {#each reviews as review}
-            <article class="flex h-full flex-col gap-4 rounded-[8px] border border-ink/10 bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:border-forest/25 hover:shadow-card-hover">
-              {#if review.author_photo_url}
-                <div class="aspect-[16/10] overflow-hidden rounded-[8px] bg-canvas ring-1 ring-ink/10">
-                  <Img
-                    record={review}
-                    fields={['author_photo_url']}
-                    alt={`Safari reviewed by ${review.author_name}`}
-                    width={720}
-                    sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              {/if}
-              <div class="flex items-start gap-3">
-                <div class="grid h-12 w-12 shrink-0 place-items-center rounded-[8px] bg-forest/10 text-sm font-bold text-forest ring-1 ring-forest/15">{initialsOf(review)}</div>
-                <div class="min-w-0 flex-1">
-                  <p class="truncate font-bold text-ink">{review.author_name}</p>
-                  {#if review.country}<p class="truncate text-xs text-ink/70">{review.country}</p>{/if}
-                </div>
-                <span class="shrink-0 rounded-[6px] bg-forest/10 px-2 py-0.5 text-[11px] font-bold text-forest">{review.platform}</span>
-              </div>
-
-              <div class="flex items-center gap-0.5" aria-hidden="true">
-                {#each Array(5) as _, i}
-                  <Star size={15} class={i < review.rating ? 'text-goldfinch-gold' : 'text-ink/15'} fill={i < review.rating ? 'currentColor' : 'none'} />
-                {/each}
-                <span class="ml-1 text-xs font-semibold text-ink/65">{review.rating}/5</span>
-              </div>
-
-              <blockquote class="flex-1 text-sm leading-6 text-ink/70">"{review.message}"</blockquote>
-
-              {#if review.tour_title || review.source_url}
-                <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
-                  {#if review.tour_title}
-                    <span class="min-w-0 truncate text-[11px] font-semibold text-ink/55">{review.tour_title}</span>
-                  {:else}
-                    <span></span>
-                  {/if}
-                  {#if review.source_url}
-                    <a class="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-forest transition hover:text-heading" href={review.source_url} target="_blank" rel="noopener nofollow">
-                      Read on {review.platform} <ExternalLink size={11} />
-                    </a>
-                  {/if}
-                </div>
-              {/if}
-            </article>
-          {/each}
+        <div class="mt-10">
+          <ReviewCards {reviews} total={summary.count} />
         </div>
       {/if}
     </div>

@@ -1800,5 +1800,16 @@
   "ui.map_view_satellite": "Setilaiti",
   "ui.map_view_terrain": "Sura ya nchi",
   "ui.route_show_on_map": "Onyesha kwenye ramani",
-  "ui.opens_new_tab": "inafunguka kwenye kichupo kipya"
+  "ui.opens_new_tab": "inafunguka kwenye kichupo kipya",
+  "ui.review_read_full": "Soma maoni kamili",
+  "ui.review_by": "Maoni ya {name}",
+  "ui.review_read_original": "Soma maoni asilia",
+  "ui.review_on_platform": "Maoni yametolewa kwenye {platform}",
+  "ui.review_stars": "Nyota {n} kati ya 5",
+  "ui.review_view_more": "Ona maoni zaidi",
+  "ui.review_loading": "Inapakia maoni…",
+  "ui.review_try_again": "Jaribu tena",
+  "ui.review_load_failed": "Hatukuweza kupakia maoni zaidi kwa sasa.",
+  "ui.review_show_n": "Onyesha maoni {n} kati ya {total}",
+  "ui.review_choose": "Chagua maoni"
 }

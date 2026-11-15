@@ -1800,5 +1800,16 @@
   "ui.map_view_satellite": "Satellite",
   "ui.map_view_terrain": "Relief",
   "ui.route_show_on_map": "Voir sur la carte",
-  "ui.opens_new_tab": "s’ouvre dans un nouvel onglet"
+  "ui.opens_new_tab": "s’ouvre dans un nouvel onglet",
+  "ui.review_read_full": "Lire l’avis complet",
+  "ui.review_by": "Avis de {name}",
+  "ui.review_read_original": "Lire l’avis d’origine",
+  "ui.review_on_platform": "Avis publié sur {platform}",
+  "ui.review_stars": "{n} étoiles sur 5",
+  "ui.review_view_more": "Voir plus d’avis",
+  "ui.review_loading": "Chargement des avis…",
+  "ui.review_try_again": "Réessayer",
+  "ui.review_load_failed": "Impossible de charger d’autres avis pour le moment.",
+  "ui.review_show_n": "Afficher l’avis {n} sur {total}",
+  "ui.review_choose": "Choisir un avis"
 }

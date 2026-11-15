@@ -632,7 +632,6 @@
   .home-faq { padding-block:clamp(3.5rem,6vw,5.5rem); }
   .home-motion-root :global(.home-destinations), .home-motion-root :global(.home-how-planned) { background:rgb(var(--c-canvas)/.55); }
   .home-motion-root :global(.destination-card) { border-radius:16px; border:1px solid rgb(var(--c-ink)/.1); }
-  .home-motion-root :global([data-review-card]) { border:1px solid rgb(var(--c-ink)/.09); background:rgb(var(--c-canvas)/.6); }
   .home-motion-root :global(.home-advisor-note) { padding-block:clamp(2.5rem,5vw,4rem); }
   .home-motion-root :global(.home-planning-band) { border-top:3px solid rgb(var(--c-goldfinch-gold)/.7); }
   .home-motion-root :global(a:focus-visible), .home-motion-root :global(button:focus-visible) { outline:2px solid rgb(var(--c-goldfinch-gold)); outline-offset:4px; }

@@ -1800,5 +1800,16 @@
   "ui.map_view_satellite": "Satélite",
   "ui.map_view_terrain": "Relieve",
   "ui.route_show_on_map": "Ver en el mapa",
-  "ui.opens_new_tab": "se abre en una pestaña nueva"
+  "ui.opens_new_tab": "se abre en una pestaña nueva",
+  "ui.review_read_full": "Leer la reseña completa",
+  "ui.review_by": "Reseña de {name}",
+  "ui.review_read_original": "Leer la reseña original",
+  "ui.review_on_platform": "Reseña publicada en {platform}",
+  "ui.review_stars": "{n} de 5 estrellas",
+  "ui.review_view_more": "Ver más reseñas",
+  "ui.review_loading": "Cargando reseñas…",
+  "ui.review_try_again": "Intentar de nuevo",
+  "ui.review_load_failed": "No hemos podido cargar más reseñas en este momento.",
+  "ui.review_show_n": "Mostrar la reseña {n} de {total}",
+  "ui.review_choose": "Elegir una reseña"
 }

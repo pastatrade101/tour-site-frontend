@@ -1679,5 +1679,16 @@
   "ui.map_view_satellite": "Satellite",
   "ui.map_view_terrain": "Terrain",
   "ui.route_show_on_map": "Show on the map",
-  "ui.opens_new_tab": "opens in a new tab"
+  "ui.opens_new_tab": "opens in a new tab",
+  "ui.review_read_full": "Read full review",
+  "ui.review_by": "Review by {name}",
+  "ui.review_read_original": "Read original review",
+  "ui.review_on_platform": "Reviewed on {platform}",
+  "ui.review_stars": "{n} out of 5 stars",
+  "ui.review_view_more": "View more reviews",
+  "ui.review_loading": "Loading reviews…",
+  "ui.review_try_again": "Try again",
+  "ui.review_load_failed": "We couldn’t load more reviews just now.",
+  "ui.review_show_n": "Show review {n} of {total}",
+  "ui.review_choose": "Choose a review"
 }

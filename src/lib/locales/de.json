@@ -1800,5 +1800,16 @@
   "ui.map_view_satellite": "Satellit",
   "ui.map_view_terrain": "Gelände",
   "ui.route_show_on_map": "Auf der Karte zeigen",
-  "ui.opens_new_tab": "öffnet in einem neuen Tab"
+  "ui.opens_new_tab": "öffnet in einem neuen Tab",
+  "ui.review_read_full": "Ganze Bewertung lesen",
+  "ui.review_by": "Bewertung von {name}",
+  "ui.review_read_original": "Originalbewertung lesen",
+  "ui.review_on_platform": "Bewertet auf {platform}",
+  "ui.review_stars": "{n} von 5 Sternen",
+  "ui.review_view_more": "Weitere Bewertungen ansehen",
+  "ui.review_loading": "Bewertungen werden geladen…",
+  "ui.review_try_again": "Erneut versuchen",
+  "ui.review_load_failed": "Weitere Bewertungen konnten gerade nicht geladen werden.",
+  "ui.review_show_n": "Bewertung {n} von {total} anzeigen",
+  "ui.review_choose": "Bewertung auswählen"
 }

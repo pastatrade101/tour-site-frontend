@@ -1,12 +1,15 @@
 <script lang="ts">
   import { locale, t } from '$lib/i18n/ui';
   import { Star } from '@lucide/svelte';
-  import { countryCodeFor } from '$lib/data/countries';
+  import ReviewCards from '../ReviewCards.svelte';
 
-  // Traveller stories / verified reviews carousel. Renders ONLY from props:
-  // if there are no usable reviews the whole section disappears. Star rows and
-  // the aggregate line come from real numbers only — nothing is invented.
+  // Traveller stories: a heading, the real average, and the review cards.
+  // Renders ONLY from props: with no usable reviews the whole section
+  // disappears. The star row and the aggregate line come from real numbers
+  // only — nothing is invented. The cards themselves are ReviewCards, the one
+  // review card the site has.
   type StoryReview = {
+    id?: string | null;
     author_name?: string | null;
     client_name?: string | null;
     country?: string | null;
@@ -37,25 +40,7 @@
   export let summary: { average?: number | null; count?: number | null; total?: number | null } | null = null;
 
   const nameOf = (r: StoryReview) => (r.author_name || r.client_name || '').trim();
-  const countryOf = (r: StoryReview) => (r.country || r.client_country || '').trim();
   const quoteOf = (r: StoryReview) => (r.message || r.comment || '').trim();
-  const titleOf = (r: StoryReview) => (r.title || '').trim();
-  const sourceUrlOf = (r: StoryReview) => (r.source_url || '').trim();
-  const tourTitleOf = (r: StoryReview) => (r.tours?.title || r.tour_title || titleOf(r)).trim();
-  const cardImageOf = (r: StoryReview) => r.author_photo_url || r.tours?.main_image_url || r.tours?.banner_image_url || '';
-
-  /**
-   * The reviewer's flag, as a picture from /flags (the open-source flag-icons
-   * set, square crops) — not an emoji, which Windows shows as two letters.
-   * Empty when the country is missing or not recognised: that reviewer keeps
-   * their initials rather than getting a flag we guessed.
-   */
-  const flagOf = (country: string): string => {
-    const code = countryCodeFor(country);
-    return code ? `/flags/${code.toLowerCase()}.svg` : '';
-  };
-  /** A flag file that fails to load steps aside, and the initials under it show. */
-  const dropFlag = (event: Event) => (event.currentTarget as HTMLImageElement).remove();
 
   // Whole stars, only when a real numeric rating exists (never defaulted to 5).
   const starsOf = (rating: number | null | undefined) => {
@@ -64,14 +49,8 @@
   };
 
   $: items = reviews.filter((r) => quoteOf(r) || nameOf(r));
-  $: shown = items.slice(0, 8);
-  /*
-   * Four across is the most the row shows, but the track is built from how many
-   * reviews there actually are — a fixed four columns holding three cards
-   * leaves a column of empty space and the row reads as though something
-   * failed to load.
-   */
-  $: columns = Math.min(Math.max(shown.length, 1), 4);
+  // Six fills two rows of three; the rest are behind "View more reviews".
+  $: shown = items.slice(0, 6);
 
   $: avg =
     summary && typeof summary.average === 'number' && isFinite(summary.average) && summary.average > 0
@@ -83,34 +62,6 @@
       ? Math.round(summaryTotal)
       : null;
   $: avgStars = avg ? starsOf(avg) : 0;
-  $: hasSummaryLine = Boolean(avg || total || sourcesLabel);
-
-
-
-
-
-  /** Initials for the avatar disc — from the reviewer's own name, never faked. */
-  const initialsOf = (name: string) =>
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() ?? '')
-      .join('');
-
-  /*
-   * Each platform keeps the colour it is known by, so the badge is recognisable
-   * at a glance rather than a row of identical grey chips. A platform that is
-   * not one of these still gets a badge — a neutral one — because the source of
-   * a review matters more than whether we have a brand colour for it.
-   */
-  const PLATFORM_STYLE: Record<string, string> = {
-    tripadvisor: 'bg-[#34E0A1]/18 text-[#0B7A55]',
-    safaribookings: 'bg-clay/12 text-clay',
-    google: 'bg-[#4285F4]/12 text-[#1A56B8]'
-  };
-  const platformClass = (platform: string) =>
-    PLATFORM_STYLE[platform.trim().toLowerCase().replace(/[^a-z]/g, '')] ?? 'bg-ink/8 text-ink/60';
 </script>
 
 {#if items.length}
@@ -145,88 +96,9 @@
         {/if}
       </div>
 
-      <!-- Four across on a wide screen, and a swipeable row below that. -->
-      <div
-        class="story-scroller mt-12 grid auto-cols-[minmax(272px,1fr)] grid-flow-col gap-5 overflow-x-auto pb-2 md:mt-14 lg:grid-flow-row lg:overflow-visible"
-        style={`--story-columns: ${columns}`}
-      >
-        {#each shown as review, index (index)}
-          {@const name = nameOf(review)}
-          {@const country = countryOf(review)}
-          {@const quote = quoteOf(review)}
-          {@const stars = starsOf(review.rating)}
-          {@const platform = (review.platform ?? '').trim()}
-          {@const flag = flagOf(country)}
-          <article data-review-card class="flex flex-col rounded-[14px] bg-canvas p-6">
-            <span class="font-serif text-[34px] leading-none text-goldfinch-gold/45" aria-hidden="true">&rdquo;</span>
-
-            {#if quote}
-              <p class="story-quote mt-3 text-[15px] leading-[1.65] text-ink/75">&ldquo;{quote}&rdquo;</p>
-            {/if}
-
-            {#if name}
-              <div class="mt-5 flex items-center gap-3 border-b border-ink/10 pb-5">
-                <!-- The flag fills the same disc the initials sat in; the
-                     initials stay underneath for a reviewer with no country. -->
-                <span class="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-goldfinch-gold/85 text-[13px] font-bold text-heading ring-1 ring-ink/15">
-                  {initialsOf(name)}
-                  {#if flag}
-                    <img src={flag} alt="" width="44" height="44" loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover" on:error={dropFlag} />
-                  {/if}
-                </span>
-                <span class="min-w-0">
-                  <span class="block truncate text-[15px] font-bold text-heading">{name}</span>
-                  {#if country}<span class="block truncate text-[13px] text-ink/50">{country}</span>{/if}
-                </span>
-              </div>
-            {/if}
-
-            <div class="mt-4 flex items-center justify-between gap-3">
-              {#if stars}
-                <span class="inline-flex items-center gap-0.5 text-goldfinch-gold">
-                  {#each Array(stars) as _, i (i)}
-                    <Star class="fill-current" size={13} strokeWidth={0} />
-                  {/each}
-                </span>
-              {:else}
-                <span></span>
-              {/if}
-              {#if platform}
-                <span class={`shrink-0 rounded-md px-2.5 py-1 text-[11.5px] font-semibold ${platformClass(platform)}`}>{platform}</span>
-              {/if}
-            </div>
-          </article>
-        {/each}
+      <div class="mt-12 md:mt-14">
+        <ReviewCards reviews={shown} total={total ?? 0} />
       </div>
     </div>
   </section>
 {/if}
-
-<style>
-  /* Four lines then an ellipsis, so cards in a row end level however long the
-     review runs. */
-  .story-quote {
-    display: -webkit-box;
-    -webkit-line-clamp: 4;
-    line-clamp: 4;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .story-scroller {
-    scrollbar-width: none;
-    scroll-snap-type: x proximity;
-  }
-  .story-scroller::-webkit-scrollbar {
-    display: none;
-  }
-  .story-scroller > :global(article) {
-    scroll-snap-align: start;
-  }
-  @media (min-width: 1024px) {
-    .story-scroller {
-      grid-template-columns: repeat(var(--story-columns, 4), minmax(0, 1fr));
-      scroll-snap-type: none;
-    }
-  }
-</style>
