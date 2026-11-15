@@ -493,12 +493,12 @@
           <p class="text-sm font-bold text-ink">Destination scores</p>
           <p class="mt-0.5 text-xs text-ink/55">Honest 0–10 ratings shown on the /destination-scores page. Leave blank to hide.</p>
           <div class="mt-4 grid gap-4 sm:grid-cols-3">
-            <AdminFormInput label="Wildlife (0–10)" name="score_wildlife" type="number" bind:value={form.score_wildlife} />
-            <AdminFormInput label="Luxury (0–10)" name="score_luxury" type="number" bind:value={form.score_luxury} />
-            <AdminFormInput label="Family (0–10)" name="score_family" type="number" bind:value={form.score_family} />
-            <AdminFormInput label="Photography (0–10)" name="score_photography" type="number" bind:value={form.score_photography} />
-            <AdminFormInput label="Adventure (0–10)" name="score_adventure" type="number" bind:value={form.score_adventure} />
-            <AdminFormInput label="Budget from (USD pp)" name="score_budget_from" type="number" bind:value={form.score_budget_from} />
+            <AdminFormInput label="Wildlife (0–10)" name="score_wildlife" type="number" step={0.1} bind:value={form.score_wildlife} />
+            <AdminFormInput label="Luxury (0–10)" name="score_luxury" type="number" step={0.1} bind:value={form.score_luxury} />
+            <AdminFormInput label="Family (0–10)" name="score_family" type="number" step={0.1} bind:value={form.score_family} />
+            <AdminFormInput label="Photography (0–10)" name="score_photography" type="number" step={0.1} bind:value={form.score_photography} />
+            <AdminFormInput label="Adventure (0–10)" name="score_adventure" type="number" step={0.1} bind:value={form.score_adventure} />
+            <AdminFormInput label="Budget from (USD pp)" name="score_budget_from" type="number" step={0.01} bind:value={form.score_budget_from} />
           </div>
         </div>
 

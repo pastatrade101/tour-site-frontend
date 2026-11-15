@@ -489,7 +489,7 @@
 
       <div class="mt-4 grid gap-4 md:grid-cols-4">
         <AdminFormInput label="Available slots" name="available_slots" type="number" bind:value={form.available_slots} placeholder="12" />
-        <AdminFormInput label="Price" name="price" type="number" bind:value={form.price} placeholder="2500" />
+        <AdminFormInput label="Price" name="price" type="number" step={0.01} bind:value={form.price} placeholder="2500" />
         <AdminFormInput label="Currency" name="currency" bind:value={form.currency} placeholder="USD" />
         <AdminSelect label="Status" name="status" bind:value={form.status} options={statusOptions} />
       </div>

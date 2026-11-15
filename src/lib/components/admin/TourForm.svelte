@@ -698,7 +698,7 @@
             {/if}
           </div>
           <AdminFormInput label="Duration nights" name="duration_nights" type="number" bind:value={form.duration_nights} />
-          <AdminFormInput label="Price from" name="price_from" type="number" bind:value={form.price_from} />
+          <AdminFormInput label="Price from" name="price_from" type="number" step={0.01} bind:value={form.price_from} />
           <div class="grid gap-1.5">
             <AdminFormInput label="Currency" name="currency" bind:value={form.currency} placeholder="USD" />
             {#if attemptedSave && currencyError}

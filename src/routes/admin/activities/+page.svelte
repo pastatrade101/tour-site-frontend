@@ -372,7 +372,7 @@
 
         <div class="grid gap-4 sm:grid-cols-3">
           <AdminFormInput label="Duration label" name="duration_label" bind:value={form.duration_label} placeholder="Full day" />
-          <AdminFormInput label="Price from" name="price_from" type="number" bind:value={form.price_from} placeholder="250" />
+          <AdminFormInput label="Price from" name="price_from" type="number" step={0.01} bind:value={form.price_from} placeholder="250" />
           <AdminFormInput label="Currency" name="currency" bind:value={form.currency} placeholder="USD" />
         </div>
 

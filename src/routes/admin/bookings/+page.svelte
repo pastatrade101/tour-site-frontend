@@ -818,7 +818,7 @@ import ConfirmModal from '$lib/components/admin/ConfirmModal.svelte';
           <!-- Booking details -->
           <section class="grid content-start gap-4">
             <div class="grid gap-4 sm:grid-cols-2">
-              <AdminFormInput label="Estimated amount" name="estimated_amount" type="number" bind:value={form.estimated_amount} />
+              <AdminFormInput label="Estimated amount" name="estimated_amount" type="number" step={0.01} bind:value={form.estimated_amount} />
               <AdminSelect label="Currency" name="currency" bind:value={form.currency} options={currencyOptions} />
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
