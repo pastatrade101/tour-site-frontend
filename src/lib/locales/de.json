@@ -1794,5 +1794,9 @@
   "ui.route_leg_boat": "Boot",
   "ui.map_hint_ctrl": "Strg + Scrollen, um die Karte zu zoomen",
   "ui.map_hint_cmd": "⌘ + Scrollen, um die Karte zu zoomen",
-  "ui.map_hint_touch": "Karte mit zwei Fingern bewegen"
+  "ui.map_hint_touch": "Karte mit zwei Fingern bewegen",
+  "ui.map_view": "Kartenansicht",
+  "ui.map_view_map": "Karte",
+  "ui.map_view_satellite": "Satellit",
+  "ui.map_view_terrain": "Gelände"
 }

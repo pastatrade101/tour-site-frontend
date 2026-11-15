@@ -1673,5 +1673,9 @@
   "ui.route_leg_boat": "Boat",
   "ui.map_hint_ctrl": "Use Ctrl + scroll to zoom the map",
   "ui.map_hint_cmd": "Use ⌘ + scroll to zoom the map",
-  "ui.map_hint_touch": "Use two fingers to move the map"
+  "ui.map_hint_touch": "Use two fingers to move the map",
+  "ui.map_view": "Map view",
+  "ui.map_view_map": "Map",
+  "ui.map_view_satellite": "Satellite",
+  "ui.map_view_terrain": "Terrain"
 }

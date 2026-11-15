@@ -1794,5 +1794,9 @@
   "ui.route_leg_boat": "Barco",
   "ui.map_hint_ctrl": "Use Ctrl + desplazamiento para ampliar el mapa",
   "ui.map_hint_cmd": "Use ⌘ + desplazamiento para ampliar el mapa",
-  "ui.map_hint_touch": "Use dos dedos para mover el mapa"
+  "ui.map_hint_touch": "Use dos dedos para mover el mapa",
+  "ui.map_view": "Vista del mapa",
+  "ui.map_view_map": "Mapa",
+  "ui.map_view_satellite": "Satélite",
+  "ui.map_view_terrain": "Relieve"
 }

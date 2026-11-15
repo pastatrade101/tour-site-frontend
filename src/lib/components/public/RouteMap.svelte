@@ -126,6 +126,15 @@
   let moves = $state(0);
   let zoomEdge = $state({ min: false, max: false });
   let showRoute: () => void = () => {};
+  /**
+   * What the live map is drawn on: the plain map, satellite imagery, or the
+   * plain map with the land's relief shaded in. The reader's choice, kept
+   * while they stay on the page.
+   */
+  type MapView = 'map' | 'satellite' | 'terrain';
+  const MAP_VIEWS: MapView[] = ['map', 'satellite', 'terrain'];
+  let mapView = $state<MapView>('map');
+  let applyView: (view: MapView) => void = () => {};
 
   /*
    * ── Zoom ──────────────────────────────────────────────────────────────────
@@ -375,6 +384,23 @@
    * is clear where in the country the trip is.
    */
   const FIT_ZOOM = 7.4;
+  /*
+   * The two other views. Both are open data served without a key, chosen
+   * because a commercial site may use them: NASA's GIBS imagery is public
+   * domain, and the elevation tiles are the open Terrain Tiles set on AWS
+   * (for East Africa, SRTM from the U.S. Geological Survey). The sharper
+   * Sentinel-2 mosaic from EOX was the obvious pick and is licensed for
+   * non-commercial use only.
+   *
+   * The imagery is Landsat's cloud-free composite for the year 2000: thirty
+   * metres to the pixel, which holds up at every zoom this map allows. Parks
+   * and lakes have not moved since; a new road may be missing.
+   */
+  const SATELLITE_TILES =
+    'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/Landsat_WELD_CorrectedReflectance_TrueColor_Global_Annual/default/2000-12-01/GoogleMapsCompatible_Level12/{z}/{y}/{x}.jpeg';
+  const SATELLITE_CREDIT = 'Imagery: NASA GIBS, Landsat WELD (NASA/USGS)';
+  const TERRAIN_TILES = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
+  const TERRAIN_CREDIT = 'Terrain: Mapzen Terrain Tiles, SRTM courtesy of the U.S. Geological Survey';
   /** Roughly Tanzania, so zooming out can always reach the whole country. */
   const COUNTRY: [[number, number], [number, number]] = [
     [28.6, -12.2],
@@ -507,8 +533,10 @@
         (box, point) => box.extend(point),
         new maplibre.LngLatBounds(route.points[0], route.points[0])
       );
+      // The bottom has the most room: the view switcher sits there, and a
+      // stop's name and days must not end up underneath it.
       const padding = () =>
-        canvas.clientWidth < 480 ? { top: 60, bottom: 52, left: 64, right: 64 } : { top: 72, bottom: 60, left: 96, right: 96 };
+        canvas.clientWidth < 480 ? { top: 60, bottom: 84, left: 64, right: 64 } : { top: 72, bottom: 84, left: 96, right: 96 };
       // Room to wander around the route and out past the country's borders,
       // never off to another continent.
       const MARGIN = 6;
@@ -662,6 +690,54 @@
         map.on('moveend', settle);
         // A click on the map itself, not on a pin's button, puts the card away.
         map.on('click', () => (openKey = null));
+        /*
+         * The other views go in under the place names and over everything
+         * else in the basemap, so towns and parks stay labelled on a
+         * photograph. Each is fetched only when it is first chosen: nobody
+         * who stays on the plain map downloads a satellite tile.
+         */
+        const basemapLabels = map
+          .getStyle()
+          .layers.filter((layer) => layer.type === 'symbol' && layer.source !== 'stops')
+          .map((layer) => layer.id);
+        const underLabels = basemapLabels[0] ?? 'route-casing';
+        // The basemap's own label colours, to put back when the photograph goes away.
+        const labelPaint = new Map(
+          basemapLabels.map((id) => [id, [map!.getPaintProperty(id, 'text-color'), map!.getPaintProperty(id, 'text-halo-color')] as const])
+        );
+        applyView = (view) => {
+          if (!map) return;
+          if (view === 'satellite' && !map.getSource('satellite')) {
+            map.addSource('satellite', { type: 'raster', tiles: [SATELLITE_TILES], tileSize: 256, maxzoom: 12, attribution: SATELLITE_CREDIT });
+            map.addLayer({ id: 'satellite', type: 'raster', source: 'satellite', layout: { visibility: 'none' } }, underLabels);
+          }
+          if (view === 'terrain' && !map.getSource('terrain')) {
+            map.addSource('terrain', { type: 'raster-dem', tiles: [TERRAIN_TILES], tileSize: 256, maxzoom: 12, encoding: 'terrarium', attribution: TERRAIN_CREDIT });
+            map.addLayer(
+              {
+                id: 'terrain',
+                type: 'hillshade',
+                source: 'terrain',
+                layout: { visibility: 'none' },
+                paint: { 'hillshade-exaggeration': 0.55, 'hillshade-shadow-color': '#4f4636', 'hillshade-highlight-color': '#ffffff', 'hillshade-accent-color': '#6b5f4a' }
+              } as never,
+              underLabels
+            );
+          }
+          for (const id of ['satellite', 'terrain'] as const) {
+            if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', id === view ? 'visible' : 'none');
+          }
+          // On a photograph, dark-grey names disappear: white, with a dark edge.
+          const photo = view === 'satellite';
+          for (const [id, [color, halo]] of labelPaint) {
+            map.setPaintProperty(id, 'text-color', photo ? '#ffffff' : color);
+            map.setPaintProperty(id, 'text-halo-color', photo ? 'rgba(20, 24, 16, 0.8)' : halo);
+          }
+          map.setPaintProperty('stop-name', 'text-color', photo ? '#ffffff' : ink);
+          map.setPaintProperty('stop-name', 'text-halo-color', photo ? 'rgba(20, 24, 16, 0.85)' : '#ffffff');
+        };
+        if (mapView !== 'map') applyView(mapView);
+
         // Keep the credit as a small (i) button rather than a strip across the route.
         canvas.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
         settle();
@@ -694,8 +770,14 @@
       ready = false;
       moved = false;
       showRoute = () => {};
+      applyView = () => {};
     };
   });
+
+  const chooseView = (view: MapView) => {
+    mapView = view;
+    applyView(view);
+  };
 
   onMount(() => {
     if (!stops.length) return;
@@ -767,6 +849,11 @@
               <button type="button" class="route__whole" class:is-moved={moved} onclick={() => showRoute()}>
                 <Maximize2 size={14} aria-hidden="true" />{$t('ui.route_whole')}
               </button>
+              <div class="route__views" role="group" aria-label={$t('ui.map_view')}>
+                {#each MAP_VIEWS as view (view)}
+                  <button type="button" aria-pressed={mapView === view} onclick={() => chooseView(view)}>{$t(`ui.map_view_${view}`)}</button>
+                {/each}
+              </div>
             {/if}
 
             {#if ready || (views && views.levels.length > 1)}
@@ -983,6 +1070,50 @@
   .route__whole:focus-visible {
     outline: 2px solid rgb(var(--c-clay));
     outline-offset: 2px;
+  }
+
+  /* Map / Satellite / Terrain, bottom-left, clear of the credit button on the right. */
+  .route__views {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    z-index: 4;
+    display: flex;
+    overflow: hidden;
+    border: 1px solid rgb(var(--c-ink) / 0.12);
+    border-radius: 10px;
+    background: rgb(var(--c-surface));
+    box-shadow: 0 6px 16px rgb(39 43 34 / 0.14);
+    pointer-events: auto;
+  }
+  .route__views button {
+    min-height: 34px;
+    padding: 0 12px;
+    border: 0;
+    background: transparent;
+    color: rgb(var(--c-ink) / 0.75);
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
+  }
+  .route__views button + button {
+    border-left: 1px solid rgb(var(--c-ink) / 0.1);
+  }
+  .route__views button:hover {
+    color: rgb(var(--c-heading));
+    background: rgb(var(--c-canvas));
+  }
+  .route__views button[aria-pressed='true'] {
+    background: rgb(var(--c-deep-green));
+    color: #fff;
+  }
+  .route__views button:focus-visible {
+    outline: 2px solid rgb(var(--c-clay));
+    outline-offset: -2px;
   }
 
   .route__modes {
