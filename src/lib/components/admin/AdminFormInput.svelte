@@ -7,6 +7,12 @@
   export let required = false;
   /** Optional min for type="number" inputs. */
   export let min: number | undefined = undefined;
+  /**
+   * For type="number". Left out, a browser only accepts whole numbers and
+   * refuses to submit "-3.25025" — which is how a destination ended up with
+   * its coordinates rounded to -3, 37. "any" allows decimals.
+   */
+  export let step: number | 'any' | undefined = undefined;
   /** Show "n/target" under the field — a soft recommended length, no truncation. */
   export let counter: number | undefined = undefined;
 </script>
@@ -21,6 +27,7 @@
     {placeholder}
     {required}
     {min}
+    {step}
   />
   {#if counter}
     <span class={`justify-self-end text-[11px] font-semibold ${String(value).length > counter ? 'text-clay' : 'text-ink/40'}`}>

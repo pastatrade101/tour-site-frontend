@@ -24,7 +24,7 @@
   import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
   import TanzaniaMap from '$lib/geo/TanzaniaMap.svelte';
   import SectionTitle from './SectionTitle.svelte';
-  import { zoomProjection, type BasemapDoc, type MapMarker, type Zoom } from '$lib/geo/basemap';
+  import { LEG_BOW, zoomProjection, type BasemapDoc, type MapMarker, type Zoom } from '$lib/geo/basemap';
   import type { ItineraryDay } from '$lib/types';
   import { t } from '$lib/i18n/ui';
   import { clampZoom, countryProjection, routeViews } from '$lib/routeFocus';
@@ -398,8 +398,6 @@
         at: [place.lng, place.lat] as [number, number]
       })),
       // Leg i arrives at stop i + 1 and is drawn in the mode it was reached by.
-      // Out and back along the same stretch by the same means is drawn once:
-      // two dashed lines laid over each other read as one broken one.
       legs: stops
         .slice(1)
         .map((stop, i) => ({
@@ -408,25 +406,24 @@
           mode: stop.mode ?? 'NONE'
         }))
         .filter((leg) => leg.from[0] !== leg.to[0] || leg.from[1] !== leg.to[1])
-        .filter((leg, i, all) => {
-          const same = (a: [number, number], b: [number, number]) => a[0] === b[0] && a[1] === b[1];
-          return (
-            all.findIndex(
-              (other) =>
-                other.mode === leg.mode &&
-                ((same(other.from, leg.from) && same(other.to, leg.to)) || (same(other.from, leg.to) && same(other.to, leg.from)))
-            ) === i
-          );
-        })
     };
   });
   /** The travel modes on this route, for the key under the live map. */
   const legModes = $derived([...new Set((liveRoute?.legs ?? []).map((leg) => leg.mode))]);
 
-  /** A gentle arc for a flight, so it reads as air and not as a road. */
-  const arc = (a: [number, number], b: [number, number]): [number, number][] => {
+  /**
+   * Every leg is a gentle arc, bent the same way relative to its direction of
+   * travel — the rule the drawn map uses (LEG_BOW), with the same amounts, so
+   * the two maps agree. Straight lines lay on top of each other whenever the
+   * trip doubled back: out to the Serengeti and back past Ngorongoro drew as
+   * one confused double line. Bent to the traveller's same side, the way out
+   * and the way back fall on opposite sides and read as a loop.
+   */
+  const arc = (a: [number, number], b: [number, number], bow: number): [number, number][] => {
     const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
-    const control: [number, number] = [(a[0] + b[0]) / 2 - dy * 0.18, (a[1] + b[1]) / 2 + dx * 0.18];
+    // Longitude runs right and latitude runs UP, the reverse of a screen's y,
+    // so the signs are the mirror of legPath's to bend to the same side.
+    const control: [number, number] = [(a[0] + b[0]) / 2 + dy * bow, (a[1] + b[1]) / 2 - dx * bow];
     return Array.from({ length: 33 }, (_, i) => {
       const t = i / 32;
       return [
@@ -500,7 +497,13 @@
         NONE: { width: 2.5, dash: [1.7, 1.5] }
       };
 
-      const bounds = route.points.reduce(
+      // The legs as drawn, and a frame that holds the whole of each arc, not
+      // only the stops it joins.
+      const lines = route.legs.map((leg) => ({
+        mode: leg.mode,
+        path: arc(leg.from, leg.to, LEG_BOW[leg.mode as keyof typeof LEG_BOW] ?? LEG_BOW.NONE)
+      }));
+      const bounds = [...route.points, ...lines.flatMap((line) => line.path)].reduce(
         (box, point) => box.extend(point),
         new maplibre.LngLatBounds(route.points[0], route.points[0])
       );
@@ -557,10 +560,10 @@
           type: 'geojson',
           data: {
             type: 'FeatureCollection',
-            features: route.legs.map((leg) => ({
+            features: lines.map((line) => ({
               type: 'Feature',
-              properties: { mode: leg.mode },
-              geometry: { type: 'LineString', coordinates: leg.mode === 'FLY' ? arc(leg.from, leg.to) : [leg.from, leg.to] }
+              properties: { mode: line.mode },
+              geometry: { type: 'LineString', coordinates: line.path }
             }))
           }
         });

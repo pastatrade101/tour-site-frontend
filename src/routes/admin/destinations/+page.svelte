@@ -504,8 +504,8 @@
 
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <AdminSelect label="Status" name="status" bind:value={form.status} options={statusOptions} />
-          <AdminFormInput label="Latitude" name="latitude" type="number" bind:value={form.latitude} placeholder="-6.3690" />
-          <AdminFormInput label="Longitude" name="longitude" type="number" bind:value={form.longitude} placeholder="34.8888" />
+          <AdminFormInput label="Latitude" name="latitude" type="number" step="any" bind:value={form.latitude} placeholder="-6.3690" />
+          <AdminFormInput label="Longitude" name="longitude" type="number" step="any" bind:value={form.longitude} placeholder="34.8888" />
           <label class="flex h-full min-h-[74px] items-center gap-3 rounded-2xl border border-ink/10 bg-sand/20 px-4 py-3 text-sm font-medium text-ink">
             <input class="h-4 w-4 rounded border-ink/20 text-forest focus:ring-forest" type="checkbox" bind:checked={form.is_featured} />
             Featured destination
