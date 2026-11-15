@@ -1798,5 +1798,7 @@
   "ui.map_view": "Kartenansicht",
   "ui.map_view_map": "Karte",
   "ui.map_view_satellite": "Satellit",
-  "ui.map_view_terrain": "Gelände"
+  "ui.map_view_terrain": "Gelände",
+  "ui.route_show_on_map": "Auf der Karte zeigen",
+  "ui.opens_new_tab": "öffnet in einem neuen Tab"
 }

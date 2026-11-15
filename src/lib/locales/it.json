@@ -1798,5 +1798,7 @@
   "ui.map_view": "Vista della mappa",
   "ui.map_view_map": "Mappa",
   "ui.map_view_satellite": "Satellite",
-  "ui.map_view_terrain": "Rilievo"
+  "ui.map_view_terrain": "Rilievo",
+  "ui.route_show_on_map": "Mostra sulla mappa",
+  "ui.opens_new_tab": "si apre in una nuova scheda"
 }

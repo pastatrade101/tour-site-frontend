@@ -1851,11 +1851,12 @@
 
   .tour-detail-main :global(.route__map) { border-radius: 14px; }
   .tour-detail-main :global(.route__legend) { padding: 0.25rem 1rem; border: 1px solid rgb(var(--c-ink) / 0.1); border-radius: 12px; background: rgb(var(--c-surface)); }
-  .tour-detail-main :global(.route__stop) { grid-template-columns: 12px minmax(0, 1fr); align-items: center; gap: 2px 10px; padding: 0.875rem 0; }
+  .tour-detail-main :global(.route__stop) { grid-template-columns: 12px minmax(0, 1fr) auto; align-items: center; gap: 2px 10px; padding: 0.875rem 0; }
   .tour-detail-main :global(.route__dot) { grid-column: 1; grid-row: 1 / 3; width: 8px; height: 8px; box-shadow: none; }
   .tour-detail-main :global(.route__day) { grid-column: 2; color: rgb(var(--c-ink) / 0.65); font-size: 11px; font-weight: 400; line-height: 1.5; letter-spacing: 0; text-transform: none; }
-  .tour-detail-main :global(.route__place) { grid-column: 2; min-width: 0; font-size: 14px; font-weight: 400; line-height: 1.5; overflow-wrap: anywhere; }
-  .tour-detail-main :global(a.route__place:focus-visible) { outline: 2px solid rgb(var(--c-goldfinch-gold)); outline-offset: 3px; border-radius: 3px; }
+  .tour-detail-main :global(.route__place) { grid-column: 2; justify-self: start; min-width: 0; font-size: 14px; font-weight: 400; line-height: 1.5; overflow-wrap: anywhere; }
+  .tour-detail-main :global(.route__open) { grid-column: 3; grid-row: 1 / span 2; }
+  .tour-detail-main :global(.route__place:focus-visible) { outline: 2px solid rgb(var(--c-goldfinch-gold)); outline-offset: 3px; border-radius: 3px; }
   #good-to-know .faq-timeline-item { padding-bottom: 2rem; }
   #good-to-know .faq-timeline-item:last-child { padding-bottom: 0; }
   #good-to-know .faq-timeline-item h3 { font-size: 21px; line-height: 1.35; }

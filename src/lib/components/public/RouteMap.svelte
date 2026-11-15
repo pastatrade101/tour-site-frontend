@@ -19,14 +19,15 @@
    * old phone. Nothing about the section depends on the live map arriving.
    */
   import { onMount, untrack } from 'svelte';
-  import { ArrowRight, BedDouble, Maximize2, Minus, Plus, X } from '@lucide/svelte';
+  import { ArrowRight, BedDouble, ExternalLink, Maximize2, Minus, Plus, X } from '@lucide/svelte';
   // MapLibre parses tiles in a web worker; Vite bundles it and hands back its URL.
   import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
   import TanzaniaMap from '$lib/geo/TanzaniaMap.svelte';
   import SectionTitle from './SectionTitle.svelte';
   import { LEG_BOW, zoomProjection, type BasemapDoc, type MapMarker, type Zoom } from '$lib/geo/basemap';
   import type { ItineraryDay } from '$lib/types';
-  import { t } from '$lib/i18n/ui';
+  import { locale, t } from '$lib/i18n/ui';
+  import { localizeUrl } from '$lib/i18n';
   import { clampZoom, countryProjection, routeViews } from '$lib/routeFocus';
 
   interface Props {
@@ -135,6 +136,13 @@
   const MAP_VIEWS: MapView[] = ['map', 'satellite', 'terrain'];
   let mapView = $state<MapView>('map');
   let applyView: (view: MapView) => void = () => {};
+  /**
+   * The stop the reader picked from the list beside the map: the map is
+   * centred on it and its pin is ringed. `row` is that line of the list —
+   * a place the trip returns to has two lines and one pin.
+   */
+  let focused = $state<{ place: string; row: string; at: [number, number] } | null>(null);
+  let focusLive: (at: [number, number], animate: boolean) => void = () => {};
 
   /*
    * ── Zoom ──────────────────────────────────────────────────────────────────
@@ -204,8 +212,10 @@
     level = next;
     openKey = null;
     let target = views.levels[next];
-    if (next <= views.start) panned = false;
-    else if (panned && shown) target = clampZoom(base, { scale: target.scale, center: shown.center });
+    if (next <= views.start) {
+      panned = false;
+      focused = null;
+    } else if (panned && shown) target = clampZoom(base, { scale: target.scale, center: shown.center });
     glideTo(target);
   };
 
@@ -461,7 +471,7 @@
 
   // The open pin is ringed on the live map, as its button is on the drawn one.
   $effect(() => {
-    const key = openKey;
+    const key = openKey ?? focused?.place ?? null;
     const pins = liveRoute?.pins ?? [];
     if (!ready || !live) return;
     pins.forEach((pin, i) => live!.setFeatureState({ source: 'stops', id: i }, { on: pin.key === key }));
@@ -564,6 +574,7 @@
 
       showRoute = () => {
         openKey = null;
+        focused = null;
         map?.fitBounds(bounds, { padding: padding(), maxZoom: FIT_ZOOM, duration: still ? 0 : 800 });
       };
 
@@ -738,6 +749,17 @@
         };
         if (mapView !== 'map') applyView(mapView);
 
+        // A stop picked from the list: a step or so closer than the whole
+        // route, near enough to see what surrounds the place. Never further
+        // out than the reader already is.
+        focusLive = (at, animate) => {
+          if (!map) return;
+          const close = Math.min(Math.max(fitZoom + 1.3, 8.2), map.getMaxZoom());
+          map.flyTo({ center: at, zoom: Math.max(map.getZoom(), close), duration: animate && !still ? 900 : 0 });
+        };
+        // Picked while the drawn map was still the one showing.
+        if (focused) focusLive(focused.at, false);
+
         // Keep the credit as a small (i) button rather than a strip across the route.
         canvas.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
         settle();
@@ -771,8 +793,40 @@
       moved = false;
       showRoute = () => {};
       applyView = () => {};
+      focusLive = () => {};
+      focused = null;
     };
   });
+
+  const rowOf = (stop: Stop) => `${stop.slug}:${stop.first}`;
+
+  /**
+   * A line in the list shows its place on the map; it used to leave the page
+   * for the destination's own. On a phone the list sits under the map, so the
+   * map is brought back into view first — otherwise the tap appears to do
+   * nothing.
+   */
+  const focusStop = (stop: Stop) => {
+    openKey = null;
+    focused = { place: `${stop.lat},${stop.lng}`, row: rowOf(stop), at: [stop.lng, stop.lat] };
+
+    const box = stage?.getBoundingClientRect();
+    if (stage && box && (box.top < 96 || box.bottom > window.innerHeight)) {
+      const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      stage.scrollIntoView({ behavior: still ? 'auto' : 'smooth', block: 'start' });
+    }
+
+    if (ready && live) {
+      focusLive(focused.at, true);
+      return;
+    }
+    // The drawn map: one step in from its opening view, centred on the stop.
+    if (!views || !base) return;
+    const next = Math.max(level, Math.min(views.start + 1, views.levels.length - 1));
+    level = next;
+    panned = true;
+    glideTo(clampZoom(base, { scale: views.levels[next].scale, center: focused.at }));
+  };
 
   const chooseView = (view: MapView) => {
     mapView = view;
@@ -836,11 +890,14 @@
                 <button
                   type="button"
                   class="route__hit"
-                  class:is-open={openKey === place.key}
+                  class:is-open={(openKey ?? focused?.place) === place.key}
                   style="left:{pin.x}px;top:{pin.y}px"
                   aria-expanded={openKey === place.key}
                   aria-label="{place.visits.map(dayLabel).join(', ')} · {place.name}"
-                  onclick={() => (openKey = openKey === place.key ? null : place.key)}
+                  onclick={() => {
+                    focused = null;
+                    openKey = openKey === place.key ? null : place.key;
+                  }}
                 ></button>
               {/if}
             {/each}
@@ -924,7 +981,8 @@
 
       <ol class="route__legend">
         {#each stops as stop, i (stop.slug + ':' + stop.first)}
-          <li class="route__stop">
+          {@const current = focused?.row === rowOf(stop)}
+          <li class="route__stop" class:is-focused={current}>
             <span
               class="route__dot"
               class:is-start={i === 0}
@@ -932,10 +990,26 @@
               aria-hidden="true"
             ></span>
             <span class="route__day">{dayLabel(stop)}</span>
+            <!-- The name shows the place on the map, and the whole line is its
+                 target. Opening the destination's page is the small button
+                 beside it, in a new tab so the trip is not left behind. -->
+            <button
+              type="button"
+              class="route__place"
+              aria-current={current ? 'true' : undefined}
+              aria-label="{stop.name}: {$t('ui.route_show_on_map')}"
+              title={$t('ui.route_show_on_map')}
+              onclick={() => focusStop(stop)}
+            >{stop.name}</button>
             {#if stop.slug}
-              <a class="route__place" href="/destinations/{stop.slug}">{stop.name}</a>
-            {:else}
-              <span class="route__place">{stop.name}</span>
+              <a
+                class="route__open"
+                href={localizeUrl(`/destinations/${stop.slug}`, $locale)}
+                target="_blank"
+                rel="noopener"
+                title={$t('ui.view_destination')}
+                aria-label="{$t('ui.view_destination')}: {stop.name} ({$t('ui.opens_new_tab')})"
+              ><ExternalLink size={15} strokeWidth={2} aria-hidden="true" /></a>
             {/if}
           </li>
         {/each}
@@ -1197,6 +1271,9 @@
   /* ── Pin cards ─────────────────────────────────────────────────────────── */
   .route__stage {
     position: relative;
+    /* Where a tap in the list brings the map back to: clear of the header
+       and the tab bar pinned under it. */
+    scroll-margin-top: 8.5rem;
   }
   .route__hits {
     position: absolute;
@@ -1366,8 +1443,9 @@
   }
 
   .route__stop {
+    position: relative;
     display: grid;
-    grid-template-columns: 18px 72px minmax(0, 1fr);
+    grid-template-columns: 18px 72px minmax(0, 1fr) auto;
     align-items: baseline;
     gap: 14px;
     padding: 16px 0;
@@ -1408,21 +1486,78 @@
   }
 
   .route__place {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
     color: rgb(var(--c-heading));
+    font: inherit;
     font-size: 17px;
     font-weight: 600;
     line-height: 1.35;
-    text-decoration: none;
+    text-align: left;
+    cursor: pointer;
   }
-  a.route__place:hover {
+  /* The whole line is the name's target, not only its letters. */
+  .route__place::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+  .route__stop:hover .route__place,
+  .route__stop.is-focused .route__place {
     color: rgb(var(--c-clay));
+  }
+  .route__stop:hover .route__place {
     text-decoration: underline;
     text-underline-offset: 3px;
   }
-  a.route__place:focus-visible {
+  .route__place:focus-visible {
     outline: 2px solid rgb(var(--c-clay));
     outline-offset: 3px;
     border-radius: 2px;
+  }
+  /* The stop the map is showing: its dot gains a ring, as its pin does. */
+  .route__stop.is-focused .route__dot {
+    box-shadow: 0 0 0 4px rgb(var(--c-clay) / 0.22);
+  }
+
+  /* Opens the destination's page. Above the line's own target, so it is the
+     one thing on the line that does not move the map. */
+  .route__open {
+    position: relative;
+    z-index: 1;
+    grid-column: -2 / -1;
+    grid-row: 1 / -1;
+    align-self: center;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgb(var(--c-ink) / 0.14);
+    border-radius: 9px;
+    background: rgb(var(--c-surface));
+    color: rgb(var(--c-ink) / 0.6);
+    transition:
+      border-color 0.15s ease,
+      color 0.15s ease,
+      background-color 0.15s ease;
+  }
+  .route__open:hover {
+    border-color: rgb(var(--c-clay) / 0.5);
+    background: rgb(var(--c-canvas));
+    color: rgb(var(--c-clay));
+  }
+  .route__open:focus-visible {
+    outline: 2px solid rgb(var(--c-clay));
+    outline-offset: 2px;
+  }
+  @media (pointer: coarse) {
+    .route__open {
+      width: 40px;
+      height: 40px;
+    }
   }
 
   @media (max-width: 767.98px) {
@@ -1431,7 +1566,7 @@
       gap: 20px;
     }
     .route__stop {
-      grid-template-columns: 16px 64px minmax(0, 1fr);
+      grid-template-columns: 16px 64px minmax(0, 1fr) auto;
       gap: 12px;
       padding: 13px 0;
     }

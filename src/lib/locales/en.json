@@ -1677,5 +1677,7 @@
   "ui.map_view": "Map view",
   "ui.map_view_map": "Map",
   "ui.map_view_satellite": "Satellite",
-  "ui.map_view_terrain": "Terrain"
+  "ui.map_view_terrain": "Terrain",
+  "ui.route_show_on_map": "Show on the map",
+  "ui.opens_new_tab": "opens in a new tab"
 }

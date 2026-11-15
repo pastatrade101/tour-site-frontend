@@ -1798,5 +1798,7 @@
   "ui.map_view": "Mwonekano wa ramani",
   "ui.map_view_map": "Ramani",
   "ui.map_view_satellite": "Setilaiti",
-  "ui.map_view_terrain": "Sura ya nchi"
+  "ui.map_view_terrain": "Sura ya nchi",
+  "ui.route_show_on_map": "Onyesha kwenye ramani",
+  "ui.opens_new_tab": "inafunguka kwenye kichupo kipya"
 }
