@@ -30,6 +30,7 @@
     '/admin/settings': 'Settings',
     '/admin/settings/integrations': 'Integrations',
     '/admin/users': 'Admin Users',
+    '/admin/security': 'Sign-in Security',
     '/admin/roles': 'Roles and Permissions',
     '/admin/audit-logs': 'Audit Logs',
     '/admin/ai-conversations': 'AI Conversations',

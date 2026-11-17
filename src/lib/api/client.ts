@@ -76,6 +76,23 @@ const withPageLocale = (path: string): string => {
   return pageLocale === DEFAULT_LOCALE ? path : `${path}${path.includes('?') ? '&' : '?'}locale=${pageLocale}`;
 };
 
+// ── CMS sign-in ─────────────────────────────────────────────────────────────
+export type AdminSession = { token: string; user: { name: string; email: string; role: string }; expiresIn: string };
+/** The password was right and one more step is due: a code from the app, or setting the app up first. */
+export type TwoFactorChallenge = { two_factor: 'code' | 'setup'; challenge: string; expires_in: number };
+export type TwoFactorStatus = {
+  enabled: boolean;
+  enabled_at: string | null;
+  recovery_codes_left: number;
+  recovery_codes_total: number;
+  /** Every account must use it. */
+  required: boolean;
+  /** False on a development server, where a setup would not work on the live CMS. */
+  can_enrol: boolean;
+};
+/** What the setup screen shows: the QR code as a picture, and the same key for typing in by hand. */
+export type TwoFactorSetup = { secret: string; otpauth_url: string; qr_data_url: string };
+
 export const apiRequest = async <T>(requestPath: string, options: RequestOptions = {}) => {
   const token = authToken();
   const method = (options.method ?? 'GET').toUpperCase();
@@ -241,13 +258,27 @@ export const api = {
     get: () => apiRequest<CurrencyApiState>('/currencies')
   },
   auth: {
+    // A correct password answers with a session, or with the step that is due first.
     login: (body: { email: string; password: string }) =>
-      apiRequest<{ token: string; user: { name: string; email: string; role: string }; expiresIn: string }>('/auth/login', {
+      apiRequest<AdminSession | TwoFactorChallenge>('/auth/login', {
         method: 'POST',
         body
       }),
     logout: () => apiRequest('/auth/logout', { method: 'POST' }),
-    me: () => apiRequest('/auth/me')
+    me: () => apiRequest('/auth/me'),
+    // Two-step sign-in (a code from an authenticator app).
+    verifyTwoFactor: (body: { challenge: string; code: string }) =>
+      apiRequest<AdminSession & { recovery_codes_left?: number }>('/auth/2fa/verify', { method: 'POST', body }),
+    twoFactor: () => apiRequest<TwoFactorStatus>('/auth/2fa'),
+    twoFactorSetup: (body: { challenge?: string; password?: string }) =>
+      apiRequest<TwoFactorSetup>('/auth/2fa/setup', { method: 'POST', body }),
+    twoFactorEnable: (body: { challenge?: string; code: string }) =>
+      apiRequest<{ recovery_codes: string[] } & Partial<AdminSession>>('/auth/2fa/enable', { method: 'POST', body }),
+    twoFactorDisable: (body: { password: string; code: string }) =>
+      apiRequest<{ required: boolean }>('/auth/2fa/disable', { method: 'POST', body }),
+    twoFactorRecoveryCodes: (body: { code: string }) =>
+      apiRequest<{ recovery_codes: string[] }>('/auth/2fa/recovery-codes', { method: 'POST', body }),
+    twoFactorPolicy: (required: boolean) => apiRequest<{ required: boolean }>('/auth/2fa/policy', { method: 'PUT', body: { required } })
   },
   users: {
     list: (params?: Record<string, QueryValue>) => apiRequest<Paginated<Record<string, unknown>>>(`/users${queryString(params)}`),
@@ -256,7 +287,10 @@ export const api = {
     update: (id: string, body: Record<string, unknown>) => apiRequest(`/users/${id}`, { method: 'PUT', body }),
     updateStatus: (id: string, body: Record<string, unknown>) => apiRequest(`/users/${id}/status`, { method: 'PUT', body }),
     updatePassword: (id: string, body: Record<string, unknown>) => apiRequest(`/users/${id}/password`, { method: 'PUT', body }),
-    remove: (id: string) => apiRequest(`/users/${id}`, { method: 'DELETE' })
+    remove: (id: string) => apiRequest(`/users/${id}`, { method: 'DELETE' }),
+    // Which accounts have two-step sign-in on: id → when it was turned on.
+    twoFactor: () => apiRequest<Record<string, string>>('/users/two-factor'),
+    resetTwoFactor: (id: string) => apiRequest(`/users/${id}/two-factor`, { method: 'DELETE' })
   },
   roles: {
     list: () => apiRequest<Array<{ role: string; permissions: string[] }>>('/roles'),

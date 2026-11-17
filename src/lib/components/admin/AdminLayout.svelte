@@ -27,7 +27,8 @@
     }
   };
 
-  const logout = async (reason?: string) => {
+  // The Logout button calls this with its click event, so only a real reason goes into the address.
+  const logout = async (reason?: string | Event) => {
     try {
       await api.auth.logout();
     } catch {
@@ -37,7 +38,7 @@
     localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_user');
     localStorage.removeItem('admin_permissions');
-    await goto(reason ? `/admin/login?reason=${reason}` : '/admin/login');
+    await goto(typeof reason === 'string' && reason ? `/admin/login?reason=${reason}` : '/admin/login');
   };
 
   onMount(loadUser);

@@ -2,7 +2,7 @@
   import { cdnUrl } from '$lib/img';
   import { onMount } from 'svelte';
   import { scale } from 'svelte/transition';
-  import { Bell, ChevronDown, LogOut, Mail, Menu, PanelLeftClose, PanelLeftOpen, ShieldCheck } from '@lucide/svelte';
+  import { Bell, ChevronDown, ChevronRight, KeyRound, LogOut, Mail, Menu, PanelLeftClose, PanelLeftOpen, ShieldCheck } from '@lucide/svelte';
 
   type AdminUser = {
     avatar_url?: string;
@@ -128,6 +128,19 @@
                   <p class="truncate text-sm font-semibold capitalize text-ink">{roleLabel}</p>
                 </div>
               </div>
+
+              <!-- Two-step sign-in and recovery codes: every role manages its own. -->
+              <a
+                class="flex items-center gap-3 rounded-2xl border border-ink/10 px-3 py-2.5 transition hover:border-forest/30 hover:bg-sand/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/25"
+                href="/admin/security"
+              >
+                <KeyRound size={16} class="shrink-0 text-forest" />
+                <span class="min-w-0 flex-1">
+                  <span class="block text-sm font-semibold text-ink">Sign-in security</span>
+                  <span class="block truncate text-xs text-ink/55">Two-step sign-in with an authenticator app</span>
+                </span>
+                <ChevronRight size={15} class="shrink-0 text-ink/40" />
+              </a>
 
               <button
                 class="mt-1 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-surface text-sm font-semibold text-red-700 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200"

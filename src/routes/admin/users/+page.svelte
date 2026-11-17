@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
-  import { Edit, KeyRound, Plus, Power, Search, ShieldCheck, Trash2, UserPlus, X } from '@lucide/svelte';
+  import { Edit, KeyRound, Plus, Power, Search, ShieldCheck, ShieldOff, Trash2, UserPlus, X } from '@lucide/svelte';
   import { api } from '$lib/api/client';
   import AdminButton from '$lib/components/admin/AdminButton.svelte';
   import AdminEmptyState from '$lib/components/admin/AdminEmptyState.svelte';
@@ -56,6 +56,10 @@
   let confirmOpen = false;
   let toDelete: User | null = null;
   let newPassword = '';
+  // Which accounts have two-step sign-in on: id → when it was turned on.
+  let twoFactor: Record<string, string> = {};
+  let toReset: User | null = null;
+  let resetting = false;
 
   const emptyForm = () => ({ full_name: '', email: '', password: '', phone: '', avatar_url: '', role: 'viewer', is_active: true });
   let form = emptyForm();
@@ -86,6 +90,8 @@
     try {
       const res = await api.users.list({ search, role: roleFilter, is_active: statusFilter === 'all' ? undefined : statusFilter, limit: 200 });
       rows = res.data.items as unknown as User[];
+      // Shown as a badge. If it cannot be read the list still loads, without badges.
+      twoFactor = await api.users.twoFactor().then((r) => r.data ?? {}).catch(() => ({}));
     } catch (err) {
       error = err instanceof Error ? err.message : 'Unable to load admin users.';
     } finally {
@@ -161,6 +167,26 @@
       showToast(err instanceof Error ? err.message : 'Unable to update password.', 'error');
     } finally {
       savingPassword = false;
+    }
+  };
+
+  /**
+   * For someone who cannot get in: a lost phone and no recovery codes left.
+   * Their password is untouched; with two-step sign-in off they sign in with it
+   * and can set the app up again.
+   */
+  const confirmReset = async () => {
+    if (!toReset) return;
+    resetting = true;
+    try {
+      await api.users.resetTwoFactor(toReset.id);
+      showToast('Two-step sign-in was reset for this account.');
+      toReset = null;
+      await load();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Unable to reset two-step sign-in.', 'error');
+    } finally {
+      resetting = false;
     }
   };
 
@@ -265,6 +291,11 @@
                   {:else}
                     <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-slate-200">Inactive</span>
                   {/if}
+                  {#if twoFactor[u.id]}
+                    <span class="ml-1 inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-bold text-sky-700 ring-1 ring-sky-200/70" title={`Two-step sign-in on since ${fmtDate(twoFactor[u.id])}`}>
+                      <ShieldCheck size={11} />2-step
+                    </span>
+                  {/if}
                 </td>
                 <td class="px-4 py-3 text-ink/65">{fmtDate(u.last_login_at)}</td>
                 <td class="px-4 py-3">
@@ -272,6 +303,10 @@
                     {#if canManage(u)}
                       <button class="grid h-9 w-9 place-items-center rounded-xl border border-ink/10 bg-surface text-ink/70 shadow-sm transition hover:border-goldfinch-gold/35 hover:bg-sand/70" type="button" aria-label="Edit" on:click={() => openEdit(u)}><Edit size={15} /></button>
                       <button class="grid h-9 w-9 place-items-center rounded-xl border border-ink/10 bg-surface text-ink/70 shadow-sm transition hover:border-goldfinch-gold/35 hover:bg-sand/70" type="button" aria-label="Change password" on:click={() => openPassword(u)}><KeyRound size={15} /></button>
+                      {#if twoFactor[u.id] && !isSelf(u)}
+                        <!-- Your own is turned off from Sign-in security, with your password and a code. -->
+                        <button class="grid h-9 w-9 place-items-center rounded-xl border border-ink/10 bg-surface text-ink/70 shadow-sm transition hover:border-goldfinch-gold/35 hover:bg-sand/70" type="button" aria-label="Reset two-step sign-in" title="Reset two-step sign-in" on:click={() => (toReset = u)}><ShieldOff size={15} /></button>
+                      {/if}
                       <button class={`grid h-9 w-9 place-items-center rounded-xl border bg-surface shadow-sm transition ${u.is_active ? 'border-amber-200 text-amber-600 hover:bg-amber-50' : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'}`} type="button" aria-label={u.is_active ? 'Deactivate' : 'Activate'} on:click={() => toggleStatus(u)}><Power size={15} /></button>
                       <button class="grid h-9 w-9 place-items-center rounded-xl border border-red-200 bg-surface text-red-600 shadow-sm transition hover:bg-red-50 disabled:opacity-30" type="button" aria-label="Delete" disabled={isSelf(u)} on:click={() => openDelete(u)}><Trash2 size={15} /></button>
                     {:else}
@@ -359,6 +394,14 @@
   message={`Remove "${toDelete?.full_name ?? 'this user'}"? This soft-deletes the account and revokes access.`}
   on:cancel={() => { confirmOpen = false; toDelete = null; }}
   on:confirm={confirmDelete}
+/>
+
+<ConfirmModal
+  open={!!toReset && !resetting}
+  title="Reset two-step sign-in"
+  message={`Turn two-step sign-in off for "${toReset?.full_name ?? 'this user'}"? Use this when they have lost their phone. They will sign in with their password alone until they set it up again.`}
+  on:cancel={() => (toReset = null)}
+  on:confirm={confirmReset}
 />
 
 {#if deleting}
