@@ -1,5 +1,6 @@
 <script lang="ts">
   import { cdnUrl } from '$lib/img';
+  import { twoFactorStatus } from '$lib/twoFactorStatus';
   import { onMount } from 'svelte';
   import { scale } from 'svelte/transition';
   import { Bell, ChevronDown, ChevronRight, KeyRound, LogOut, Mail, Menu, PanelLeftClose, PanelLeftOpen, ShieldCheck } from '@lucide/svelte';
@@ -112,7 +113,8 @@
               </div>
             </div>
 
-            <div class="grid gap-2 p-3">
+            <!-- One column that may shrink: a long email or label is cut short inside its row, never pushed past the menu's edge. -->
+            <div class="grid grid-cols-[minmax(0,1fr)] gap-2 p-3">
               <div class="flex items-center gap-3 rounded-2xl bg-sand/45 px-3 py-2.5">
                 <Mail size={16} class="shrink-0 text-forest" />
                 <div class="min-w-0">
@@ -137,7 +139,13 @@
                 <KeyRound size={16} class="shrink-0 text-forest" />
                 <span class="min-w-0 flex-1">
                   <span class="block text-sm font-semibold text-ink">Sign-in security</span>
-                  <span class="block truncate text-xs text-ink/55">Two-step sign-in with an authenticator app</span>
+                  <span class="block text-xs leading-4 text-ink/55">
+                    {#if $twoFactorStatus}
+                      Two-step sign-in is {$twoFactorStatus.enabled ? 'on' : 'off'}
+                    {:else}
+                      Two-step sign-in
+                    {/if}
+                  </span>
                 </span>
                 <ChevronRight size={15} class="shrink-0 text-ink/40" />
               </a>

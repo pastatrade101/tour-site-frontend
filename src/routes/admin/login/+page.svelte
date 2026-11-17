@@ -9,6 +9,7 @@
   import LoginSlider from '$lib/components/admin/LoginSlider.svelte';
   import RecoveryCodes from '$lib/components/admin/RecoveryCodes.svelte';
   import TwoFactorSetupGuide from '$lib/components/admin/TwoFactorSetupGuide.svelte';
+  import { TWO_STEP_LATER_KEY } from '$lib/twoFactorStatus';
 
   type Slide = { image_url: string; title?: string; subtitle?: string };
 
@@ -62,6 +63,8 @@
     localStorage.setItem('admin_token', session.token);
     localStorage.setItem('admin_user', JSON.stringify(session.user));
     localStorage.setItem('admin_permissions', JSON.stringify(session.user.role === 'super_admin' ? ['*'] : []));
+    // A new sign-in: the reminder to turn two-step sign-in on may be shown again.
+    localStorage.removeItem(TWO_STEP_LATER_KEY);
   };
 
   /** Back to the email and password, with nothing of the unfinished attempt kept. */

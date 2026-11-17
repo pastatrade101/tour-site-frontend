@@ -10,6 +10,7 @@
   import ToastStack from '$lib/components/admin/ToastStack.svelte';
   import TwoFactorSetupGuide from '$lib/components/admin/TwoFactorSetupGuide.svelte';
   import LoadingState from '$lib/components/public/LoadingState.svelte';
+  import { twoFactorStatus } from '$lib/twoFactorStatus';
 
   /**
    * Sign-in security: the signed-in account's own two-step sign-in, and, for a
@@ -38,10 +39,12 @@
   let role = '';
   let email = '';
   let savingPolicy = false;
-  let confirmPolicy = false;
+  let confirmPolicy: 'on' | 'off' | null = null;
   let toasts: Toast[] = [];
 
   $: isSuperAdmin = role === 'super_admin';
+  // The CMS shell shows a reminder and the state in the profile menu: keep them in step with this page.
+  $: if (status) twoFactorStatus.set(status);
 
   const showToast = (message: string, type: Toast['type'] = 'success') => {
     const id = crypto.randomUUID();
@@ -137,7 +140,7 @@
     });
 
   const setPolicy = async (required: boolean) => {
-    confirmPolicy = false;
+    confirmPolicy = null;
     savingPolicy = true;
     try {
       await api.auth.twoFactorPolicy(required);
@@ -150,10 +153,10 @@
     }
   };
 
+  // Both directions are confirmed: on asks something of the whole team, off takes a protection away.
   const togglePolicy = () => {
     if (!status) return;
-    if (status.required) setPolicy(false);
-    else confirmPolicy = true;
+    confirmPolicy = status.required ? 'off' : 'on';
   };
 
   onMount(() => {
@@ -336,7 +339,7 @@
             <div class="min-w-0">
               <h2 class="text-lg font-bold text-ink">Require it for every account</h2>
               <p class="mt-0.5 max-w-xl text-sm leading-6 text-ink/60">
-                Anyone who has not set it up is asked to, the next time they sign in, before the CMS opens. Accounts that already use it are not affected.
+                Anyone who has not set it up is asked to, the next time they sign in, before the CMS opens. This is on unless you switch it off.
               </p>
             </div>
           </div>
@@ -367,11 +370,13 @@
 </div>
 
 <ConfirmModal
-  open={confirmPolicy}
-  title="Require two-step sign-in for every account?"
-  message="Everyone who has not set it up will be asked to scan a QR code with an authenticator app the next time they sign in. Tell your team before you turn this on."
-  on:cancel={() => (confirmPolicy = false)}
-  on:confirm={() => setPolicy(true)}
+  open={confirmPolicy !== null}
+  title={confirmPolicy === 'off' ? 'Make two-step sign-in optional?' : 'Require two-step sign-in for every account?'}
+  message={confirmPolicy === 'off'
+    ? 'Accounts that have not set it up will open the CMS with a password alone. Accounts that already use it keep it.'
+    : 'Everyone who has not set it up will be asked to scan a QR code with an authenticator app the next time they sign in. Tell your team before you turn this on.'}
+  on:cancel={() => (confirmPolicy = null)}
+  on:confirm={() => setPolicy(confirmPolicy === 'on')}
 />
 
 <style>

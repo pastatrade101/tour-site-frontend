@@ -399,7 +399,7 @@
 <ConfirmModal
   open={!!toReset && !resetting}
   title="Reset two-step sign-in"
-  message={`Turn two-step sign-in off for "${toReset?.full_name ?? 'this user'}"? Use this when they have lost their phone. They will sign in with their password alone until they set it up again.`}
+  message={`Turn two-step sign-in off for "${toReset?.full_name ?? 'this user'}"? Use this when they have lost their phone. They sign in with their password and set it up again with a new QR code.`}
   on:cancel={() => (toReset = null)}
   on:confirm={confirmReset}
 />
