@@ -2,8 +2,8 @@ import { isEnquiryEmail, isEnquiryPhoneFor } from './validation';
 /** Data shared by the inline category/package enquiry; delivery stays on /bookings. */
 export type PlannerField = 'route' | 'days' | 'travelDate' | 'adults' | 'children' | 'language' | 'fullName' | 'email' | 'phone';
 export type PlannerValues = {
-  days: number | undefined; daysUnsure: boolean; travelDate: string; dateUnsure: boolean;
   // null when a number box is cleared (Svelte's bind:value), undefined before it is touched.
+  days: number | null | undefined; daysUnsure: boolean; travelDate: string; dateUnsure: boolean;
   adults: number | null | undefined; children: number | null | undefined; language: string;
   comfort: string; beach: string; fullName: string; email: string; phone: string;
   dialCode: string; specialRequests: string; whatsappOptIn: boolean; route: string; hp: string;

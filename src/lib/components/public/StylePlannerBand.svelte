@@ -9,6 +9,7 @@
   import { publicSettings, settingText } from '$lib/settings';
   import TripDatePicker from './TripDatePicker.svelte';
   import TripPhoneInput from './TripPhoneInput.svelte';
+  import CountStepper from './CountStepper.svelte';
   import { plannerProblems, plannerPayload, type PlannerValues, type PlannerField } from '$lib/enquiry/stylePlanner';
   import { loadDraft, saveDraft, clearDraft } from '$lib/enquiry/draft';
 
@@ -21,6 +22,13 @@
   export let packageSlug = '';
   export let routeOptions: Array<{ label: string; tourTitle: string; tourSlug: string; tourDays?: number | null }> = [];
   export let suggestedRoute = '';
+  /**
+   * `band` lays the heading beside the fields across a page-wide panel.
+   * `hero` is the same form as a narrow card, for sitting beside a headline.
+   */
+  export let layout: 'band' | 'hero' = 'band';
+  /** A usual length for this kind of trip: where the empty days count begins. */
+  export let daysStart: number | undefined = undefined;
 
   const LANGUAGES = [
     { code: 'en', label: 'English' }, { code: 'sw', label: 'Kiswahili' },
@@ -51,7 +59,7 @@
   let idempotencyKey = '';
   let values: PlannerValues = {
     days: undefined, daysUnsure: false, travelDate: '', dateUnsure: false,
-    adults: undefined, children: undefined, language: $locale, comfort: '', beach: '',
+    adults: 2, children: 0, language: $locale, comfort: '', beach: '',
     fullName: '', email: '', phone: '', dialCode: '+255', specialRequests: '',
     whatsappOptIn: false, route: '', hp: ''
   };
@@ -181,11 +189,14 @@
     const field = Object.keys(errors)[0];
     if (!field) return true;
     await tick();
-    stepFields?.querySelector<HTMLElement>(`[data-field="${field}"]`)?.querySelector<HTMLElement>('input, select, button')?.focus();
+    const holder = stepFields?.querySelector<HTMLElement>(`[data-field="${field}"]`);
+    (holder?.querySelector<HTMLElement>('[data-focus]') ?? holder?.querySelector<HTMLElement>('input, select, button'))?.focus();
     tracker.invalid(STEP_KEYS[index - 1], field);
     return false;
   }
-  async function focusStep() { await tick(); stepHeading?.scrollIntoView({ block: 'start' }); stepHeading?.focus({ preventScroll: true }); }
+  async function focusStep() { await tick(); stepHeading?.scrollIntoView({ block: layout === 'hero' ? 'nearest' : 'start' }); stepHeading?.focus({ preventScroll: true }); }
+  // A press of plus or minus is an answer too, but not an `input` event the form would hear.
+  const counted = (field: PlannerField) => { if (field === 'days') daysTouched = true; clearError(field); tracker.started(); };
   async function next() { if (submitting || !(await validate(step))) return; formError = ''; tracker.step(step - 1, STEP_KEYS[step - 1]); step += 1; await focusStep(); }
   async function back() { formError = ''; errors = {}; step -= 1; await focusStep(); }
   async function submit() {
@@ -217,13 +228,14 @@
   $: if (draftReady && !submitted) keepDraft(values, step, daysTouched);
 </script>
 
-<section bind:this={root} class="enquiry-band bg-surface" aria-label={title}>
-  <div class="container-shell">
+<section bind:this={root} class="enquiry-band" class:bg-surface={layout === 'band'} class:hero={layout === 'hero'} aria-label={title}>
+  <div class:container-shell={layout === 'band'}>
     <div class="planner-panel">
       <div class="planner-intro">
         <p class="eyebrow">{eyebrow || $t('ui.plan_this_safari')}</p>
         <h2>{title}</h2>
-        {#if description}<p class="intro-copy">{description}</p>{/if}
+        <!-- In the card the invitation is for the first step; after that the room goes to the questions. -->
+        {#if description && (layout === 'band' || (step === 1 && !submitted))}<p class="intro-copy">{description}</p>{/if}
       </div>
       <div class="planner-form">
         {#if submitted}
@@ -235,7 +247,8 @@
         {:else}
           <form novalidate on:input={() => tracker.started()} on:change={() => tracker.started()} on:submit|preventDefault={step === 3 ? submit : next}>
             <input type="text" hidden tabindex="-1" autocomplete="off" aria-hidden="true" name="gf-x1" bind:value={values.hp} />
-            <p class="step-heading" bind:this={stepHeading} tabindex="-1" aria-live="polite"><span>{step} / 3</span> · {$t(STEP_KEYS[step - 1])}</p>
+            <div class="progress" aria-hidden="true">{#each STEP_KEYS as key, index (key)}<span class:reached={index < step}></span>{/each}</div>
+            <p class="step-heading" bind:this={stepHeading} tabindex="-1" aria-live="polite"><span>{$t('ui.step_x_of_y').replace('{step}', String(step)).replace('{total}', String(STEP_KEYS.length))}</span> · {$t(STEP_KEYS[step - 1])}</p>
             <div bind:this={stepFields}>
               {#if step === 1}
                 {#if hasRouteOptions}
@@ -249,10 +262,10 @@
                     {#if errors.route}<p class="field-error" id={errorId('route')}>{$t(errors.route)}</p>{/if}
                   </div>
                 {/if}
-                <div class="fields two-columns">
+                <div class="fields two-columns trip-fields">
                   <div class="field" data-field="days">
                     <label for={`${uid}-days`}>{$t('style_form.safari_days')} <span class="required">*</span></label>
-                    <input id={`${uid}-days`} class="control" type="number" min="1" step="1" inputmode="numeric" bind:value={values.days} disabled={values.daysUnsure} on:input={() => { daysTouched = true; clearError('days'); }} aria-invalid={Boolean(errors.days)} aria-describedby={errors.days ? errorId('days') : undefined} />
+                    <CountStepper id={`${uid}-days`} label={$t('style_form.safari_days')} min={1} max={60} start={daysStart} bind:value={values.days} disabled={values.daysUnsure} invalid={Boolean(errors.days)} describedBy={errors.days ? errorId('days') : undefined} on:input={() => { daysTouched = true; clearError('days'); }} on:change={() => counted('days')} />
                     <label class="check"><input type="checkbox" bind:checked={values.daysUnsure} on:change={() => clearError('days')} /><span>{$t('ui.not_sure_yet')}</span></label>
                     {#if errors.days}<p class="field-error" id={errorId('days')}>{$t(errors.days)}</p>{/if}
                   </div>
@@ -264,15 +277,15 @@
                   </div>
                 </div>
               {:else if step === 2}
-                <div class="fields three-columns">
+                <div class="fields three-columns party-fields">
                   <div class="field" data-field="adults">
                     <label for={`${uid}-adults`}>{$t('form.adults')} <span class="required">*</span></label>
-                    <input id={`${uid}-adults`} class="control" type="number" min="1" step="1" inputmode="numeric" required bind:value={values.adults} on:input={() => clearError('adults')} aria-invalid={Boolean(errors.adults)} aria-describedby={errors.adults ? errorId('adults') : undefined} />
+                    <CountStepper id={`${uid}-adults`} label={$t('form.adults')} min={1} max={40} start={2} bind:value={values.adults} invalid={Boolean(errors.adults)} describedBy={errors.adults ? errorId('adults') : undefined} on:input={() => clearError('adults')} on:change={() => counted('adults')} />
                     {#if errors.adults}<p class="field-error" id={errorId('adults')}>{$t(errors.adults)}</p>{/if}
                   </div>
                   <div class="field" data-field="children">
                     <label for={`${uid}-children`}>{$t('style_form.children')} <span class="optional">({$t('ui.optional').toLowerCase()})</span></label>
-                    <input id={`${uid}-children`} class="control" type="number" min="0" step="1" inputmode="numeric" bind:value={values.children} on:input={() => clearError('children')} aria-invalid={Boolean(errors.children)} aria-describedby={errors.children ? errorId('children') : undefined} />
+                    <CountStepper id={`${uid}-children`} label={$t('style_form.children')} min={0} max={20} start={0} bind:value={values.children} invalid={Boolean(errors.children)} describedBy={errors.children ? errorId('children') : undefined} on:input={() => clearError('children')} on:change={() => counted('children')} />
                     {#if errors.children}<p class="field-error" id={errorId('children')}>{$t(errors.children)}</p>{/if}
                   </div>
                   <div class="field" data-field="language">
@@ -335,39 +348,49 @@
 <style>
   .step-heading { scroll-margin-top: 7rem; }
   .enquiry-band { padding-block: 40px; }
-  .planner-panel { position: relative; z-index: 2; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); align-items: center; gap: 44px; padding: 32px 36px; border-radius: 16px; background: rgb(var(--c-deep-green)); color: #fff; }
+  /* The panel's colours, named once: a layout that sits on a different surface restates these and nothing else. */
+  .planner-panel {
+    --pf-surface: rgb(var(--c-deep-green)); --pf-text: #fff; --pf-accent: rgb(var(--c-goldfinch-gold));
+    --pf-soft: #ffffffd9; --pf-label: #fffffff0; --pf-check: #ffffffeb; --pf-track: rgb(255 255 255 / .2);
+    --pf-border: rgb(var(--c-goldfinch-gold) / .45); --pf-focus: rgb(var(--c-goldfinch-gold));
+    --pf-invalid: #f2b8a6; --pf-error: #ffd0c0; --pf-link-hover: rgb(var(--c-gold-hover));
+  }
+  .planner-panel { position: relative; z-index: 2; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); align-items: center; gap: 44px; padding: 32px 36px; border-radius: 16px; background: var(--pf-surface); color: var(--pf-text); }
   .planner-intro, .planner-form { min-width: 0; }
-  .eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: rgb(var(--c-goldfinch-gold)); }
+  .eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--pf-accent); }
   h2 { margin-top: 12px; font-family: "Source Serif 4", Georgia, serif; font-size: clamp(28px, 2.5vw, 40px); line-height: 1.12; font-weight: 400; }
-  .intro-copy { margin-top: 16px; font-size: 16px; line-height: 1.55; color: #ffffffd9; }
+  .intro-copy { margin-top: 16px; font-size: 16px; line-height: 1.55; color: var(--pf-soft); }
+  .progress { display: flex; gap: 6px; margin-bottom: 12px; }
+  .progress span { flex: 1 1 0; max-width: 72px; height: 4px; border-radius: 999px; background: var(--pf-track); transition: background-color 240ms ease; }
+  .progress .reached { background: rgb(var(--c-goldfinch-gold)); }
   .step-heading { margin-bottom: 18px; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; outline: none; }
   .step-heading span { font-weight: 600; }
   .fields { display: grid; gap: 16px; align-items: start; }
   .two-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .three-columns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .field, fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
-  .field > label:not(.check), .field-label, legend { display: block; margin-bottom: 7px; font-size: 10.5px; letter-spacing: .07em; line-height: 1.4; text-transform: uppercase; color: #fffffff0; }
+  .field > label:not(.check), .field-label, legend { display: block; margin-bottom: 7px; font-size: 10.5px; letter-spacing: .07em; line-height: 1.4; text-transform: uppercase; color: var(--pf-label); }
   .optional { text-transform: none; letter-spacing: 0; }
-  .required { color: rgb(var(--c-goldfinch-gold)); }
-  .control, .planner-form :global(.gf-input) { width: 100%; min-width: 0; border: 1px solid rgb(var(--c-goldfinch-gold) / .45); border-radius: 5px; background-color: #fff; color: rgb(var(--c-deep-green)); font-size: 14px; }
+  .required { color: var(--pf-accent); }
+  .control, .planner-form :global(.gf-input) { width: 100%; min-width: 0; border: 1px solid var(--pf-border); border-radius: 5px; background-color: #fff; color: rgb(var(--c-deep-green)); font-size: 14px; }
   .control { height: 46px; padding: 10px 14px; outline: none; }
   .planner-form :global(.date-trigger), .planner-form :global(.phone-row .gf-input) { height: 46px; }
   .planner-form :global(.date-trigger) { background: #fcfaf4; padding-inline: 14px; }
   .control::placeholder, .planner-form :global(input::placeholder) { color: rgb(57 61 50 / 0.42); opacity: 1; }
-  .control:focus, .planner-form :global(.gf-input:focus-visible) { outline: 2px solid rgb(var(--c-goldfinch-gold)); outline-offset: 2px; }
+  .control:focus, .planner-form :global(.gf-input:focus-visible) { outline: 2px solid var(--pf-focus); outline-offset: 2px; }
   .control:disabled, .planner-form :global(.date-trigger:disabled) { background: #e6e6df; opacity: .65; cursor: default; }
-  .planner-form :global(.date-trigger[data-invalid='true']), .control[aria-invalid='true'], .planner-form :global(.gf-input[aria-invalid='true']) { border-color: #f2b8a6; outline: 2px solid #f2b8a6; }
+  .planner-form :global(.date-trigger[data-invalid='true']), .control[aria-invalid='true'], .planner-form :global(.gf-input[aria-invalid='true']) { border-color: var(--pf-invalid); outline: 2px solid var(--pf-invalid); }
   .select-wrap { position: relative; display: block; }
   .select-wrap select { appearance: none; padding-right: 32px; background-image: none; }
   .select-wrap :global(svg) { position: absolute; right: 12px; top: 15px; pointer-events: none; color: rgb(var(--c-deep-green)); }
-  .check { display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; cursor: pointer; font-size: 12px; line-height: 1.5; color: #ffffffeb; }
+  .check { display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; cursor: pointer; font-size: 12px; line-height: 1.5; color: var(--pf-check); }
   .check input { flex-shrink: 0; width: 18px; height: 18px; margin-top: 0; accent-color: rgb(var(--c-goldfinch-gold)); }
   .preferences, .requests { margin-top: 18px; }
   /* Choices wrap instead of overflowing: long words (German, a larger default
      font) break inside their box, and a choice that no longer fits moves to a
      full-width row. The 1px gap over the grey background draws the dividers
      wherever the choices land. */
-  .choices { display: flex; flex-wrap: wrap; gap: 1px; min-height: 46px; border: 1px solid rgb(var(--c-goldfinch-gold) / .45); border-radius: 5px; background: #dedbd2; color: rgb(var(--c-deep-green)); overflow: hidden; }
+  .choices { display: flex; flex-wrap: wrap; gap: 1px; min-height: 46px; border: 1px solid var(--pf-border); border-radius: 5px; background: #dedbd2; color: rgb(var(--c-deep-green)); overflow: hidden; }
   .choices label { display: flex; flex: 1 1 7rem; align-items: center; justify-content: center; min-width: 0; gap: 7px; padding: 10px 8px; background: #fff; font-size: 11px; line-height: 1.3; cursor: pointer; }
   .choices label span { min-width: 0; overflow-wrap: anywhere; hyphens: auto; }
   .choices input { flex-shrink: 0; width: 16px; height: 16px; accent-color: rgb(var(--c-goldfinch-gold)); }
@@ -377,19 +400,49 @@
   .route-field { margin-bottom: 16px; }
   .actions { display: flex; justify-content: flex-end; align-items: center; gap: 24px; margin-top: 16px; }
   .actions button { display: inline-flex; justify-content: center; align-items: center; gap: 12px; min-height: 44px; font-size: 12px; }
-  .back { padding: 8px 0; color: #fff; }
+  .back { padding: 8px 0; color: var(--pf-text); }
   .next { padding: 12px 23px; background: rgb(var(--c-goldfinch-gold)); border: 1px solid rgb(var(--c-goldfinch-gold)); border-radius: 6px; color: rgb(var(--c-deep-green)); font-weight: 600; letter-spacing: .07em; text-transform: uppercase; }
   .next:hover { background: rgb(var(--c-gold-hover)); }
   button:disabled { opacity: .6; cursor: wait; }
-  button:focus-visible, a:focus-visible { outline: 2px solid rgb(var(--c-goldfinch-gold)); outline-offset: 4px; }
-  .whatsapp { display: flex; justify-content: flex-end; align-items: center; gap: 9px; margin-top: 13px; font-size: 12px; line-height: 1.4; color: #fffffff0; }
-  .whatsapp:hover { color: rgb(var(--c-gold-hover)); }
-  .field-error { margin-top: 7px; font-size: 12px; line-height: 1.45; color: #ffd0c0; }
-  .form-error { margin-top: 16px; padding: 12px; border: 1px solid #f2b8a6; border-radius: 6px; font-size: 14px; }
-  .confirmation { padding: 24px; border: 1px solid rgb(var(--c-goldfinch-gold) / .4); border-radius: 10px; outline: none; }
+  button:focus-visible, a:focus-visible { outline: 2px solid var(--pf-focus); outline-offset: 4px; }
+  .whatsapp { display: flex; justify-content: flex-end; align-items: center; gap: 9px; margin-top: 13px; font-size: 12px; line-height: 1.4; color: var(--pf-label); }
+  .whatsapp:hover { color: var(--pf-link-hover); }
+  .field-error { margin-top: 7px; font-size: 12px; line-height: 1.45; color: var(--pf-error); }
+  .form-error { margin-top: 16px; padding: 12px; border: 1px solid var(--pf-invalid); border-radius: 6px; font-size: 14px; }
+  .confirmation { padding: 24px; border: 1px solid var(--pf-border); border-radius: 10px; outline: none; }
   .confirmation h3 { font-family: Georgia, serif; font-size: 28px; }
   .confirmation p { margin-top: 12px; line-height: 1.6; }
-  .confirmation strong { color: rgb(var(--c-goldfinch-gold)); }
+  .confirmation strong { color: var(--pf-accent); }
+  /* The same form as a card beside a headline: one narrow column, the heading
+     on top, and the paired answers (adults and children, name and email) kept
+     side by side so the card stays short enough to be seen whole. */
+  .hero.enquiry-band { padding-block: 0; }
+  /* White glass over the photograph. The colours are stated outright rather
+     than taken from the theme's text tokens: those turn light in dark mode,
+     and this card stays white in both. */
+  .hero .planner-panel {
+    --pf-surface: linear-gradient(165deg, rgb(255 255 255 / .94), rgb(255 255 255 / .84)); --pf-text: rgb(var(--c-deep-green)); --pf-accent: #aa3d1d;
+    --pf-soft: rgb(var(--c-deep-green) / .82); --pf-label: rgb(var(--c-deep-green) / .9); --pf-check: rgb(var(--c-deep-green) / .92);
+    --pf-track: rgb(var(--c-deep-green) / .16); --pf-border: rgb(var(--c-deep-green) / .24); --pf-focus: rgb(var(--c-deep-green));
+    --pf-invalid: #c9543c; --pf-error: #a3301b; --pf-link-hover: #aa3d1d;
+    grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 26px 28px 22px;
+    border: 1px solid rgb(255 255 255 / .65); box-shadow: 0 28px 70px rgb(0 0 0 / .32), inset 0 1px 0 rgb(255 255 255 / .85);
+    -webkit-backdrop-filter: blur(22px) saturate(1.6); backdrop-filter: blur(22px) saturate(1.6);
+  }
+  /* Without the blur the photograph would show through the words, so the card turns nearly solid. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .hero .planner-panel { --pf-surface: rgb(255 255 255 / .96); }
+  }
+  .hero h2 { max-width: none; margin-top: 8px; font-size: 26px; }
+  .hero .intro-copy { max-width: none; margin-top: 8px; font-size: 14px; line-height: 1.5; }
+  .hero .progress span { max-width: none; }
+  .hero .step-heading { margin-bottom: 16px; font-size: 12px; }
+  .hero .trip-fields, .hero .preferences { grid-template-columns: minmax(0, 1fr); }
+  .hero .party-fields, .hero .contact-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero .party-fields .field:last-child, .hero .contact-fields .field:last-child { grid-column: 1 / -1; }
+  .hero .preferences, .hero .requests { margin-top: 16px; }
+  .hero .next { flex: 1; }
+  .hero .whatsapp { justify-content: center; text-align: center; }
   @media (max-width: 1100px) {
     .planner-panel { grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr); gap: 28px; padding: 28px; }
     .contact-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -408,6 +461,12 @@
     .two-columns, .three-columns { grid-template-columns: minmax(0, 1fr); }
     .fields { gap: 18px; }
     .control, .planner-form :global(.phone-row .gf-input), .planner-form :global(.date-trigger) { font-size: 16px; height: 48px; }
+    .planner-form { --stepper-height: 48px; --stepper-font-size: 16px; }
+    .hero .planner-panel { gap: 16px; padding: 22px 18px 18px; }
+    .hero h2 { font-size: 24px; }
+    /* On a phone the page's own introduction sits right above the card; the room goes to the first questions. */
+    .hero .intro-copy { display: none; }
+    .hero .contact-fields { grid-template-columns: minmax(0, 1fr); }
     .choices label { font-size: 12px; padding-block: 13px; }
     .step-heading { font-size: 12px; letter-spacing: .065em; }
     .actions { gap: 20px; }

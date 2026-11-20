@@ -213,6 +213,9 @@
 
   // Page CTAs stay with this enquiry; the global planner keeps its own context.
   const planHref = '#lead-form';
+  // Where the form's empty "safari days" count begins: the middle length of this style's own published trips.
+  $: tripLengths = tours.map((tour) => Number(tour.duration_days ?? 0)).filter((days) => Number.isInteger(days) && days > 0).sort((a, b) => a - b);
+  $: typicalDays = tripLengths.length ? tripLengths[Math.floor((tripLengths.length - 1) / 2)] : undefined;
   $: fullPlannerHref = planTripHref({ name: category?.name, slug: category?.slug, from: `safari style: ${category?.slug ?? ''}` });
   // The top bar's and footer's "Plan My Trip" open the planner for this style too.
   $: plannerHref.set(fullPlannerHref);
@@ -268,45 +271,69 @@
   {#if categorySchema}<JsonLd data={categorySchema} />{/if}
 
   <!-- 2 · Hero -->
-  <!-- The words sit along the bottom edge rather than through the middle, so
-       the photograph is only read against its own foreground. `min-h`, not a
-       fixed height: a long headline on a narrow screen grows the band instead
-       of spilling out of it. -->
-  <section data-hero class="relative isolate flex min-h-[560px] items-end overflow-hidden bg-deep-green md:min-h-[640px] lg:min-h-[720px]">
-    {#if category.image_url}
-      <!-- Anchored to the top, so a landscape photo in a shorter frame loses
-           ground rather than the faces in the upper half of it. -->
-      <Img record={category} fields={['image_url']} alt="" width={1920} sizes="100vw" eager className="absolute inset-0 h-full w-full object-cover object-top" />
-    {/if}
-    <!-- Weighted to the bottom for the same reason: enough behind the text to
-         read it, next to nothing over the top of the picture. -->
-    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/5"></div>
-    <div class="container-shell relative w-full pb-14 pt-24 md:pb-16 md:pt-28">
-      <div class="max-w-2xl text-white">
-        <span class="inline-flex items-center rounded-md bg-white/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white ring-1 ring-white/25 backdrop-blur">{landing.hero.eyebrow}</span>
-        <h1 class="mt-5 font-serif text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl">{landing.hero.headline}</h1>
-        <p class="mt-5 max-w-xl text-base leading-relaxed text-white/90 md:text-lg">{landing.hero.subheadline}</p>
-        <div class="mt-7 flex flex-col gap-3 sm:flex-row">
-          <!-- Opens the trip planner rather than scrolling to it: the ask is
-               "plan my trip", and a jump down the page is not an answer. -->
-          <a href={planHref} on:click={() => planClick('style_hero', landing.hero.primaryCtaLabel)} class="inline-flex items-center justify-center rounded-md bg-goldfinch-gold px-5 py-3 text-sm font-semibold text-heading transition hover:brightness-95">{landing.hero.primaryCtaLabel}</a>
-          <a href="#trip-ideas" class="inline-flex items-center justify-center rounded-md border border-white/35 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20">{landing.hero.secondaryCtaLabel}</a>
+  <!-- The headline and the enquiry form share the hero, so a visitor can
+       start planning without scrolling: side by side from a laptop up, the
+       headline first and the form straight under it on anything narrower.
+       The section itself does not clip — the form's calendar may open past
+       its bottom edge — so the photograph is clipped in its own box, and
+       z-10 keeps whatever opens out of the form above the sections below.
+       The minimum height is the form's tallest step plus the padding, so
+       moving between steps does not push the rest of the page down. -->
+  <section data-hero class="relative isolate z-10 bg-deep-green">
+    <!-- On a phone the photograph sits behind the headline only and fades
+         into the green the form stands on; stretched down the whole stacked
+         hero it would be an enlarged sliver of itself. -->
+    <div class="absolute inset-x-0 top-0 h-[520px] overflow-hidden lg:inset-0 lg:h-auto">
+      {#if category.image_url}
+        <!-- Anchored to the top, so a landscape photo in a shorter frame loses
+             ground rather than the faces in the upper half of it. -->
+        <Img record={category} fields={['image_url']} alt="" width={1920} sizes="100vw" eager className="absolute inset-0 h-full w-full object-cover object-top" />
+      {/if}
+      <div class="absolute inset-0 bg-gradient-to-t from-deep-green via-black/50 to-black/25 lg:from-black/80 lg:via-black/45 lg:to-black/15"></div>
+      <!-- Beside the form the words sit mid-height, so they get their own shade from the left. -->
+      <div class="absolute inset-0 hidden bg-gradient-to-r from-black/55 via-black/20 to-transparent lg:block"></div>
+    </div>
+    <div class="container-shell relative grid gap-8 py-10 md:py-12 lg:min-h-[700px] lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)] lg:items-center lg:gap-14 lg:py-14">
+      <!-- One column beside the form on a wide screen. Below that it dissolves
+           into the grid, so the form can sit between the headline and the rest. -->
+      <div class="contents text-white lg:block">
+        <div class="order-1 max-w-2xl">
+          <span class="inline-flex items-center rounded-md bg-white/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white ring-1 ring-white/25 backdrop-blur">{landing.hero.eyebrow}</span>
+          <h1 class="mt-5 font-serif text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-5xl xl:text-6xl">{landing.hero.headline}</h1>
+          <p class="mt-5 max-w-xl text-base leading-relaxed text-white/90 md:text-lg">{landing.hero.subheadline}</p>
         </div>
-        {#if trustItems.length}
-          <!-- Each item carries its own leading dot rather than sitting between
-               shared separators. Separators belong to the gaps, and a gap that
-               lands at a line break leaves a mark dangling off the end of one
-               line — this way every line starts on a dot and ends on a word,
-               at any width. -->
-          <ul class="mt-6 flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] leading-5 text-white/80 sm:gap-x-5 sm:text-sm">
-            {#each trustItems as item, index (index)}
-              <li class="flex items-center gap-2 whitespace-nowrap">
-                <span class="h-[5px] w-[5px] shrink-0 rounded-full bg-goldfinch-gold" aria-hidden="true"></span>
-                {item}
-              </li>
-            {/each}
-          </ul>
-        {/if}
+        <div class="order-3 max-w-2xl lg:mt-7">
+          <!-- The form is the hero's own way to ask for a plan, so the only
+               button left here is the one that leads somewhere else. -->
+          <a href="#trip-ideas" class="inline-flex items-center justify-center rounded-md border border-white/35 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20">{landing.hero.secondaryCtaLabel}</a>
+          {#if trustItems.length}
+            <!-- Each item carries its own leading dot rather than sitting between
+                 shared separators. Separators belong to the gaps, and a gap that
+                 lands at a line break leaves a mark dangling off the end of one
+                 line — this way every line starts on a dot and ends on a word,
+                 at any width. -->
+            <ul class="mt-6 flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] leading-5 text-white/80 sm:gap-x-5 sm:text-sm">
+              {#each trustItems as item, index (index)}
+                <li class="flex items-center gap-2 whitespace-nowrap">
+                  <span class="h-[5px] w-[5px] shrink-0 rounded-full bg-goldfinch-gold" aria-hidden="true"></span>
+                  {item}
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </div>
+      </div>
+      <!-- Every "request a plan" link on the page still points here. -->
+      <div id="lead-form" class="order-2 w-full max-w-[520px] scroll-mt-28 lg:order-none lg:max-w-none">
+        <StylePlannerBand
+          layout="hero"
+          eyebrow={landing.planner.label}
+          title={landing.planner.headline}
+          description={landing.planner.intro}
+          categoryName={category.name}
+          categorySlug={category.slug}
+          daysStart={typicalDays}
+        />
       </div>
     </div>
   </section>
@@ -340,21 +367,6 @@
       </div>
     </div>
   </section>
-
-  <!--
-    Mid-page CTA. A short band, not a second landing page: the heading sits on
-    the left, the form lays its fields across one row on the right, and the
-    stacked card layout is left for the pages that have room for it.
-  -->
-  <div id="lead-form" class="scroll-mt-24">
-  <StylePlannerBand
-    eyebrow={landing.planner.label}
-    title={landing.planner.headline}
-    description={landing.planner.intro}
-    categoryName={category.name}
-    categorySlug={category.slug}
-  />
-  </div>
 
   <!-- 6 · Tour collection / itinerary fallback -->
   <section id="trip-ideas" class="scroll-mt-24 bg-surface py-14 md:py-16">
