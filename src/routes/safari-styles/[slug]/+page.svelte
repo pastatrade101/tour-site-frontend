@@ -302,17 +302,23 @@
           <h1 class="mt-5 font-serif text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-5xl xl:text-6xl">{landing.hero.headline}</h1>
           <p class="mt-5 max-w-xl text-base leading-relaxed text-white/90 md:text-lg">{landing.hero.subheadline}</p>
         </div>
-        <div class="order-3 max-w-2xl lg:mt-7">
+        <!-- With nothing to show under the form, the block steps out of the
+             stacked layout instead of leaving its gap behind. -->
+        <div class="order-3 max-w-2xl lg:mt-7 {trustItems.length ? '' : 'hidden lg:block'}">
           <!-- The form is the hero's own way to ask for a plan, so the only
-               button left here is the one that leads somewhere else. -->
-          <a href="#trip-ideas" class="inline-flex items-center justify-center rounded-md border border-white/35 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20">{landing.hero.secondaryCtaLabel}</a>
+               button left here is the one that leads somewhere else. Beside
+               the form it has a place; stacked under it on a phone or tablet
+               it is one more button after the one that matters, so it is
+               left out there — the trip ideas are the next thing down the
+               page anyway. -->
+          <a href="#trip-ideas" class="hidden items-center justify-center rounded-md border border-white/35 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20 lg:inline-flex">{landing.hero.secondaryCtaLabel}</a>
           {#if trustItems.length}
             <!-- Each item carries its own leading dot rather than sitting between
                  shared separators. Separators belong to the gaps, and a gap that
                  lands at a line break leaves a mark dangling off the end of one
                  line — this way every line starts on a dot and ends on a word,
                  at any width. -->
-            <ul class="mt-6 flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] leading-5 text-white/80 sm:gap-x-5 sm:text-sm">
+            <ul class="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] leading-5 text-white/80 sm:gap-x-5 sm:text-sm lg:mt-6">
               {#each trustItems as item, index (index)}
                 <li class="flex items-center gap-2 whitespace-nowrap">
                   <span class="h-[5px] w-[5px] shrink-0 rounded-full bg-goldfinch-gold" aria-hidden="true"></span>
