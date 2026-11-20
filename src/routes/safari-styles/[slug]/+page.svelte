@@ -317,11 +317,18 @@
                  shared separators. Separators belong to the gaps, and a gap that
                  lands at a line break leaves a mark dangling off the end of one
                  line — this way every line starts on a dot and ends on a word,
-                 at any width. -->
+                 at any width.
+
+                 Nothing here forbids wrapping. A short item still moves to
+                 the next line whole, because that is how a wrapping row lays
+                 its items out; but an editor may also write the trust line as
+                 one long sentence, and that has to fold inside the column
+                 rather than run on behind the form and off the page. The dot
+                 is set against the first line for the same reason. -->
             <ul class="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] leading-5 text-white/80 sm:gap-x-5 sm:text-sm lg:mt-6">
               {#each trustItems as item, index (index)}
-                <li class="flex items-center gap-2 whitespace-nowrap">
-                  <span class="h-[5px] w-[5px] shrink-0 rounded-full bg-goldfinch-gold" aria-hidden="true"></span>
+                <li class="flex min-w-0 items-start gap-2">
+                  <span class="mt-[7.5px] h-[5px] w-[5px] shrink-0 rounded-full bg-goldfinch-gold" aria-hidden="true"></span>
                   {item}
                 </li>
               {/each}
