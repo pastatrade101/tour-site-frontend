@@ -1962,5 +1962,10 @@
   "compare.n_year": "Mwaka {n}",
   "compare.n_years": "Miaka {n}",
   "compare.row_languages": "Lugha anazozungumza",
-  "compare.row_specialisations": "Utaalamu"
+  "compare.row_specialisations": "Utaalamu",
+  "compare.derived_accommodation": "Mahali safari unazolinganisha zinapolala:",
+  "compare.derived_destinations": "Mahali safari unazolinganisha zinapokwenda:",
+  "compare.derived_guides": "Wanaosimamia safari unazolinganisha:",
+  "compare.derived_change": "Unaweza kubadilisha au kuondoa yoyote, au kuongeza yako.",
+  "compare.derived_more": " Pia kwenye safari hizi: {list}."
 }

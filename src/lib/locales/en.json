@@ -1841,5 +1841,10 @@
   "compare.n_year": "{n} year",
   "compare.n_years": "{n} years",
   "compare.row_languages": "Languages spoken",
-  "compare.row_specialisations": "Specialisations"
+  "compare.row_specialisations": "Specialisations",
+  "compare.derived_accommodation": "Where your compared safaris stay:",
+  "compare.derived_destinations": "Where your compared safaris go:",
+  "compare.derived_guides": "Who looks after your compared safaris:",
+  "compare.derived_change": "Replace or remove any of them, or add your own.",
+  "compare.derived_more": " Also on these safaris: {list}."
 }

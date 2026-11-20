@@ -153,6 +153,7 @@ export const destinationsKind: KindConfig<Destination> = {
   listPath: '/destinations?status=published&limit=100',
   detailPath: (key) => `/destinations/${encodeURIComponent(key)}`,
   needs: ['tours', 'lodges', 'activities', 'tripPoints'],
+  fromTour: (tour) => getTourDestinations(tour).map((place) => ({ key: place.slug, title: place.name })),
   keyOf: (destination) => destination.slug,
   toPick: (destination) => ({ key: destination.slug, title: destination.name, image: thumbImage(destination, IMAGE_FIELDS) }),
   toItem: (destination, { t }) => ({

@@ -52,6 +52,12 @@ export type KindConfig<T> = {
   detailPath: ((key: string) => string) | null;
   /** Which lists `sections` needs beside the items. */
   needs: Array<keyof CompareExtras>;
+  /**
+   * What a safari already says about this category: the places it sleeps at,
+   * the places it visits, the person who looks after it. Lets the comparison
+   * open on those when a visitor comparing safaris has picked nothing here yet.
+   */
+  fromTour?: (tour: Tour) => Array<{ key: string; title: string }>;
   keyOf: (record: T) => string;
   toPick: (record: T) => ComparePick;
   toItem: (record: T, ctx: KindContext) => CompareItem<T>;
@@ -101,4 +107,23 @@ export const thumbImage = (record: unknown, fields: string[]): string => {
     return typeof thumbnail === 'string' && thumbnail.trim() ? thumbnail.trim() : original.trim();
   }
   return '';
+};
+
+/**
+ * One entry from each list in turn, each key once: the first place of every
+ * safari before the second of any, so no safari is left out when only a few fit.
+ */
+export const interleave = <T extends { key: string }>(lists: T[][]): T[] => {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  const longest = Math.max(0, ...lists.map((list) => list.length));
+  for (let index = 0; index < longest; index++) {
+    for (const list of lists) {
+      const entry = list[index];
+      if (!entry || !entry.key || seen.has(entry.key)) continue;
+      seen.add(entry.key);
+      out.push(entry);
+    }
+  }
+  return out;
 };

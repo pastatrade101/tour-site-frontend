@@ -92,18 +92,35 @@
    */
   let synced = '';
   $: if (browser && $compareState.ready) {
-    const stamp = `${kind}:${keys.join(',')}:${data.missing}`;
+    const stamp = `${kind}:${keys.join(',')}:${data.missing}:${data.derived ? data.derived.tourKeys.join(',') : ''}`;
     if (stamp !== synced) {
       synced = stamp;
       const stored = $compareState.lists[kind].map((pick) => pick.key);
-      if (keys.length) {
+      if (data.derived) {
+        // Shown from the compared safaris, not chosen: the tray is not filled with them.
+        // The visitor's own picks in this category, if any, win.
+        if (stored.length) void open(stored);
+      } else if (keys.length) {
         if (stored.join(',') !== keys.join(',')) setCompareList(kind, records.map((record) => config.toPick(record)));
       } else if (!data.missing && stored.length) {
         // A link whose items have all gone is left alone: it must not wipe what the visitor had picked.
         void open(stored);
+      } else if (!data.missing && config.fromTour && $compareState.lists.tours.length) {
+        // Nothing picked here, but safaris are being compared: start from what those safaris say.
+        void goto(localizeUrl(fromToursHref(kind, $compareState.lists.tours.map((pick) => pick.key)), $locale), { replaceState: true, noScroll: true });
       }
     }
   }
+
+  /** Another category, opened on what the compared safaris say about it. */
+  const fromToursHref = (entry: CompareKind, tours: string[]) => `/compare/${entry}?tours=${tours.map(encodeURIComponent).join(',')}`;
+  // The safaris in play: the ones on this page, the ones this page was built from, or the visitor's picks.
+  $: safarisInPlay = kind === 'tours' ? keys : (data.derived?.tourKeys ?? $compareState.lists.tours.map((pick) => pick.key));
+  $: tabHref = (entry: CompareKind): string => {
+    if (entry === kind) return sharePath;
+    if ($compareState.lists[entry].length || !KINDS[entry].fromTour || safarisInPlay.length < 1) return compareListHref($compareState, entry);
+    return fromToursHref(entry, safarisInPlay);
+  };
 
   $: sharePath = localizeUrl(compareHref(kind, keys), $locale);
   $: shareUrl = `${data.origin}${sharePath}`;
@@ -169,12 +186,25 @@
     <!-- One comparison per category: the others keep what was picked in them. -->
     <nav class="kinds" aria-label={$t('compare.kinds_label')}>
       {#each COMPARE_KINDS as entry (entry)}
-        {@const total = entry === kind ? keys.length : $compareState.lists[entry].length}
-        <a href={entry === kind ? sharePath : compareListHref($compareState, entry)} aria-current={entry === kind ? 'page' : undefined} data-sveltekit-noscroll>
+        {@const total = entry === kind && !data.derived ? keys.length : $compareState.lists[entry].length}
+        <a href={tabHref(entry)} aria-current={entry === kind ? 'page' : undefined} data-sveltekit-noscroll>
           {$t(KINDS[entry].nameKey)}{#if total}<span>{total}</span>{/if}
         </a>
       {/each}
     </nav>
+
+    {#if data.derived && items.length}
+      <div class="derived">
+        <p>
+          <strong>{$t(`compare.derived_${kind}`)}</strong>
+          {data.derived.tours.join(' · ')}
+        </p>
+        <p>
+          {$t('compare.derived_change')}
+          {#if data.derived.more.length}{$t('compare.derived_more').replace('{list}', data.derived.more.join(', '))}{/if}
+        </p>
+      </div>
+    {/if}
 
     {#if data.missing}
       <p class="note">{$t(data.missing === 1 ? 'compare.missing_one' : 'compare.missing_many').replace('{n}', String(data.missing))}</p>
@@ -191,6 +221,10 @@
         <div class="empty-actions">
           <button type="button" class="primary" on:click={() => (picker = { replace: null })}><Plus size={17} aria-hidden="true" />{$t(config.addKey)}</button>
           <a class="ghost" href={config.browseHref}>{$t('compare.browse_all')}<ArrowRight size={16} aria-hidden="true" /></a>
+          {#if items.length === 1}
+            <!-- The one thing chosen can still be taken off from here. -->
+            <button type="button" class="ghost" on:click={() => drop(items[0].key)} aria-label={$t('compare.remove_name').replace('{name}', items[0].title)}><X size={15} aria-hidden="true" />{$t('compare.remove')}</button>
+          {/if}
         </div>
       </div>
     {:else}
@@ -393,6 +427,10 @@
   .kinds a span { display: grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: rgb(var(--c-ink) / 0.1); color: rgb(var(--c-heading)); font-size: 11px; font-weight: 700; }
   .kinds a[aria-current] span { background: rgb(var(--c-heading)); color: rgb(var(--c-surface)); }
 
+  .derived { margin-top: 18px; padding: 14px 16px; border-left: 3px solid rgb(var(--c-goldfinch-gold)); border-radius: 0 10px 10px 0; background: rgb(var(--c-surface)); font-size: 14px; line-height: 1.6; }
+  .derived p { margin: 0; color: rgb(var(--c-ink) / 0.7); }
+  .derived p + p { margin-top: 2px; font-size: 13px; }
+  .derived strong { margin-right: 6px; color: rgb(var(--c-heading)); font-weight: 700; }
   .note { margin: 18px 0 0; color: rgb(var(--c-ink) / 0.65); font-size: 14px; }
   .note.after { margin-top: 12px; }
 

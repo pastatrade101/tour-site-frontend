@@ -4,6 +4,7 @@ import { accommodationKind } from './accommodation';
 import { destinationsKind } from './destinations';
 import { guidesKind } from './guides';
 import { buildComparison, compareHref, flag, list, money, narrowComparison, parseCompareKeys, score, text, type SectionDef } from './model';
+import { interleave } from './shared';
 import { toursKind } from './tours';
 
 /** Stands in for `$t`: a key reads as itself, so a test can see which label a value got. */
@@ -260,5 +261,36 @@ describe('guides', () => {
     // Nobody filled in: the rows are not there at all.
     const empty = buildComparison(guidesKind.sections([ben], ctx()), [ben]);
     for (const id of ['experience', 'languages', 'specialisations']) assert.equal(row(empty, id), undefined);
+  });
+});
+
+describe('what a safari already says about the other categories', () => {
+  const tour = (slug: string, lodges: Array<[string, string] | null>, places: string[], specialist: string | null) =>
+    ({
+      id: slug,
+      title: slug,
+      slug,
+      specialist_id: specialist,
+      specialist: specialist ? { id: specialist, name: `Person ${specialist}`, role: 'Tour Planner' } : null,
+      itinerary_days: lodges.map((lodge, index) => ({ day_number: index + 1, title: `Day ${index + 1}`, lodge: lodge ? { id: lodge[0], slug: lodge[0], name: lodge[1] } : null, accommodation: lodge ? null : 'A guest house in town' })),
+      tour_destinations: places.map((place, index) => ({ destination_id: place, sort_order: index, destinations: { id: place, slug: place, name: place } }))
+    }) as never;
+
+  const a = tour('a', [['river-camp', 'River Camp'], ['river-camp', 'River Camp'], ['crater-lodge', 'Crater Lodge'], null], ['serengeti', 'ngorongoro'], 'p1');
+  const b = tour('b', [['beach-house', 'Beach House'], ['crater-lodge', 'Crater Lodge']], ['zanzibar', 'serengeti'], 'p1');
+
+  it('reads the linked properties, the places visited and the specialist from a safari', () => {
+    assert.deepEqual(accommodationKind.fromTour!(a).map((entry) => entry.key), ['river-camp', 'river-camp', 'crater-lodge']); // free-text stays have no page
+    assert.deepEqual(destinationsKind.fromTour!(a).map((entry) => entry.key), ['serengeti', 'ngorongoro']);
+    assert.deepEqual(guidesKind.fromTour!(a), [{ key: 'p1', title: 'Person p1' }]);
+    assert.equal(toursKind.fromTour, undefined);
+  });
+
+  it('takes turns between the safaris and lists each place once', () => {
+    const stays = interleave([a, b].map((entry) => accommodationKind.fromTour!(entry)));
+    assert.deepEqual(stays.map((entry) => entry.key), ['river-camp', 'beach-house', 'crater-lodge']);
+    const people = interleave([a, b].map((entry) => guidesKind.fromTour!(entry)));
+    assert.deepEqual(people.map((entry) => entry.key), ['p1']);
+    assert.deepEqual(interleave([]), []);
   });
 });

@@ -1962,5 +1962,10 @@
   "compare.n_year": "{n} an",
   "compare.n_years": "{n} ans",
   "compare.row_languages": "Langues parlées",
-  "compare.row_specialisations": "Spécialités"
+  "compare.row_specialisations": "Spécialités",
+  "compare.derived_accommodation": "Où séjournent les safaris que vous comparez :",
+  "compare.derived_destinations": "Où vont les safaris que vous comparez :",
+  "compare.derived_guides": "Qui s’occupe des safaris que vous comparez :",
+  "compare.derived_change": "Vous pouvez en remplacer, en retirer ou ajouter les vôtres.",
+  "compare.derived_more": " Également sur ces safaris : {list}."
 }

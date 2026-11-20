@@ -152,6 +152,8 @@ export const accommodationKind: KindConfig<Lodge> = {
   listPath: '/lodges?status=published&show_property_publicly=true&limit=100',
   detailPath: (key) => `/lodges/${encodeURIComponent(key)}`,
   needs: [],
+  // Only properties an itinerary day is linked to: a name typed as free text has no page to compare.
+  fromTour: (tour) => (tour.itinerary_days ?? []).flatMap((day) => (day.lodge?.slug ? [{ key: day.lodge.slug, title: day.lodge.name }] : [])),
   keyOf: (lodge) => lodge.slug,
   toPick: (lodge) => ({ key: lodge.slug, title: lodge.name, image: picture(lodge) }),
   toItem: (lodge, { t }) => ({

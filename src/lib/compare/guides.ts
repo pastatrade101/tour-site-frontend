@@ -64,6 +64,7 @@ export const guidesKind: KindConfig<Specialist> = {
   // A specialist has no page of their own: the published list is the source.
   detailPath: null,
   needs: ['tours'],
+  fromTour: (tour) => (tour.specialist_id ? [{ key: tour.specialist_id, title: tour.specialist?.name ?? '' }] : []),
   keyOf: (specialist) => specialist.id ?? '',
   toPick: (specialist) => ({ key: specialist.id ?? '', title: specialist.name, image: thumbImage(specialist, IMAGE_FIELDS) }),
   toItem: (specialist, { t }) => {
