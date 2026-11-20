@@ -32,7 +32,7 @@
     aria-label={label}
     data-track-location="floating_button"
     class={`whatsapp-fab package-aware-fab group fixed right-4 z-50 flex items-center md:right-6 ${isTourDetail ? 'bottom-[5.75rem] lg:bottom-6' : 'bottom-5 md:bottom-6'}`}
-    style="margin-bottom: calc(env(safe-area-inset-bottom) + var(--package-dock-space, 0px));"
+    style="margin-bottom: calc(env(safe-area-inset-bottom) + var(--package-dock-space, 0px) + var(--compare-dock-space, 0px));"
   >
     <!-- Desktop: the label slides out on hover or keyboard focus. -->
     <span

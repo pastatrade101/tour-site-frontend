@@ -82,6 +82,9 @@ test('shares URL and indexing policy with page metadata and robots', () => {
   assert.ok(!disallowsIndexing('index, follow'));
   for (const path of ['/admin', '/de/admin/tours', '/booking/test', '/quote/token', '/trip/token', '/shortlist', '/guides/test']) assert.ok(isPrivateOrUtilityPath(path));
   assert.ok(!isPrivateOrUtilityPath('/trip-finder'));
+  // A visitor's own side-by-side comparison is not for indexing; the written comparisons are content.
+  for (const path of ['/compare/tours', '/compare/accommodation', '/de/compare/destinations', '/compare/guides/']) assert.ok(isPrivateOrUtilityPath(path));
+  for (const path of ['/compare', '/compare/serengeti-vs-masai-mara', '/compare/tours-vs-packages']) assert.ok(!isPrivateOrUtilityPath(path));
 });
 
 test('lists journal articles under their category and categories that have articles', () => {

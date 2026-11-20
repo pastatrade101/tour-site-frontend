@@ -48,6 +48,10 @@
     blurb: '',
     whatsapp_number: '',
     tripadvisor_url: '',
+    years_experience: '',
+    // Typed as one line, separated by commas; saved as a list.
+    languages: '',
+    specialisations: '',
     status: 'draft' as SpecialistRow['status'],
     is_featured: false,
     sort_order: '0'
@@ -139,6 +143,9 @@
       blurb: specialist.blurb ?? '',
       whatsapp_number: specialist.whatsapp_number ?? '',
       tripadvisor_url: specialist.tripadvisor_url ?? '',
+      years_experience: specialist.years_experience ? String(specialist.years_experience) : '',
+      languages: (specialist.languages ?? []).join(', '),
+      specialisations: (specialist.specialisations ?? []).join(', '),
       status: specialist.status,
       is_featured: Boolean(specialist.is_featured),
       sort_order: String(specialist.sort_order ?? 0)
@@ -153,6 +160,13 @@
     form = emptyForm();
   };
 
+  /** "English, Swahili ,  " → ['English', 'Swahili']. */
+  const commaList = (value: string): string[] =>
+    value
+      .split(/[,\n]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+
   const payload = () => ({
     name: form.name.trim(),
     role: form.role.trim(),
@@ -160,6 +174,10 @@
     blurb: form.blurb.trim() || null,
     whatsapp_number: form.whatsapp_number.trim() || null,
     tripadvisor_url: form.tripadvisor_url.trim() || null,
+    // Empty is "not stated": never saved as 0.
+    years_experience: String(form.years_experience ?? '').trim() === '' ? null : Number(form.years_experience),
+    languages: commaList(form.languages),
+    specialisations: commaList(form.specialisations),
     status: form.status,
     is_featured: form.is_featured,
     sort_order: Number(form.sort_order || 0)
@@ -361,6 +379,19 @@
         </div>
 
         <AdminTextArea label="Short bio" name="blurb" bind:value={form.blurb} rows={4} placeholder="Brief planning experience, region knowledge, or what this person helps with." />
+
+        <!-- Shown when visitors compare guides side by side. All optional: an empty field is simply not shown. -->
+        <div class="grid gap-4 rounded-[8px] border border-ink/10 bg-sand/25 p-4">
+          <div>
+            <p class="text-sm font-bold text-ink">Profile details</p>
+            <p class="mt-0.5 text-xs leading-5 text-ink/60">Optional. Shown on the website when visitors compare guides and specialists. Leave a field empty if it does not apply.</p>
+          </div>
+          <div class="grid gap-4 sm:grid-cols-[minmax(0,180px)_minmax(0,1fr)]">
+            <AdminFormInput label="Years of experience" name="years_experience" type="number" min={0} bind:value={form.years_experience} placeholder="e.g. 8" />
+            <AdminFormInput label="Languages spoken (separate with commas)" name="languages" bind:value={form.languages} placeholder="English, Swahili, German" />
+          </div>
+          <AdminFormInput label="Specialisations (separate with commas)" name="specialisations" bind:value={form.specialisations} placeholder="Great Migration, family safaris, photography" />
+        </div>
 
         <div class="grid gap-4 sm:grid-cols-2">
           <AdminFormInput label="WhatsApp number" name="whatsapp_number" bind:value={form.whatsapp_number} placeholder="+255..." />

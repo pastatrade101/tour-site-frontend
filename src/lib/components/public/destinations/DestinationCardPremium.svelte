@@ -32,6 +32,8 @@
   import { toMetaText } from '$lib/richText';
   import type { Destination } from '$lib/types';
   import Img from '../Img.svelte';
+  import CompareButton from '../compare/CompareButton.svelte';
+  import { thumbImage } from '$lib/compare/shared';
 
   export let destination: Destination;
   /** Set on the first row of the grid so the above-the-fold images do not lazy-load. */
@@ -68,6 +70,8 @@
   $: showFacts = hasGlance && Boolean(stay || chips.length || styleFallback);
 </script>
 
+<!-- The card is one link; "Compare" is a button, so it is laid over the card rather than put inside it. -->
+<div class="relative h-full">
 <a
   class:destination-card-compact={compact}
   class="destination-card-premium group flex h-full flex-col overflow-hidden rounded-[10px] bg-surface shadow-card transition duration-300 ease-out hover:-translate-y-1 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none motion-reduce:hover:translate-y-0"
@@ -182,6 +186,12 @@
     </span>
   </div>
 </a>
+{#if destination.slug}
+  <div class="absolute right-3.5 top-3.5 z-10">
+    <CompareButton kind="destinations" pick={{ key: destination.slug, title: destination.name, image: thumbImage(destination, ['main_image_url', 'image_url', 'banner_image_url']) }} />
+  </div>
+{/if}
+</div>
 
 <style>
   @media (max-width: 767px) {

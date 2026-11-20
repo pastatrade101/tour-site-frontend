@@ -12,8 +12,16 @@ export type SeoOverride = {
   structured_data?: Record<string, unknown> | unknown[] | null;
 };
 
-export const isPrivateOrUtilityPath = (path: string): boolean =>
-  /^\/(admin|api|booking|quote|trip|shortlist|guides)(\/|$)/.test(stripLocale(path));
+export const isPrivateOrUtilityPath = (path: string): boolean => {
+  const clean = stripLocale(path);
+  return (
+    /^\/(admin|api|booking|quote|trip|shortlist|guides)(\/|$)/.test(clean) ||
+    // A visitor's own side-by-side comparison (/compare/tours?items=…): worth
+    // sending to a travel companion, not worth indexing. The written
+    // comparisons at /compare/<slug> are content and stay indexable.
+    /^\/compare\/(tours|accommodation|destinations|guides)\/?$/.test(clean)
+  );
+};
 
 // These detail components currently read only the default-language content.
 // Do not advertise translated copies just because their navigation is translated.

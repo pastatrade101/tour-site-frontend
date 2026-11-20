@@ -30,7 +30,7 @@
   <button
     type="button"
     class={`package-aware-fab group fixed right-4 z-50 grid h-12 w-12 place-items-center rounded-full bg-goldfinch-gold text-heading shadow-[0_12px_34px_rgba(57,61,50,0.30)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/40 md:right-6 ${isTourDetail ? 'bottom-[5.75rem] lg:bottom-6' : 'bottom-5 md:bottom-6'}`}
-    style="margin-bottom: calc(env(safe-area-inset-bottom) + var(--package-dock-space, 0px) + var(--wa-fab-space, 0px)); margin-right: var(--wa-fab-inset, 0px);"
+    style="margin-bottom: calc(env(safe-area-inset-bottom) + var(--package-dock-space, 0px) + var(--wa-fab-space, 0px) + var(--compare-dock-space, 0px)); margin-right: var(--wa-fab-inset, 0px);"
     aria-label={$t('ui.back_to_top')}
     title={$t('ui.back_to_top')}
     transition:fly={{ y: 14, duration: 180 }}

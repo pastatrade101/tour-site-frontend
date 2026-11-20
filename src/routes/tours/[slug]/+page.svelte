@@ -34,6 +34,8 @@
   import { trackEvent } from '$lib/analytics';
   import { currency, formatUsd } from '$lib/currency';
   import BlogCard from '$lib/components/public/BlogCard.svelte';
+  import CompareButton from '$lib/components/public/compare/CompareButton.svelte';
+  import { thumbImage } from '$lib/compare/shared';
   import DayBadge from '$lib/components/public/DayBadge.svelte';
   import SectionTitle from '$lib/components/public/SectionTitle.svelte';
   import TripRequestForm from '$lib/components/public/TripRequestForm.svelte';
@@ -653,6 +655,7 @@
             class="tour-hero-plan"
             on:click={() => openPlanner('hero')}
           >{$t('ui.plan_this_trip')}<ArrowRight size={18} strokeWidth={1.8} aria-hidden="true" /></button>
+          <CompareButton kind="tours" variant="full" onDark shape="rounded-[10px]" pick={{ key: tour.slug, title: tour.title, image: thumbImage(tour, ['main_image_url', 'banner_image_url']) }} />
         </div>
         {#if heroFacts.length}
           <div class="tour-hero-facts">
@@ -1176,7 +1179,7 @@
   .tour-hero-category::before { content: ''; flex: 0 0 28px; height: 1px; background: currentColor; }
   .tour-hero-copy h1 { max-width: 24ch; margin-top: 1rem; color: white; font-size: clamp(2.75rem, 4.2vw, 3.875rem); font-weight: 500; line-height: 1.06; letter-spacing: -0.025em; text-wrap: balance; }
   .tour-hero-subtitle { display: block; margin-top: 1.125rem; color: rgb(var(--c-savanna) / 0.95); font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: clamp(1rem, 1.6vw, 1.25rem); font-weight: 400; line-height: 1.5; letter-spacing: 0.01em; }
-  .tour-hero-actions { display: flex; margin-top: 1.75rem; }
+  .tour-hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 1.75rem; }
   .tour-hero-plan { display: inline-flex; align-items: center; justify-content: space-between; gap: 1.75rem; min-height: 50px; padding: 0.875rem 1.125rem 0.875rem 1.25rem; border: 1px solid rgb(var(--c-goldfinch-gold)); border-radius: 10px; background: rgb(var(--c-goldfinch-gold)); color: rgb(var(--c-deep-green)); font-size: 0.875rem; font-weight: 700; }
   .tour-hero-plan:hover { background: rgb(var(--c-gold-hover)); border-color: rgb(var(--c-gold-hover)); }
   .tour-hero-plan:focus-visible, .tour-hero-back:focus-visible { outline: 2px solid white; outline-offset: 5px; }

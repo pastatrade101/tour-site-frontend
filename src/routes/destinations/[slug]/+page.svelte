@@ -27,6 +27,8 @@
   import { trackEvent } from '$lib/analytics';
   import { fadeUpOnScroll, revealHeading, staggeredCardReveal } from '$lib/animations';
   import ActivityCard from '$lib/components/public/ActivityCard.svelte';
+  import CompareButton from '$lib/components/public/compare/CompareButton.svelte';
+  import { thumbImage } from '$lib/compare/shared';
   import DestinationCard from '$lib/components/public/DestinationCard.svelte';
   import ErrorState from '$lib/components/public/ErrorState.svelte';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
@@ -945,6 +947,7 @@
             <button type="button" class="inline-flex items-center justify-center gap-2 rounded-[6px] border border-white/35 bg-deep-green/30 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-deep-green/45" on:click={() => scrollToSection('recommended-trips')}>{$t('ui.see_matching_trips')}<ArrowRight size={17} />
             </button>
           {/if}
+          <CompareButton kind="destinations" variant="full" onDark shape="rounded-[6px]" pick={{ key: destination.slug, title: destination.name, image: thumbImage(destination, ['main_image_url', 'image_url', 'banner_image_url']) }} />
         </div>
         {#if heroStats.length}
           <div class="mt-5 flex max-w-3xl flex-wrap gap-2">

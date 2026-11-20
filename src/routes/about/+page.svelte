@@ -9,6 +9,8 @@
   import { publicSettings, settingText } from '$lib/settings';
   import { fadeUpOnScroll, sectionReveal, staggeredCardReveal } from '$lib/animations';
   import Img from '$lib/components/public/Img.svelte';
+  import CompareButton from '$lib/components/public/compare/CompareButton.svelte';
+  import { thumbImage } from '$lib/compare/shared';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import HomeAdvisorNote from '$lib/components/public/home/HomeAdvisorNote.svelte';
   import { advisorNoteEnabled, advisorNoteProps, type AdvisorNoteSection } from '$lib/advisorNote';
@@ -225,7 +227,7 @@
 
 <!-- ── Meet the specialists ─────────────────────────────────────────────── -->
 {#if specialists.length}
-  <section class="bg-surface py-16 md:py-24" use:sectionReveal>
+  <section id="team" class="scroll-mt-24 bg-surface py-16 md:py-24" use:sectionReveal>
     <div class="container-shell">
       <div class="mx-auto max-w-2xl text-center">
         <p class="text-sm font-bold uppercase tracking-[0.16em] text-goldfinch-gold">{$t('ui.meet_the_team')}</p>
@@ -253,6 +255,11 @@
                 </div>
               {/if}
               <div class="absolute inset-0 bg-gradient-to-t from-deep-green/80 via-deep-green/20 to-transparent"></div>
+              {#if specialist.id}
+                <div class="absolute right-3 top-3 z-10">
+                  <CompareButton kind="guides" pick={{ key: specialist.id, title: specialist.name, image: thumbImage(specialist, ['photo_url', 'photo']) }} />
+                </div>
+              {/if}
               <div class="absolute inset-x-0 bottom-0 p-5">
                 <p class="font-serif text-2xl font-semibold leading-tight text-white">{specialist.name}</p>
                 <p class="mt-1 text-sm font-bold text-goldfinch-gold">{specialist.role}</p>

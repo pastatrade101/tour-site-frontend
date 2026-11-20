@@ -7,6 +7,8 @@
   import type { Lodge } from '$lib/types';
   import { enumLabel } from '$lib/accommodationEnums';
   import Img from './Img.svelte';
+  import CompareButton from './compare/CompareButton.svelte';
+  import { thumbImage } from '$lib/compare/shared';
 
   export let lodge: Lodge;
   export let feature = false;
@@ -45,6 +47,8 @@
     : '';
 </script>
 
+<!-- The card is one link; "Compare" is a button, so it is laid over the card rather than put inside it. -->
+<div class="relative h-full">
 <a href={`/accommodation/${lodge.slug}`} class={`group relative flex h-full flex-col overflow-hidden rounded-xl border border-ink/10 bg-surface shadow-[0_12px_34px_rgba(57,61,50,0.07)] transition duration-300 hover:-translate-y-1 hover:border-goldfinch-gold/40 hover:shadow-[0_24px_56px_rgba(57,61,50,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-goldfinch-gold ${feature ? 'md:grid md:grid-cols-2' : ''}`}>
   <div class={`relative overflow-hidden bg-deep-green ${feature ? 'aspect-[4/3] md:aspect-auto md:min-h-[430px]' : compact ? 'aspect-[3/2]' : 'aspect-[16/11]'}`}>
     {#if imageUrl}
@@ -93,3 +97,9 @@
     </div>
   </div>
 </a>
+{#if lodge.slug}
+  <div class={`absolute right-3 top-3 z-10 ${feature ? 'md:right-[calc(50%+0.75rem)]' : ''}`}>
+    <CompareButton kind="accommodation" pick={{ key: lodge.slug, title: lodge.name, image: thumbImage(lodge, ['image_url', 'hero_image_url', 'cover_image_url']) }} />
+  </div>
+{/if}
+</div>

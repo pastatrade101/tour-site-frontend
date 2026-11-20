@@ -4,9 +4,12 @@
   import { revealHeading } from '$lib/animations';
   import Img from '$lib/components/public/Img.svelte';
   import { currency, formatUsd } from '$lib/currency';
+  import { MAX_COMPARE, MIN_COMPARE, compareHref } from '$lib/compare/model';
   import { clearShortlist, removeShortlist, shortlist } from '$lib/shortlist';
 
   $: items = $shortlist;
+  // Saved trips side by side: the first four, which is as many as a comparison holds.
+  $: compareSaved = items.length >= MIN_COMPARE ? compareHref('tours', items.slice(0, MAX_COMPARE).map((item) => item.slug)) : '';
 </script>
 
 <section class="container-shell py-12 md:py-16">
@@ -54,8 +57,13 @@
     <div class="mt-8 rounded-2xl border border-forest/15 bg-forest/[0.04] p-6 text-center">
       <p class="text-lg font-bold text-heading">{$t('ui.ready_to_turn_these_into')}</p>
       <p class="mt-1 text-sm text-ink/70">{$t('ui.send_your_shortlist_to_a')}</p>
-      <a class="mt-4 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-deep-green px-6 font-bold text-white transition hover:bg-forest" href="/plan-my-trip?from=shortlist">{$t('ui.plan_with_these_trips')}<ArrowRight size={18} />
-      </a>
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
+        <a class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-deep-green px-6 font-bold text-white transition hover:bg-forest" href="/plan-my-trip?from=shortlist">{$t('ui.plan_with_these_trips')}<ArrowRight size={18} />
+        </a>
+        {#if compareSaved}
+          <a class="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-ink/15 bg-surface px-6 font-semibold text-heading transition hover:bg-canvas" href={compareSaved}>{$t('compare.shortlist_cta')}</a>
+        {/if}
+      </div>
     </div>
   {:else}
     <div class="mt-8 rounded-2xl border border-dashed border-ink/15 bg-surface p-10 text-center">

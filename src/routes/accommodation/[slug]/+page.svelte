@@ -11,6 +11,8 @@
   import { fadeUpOnScroll, staggeredCardReveal } from '$lib/animations';
   import { imgUrl, sourceFor, srcsetFor, variantSrc, variantsOf } from '$lib/img';
   import JsonLd from '$lib/components/public/JsonLd.svelte';
+  import CompareButton from '$lib/components/public/compare/CompareButton.svelte';
+  import { thumbImage } from '$lib/compare/shared';
   import Img from '$lib/components/public/Img.svelte';
   import TourCard from '$lib/components/public/TourCard.svelte';
   import LodgeGallery from '$lib/components/public/LodgeGallery.svelte';
@@ -206,6 +208,7 @@
           <a class="inline-flex h-12 w-full items-center justify-center gap-2 bg-goldfinch-gold px-7 text-sm font-extrabold text-heading transition hover:brightness-95 sm:w-auto" href="/tours">{$t('cta.explore_tours')}<ArrowRight size={16}/></a>
         {/if}
         <a class="inline-flex h-12 w-full items-center justify-center border border-white/30 px-7 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/10 sm:w-auto" href={planHref}>{$t('ui.build_a_trip_around_this')}</a>
+        {#if lodge?.slug}<CompareButton kind="accommodation" variant="full" onDark shape="rounded-none" pick={{ key: lodge.slug, title: lodge.name, image: thumbImage(lodge, ['image_url', 'hero_image_url', 'cover_image_url']) || lodge.images?.[0]?.image_url || '' }} />{/if}
       </div>
     </div>
   </div>

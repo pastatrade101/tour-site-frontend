@@ -13,6 +13,7 @@
   import WhatsAppFab from '$lib/components/public/WhatsAppFab.svelte';
   import NavigationProgress from '$lib/components/public/NavigationProgress.svelte';
   import ShortlistFab from '$lib/components/public/ShortlistFab.svelte';
+  import CompareDock from '$lib/components/public/compare/CompareDock.svelte';
   import { consentChoice } from '$lib/consent';
   import { setupPwaInstall } from '$lib/pwa';
   import { initSmoothScrolling, setupGsap } from '$lib/animations';
@@ -329,6 +330,7 @@
 {#if !isAdmin}
   <Footer />
   <ShortlistFab />
+  <CompareDock />
   <BackToTop />
   <WhatsAppFab />
   <ConsentDialog />

@@ -28,6 +28,10 @@ export type Specialist = {
   blurb?: string | null;
   whatsapp_number?: string | null;
   tripadvisor_url?: string | null;
+  /** Profile details an editor may fill in. Empty is "not stated", never a default. */
+  years_experience?: number | null;
+  languages?: string[] | null;
+  specialisations?: string[] | null;
   status?: 'draft' | 'published' | 'archived';
   is_featured?: boolean;
   sort_order?: number | null;

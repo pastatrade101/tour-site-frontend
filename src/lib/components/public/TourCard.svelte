@@ -8,11 +8,15 @@
   import type { Tour } from '$lib/types';
   import Img from './Img.svelte';
   import ShortlistButton from './ShortlistButton.svelte';
+  import CompareButton from './compare/CompareButton.svelte';
+  import { thumbImage } from '$lib/compare/shared';
 
   type TourCardBadgeType = 'rust' | 'gold' | 'olive' | 'default';
 
   export let tour: Tour;
   export let showShortlist = true;
+  /** "Compare" on the photograph. Off where the card stands in for something else (a deal, a teaser). */
+  export let showCompare = true;
   export let whiteSurface = true;
   export let badge: string | null | undefined = undefined;
   export let badgeType: TourCardBadgeType | undefined = undefined;
@@ -106,6 +110,12 @@
     {#if showShortlist}
       <div class="absolute right-3.5 top-3.5 z-10">
         <ShortlistButton item={shortlistItem} />
+      </div>
+    {/if}
+
+    {#if showCompare && tour.slug}
+      <div class="absolute bottom-3 left-3 z-10">
+        <CompareButton kind="tours" pick={{ key: tour.slug, title: tour.title, image: thumbImage(tour, ['main_image_url', 'banner_image_url']) }} />
       </div>
     {/if}
 
