@@ -118,6 +118,8 @@
   $: safarisInPlay = kind === 'tours' ? keys : (data.derived?.tourKeys ?? $compareState.lists.tours.map((pick) => pick.key));
   $: tabHref = (entry: CompareKind): string => {
     if (entry === kind) return sharePath;
+    // Opened from a link built on someone else's safaris: the Safaris tab leads back to those.
+    if (entry === 'tours' && !$compareState.lists.tours.length && data.derived) return compareHref('tours', data.derived.tourKeys);
     if ($compareState.lists[entry].length || !KINDS[entry].fromTour || safarisInPlay.length < 1) return compareListHref($compareState, entry);
     return fromToursHref(entry, safarisInPlay);
   };
