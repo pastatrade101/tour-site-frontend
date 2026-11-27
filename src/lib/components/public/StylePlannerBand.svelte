@@ -520,7 +520,7 @@
           {#if bookingCode}<p>{$t('form.your_reference_is')} <strong>{bookingCode}</strong>.</p>{/if}
           <p>{$t('ui.a_local_specialist_will_shape')}</p>
           <div class="overlay-done">
-            {#if waDigits}<a class="next" href={whatsappHref} target="_blank" rel="noopener noreferrer" data-track-location="style_planner"><WhatsAppIcon size={20} />{$t('style_form.chat_whatsapp')}</a>{/if}
+            {#if waDigits}<a class="next wa" href={whatsappHref} target="_blank" rel="noopener noreferrer" data-track-location="style_planner"><WhatsAppIcon size={20} />{$t('style_form.chat_whatsapp')}</a>{/if}
             <button type="button" class="back" on:click={closeOverlay}>{$t('ui.close')}</button>
           </div>
         </div>
@@ -822,7 +822,11 @@
   .overlay-confirmation strong { color: var(--pf-accent); font-weight: 500; }
   .overlay-done { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; margin-top: 28px; }
   .overlay-done .next { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; }
-  .overlay-done .back { min-height: 44px; font-size: 12px; letter-spacing: .07em; text-transform: uppercase; }
+  .overlay-done .back { min-height: 44px; font-size: 15px; letter-spacing: 0; text-transform: none; }
+  /* WhatsApp's own green, so the button says where it goes before it is read.
+     Dark words on it: white on this green is too faint to read comfortably. */
+  .overlay-done .wa { border-color: #25d366; background: #25d366; color: #0b2014; font-size: 15px; letter-spacing: 0; text-transform: none; }
+  .overlay-done .wa:hover { border-color: #1ebe5d; background: #1ebe5d; color: #0b2014; }
   @keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
   @keyframes step-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
   @media (min-width: 640px) {
