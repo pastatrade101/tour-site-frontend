@@ -11,7 +11,7 @@
   import TripPhoneInput from './TripPhoneInput.svelte';
   import CountStepper from './CountStepper.svelte';
   import Img from './Img.svelte';
-  import { plannerProblems, plannerPayload, type PlannerValues, type PlannerField } from '$lib/enquiry/stylePlanner';
+  import { beachDaysOf, plannerProblems, plannerPayload, type PlannerValues, type PlannerField } from '$lib/enquiry/stylePlanner';
   import { loadDraft, saveDraft, clearDraft } from '$lib/enquiry/draft';
 
   export let eyebrow = '';
@@ -51,7 +51,7 @@
     ? [
         { key: 'style_form.your_trip', check: 1 },
         { key: 'ui.travellers', check: 2, fields: ['adults', 'children'], question: 'style_form.q_travellers' },
-        { key: 'ui.preferences', check: 2, fields: ['language'], question: 'style_form.q_preferences' },
+        { key: 'ui.preferences', check: 2, fields: ['comfort', 'beachDays', 'language'], question: 'style_form.q_preferences' },
         { key: 'style_form.your_details', check: 3, question: 'style_form.q_details' }
       ]
     : [{ key: 'style_form.your_trip', check: 1 }, { key: 'style_form.travellers_preferences', check: 2 }, { key: 'style_form.your_details', check: 3 }];
@@ -85,7 +85,7 @@
   let idempotencyKey = '';
   let values: PlannerValues = {
     days: undefined, daysUnsure: false, travelDate: '', dateUnsure: false,
-    adults: 2, children: 0, language: $locale, comfort: '', beach: '',
+    adults: 2, children: 0, language: $locale, comfort: '', beach: '', beachDays: undefined,
     fullName: '', email: '', phone: '', dialCode: '+255', specialRequests: '',
     whatsappOptIn: false, route: '', hp: ''
   };
@@ -152,6 +152,7 @@
       if (language && typeof trip.locale === 'string' && (trip.locale === $locale || language !== trip.locale)) next.language = language;
       next.comfort = asChoice(trip.comfort, ['', ...COMFORT.map((option) => option.value)]) ?? next.comfort;
       next.beach = asChoice(trip.beach, ['', ...BEACH.map((option) => option.value)]) ?? next.beach;
+      next.beachDays = asCount(trip.beachDays, 1) ?? next.beachDays;
       // A route only means something on the page it was chosen on, and one the page itself suggests wins —
       // now or later: it comes back untouched, so a route the visitor picks on the page (a tab, a "request" button) still replaces it.
       const pageRoute = Boolean(suggestedRoute) && routeOptions.some((option) => option.label === suggestedRoute);
@@ -185,7 +186,7 @@
     const trip = {
       days: current.days, daysUnsure: current.daysUnsure, travelDate: current.travelDate, dateUnsure: current.dateUnsure,
       adults: current.adults, children: current.children, language: current.language, comfort: current.comfort,
-      beach: current.beach, route: current.route, step: currentStep, daysTouched: typedDays,
+      beach: current.beach, beachDays: current.beachDays, route: current.route, step: currentStep, daysTouched: typedDays,
       locale: $locale, categorySlug, packageSlug
     };
     const contact = {
@@ -214,6 +215,7 @@
     { label: $t('form.preferred_language'), value: LANGUAGES.find((language) => language.code === values.language)?.label ?? '' },
     { label: $t('style_form.accommodation'), value: values.comfort ? $t(COMFORT.find((option) => option.value === values.comfort)?.key ?? '') : '' },
     { label: $t('style_form.beach_stay'), value: values.beach ? $t(BEACH.find((option) => option.value === values.beach)?.key ?? '') : '' },
+    { label: $t('style_form.beach_days'), value: String(beachDaysOf(values) ?? '') },
     { label: $t('form.special_requests'), value: values.specialRequests }
   ].filter((row) => row.value).map((row) => ({ label: row.label.slice(0, 300), value: row.value.trim().slice(0, 300) }));
 
@@ -299,7 +301,9 @@
     values.daysUnsure ? '' : typeof values.days === 'number' ? `${values.days} ${$t(values.days === 1 ? 'label.day' : 'label.days')}` : '',
     step >= 3 && typeof values.adults === 'number'
       ? [countOf(values.adults === 1 ? 'pg_plan_my_trip.n_adult' : 'pg_plan_my_trip.n_adults', values.adults), values.children ? countOf(values.children === 1 ? 'pg_plan_my_trip.n_child' : 'pg_plan_my_trip.n_children', values.children) : ''].filter(Boolean).join(' · ')
-      : ''
+      : '',
+    step >= 4 && values.comfort ? $t(COMFORT.find((option) => option.value === values.comfort)?.key ?? '') : '',
+    step >= 4 && beachDaysOf(values) ? `${$t('style_form.beach_days')}: ${beachDaysOf(values)}` : ''
   ].filter(Boolean);
   $: anyStayPhoto = STAYS.some((stay) => stayPhotos[stay.value]);
   $: shownTitle = layout === 'hero' ? $t('ui.plan_your_trip') : title;
@@ -457,11 +461,19 @@
                   </div>
                 </div>
                 <div class="fields two-columns preferences">
-                  <fieldset><legend>{$t('style_form.accommodation')} <span class="optional">({$t('ui.optional').toLowerCase()})</span></legend>
-                    <div class="choices">{#each COMFORT as option}<label class:chosen={values.comfort === option.value}><input type="radio" name={`${uid}-comfort`} value={option.value} bind:group={values.comfort} /><span>{$t(option.key)}</span></label>{/each}</div>
+                  <fieldset data-field="comfort" aria-describedby={errors.comfort ? errorId('comfort') : undefined}><legend>{$t('style_form.accommodation')} <span class="required">*</span></legend>
+                    <div class="choices">{#each COMFORT as option}<label class:chosen={values.comfort === option.value}><input type="radio" name={`${uid}-comfort`} value={option.value} bind:group={values.comfort} on:change={() => clearError('comfort')} /><span>{$t(option.key)}</span></label>{/each}</div>
+                    {#if errors.comfort}<p class="field-error" id={errorId('comfort')}>{$t(errors.comfort)}</p>{/if}
                   </fieldset>
                   <fieldset><legend>{$t('style_form.beach_stay')} <span class="optional">({$t('ui.optional').toLowerCase()})</span></legend>
-                    <div class="choices">{#each BEACH as option}<label class:chosen={values.beach === option.value}><input type="radio" name={`${uid}-beach`} value={option.value} bind:group={values.beach} /><span>{$t(option.key)}</span></label>{/each}</div>
+                    <div class="choices">{#each BEACH as option}<label class:chosen={values.beach === option.value}><input type="radio" name={`${uid}-beach`} value={option.value} bind:group={values.beach} on:change={() => clearError('beachDays')} /><span>{$t(option.key)}</span></label>{/each}</div>
+                    {#if values.beach === 'Yes'}
+                      <div class="field beach-days" data-field="beachDays">
+                        <label for={`${uid}-beach-days`}>{$t('style_form.q_beach_days')} <span class="required">*</span></label>
+                        <CountStepper id={`${uid}-beach-days`} label={$t('style_form.beach_days')} min={1} max={60} showStart={false} bind:value={values.beachDays} invalid={Boolean(errors.beachDays)} describedBy={errors.beachDays ? errorId('beachDays') : undefined} on:input={() => clearError('beachDays')} on:change={() => counted('beachDays')} />
+                        {#if errors.beachDays}<p class="field-error" id={errorId('beachDays')}>{$t(errors.beachDays)}</p>{/if}
+                      </div>
+                    {/if}
                   </fieldset>
                 </div>
               {:else}
@@ -538,12 +550,12 @@
                     {#if errors.children}<p class="field-error" id={errorId('children')}>{$t(errors.children)}</p>{/if}
                   </div>
                 {:else if step === 3}
-                  <fieldset class="overlay-group">
-                    <legend>{$t('style_form.accommodation')} <span class="optional">({$t('ui.optional').toLowerCase()})</span></legend>
+                  <fieldset class="overlay-group" data-field="comfort">
+                    <legend>{$t('style_form.accommodation')} <span class="required">*</span></legend>
                     <div class="stays">
                       {#each STAYS as stay (stay.value)}
                         {@const photo = stayPhotos[stay.value]}
-                        <button type="button" class="stay" class:chosen={values.comfort === stay.value} aria-pressed={values.comfort === stay.value} on:click={() => { values.comfort = values.comfort === stay.value ? '' : stay.value; tracker.started(); }}>
+                        <button type="button" class="stay" class:chosen={values.comfort === stay.value} aria-pressed={values.comfort === stay.value} aria-describedby={errors.comfort ? errorId('comfort') : undefined} on:click={() => { values.comfort = stay.value; clearError('comfort'); tracker.started(); }}>
                           {#if photo}<span class="stay-photo"><Img record={photo} fields={['image_url']} alt="" eager width={480} sizes="(max-width: 1023px) 80px, 320px" className="h-full w-full object-cover" /></span>{/if}
                           <span class="stay-text"><span class="stay-name">{$t(stay.key)}</span><span class="stay-note">{$t(stay.note)}</span></span>
                           {#if values.comfort === stay.value}<span class="stay-tick" aria-hidden="true"><Check size={14} /></span>{/if}
@@ -552,14 +564,23 @@
                     </div>
                     <!-- The pictures are real properties at each level, not the ones this trip will use. -->
                     {#if anyStayPhoto}<p class="photo-note">{$t('style_form.stay_photos_note')}</p>{/if}
+                    {#if errors.comfort}<p class="field-error" id={errorId('comfort')}>{$t(errors.comfort)}</p>{/if}
                   </fieldset>
                   <fieldset class="overlay-group">
                     <legend>{$t('style_form.beach_stay')} <span class="optional">({$t('ui.optional').toLowerCase()})</span></legend>
                     <div class="pills">
                       {#each BEACH as option (option.value)}
-                        <button type="button" class="pill" aria-pressed={values.beach === option.value} on:click={() => { values.beach = values.beach === option.value ? '' : option.value; tracker.started(); }}>{$t(option.key)}{#if values.beach === option.value}<Check size={14} aria-hidden="true" />{/if}</button>
+                        <button type="button" class="pill" aria-pressed={values.beach === option.value} on:click={() => { values.beach = values.beach === option.value ? '' : option.value; clearError('beachDays'); tracker.started(); }}>{$t(option.key)}{#if values.beach === option.value}<Check size={14} aria-hidden="true" />{/if}</button>
                       {/each}
                     </div>
+                    <!-- A yes needs its length; the other answers do not ask. -->
+                    {#if values.beach === 'Yes'}
+                      <div class="count-row beach-days" data-field="beachDays">
+                        <label for={`${uid}-beach-days`}>{$t('style_form.q_beach_days')} <span class="required">*</span></label>
+                        <div class="count-box"><CountStepper round id={`${uid}-beach-days`} label={$t('style_form.beach_days')} min={1} max={60} showStart={false} bind:value={values.beachDays} invalid={Boolean(errors.beachDays)} describedBy={errors.beachDays ? errorId('beachDays') : undefined} on:input={() => clearError('beachDays')} on:change={() => counted('beachDays')} /></div>
+                      </div>
+                      {#if errors.beachDays}<p class="field-error" id={errorId('beachDays')}>{$t(errors.beachDays)}</p>{/if}
+                    {/if}
                   </fieldset>
                   <fieldset class="overlay-group" data-field="language">
                     <legend>{$t('form.preferred_language')} <span class="required">*</span></legend>
@@ -762,6 +783,7 @@
   }
   .overlay-group + .overlay-group { margin-top: 26px; }
   .count-rows { display: grid; gap: 12px; }
+  .beach-days { margin-top: 14px; }
   .count-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-width: 0; padding: 10px 12px 10px 18px; border: 1px solid var(--pf-border); border-radius: 12px; background: #faf8f3; }
   .count-row label { min-width: 0; margin: 0; font-size: 15px; letter-spacing: 0; text-transform: none; color: var(--pf-text); }
   .count-box { flex-shrink: 0; width: 164px; }

@@ -1,13 +1,17 @@
 import { isEnquiryEmail, isEnquiryPhoneFor } from './validation';
 /** Data shared by the inline category/package enquiry; delivery stays on /bookings. */
-export type PlannerField = 'route' | 'days' | 'travelDate' | 'adults' | 'children' | 'language' | 'fullName' | 'email' | 'phone';
+export type PlannerField = 'route' | 'days' | 'travelDate' | 'adults' | 'children' | 'language' | 'comfort' | 'beachDays' | 'fullName' | 'email' | 'phone';
 export type PlannerValues = {
   // null when a number box is cleared (Svelte's bind:value), undefined before it is touched.
   days: number | null | undefined; daysUnsure: boolean; travelDate: string; dateUnsure: boolean;
   adults: number | null | undefined; children: number | null | undefined; language: string;
-  comfort: string; beach: string; fullName: string; email: string; phone: string;
+  comfort: string; beach: string; beachDays: number | null | undefined; fullName: string; email: string; phone: string;
   dialCode: string; specialRequests: string; whatsappOptIn: boolean; route: string; hp: string;
 };
+/** The accommodation levels the form offers, as sent to the team. */
+export const COMFORT_LEVELS = ['Budget', 'Mid-range', 'Luxury'];
+/** Beach days only count when the traveller said yes to a beach stay. */
+export const beachDaysOf = (values: PlannerValues) => (values.beach === 'Yes' && Number.isSafeInteger(values.beachDays) ? Number(values.beachDays) : undefined);
 export function plannerProblems(values: PlannerValues, step: number, today: string, hasRoutes: boolean) {
   const errors: Partial<Record<PlannerField, string>> = {};
   if (step === 1) {
@@ -22,6 +26,10 @@ export function plannerProblems(values: PlannerValues, step: number, today: stri
     if (!Number.isSafeInteger(values.adults) || Number(values.adults) < 1) errors.adults = 'form.err_adult_count';
     if (values.children != null && (!Number.isSafeInteger(values.children) || values.children < 0)) errors.children = 'form.err_child_count';
     if (!['en', 'sw', 'de', 'fr', 'es', 'it'].includes(values.language)) errors.language = 'style_form.err_language';
+    // The accommodation level is required; the beach stay is not, but a yes
+    // needs its length, as in the client's brief (1 to 60).
+    if (!COMFORT_LEVELS.includes(values.comfort)) errors.comfort = 'style_form.err_accommodation';
+    if (values.beach === 'Yes' && (!Number.isSafeInteger(values.beachDays) || Number(values.beachDays) < 1 || Number(values.beachDays) > 60)) errors.beachDays = 'style_form.err_beach_days';
   } else {
     if (values.fullName.trim().length < 2) errors.fullName = 'ui.please_enter_your_full_name';
     if (!isEnquiryEmail(values.email)) errors.email = 'ui.that_email_address_does_not';
@@ -53,7 +61,7 @@ export function plannerPayload(values: PlannerValues, context: Context) {
       safari_package: context.packageName || undefined, safari_package_slug: context.packageSlug || undefined,
       route_option: context.hasRouteOptions ? values.route : undefined,
       route_option_tour: context.route?.tourTitle, route_option_tour_slug: context.route?.tourSlug,
-      trip_days: tripDays, comfort_level: values.comfort || undefined,
+      trip_days: tripDays, comfort_level: values.comfort || undefined, beach_days: beachDaysOf(values),
       language: values.language, page_locale: context.pageLocale,
       page: { url: context.pageUrl },
       // Named answers reach the staff brief as well as the stored lead context.
@@ -61,6 +69,7 @@ export function plannerPayload(values: PlannerValues, context: Context) {
         trip_duration: values.daysUnsure ? tripDays : `${tripDays} days`,
         date_flexibility: values.dateUnsure ? 'Dates not decided yet' : 'Exact date',
         accommodation_style: values.comfort || undefined, beach_stay: values.beach || undefined,
+        beach_days: beachDaysOf(values),
         preferred_language: values.language,
         route_option: context.hasRouteOptions ? values.route : undefined
       },
