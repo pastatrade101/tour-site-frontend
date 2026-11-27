@@ -374,7 +374,7 @@
 
 <!-- ── Final CTA ────────────────────────────────────────────────────────── -->
 <section class="relative isolate overflow-hidden bg-deep-green text-white">
-  <Img src={heroImage} alt="" width={1800} sizes="100vw" className="absolute inset-0 h-full w-full object-cover opacity-45" />
+  <Img src={settingText(s, 'about_closing_image') || heroImage} alt="" width={1800} sizes="100vw" className="absolute inset-0 h-full w-full object-cover opacity-45" />
   <div
     class="absolute inset-0"
     style="background: linear-gradient(180deg, rgb(var(--c-deep-green) / 0.7), rgb(var(--c-deep-green) / 0.82))"

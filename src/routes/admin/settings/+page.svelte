@@ -9,6 +9,7 @@
     ClipboardList,
     Coins,
     FileText,
+    Image as ImageIcon,
     Info,
     Languages,
     MapPin,
@@ -130,6 +131,11 @@
       { key: 'hubspot_enabled', label: 'HubSpot enabled', type: 'boolean', public: false },
       { key: 'hubspot_sync_enabled', label: 'Sync leads & bookings', type: 'boolean', public: false },
       { key: 'hubspot_pipeline_name', label: 'Pipeline name', type: 'text', public: false, default: 'Sales Pipeline' }
+    ] },
+    { key: 'about', label: 'About page', icon: ImageIcon, note: 'The photos on the About us page. Leave one empty and the page uses the built-in photo instead.', fields: [
+      { key: 'about_hero_image', label: 'Top photo', type: 'image', public: true, aspect: 'aspect-[16/9]', helper: 'The large photo behind the page title. A wide landscape photo works best.' },
+      { key: 'about_story_image', label: 'Story photo', type: 'image', public: true, aspect: 'aspect-[4/3]', helper: 'Beside the "our story" text. Empty = the top photo.' },
+      { key: 'about_closing_image', label: 'Bottom banner photo', type: 'image', public: true, aspect: 'aspect-[16/9]', helper: 'Faded behind the last "plan your trip" band. Empty = the top photo.' }
     ] },
     { key: 'analytics', label: 'Analytics', icon: BarChart3, fields: [
       { key: 'ga4_measurement_id', label: 'GA4 measurement ID', type: 'text', public: true, helper: 'e.g. G-XXXXXXXXXX' },
