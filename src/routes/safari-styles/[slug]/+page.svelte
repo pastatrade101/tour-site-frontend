@@ -12,6 +12,7 @@
   import { page } from '$app/stores';
   import FAQAccordion from '$lib/components/public/FAQAccordion.svelte';
   import StylePlannerBand from '$lib/components/public/StylePlannerBand.svelte';
+  import HeroFacts from '$lib/components/public/HeroFacts.svelte';
   import { planTripHref, resolvePlanHref } from '$lib/planHref';
   import { onDestroy } from 'svelte';
   import { trackCta } from '$lib/analytics';
@@ -127,6 +128,9 @@
     .split(/[·•|]/)
     .map((item) => item.trim())
     .filter(Boolean);
+  // The hero lists points, it does not carry prose: a trust line written as a
+  // sentence or two is left to the introduction above it, which says the same.
+  $: trustPoints = trustItems.filter((item) => item.length <= 60);
   $: heroVariants = variantsOf(category, 'image_url');
   $: heroPreloadType = heroVariants?.avif ? 'image/avif' : heroVariants ? 'image/webp' : undefined;
   $: heroPreloadSrcset = heroVariants ? srcsetFor(heroVariants, heroVariants.avif ? 'avif' : 'webp') : '';
@@ -216,6 +220,27 @@
   // Where the form's empty "safari days" count begins: the middle length of this style's own published trips.
   $: tripLengths = tours.map((tour) => Number(tour.duration_days ?? 0)).filter((days) => Number.isInteger(days) && days > 0).sort((a, b) => a - b);
   $: typicalDays = tripLengths.length ? tripLengths[Math.floor((tripLengths.length - 1) / 2)] : undefined;
+
+  /*
+   * The hero's figures, each read from this style's published trips and left
+   * out when it cannot be stood behind: a count of one is not a figure, and a
+   * shortest trip, a longest or a lowest price is only stated when every trip
+   * of the style was loaded — over part of the list it could be wrong. With
+   * fewer than two there is no row to speak of, so none is drawn.
+   */
+  $: tourTotal = Math.max(Number(data.tourTotal ?? 0) || 0, tours.length);
+  $: everyTrip = tours.length > 0 && tours.length >= tourTotal;
+  $: shortest = tripLengths[0];
+  $: longest = tripLengths[tripLengths.length - 1];
+  $: figures = [
+    tourTotal > 1 ? { value: String(tourTotal), label: $t('pg_tours.stat_itineraries') } : null,
+    everyTrip && destinations.length > 1 ? { value: String(destinations.length), label: $t('pg_tours.stat_destinations') } : null,
+    everyTrip && tripLengths.length
+      ? { value: shortest === longest ? `${shortest} ${$t(shortest === 1 ? 'label.day' : 'label.days')}` : `${shortest}–${longest} ${$t('label.days')}`, label: $t('ui.trip_duration') }
+      : null,
+    everyTrip && prices.length ? { value: formatUsd(Math.min(...prices), $currency), label: `${$t('label.from')} · ${$t('label.per_person')}` } : null
+  ].filter((figure): figure is NonNullable<typeof figure> => Boolean(figure?.value));
+  $: heroFacts = figures.length > 1 ? figures : [];
   $: fullPlannerHref = planTripHref({ name: category?.name, slug: category?.slug, from: `safari style: ${category?.slug ?? ''}` });
   // The top bar's and footer's "Plan My Trip" open the planner for this style too.
   $: plannerHref.set(fullPlannerHref);
@@ -304,7 +329,7 @@
         </div>
         <!-- With nothing to show under the form, the block steps out of the
              stacked layout instead of leaving its gap behind. -->
-        <div class="order-3 max-w-2xl lg:mt-7 {trustItems.length ? '' : 'hidden lg:block'}">
+        <div class="order-3 max-w-2xl lg:mt-7 {heroFacts.length || trustPoints.length ? '' : 'hidden lg:block'}">
           <!-- The form is the hero's own way to ask for a plan, so the only
                button left here is the one that leads somewhere else. Beside
                the form it has a place; stacked under it on a phone or tablet
@@ -312,7 +337,14 @@
                left out there — the trip ideas are the next thing down the
                page anyway. -->
           <a href="#trip-ideas" class="hidden items-center justify-center rounded-md border border-white/35 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20 lg:inline-flex">{landing.hero.secondaryCtaLabel}</a>
-          {#if trustItems.length}
+          {#if heroFacts.length}
+            <!-- What this style actually holds — how many trips, where they go,
+                 how long they run, what they start from — as figures. -->
+            <div class="lg:mt-7">
+              <HeroFacts facts={heroFacts} label={$t('ui.tour_collection_details')} />
+            </div>
+          {/if}
+          {#if trustPoints.length}
             <!-- Each item carries its own leading dot rather than sitting between
                  shared separators. Separators belong to the gaps, and a gap that
                  lands at a line break leaves a mark dangling off the end of one
@@ -321,12 +353,11 @@
 
                  Nothing here forbids wrapping. A short item still moves to
                  the next line whole, because that is how a wrapping row lays
-                 its items out; but an editor may also write the trust line as
-                 one long sentence, and that has to fold inside the column
-                 rather than run on behind the form and off the page. The dot
-                 is set against the first line for the same reason. -->
-            <ul class="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] leading-5 text-white/80 sm:gap-x-5 sm:text-sm lg:mt-6">
-              {#each trustItems as item, index (index)}
+                 its items out; one that is wider than the column folds inside
+                 it rather than running on behind the form and off the page.
+                 The dot is set against the first line for the same reason. -->
+            <ul class="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] leading-5 text-white/80 sm:gap-x-5 sm:text-sm {heroFacts.length ? 'mt-5' : ''} lg:mt-6">
+              {#each trustPoints as item, index (index)}
                 <li class="flex min-w-0 items-start gap-2">
                   <span class="mt-[7.5px] h-[5px] w-[5px] shrink-0 rounded-full bg-goldfinch-gold" aria-hidden="true"></span>
                   {item}
@@ -346,6 +377,8 @@
           categoryName={category.name}
           categorySlug={category.slug}
           daysStart={typicalDays}
+          stayPhotos={data.stayPhotos ?? {}}
+          visual={category.image_url ? category : null}
         />
       </div>
     </div>
@@ -358,7 +391,7 @@
         {#each trustChips as chip}
           <li class="group flex items-center gap-3 px-4 py-4 transition-transform hover:-translate-y-0.5">
             <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-goldfinch-gold text-heading"><Check size={14} strokeWidth={3} /></span>
-            <span class="min-w-0 text-[15px] font-semibold leading-tight text-white md:text-base">{chip}</span>
+            <span class="min-w-0 text-[15px] font-normal leading-snug text-white md:text-base">{chip}</span>
           </li>
         {/each}
       </ul>

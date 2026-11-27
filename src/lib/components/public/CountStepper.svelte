@@ -25,6 +25,10 @@
    * press of the plus lands on it. Left out, an empty box starts at `min`.
    */
   export let start: number | undefined = undefined;
+  /** Show `start` greyed in the empty box; off, an empty box shows a dash and plus still lands on `start`. */
+  export let showStart = true;
+  /** Round buttons either side of a plain number, for a row that already draws its own box. */
+  export let round = false;
   export let disabled = false;
   export let invalid = false;
   export let describedBy: string | undefined = undefined;
@@ -42,12 +46,12 @@
   }
 </script>
 
-<div class="stepper" class:invalid class:off={disabled}>
+<div class="stepper" class:round class:invalid class:off={disabled}>
   <button type="button" aria-label={$t('pg_plan_my_trip.fewer_label').replace('{label}', label)} disabled={disabled || count === null || count <= min} on:click={() => move(-1)}>
     <Minus size={16} aria-hidden="true" />
   </button>
   <!-- data-focus: where the form sends the cursor when this field needs fixing. -->
-  <input {id} data-focus type="number" {min} step="1" inputmode="numeric" bind:value {disabled} placeholder={start === undefined ? '–' : String(first)} aria-invalid={invalid} aria-describedby={describedBy} on:input />
+  <input {id} data-focus type="number" {min} step="1" inputmode="numeric" bind:value {disabled} placeholder={start === undefined || !showStart ? '–' : String(first)} aria-invalid={invalid} aria-describedby={describedBy} on:input />
   <button type="button" aria-label={$t('pg_plan_my_trip.more_label').replace('{label}', label)} disabled={disabled || (count !== null && count >= max)} on:click={() => move(1)}>
     <Plus size={16} aria-hidden="true" />
   </button>
@@ -68,5 +72,14 @@
   .stepper.off button { background: transparent; }
   input { width: 100%; min-width: 0; padding: 0 4px; border: 0; outline: none; background: transparent; color: inherit; font-size: var(--stepper-font-size, 15px); font-weight: 600; text-align: center; appearance: textfield; -moz-appearance: textfield; }
   input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { margin: 0; -webkit-appearance: none; }
+  .stepper.round { gap: 6px; height: 44px; overflow: visible; border: 0; border-radius: 0; background: transparent; outline: none; }
+  .stepper.round button, .stepper.round button:first-child, .stepper.round button:last-child { width: 44px; height: 44px; border: 1px solid var(--pf-border, rgb(var(--c-goldfinch-gold) / .45)); border-radius: 50%; background: #fff; }
+  .stepper.round button:hover:not(:disabled) { background: #fff6e1; }
+  .stepper.round button:focus-visible { box-shadow: none; outline: 2px solid var(--pf-focus, rgb(var(--c-goldfinch-gold))); outline-offset: 2px; }
+  .stepper.round button:disabled { opacity: .5; }
+  .stepper.round input { border-radius: 6px; font-size: var(--stepper-font-size, 17px); font-weight: 500; }
+  .stepper.round input:focus-visible { outline: 2px solid var(--pf-focus, rgb(var(--c-goldfinch-gold))); }
+  .stepper.round.invalid { outline: none; }
+  .stepper.round.invalid button { border-color: var(--pf-invalid, #f2b8a6); }
   input::placeholder { color: rgb(57 61 50 / .42); font-weight: 400; opacity: 1; }
 </style>
