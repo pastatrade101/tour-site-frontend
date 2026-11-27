@@ -24,7 +24,9 @@
   import {
     defaultStyleLandingContent,
     parseStyleLandingJson,
+    STAY_PHOTO_LEVELS,
     styleLandingContentErrors,
+    type StayPhotoLevel,
     type StyleLandingContent
   } from '$lib/safariStyleLanding';
 
@@ -80,6 +82,23 @@
   /** Kept so list edits mutate-then-notify in one step. */
   const push = () => {
     content = content;
+  };
+
+  /**
+   * One accommodation photo for the trip form, or none.
+   *
+   * Written by hand rather than bound, so a style that never had photos
+   * picked keeps a document without the key: opening the editor must not
+   * change what is saved. A cleared photo is removed, not stored blank.
+   */
+  const setStayPhoto = (key: StayPhotoLevel, url: string) => {
+    const photos = { ...(content.planner.stayPhotos ?? {}) };
+    const value = String(url ?? '').trim();
+    if (value) photos[key] = value;
+    else delete photos[key];
+    if (Object.keys(photos).length) content.planner.stayPhotos = photos;
+    else delete content.planner.stayPhotos;
+    push();
   };
 
   $: errors = styleLandingContentErrors(content);
@@ -384,7 +403,7 @@
         <ChevronDown size={16} class={`shrink-0 text-ink/40 transition ${open.bands ? 'rotate-180' : ''}`} />
         <span class="min-w-0 flex-1">
           <span class="block text-sm font-bold text-heading">4 · Section headings</span>
-          <span class="block text-[11px] text-ink/50">The short titles above the planner, the trip list, the reviews and the questions.</span>
+          <span class="block text-[11px] text-ink/50">The short titles above the planner, the trip list, the reviews and the questions, and the trip form's accommodation photos.</span>
         </span>
         {#if incomplete('planner') || incomplete('tours') || incomplete('reviews') || incomplete('faq')}
           <span class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">Needs filling</span>
@@ -399,6 +418,26 @@
               <input class={field} bind:value={content.planner.headline} on:input={push} placeholder="Heading" />
             </div>
             <textarea class={area} rows="2" bind:value={content.planner.intro} on:input={push} placeholder="Sentence underneath"></textarea>
+          </div>
+
+          <div class="grid gap-3">
+            <div class="grid gap-1">
+              <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-ink/45">Accommodation photos in the trip form</p>
+              <span class={hint}>The pictures on the Budget, Mid-range and Luxury cards in the form's Preferences step. Leave one empty and the form shows the main photo of a published property at that level instead.</span>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-3">
+              {#each STAY_PHOTO_LEVELS as level (level.key)}
+                <div class="grid content-start gap-1.5">
+                  <MediaPicker
+                    label={`${level.label} photo`}
+                    uploadFolder="categories/landing"
+                    aspect="aspect-[16/9]"
+                    value={content.planner.stayPhotos?.[level.key] ?? ''}
+                    on:change={(event) => setStayPhoto(level.key, event.detail)}
+                  />
+                </div>
+              {/each}
+            </div>
           </div>
 
           <div class="grid gap-3">

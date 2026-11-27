@@ -28,7 +28,7 @@
   import { currency, formatUsd } from '$lib/currency';
   import { cdnUrl, imgUrl, srcsetFor, variantSrc, variantsOf } from '$lib/img';
   import { publicSettings, settingText } from '$lib/settings';
-  import { defaultStyleLandingContent } from '$lib/safariStyleLanding';
+  import { defaultStyleLandingContent, stayPhotosWithChoices } from '$lib/safariStyleLanding';
   import { breadcrumbLd, faqLd } from '$lib/seo';
   import { getTourDestinations } from '$lib/tourDestinations';
   import { toMetaText, toPlainText } from '$lib/richText';
@@ -114,6 +114,8 @@
   $: highlights = (category?.highlights ?? []).map((item) => toPlainText(item).trim()).filter(Boolean);
   $: landing = category?.landing_page_content ?? defaultStyleLandingContent(category ?? {});
   $: trustChips = landing.trustChips;
+  // A photo the admin chose for a level in this style's page editor wins over the automatic one.
+  $: stayPhotos = stayPhotosWithChoices(data.stayPhotos, landing.planner?.stayPhotos);
   /**
    * The hero's trust line, back into the items it was joined from.
    *
@@ -320,20 +322,21 @@
     </div>
     <div class="container-shell relative grid gap-8 py-10 md:py-12 lg:min-h-[700px] lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)] lg:items-center lg:gap-14 lg:py-14">
       <!-- One column beside the form on a wide screen. Below that it dissolves
-           into the grid, so the form can sit between the headline and the rest. -->
+           into the grid, so on a phone the figures come straight after the
+           headline and the form follows them. -->
       <div class="contents text-white lg:block">
         <div class="order-1 max-w-2xl">
           <span class="inline-flex items-center rounded-md bg-white/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white ring-1 ring-white/25 backdrop-blur">{landing.hero.eyebrow}</span>
           <h1 class="mt-5 font-serif text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-5xl xl:text-6xl">{landing.hero.headline}</h1>
           <p class="mt-5 max-w-xl text-base leading-relaxed text-white/90 md:text-lg">{landing.hero.subheadline}</p>
         </div>
-        <!-- With nothing to show under the form, the block steps out of the
+        <!-- With nothing to show above the form, the block steps out of the
              stacked layout instead of leaving its gap behind. -->
-        <div class="order-3 max-w-2xl lg:mt-7 {heroFacts.length || trustPoints.length ? '' : 'hidden lg:block'}">
+        <div class="order-2 max-w-2xl lg:mt-7 {heroFacts.length || trustPoints.length ? '' : 'hidden lg:block'}">
           <!-- The form is the hero's own way to ask for a plan, so the only
                button left here is the one that leads somewhere else. Beside
-               the form it has a place; stacked under it on a phone or tablet
-               it is one more button after the one that matters, so it is
+               the form it has a place; stacked on a phone or tablet it would
+               be a second button ahead of the one that matters, so it is
                left out there — the trip ideas are the next thing down the
                page anyway. -->
           <a href="#trip-ideas" class="hidden items-center justify-center rounded-md border border-white/35 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20 lg:inline-flex">{landing.hero.secondaryCtaLabel}</a>
@@ -368,7 +371,7 @@
         </div>
       </div>
       <!-- Every "request a plan" link on the page still points here. -->
-      <div id="lead-form" class="order-2 w-full max-w-[520px] scroll-mt-28 lg:order-none lg:max-w-none">
+      <div id="lead-form" class="order-3 w-full max-w-[520px] scroll-mt-28 lg:order-none lg:max-w-none">
         <StylePlannerBand
           layout="hero"
           eyebrow={landing.planner.label}
@@ -377,7 +380,7 @@
           categoryName={category.name}
           categorySlug={category.slug}
           daysStart={typicalDays}
-          stayPhotos={data.stayPhotos ?? {}}
+          {stayPhotos}
           visual={category.image_url ? category : null}
         />
       </div>

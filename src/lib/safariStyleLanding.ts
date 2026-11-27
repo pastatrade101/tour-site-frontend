@@ -1,5 +1,31 @@
 export type StyleLandingLink = { label: string; href: string };
 
+/** The trip form's three accommodation levels, as the landing document names them. */
+export const STAY_PHOTO_LEVELS = [
+  { key: 'budget', level: 'Budget', label: 'Budget' },
+  { key: 'midRange', level: 'Mid-range', label: 'Mid-range' },
+  { key: 'luxury', level: 'Luxury', label: 'Luxury' }
+] as const;
+export type StayPhotoLevel = (typeof STAY_PHOTO_LEVELS)[number]['key'];
+type StayPhotoRecords = Partial<Record<(typeof STAY_PHOTO_LEVELS)[number]['level'], Record<string, unknown>>>;
+
+/**
+ * The trip form's accommodation photos: a photo chosen for a level in the
+ * style's page editor wins; a level left empty keeps the published property's
+ * photo picked automatically, and with neither the card has no picture.
+ */
+export const stayPhotosWithChoices = (
+  automatic: StayPhotoRecords | null | undefined,
+  chosen: Partial<Record<StayPhotoLevel, string>> | null | undefined
+): StayPhotoRecords => {
+  const photos: StayPhotoRecords = { ...(automatic ?? {}) };
+  for (const level of STAY_PHOTO_LEVELS) {
+    const url = String(chosen?.[level.key] ?? '').trim();
+    if (/^https?:\/\//i.test(url)) photos[level.level] = { image_url: url };
+  }
+  return photos;
+};
+
 export type StyleLandingContent = {
   hero: {
     eyebrow: string;
@@ -16,7 +42,16 @@ export type StyleLandingContent = {
     paragraphs: string[];
     imageUrl: string;
   };
-  planner: { label: string; headline: string; intro: string };
+  planner: {
+    label: string;
+    headline: string;
+    intro: string;
+    /**
+     * The photo on each accommodation card in the trip form. A level left
+     * blank shows a published property's own photo, picked automatically.
+     */
+    stayPhotos?: Partial<Record<StayPhotoLevel, string>>;
+  };
   tourCollection: {
     label: string;
     headline: string;
@@ -230,6 +265,16 @@ export const styleLandingContentErrors = (value: unknown): string[] => {
   // rather than optional — without one the section publishes half empty.
   requiredText('overview.imageUrl', data.overview?.imageUrl);
   for (const key of ['label', 'headline', 'intro'] as const) requiredText(`planner.${key}`, data.planner?.[key]);
+  // Optional, but the server refuses anything that is not a web address, so
+  // the editor says so first rather than at save time.
+  const stayPhotos = data.planner?.stayPhotos;
+  if (stayPhotos !== undefined) {
+    if (!stayPhotos || typeof stayPhotos !== 'object' || Array.isArray(stayPhotos)) errors.push('planner.stayPhotos must be an object.');
+    else for (const [key, url] of Object.entries(stayPhotos)) {
+      if (!STAY_PHOTO_LEVELS.some((level) => level.key === key)) errors.push(`planner.stayPhotos.${key} is not an accommodation level.`);
+      else if (url !== '' && (typeof url !== 'string' || !/^https?:\/\/\S+$/i.test(url.trim()))) errors.push(`planner.stayPhotos.${key} must be a web address.`);
+    }
+  }
   for (const key of ['label', 'headline', 'subheadline', 'resultsNoun', 'loadMoreLabel'] as const) requiredText(`tourCollection.${key}`, data.tourCollection?.[key]);
   for (const key of ['label', 'title', 'intro'] as const) requiredText(`planningGuide.${key}`, data.planningGuide?.[key]);
   if (!Array.isArray(data.planningGuide?.blocks) || data.planningGuide!.blocks.length !== 4) errors.push('planningGuide.blocks must contain exactly 4 blocks.');
